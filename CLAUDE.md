@@ -24,20 +24,36 @@ OpsClear is an operational tracking app for small/medium businesses (5-50 employ
 
 ```
 OpsClear/
-├── backend/         # Spring Boot API
-├── frontend/        # React SPA
-├── docker/          # Docker configs
-├── .github/         # GitHub Actions workflows
-├── docs/            # Documentation
-├── CLAUDE.md        # This file (Claude context)
-├── TECHNICAL.md     # Technical decisions log
-└── README.md        # Project overview
+├── backend/                # Spring Boot API (Java 21 + Gradle)
+│   ├── src/main/java/com/opsclear/
+│   │   ├── config/         # Security, web config
+│   │   ├── controller/     # REST controllers
+│   │   ├── service/        # Business logic
+│   │   ├── repository/     # JPA repositories
+│   │   ├── entity/         # JPA entities
+│   │   ├── dto/            # Request/response DTOs
+│   │   ├── exception/      # Custom exceptions
+│   │   └── security/       # JWT, auth
+│   └── src/main/resources/
+│       ├── db/migration/   # Flyway migrations
+│       └── application.yml
+├── frontend/               # React SPA (not yet scaffolded)
+├── docs/                   # Docusaurus documentation
+│   ├── docs/              # User-facing guides
+│   └── dev/               # Developer documentation
+├── docker-compose.yml      # Local dev environment
+├── CLAUDE.md              # This file (Claude context)
+├── TECHNICAL.md           # Technical decisions log
+└── README.md              # Project overview
 ```
 
 ## Key Documents
 
 - `README.md` - Product vision, features, target users
 - `TECHNICAL.md` - All technical decisions with rationale
+- `ROADMAP.md` - Phases, modules, and tasks
+- `CONTRIBUTING.md` - **Commit messages, branching, coding standards**
+- `docs/dev/decisions/` - Architecture Decision Records (ADRs)
 
 ## Domain Model (Core Entities)
 
@@ -61,10 +77,26 @@ OpsClear/
 - Mobile-friendly (future React Native app)
 - Audit trail for decisions
 
+## Git Conventions
+
+**See `CONTRIBUTING.md` for full details.**
+
+Commit format:
+```
+<type>(<scope>): <short summary>
+
+- <change 1>
+- <change 2>
+```
+
+Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+
+Branches: `feature/<name>`, `fix/<name>`, `docs/<name>`
+
 ## Commands
 
 ```bash
-# Development (TBD)
+# Development
 cd backend && ./gradlew bootRun
 cd frontend && npm run dev
 

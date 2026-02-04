@@ -1,0 +1,212 @@
+# OpsClear - Roadmap & Tasks
+
+**Last Updated:** 2026-02-05
+
+---
+
+## Phase 1: Authentication (Backend)
+
+**Goal:** Users can register and login via API
+
+### Module 1.1: User Authentication
+
+- [ ] **DOC:** Write ADR for authentication design (JWT, password hashing, token refresh)
+- [ ] Create Flyway migration: `users` table
+- [ ] Implement `User` entity
+- [ ] Implement `UserRepository`
+- [ ] Implement `AuthService` (register, login, password hashing)
+- [ ] Implement `JwtService` (generate, validate tokens)
+- [ ] Create `AuthController` (POST /auth/register, POST /auth/login)
+- [ ] Add security filter for JWT validation
+- [ ] Write integration tests
+
+---
+
+## Phase 2: Projects & Members (Backend)
+
+**Goal:** Users can create projects and invite team members
+
+### Module 2.1: Projects
+
+- [ ] **DOC:** Write ADR for project model and multi-tenancy approach
+- [ ] Create Flyway migration: `projects` table
+- [ ] Implement `Project` entity
+- [ ] Implement `ProjectRepository`
+- [ ] Implement `ProjectService`
+- [ ] Create `ProjectController` (CRUD endpoints)
+- [ ] Write integration tests
+
+### Module 2.2: Project Membership
+
+- [ ] **DOC:** Write ADR for roles and permissions model
+- [ ] Create Flyway migration: `project_members` table
+- [ ] Implement `ProjectMember` entity (user + project + role)
+- [ ] Implement role enum: `OWNER`, `ADMIN`, `MEMBER`
+- [ ] Implement `ProjectMemberRepository`
+- [ ] Implement `ProjectMemberService` (invite, remove, change role)
+- [ ] Create `ProjectMemberController`
+- [ ] Add permission checks to project endpoints
+- [ ] Write integration tests
+
+---
+
+## Phase 3: Jobs (Backend)
+
+**Goal:** CRUD for jobs with status tracking
+
+### Module 3.1: Job Entity & API
+
+- [ ] **DOC:** Write ADR for job model and status flow
+- [ ] Create Flyway migration: `jobs` table
+- [ ] Implement `Job` entity (name, client, responsible, deadline, status)
+- [ ] Implement status enum: `NEW`, `IN_PROGRESS`, `COMPLETED`
+- [ ] Implement `JobRepository`
+- [ ] Implement `JobService` (CRUD, status transitions)
+- [ ] Create `JobController` (CRUD endpoints)
+- [ ] Add project-scoped access (user sees only their project's jobs)
+- [ ] Add permission checks (Member sees assigned only)
+- [ ] Write integration tests
+
+---
+
+## Phase 4: Blocking (Backend)
+
+**Goal:** Mark jobs as blocked with reason
+
+### Module 4.1: Blocking Feature
+
+- [ ] **DOC:** Write ADR for blocking model
+- [ ] Create Flyway migration: add blocking fields to `jobs`
+- [ ] Update `Job` entity: `blocked`, `blocked_by`, `blocked_reason`, `blocked_at`
+- [ ] Implement block/unblock in `JobService`
+- [ ] Add endpoints: POST /jobs/{id}/block, POST /jobs/{id}/unblock
+- [ ] Write integration tests
+
+---
+
+## Phase 5: Notes (Backend)
+
+**Goal:** Immutable notes attached to jobs
+
+### Module 5.1: Notes Feature
+
+- [ ] **DOC:** Write ADR for notes model (immutability, audit)
+- [ ] Create Flyway migration: `notes` table
+- [ ] Implement `Note` entity (job_id, author_id, content, created_at)
+- [ ] Implement `NoteRepository`
+- [ ] Implement `NoteService` (create only, no update/delete)
+- [ ] Create `NoteController` (POST, GET list)
+- [ ] Write integration tests
+
+---
+
+## Phase 6: Approvals (Backend)
+
+**Goal:** Request and process approvals
+
+### Module 6.1: Approvals Feature
+
+- [ ] **DOC:** Write ADR for approval workflow
+- [ ] Create Flyway migration: `approvals` table
+- [ ] Implement `Approval` entity (job_id, requester, approver, status, comment)
+- [ ] Implement approval status: `PENDING`, `APPROVED`, `REJECTED`
+- [ ] Implement `ApprovalRepository`
+- [ ] Implement `ApprovalService` (request, approve, reject)
+- [ ] Create `ApprovalController`
+- [ ] Write integration tests
+
+---
+
+## Phase 7: Frontend
+
+**Goal:** React app consuming the API
+
+### Module 7.1: Setup
+
+- [ ] **DOC:** Write ADR for frontend architecture (state management, routing, styling)
+- [ ] Scaffold React + Vite + TypeScript
+- [ ] Set up routing (React Router)
+- [ ] Set up API client (axios/fetch + JWT handling)
+- [ ] Set up styling approach (Tailwind / CSS modules / etc)
+
+### Module 7.2: Auth Screens
+
+- [ ] Login page
+- [ ] Register page
+- [ ] Auth state management
+- [ ] Protected route wrapper
+
+### Module 7.3: Projects Screens
+
+- [ ] Project list
+- [ ] Create project
+- [ ] Project settings
+- [ ] Member management (invite, remove, change role)
+
+### Module 7.4: Jobs Screens
+
+- [ ] Job list (with filters)
+- [ ] Job detail view
+- [ ] Create/edit job form
+- [ ] Status change controls
+- [ ] Block/unblock modal
+- [ ] Notes section
+- [ ] Request approval button
+
+### Module 7.5: Approvals Screens
+
+- [ ] Approval queue (for Owner/Admin)
+- [ ] Approve/reject modal
+
+---
+
+## Phase 8: Dashboard & Polish
+
+**Goal:** Production-ready MVP
+
+### Module 8.1: Dashboard
+
+- [ ] **DOC:** Write ADR for dashboard data aggregation
+- [ ] Backend: `DashboardService` + `DashboardController`
+- [ ] Frontend: Dashboard home screen (blocked, in-progress, awaiting)
+
+### Module 8.2: Polish
+
+- [ ] Mobile responsive design
+- [ ] Loading states, error handling
+- [ ] In-app notifications
+- [ ] Performance optimization
+- [ ] Security audit
+
+---
+
+## Future (Post-MVP)
+
+- [ ] Organizations (group projects under company)
+- [ ] Email notifications
+- [ ] React Native mobile app
+- [ ] OAuth (Google, Microsoft)
+- [ ] Webhooks / API integrations
+- [ ] User-facing documentation (Docusaurus)
+
+---
+
+## Completed
+
+- [x] Project documentation (README, TECHNICAL, CLAUDE.md)
+- [x] Backend scaffolding (Spring Boot, Gradle, packages)
+- [x] Docker Compose with PostgreSQL
+- [x] Security config (stateless, JWT-ready)
+- [x] Health endpoint + SpringDoc OpenAPI
+- [x] ADR template and structure
+- [x] Roadmap planning
+- [x] Postman collection setup (manual testing)
+
+---
+
+## Legend
+
+| Prefix | Meaning |
+|--------|---------|
+| **DOC:** | Documentation task (ADR) - do first |
+| _(none)_ | Implementation task |

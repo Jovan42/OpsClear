@@ -1,0 +1,98 @@
+{
+	"info": {
+		"_postman_id": "opsclear-api-collection",
+		"name": "OpsClear API",
+		"description": "API collection for OpsClear - Operational tracking for SMBs.\n\n## Usage\n\n1. Import this collection into Postman\n2. Import the environment file from `environments/`\n3. Run \"Login\" request to get JWT token\n4. Token is auto-saved to environment variable\n5. All other requests use the token automatically\n\n## Structure\n\nFolders match API modules:\n- Auth: Register, login, refresh\n- Projects: CRUD for projects\n- Members: Project membership management\n- Jobs: Job CRUD and status\n- Notes: Immutable notes on jobs\n- Approvals: Approval workflow",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "health"]
+						},
+						"description": "Check if API is running"
+					},
+					"response": []
+				}
+			],
+			"description": "Health check endpoints"
+		},
+		{
+			"name": "Auth",
+			"item": [],
+			"description": "Authentication endpoints (register, login, refresh)"
+		},
+		{
+			"name": "Projects",
+			"item": [],
+			"description": "Project CRUD endpoints"
+		},
+		{
+			"name": "Members",
+			"item": [],
+			"description": "Project membership endpoints"
+		},
+		{
+			"name": "Jobs",
+			"item": [],
+			"description": "Job CRUD and status endpoints"
+		},
+		{
+			"name": "Notes",
+			"item": [],
+			"description": "Notes endpoints (create, list)"
+		},
+		{
+			"name": "Approvals",
+			"item": [],
+			"description": "Approval workflow endpoints"
+		},
+		{
+			"name": "Dashboard",
+			"item": [],
+			"description": "Dashboard aggregation endpoints"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
