@@ -26,19 +26,26 @@ Process:
 
 ## Phase 1: Authentication (Backend)
 
-**Goal:** Users can register and login via API
+**Goal:** Users can register and login via Keycloak
 
-### Module 1.1: User Authentication
+### Module 1.1: Keycloak Setup
 
-- [ ] **DOC:** Write ADR for authentication design (JWT, password hashing, token refresh)
+- [x] **DOC:** Write ADR for authentication design (Keycloak)
+- [ ] Update docker-compose with Keycloak service
+- [ ] Configure Keycloak realm `opsclear`
+- [ ] Configure Keycloak clients (frontend, backend)
+- [ ] Export realm config to JSON (for reproducible setup)
+
+### Module 1.2: User Sync
+
+- [ ] **DOC:** Write ADR for user sync strategy (covered in 0002)
 - [ ] Create Flyway migration: `users` table
 - [ ] Implement `User` entity
 - [ ] Implement `UserRepository`
-- [ ] Implement `AuthService` (register, login, password hashing)
-- [ ] Implement `JwtService` (generate, validate tokens)
-- [ ] Create `AuthController` (POST /auth/register, POST /auth/login)
-- [ ] Add security filter for JWT validation
+- [ ] Implement `UserSyncService` (sync from JWT on login)
+- [ ] Update Spring Security for OAuth2 resource server
 - [ ] Write integration tests
+- [ ] Update Postman collection with auth flow
 
 ---
 

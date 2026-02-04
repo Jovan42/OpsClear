@@ -27,7 +27,10 @@ Target users are SME owners (5-50 employees) who need operational visibility.
 - **React + Vite + TypeScript** - Fast DX, type safety, path to React Native
 
 ### Authentication
-- **JWT tokens** - Stateless, mobile-ready, simple to implement
+- **Keycloak** - Self-hosted identity provider, handles users/JWT/OAuth2
+- **JWT tokens** - Issued by Keycloak, validated by Spring Security
+
+**See [ADR-0002](0002-authentication.md) for details.**
 
 ### API Documentation
 - **SpringDoc OpenAPI** - Auto-generated from code, Swagger UI included

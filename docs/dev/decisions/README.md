@@ -46,3 +46,4 @@ See [0000-template.md](0000-template.md) for the ADR template.
 | # | Title | Status | Date |
 |---|-------|--------|------|
 | 0001 | [Initial Tech Stack](0001-initial-tech-stack.md) | Implemented | 2026-02-03 |
+| 0002 | [Authentication with Keycloak](0002-authentication.md) | Proposed | 2026-02-05 |
