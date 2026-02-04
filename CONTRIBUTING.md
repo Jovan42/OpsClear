@@ -89,21 +89,39 @@ Examples:
 
 ```
 main (always deployable)
-  └── feature/auth-jwt
-  └── feature/jobs-crud
+  └── feature/1.1-auth-adr
+  └── feature/1.1-auth-user-entity
+  └── feature/1.1-auth-jwt
   └── fix/login-validation
 ```
 
+**Small, focused PRs** - one module can have multiple branches/PRs.
+
 1. Create branch from `main`
-2. Make commits following convention above
+2. Make focused changes (1-3 related tasks)
 3. Push and create PR
 4. Review (if team)
 5. Merge to `main` (squash for feature branches)
+6. Delete branch after merge
+
+### Branch Naming
+
+Pattern: `feature/<phase>.<module>-<description>`
+
+Examples for Module 1.1 (Auth):
+- `feature/1.1-auth-adr` - ADR documentation only
+- `feature/1.1-auth-user-entity` - User entity + migration
+- `feature/1.1-auth-jwt` - JWT service + filter
+- `feature/1.1-auth-endpoints` - Controller + tests
+
+Other examples:
+- `feature/2.1-jobs-entity` - Job entity + migration
+- `fix/auth-token-expiry` - Bug fix
 
 ### When to Branch
 
 - **Direct to main:** Small docs fixes, typos, config tweaks
-- **Feature branch:** New features, bug fixes, refactors
+- **Feature branch:** Any module work (always)
 
 ---
 

@@ -4,6 +4,26 @@
 
 ---
 
+## Workflow
+
+**Small, focused PRs** - one module can have multiple branches/PRs if needed.
+
+Branch naming: `feature/<phase>.<module>-<description>`
+
+Examples for Module 1.1 (Auth):
+- `feature/1.1-auth-adr` - ADR documentation
+- `feature/1.1-auth-user-entity` - User entity + migration
+- `feature/1.1-auth-jwt` - JWT service + security filter
+- `feature/1.1-auth-endpoints` - Auth controller + tests
+
+Process:
+1. Create branch from `main`
+2. Make focused changes (1-3 related tasks)
+3. Create PR, merge to `main`
+4. Update this file: check off completed tasks
+
+---
+
 ## Phase 1: Authentication (Backend)
 
 **Goal:** Users can register and login via API

@@ -81,6 +81,13 @@ OpsClear/
 
 **See `CONTRIBUTING.md` for full details.**
 
+**Small, focused PRs** - one module can have multiple branches/PRs.
+
+Branch naming: `feature/<phase>.<module>-<description>`
+- `feature/1.1-auth-adr` - Auth ADR only
+- `feature/1.1-auth-user-entity` - User entity + migration
+- `feature/1.1-auth-jwt` - JWT service
+
 Commit format:
 ```
 <type>(<scope>): <short summary>
@@ -90,8 +97,6 @@ Commit format:
 ```
 
 Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
-
-Branches: `feature/<name>`, `fix/<name>`, `docs/<name>`
 
 ## Commands
 
