@@ -68,8 +68,8 @@ Process:
 - [x] **DOC:** Write ADR for project model and multi-tenancy approach
 - [x] Create Flyway migration: `projects` table
 - [x] Implement `Project` entity
-- [ ] Implement `ProjectRepository`
-- [ ] Implement `ProjectService`
+- [x] Implement `ProjectRepository`
+- [x] Implement `ProjectService`
 - [ ] Create `ProjectController` (CRUD endpoints)
 - [ ] Write integration tests
 
@@ -151,6 +151,7 @@ Process:
 - [ ] Implement `ApprovalService` (request, approve, reject)
 - [ ] Create `ApprovalController`
 - [ ] Write integration tests
+- [ ] Squash and rename all Flyway migrations into single `V001__init_mvp.sql` (zero-padded format)
 
 ---
 
