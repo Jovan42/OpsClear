@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "OpsClear PostgreSQL",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "opsclear",
+      "Username": "opsclear",
+      "SSLMode": "prefer"
+    }
+  }
+}
