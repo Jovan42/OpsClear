@@ -65,9 +65,9 @@ Process:
 
 ### Module 2.1: Projects
 
-- [ ] **DOC:** Write ADR for project model and multi-tenancy approach
-- [ ] Create Flyway migration: `projects` table
-- [ ] Implement `Project` entity
+- [x] **DOC:** Write ADR for project model and multi-tenancy approach
+- [x] Create Flyway migration: `projects` table
+- [x] Implement `Project` entity
 - [ ] Implement `ProjectRepository`
 - [ ] Implement `ProjectService`
 - [ ] Create `ProjectController` (CRUD endpoints)
