@@ -31,10 +31,10 @@ Process:
 ### Module 1.1: Keycloak Setup
 
 - [x] **DOC:** Write ADR for authentication design (Keycloak)
-- [ ] Update docker-compose with Keycloak service
-- [ ] Configure Keycloak realm `opsclear`
-- [ ] Configure Keycloak clients (frontend, backend)
-- [ ] Export realm config to JSON (for reproducible setup)
+- [x] Update docker-compose with Keycloak service
+- [x] Configure Keycloak realm `opsclear`
+- [x] Configure Keycloak clients (frontend, backend)
+- [x] Export realm config to JSON (for reproducible setup)
 
 ### Module 1.2: User Sync
 

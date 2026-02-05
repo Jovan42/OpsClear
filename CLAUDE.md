@@ -101,15 +101,26 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 ## Commands
 
 ```bash
-# Development
-cd backend && ./gradlew bootRun
-cd frontend && npm run dev
-
-# Docker
+# Start all services
 docker-compose up
+
+# Development (backend only, requires running postgres + keycloak)
+cd backend && ./gradlew bootRun
 
 # Tests
 cd backend && ./gradlew test
-cd frontend && npm test
-npx cypress run
 ```
+
+## Access Points (Local Dev)
+
+| Service | URL |
+|---------|-----|
+| Backend API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| Keycloak Admin | http://localhost:8180/admin (admin/admin) |
+| Keycloak Auth | http://localhost:8180/realms/opsclear |
+
+## Test User
+
+- Email: `testuser@example.com`
+- Password: `password123`
