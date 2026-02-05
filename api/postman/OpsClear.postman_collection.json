@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "opsclear-api-collection",
 		"name": "OpsClear API",
-		"description": "API collection for OpsClear - Operational tracking for SMBs.\n\n## Usage\n\n1. Import this collection into Postman\n2. Import the environment file from `environments/`\n3. Run \"Login\" request to get JWT token\n4. Token is auto-saved to environment variable\n5. All other requests use the token automatically\n\n## Structure\n\nFolders match API modules:\n- Auth: Register, login, refresh\n- Projects: CRUD for projects\n- Members: Project membership management\n- Jobs: Job CRUD and status\n- Notes: Immutable notes on jobs\n- Approvals: Approval workflow",
+		"description": "API collection for OpsClear - Operational tracking for SMBs.\n\n## Usage\n\n1. Import this collection into Postman\n2. Import the environment file from `environments/`\n3. Run \"Login\" request to get JWT token\n4. Token is auto-saved to environment variable\n5. All other requests use the token automatically\n\n## Structure\n\nFolders match API modules:\n- Auth: Login, token refresh\n- Projects: CRUD for projects\n- Members: Project membership management\n- Jobs: Job CRUD and status\n- Notes: Immutable notes on jobs\n- Approvals: Approval workflow",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -28,8 +28,209 @@
 		},
 		{
 			"name": "Auth",
-			"item": [],
-			"description": "Authentication endpoints (register, login, refresh)"
+			"item": [
+				{
+					"name": "Login (Get Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    ",
+									"    // Save access token",
+									"    pm.environment.set(\"accessToken\", jsonData.access_token);",
+									"    console.log(\"Access token saved to environment\");",
+									"    ",
+									"    // Save refresh token",
+									"    if (jsonData.refresh_token) {",
+									"        pm.environment.set(\"refreshToken\", jsonData.refresh_token);",
+									"        console.log(\"Refresh token saved to environment\");",
+									"    }",
+									"    ",
+									"    // Log token expiry",
+									"    console.log(\"Token expires in: \" + jsonData.expires_in + \" seconds\");",
+									"}",
+									"",
+									"pm.test(\"Login successful\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has access_token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('access_token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{keycloakClientId}}",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "{{testUserEmail}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "{{testUserPassword}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloakUrl}}/realms/{{keycloakRealm}}/protocol/openid-connect/token",
+							"host": ["{{keycloakUrl}}"],
+							"path": ["realms", "{{keycloakRealm}}", "protocol", "openid-connect", "token"]
+						},
+						"description": "Get JWT access token from Keycloak using username/password.\n\nThe access token is automatically saved to the `accessToken` environment variable.\n\n**Note:** This uses the Resource Owner Password Grant which should only be used for testing. The frontend will use Authorization Code with PKCE."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    ",
+									"    pm.environment.set(\"accessToken\", jsonData.access_token);",
+									"    console.log(\"Access token refreshed\");",
+									"    ",
+									"    if (jsonData.refresh_token) {",
+									"        pm.environment.set(\"refreshToken\", jsonData.refresh_token);",
+									"        console.log(\"Refresh token updated\");",
+									"    }",
+									"}",
+									"",
+									"pm.test(\"Token refresh successful\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "refresh_token",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{keycloakClientId}}",
+									"type": "text"
+								},
+								{
+									"key": "refresh_token",
+									"value": "{{refreshToken}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloakUrl}}/realms/{{keycloakRealm}}/protocol/openid-connect/token",
+							"host": ["{{keycloakUrl}}"],
+							"path": ["realms", "{{keycloakRealm}}", "protocol", "openid-connect", "token"]
+						},
+						"description": "Get a new access token using the refresh token.\n\nRun this when your access token expires (default: 5 minutes)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{keycloakUrl}}/realms/{{keycloakRealm}}/protocol/openid-connect/userinfo",
+							"host": ["{{keycloakUrl}}"],
+							"path": ["realms", "{{keycloakRealm}}", "protocol", "openid-connect", "userinfo"]
+						},
+						"description": "Get the current user's info from Keycloak.\n\nRequires a valid access token (uses collection auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "client_id",
+									"value": "{{keycloakClientId}}",
+									"type": "text"
+								},
+								{
+									"key": "refresh_token",
+									"value": "{{refreshToken}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloakUrl}}/realms/{{keycloakRealm}}/protocol/openid-connect/logout",
+							"host": ["{{keycloakUrl}}"],
+							"path": ["realms", "{{keycloakRealm}}", "protocol", "openid-connect", "logout"]
+						},
+						"description": "Invalidate the refresh token (logout from Keycloak)."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication via Keycloak.\n\n**Workflow:**\n1. Run \"Login\" to get tokens\n2. Tokens are auto-saved to environment\n3. All API requests use the token automatically\n4. Run \"Refresh Token\" when access token expires"
 		},
 		{
 			"name": "Projects",

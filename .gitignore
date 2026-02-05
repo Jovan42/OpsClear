@@ -1,0 +1,32 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Build outputs
+build/
+target/
+dist/
+node_modules/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Personal notes (not for repo)
+IDEAS.txt
+NOTES.txt
+TODO.txt

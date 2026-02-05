@@ -66,6 +66,15 @@ Brief description.
 - Rollback plan
 - Testing requirements
 
+## API Changes Checklist
+
+If this ADR introduces or modifies API endpoints:
+
+- [ ] Update Postman collection (`api/postman/OpsClear.postman_collection.json`)
+- [ ] Add example requests for new endpoints
+- [ ] Update environment variables if needed
+- [ ] Test the flow manually before marking complete
+
 ## References
 
 - Links to relevant documentation
