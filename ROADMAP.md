@@ -49,13 +49,13 @@ Process:
 
 ### Module 1.3: CI/CD Pipeline
 
-- [ ] **DOC:** Write ADR for CI/CD strategy
-- [ ] Create GitHub Actions workflow (`.github/workflows/ci.yml`)
-- [ ] Configure build step (`./gradlew build`)
-- [ ] Configure test step (`./gradlew test`)
-- [ ] Add Checkstyle for code linting
-- [ ] Configure Checkstyle rules
-- [ ] Setup branch protection (require CI to pass, no review required)
+- [x] **DOC:** Write ADR for CI/CD strategy
+- [x] Create GitHub Actions workflow (`.github/workflows/ci.yml`)
+- [x] Configure build step (`./gradlew build`)
+- [x] Configure test step (unit + integration, separate jobs)
+- [x] Add Checkstyle for code linting
+- [x] Configure Checkstyle rules (Google style, 4-space indent)
+- [x] Setup branch protection (CI runs on PRs; enforcement requires GitHub Team for private repos)
 
 ---
 
