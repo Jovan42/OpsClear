@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'checkstyle'
 }
 
 group = 'com.opsclear'
@@ -53,4 +54,27 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+
+    // Filter tests based on project properties
+    if (project.hasProperty('excludeIntegrationTests')) {
+        exclude '**/integration/**'
+    }
+    if (project.hasProperty('onlyIntegrationTests')) {
+        include '**/integration/**'
+    }
+}
+
+// Checkstyle configuration
+checkstyle {
+    toolVersion = '10.21.4'
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+    maxWarnings = 0
+    maxErrors = 0
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }
