@@ -158,8 +158,10 @@ Process:
 
 ### Module 7.2: Auth Screens
 
-- [ ] Login page
-- [ ] Register page
+- [ ] **DOC:** Write ADR for auth UI approach (Keycloak redirect vs custom UI)
+- [ ] Login page (custom UI proxying to Keycloak, no redirect)
+- [ ] Register page (custom UI via Keycloak Admin API)
+- [ ] Password reset flow
 - [ ] Auth state management
 - [ ] Protected route wrapper
 
