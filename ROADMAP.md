@@ -38,14 +38,24 @@ Process:
 
 ### Module 1.2: User Sync
 
-- [ ] **DOC:** Write ADR for user sync strategy (covered in 0002)
-- [ ] Create Flyway migration: `users` table
-- [ ] Implement `User` entity
-- [ ] Implement `UserRepository`
-- [ ] Implement `UserSyncService` (sync from JWT on login)
-- [ ] Update Spring Security for OAuth2 resource server
-- [ ] Write integration tests
-- [ ] Update Postman collection with auth flow
+- [x] **DOC:** Write ADR for user sync strategy (covered in 0002)
+- [x] Create Flyway migration: `users` table
+- [x] Implement `User` entity
+- [x] Implement `UserRepository`
+- [x] Implement `UserSyncService` (sync from JWT on login)
+- [x] Update Spring Security for OAuth2 resource server
+- [x] Write integration tests
+- [x] Update Postman collection with auth flow
+
+### Module 1.3: CI/CD Pipeline
+
+- [ ] **DOC:** Write ADR for CI/CD strategy
+- [ ] Create GitHub Actions workflow (`.github/workflows/ci.yml`)
+- [ ] Configure build step (`./gradlew build`)
+- [ ] Configure test step (`./gradlew test`)
+- [ ] Add Checkstyle for code linting
+- [ ] Configure Checkstyle rules
+- [ ] Setup branch protection (require CI to pass, no review required)
 
 ---
 
