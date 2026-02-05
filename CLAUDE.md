@@ -119,6 +119,7 @@ cd backend && ./gradlew test
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 | Keycloak Admin | http://localhost:8180/admin (admin/admin) |
 | Keycloak Auth | http://localhost:8180/realms/opsclear |
+| pgAdmin | http://localhost:5050 (admin@admin.com/admin) |
 
 ## Test User
 
