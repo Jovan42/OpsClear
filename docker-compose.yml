@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U opsclear"]
       interval: 5s
@@ -23,15 +24,14 @@ services:
     environment:
       # Database
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/opsclear
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: opsclear
       KC_DB_PASSWORD: opsclear
-      KC_DB_SCHEMA: keycloak
       # Admin credentials
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       # Health check
-      KC_HEALTH_ENABLED: true
+      KC_HEALTH_ENABLED: "true"
     ports:
       - "8180:8080"
     volumes:
@@ -39,12 +39,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e 'GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n' >&3;if [ $? -eq 0 ]; then echo 'Healthcheck Successful';exit 0;else echo 'Healthcheck Failed';exit 1;fi;"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
 
 volumes:
   postgres_data:
