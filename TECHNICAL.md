@@ -41,6 +41,34 @@
 
 ---
 
+## Database Patterns
+
+### Soft Delete
+
+Entities that contain significant user data use **soft delete** with a `deleted_at` timestamp:
+
+```sql
+deleted_at TIMESTAMP  -- NULL = active, timestamp = deleted
+```
+
+**Applies to:**
+- `projects` - contains jobs, notes, approvals
+- `jobs` - (future) contains notes, history
+- Other entities with important user data
+
+**Does NOT apply to:**
+- `users` - synced from Keycloak, managed externally
+- `project_members` - hard delete is fine (re-invite is easy)
+- `notes` - immutable by design, never deleted
+
+**Implementation:**
+- Repository methods filter `WHERE deleted_at IS NULL` by default
+- Add `@Query` annotation or use method naming: `findAllByDeletedAtIsNull()`
+- Entity has `softDelete()` method that sets `deletedAt = Instant.now()`
+- Partial index for performance: `CREATE INDEX ... WHERE deleted_at IS NULL`
+
+---
+
 ## Docker Services (Planned)
 
 ```yaml
