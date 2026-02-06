@@ -71,7 +71,7 @@ Process:
 - [x] Implement `ProjectRepository`
 - [x] Implement `ProjectService`
 - [x] Create `ProjectController` (CRUD endpoints)
-- [ ] Write integration tests
+- [x] Write integration tests
 
 ### Module 2.2: Project Membership
 
