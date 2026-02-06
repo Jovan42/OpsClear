@@ -70,7 +70,7 @@ Process:
 - [x] Implement `Project` entity
 - [x] Implement `ProjectRepository`
 - [x] Implement `ProjectService`
-- [ ] Create `ProjectController` (CRUD endpoints)
+- [x] Create `ProjectController` (CRUD endpoints)
 - [ ] Write integration tests
 
 ### Module 2.2: Project Membership
@@ -84,6 +84,11 @@ Process:
 - [ ] Create `ProjectMemberController`
 - [ ] Add permission checks to project endpoints
 - [ ] Write integration tests
+
+### Module 2.3: Mapper Investigation
+
+- [ ] **DOC:** Investigate MapStruct vs manual mapping, write ADR
+- [ ] Implement mapper layer if beneficial
 
 ---
 
