@@ -75,7 +75,7 @@ Process:
 
 ### Module 2.2: Project Membership
 
-- [ ] **DOC:** Write ADR for roles and permissions model
+- [x] **DOC:** Write ADR for roles and permissions model
 - [ ] Create Flyway migration: `project_members` table
 - [ ] Implement `ProjectMember` entity (user + project + role)
 - [ ] Implement role enum: `OWNER`, `ADMIN`, `MEMBER`

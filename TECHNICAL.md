@@ -180,6 +180,23 @@ docs/
 
 ---
 
+## Authorization Model
+
+### Three-Role Model (Project-Scoped)
+
+| Role | Description |
+|------|-------------|
+| `OWNER` | Project creator. Full control. One per project. |
+| `ADMIN` | Can manage members and project settings. |
+| `MEMBER` | Can work on assigned jobs only. |
+
+- Roles are **project-scoped** — a user can be OWNER in one project and MEMBER in another
+- Permissions enforced at the **service layer** via `requireRole()` checks
+- Owner is auto-added when project is created
+- See [ADR-0005](docs/dev/decisions/0005-roles-and-permissions.md) for full permission matrix
+
+---
+
 ## Future Considerations
 
 - [ ] OAuth2 integration (Google, Microsoft login)
