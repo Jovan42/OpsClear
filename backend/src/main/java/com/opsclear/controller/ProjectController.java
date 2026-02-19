@@ -3,7 +3,7 @@ package com.opsclear.controller;
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.ProjectResponse;
 import com.opsclear.dto.UpdateProjectRequest;
-import com.opsclear.entity.Project;
+import com.opsclear.model.ProjectModel;
 import com.opsclear.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ public class ProjectController {
             @Valid @RequestBody CreateProjectRequest request,
             JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
-        Project project = projectService.create(request, userId);
+        ProjectModel project = projectService.create(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ProjectResponse.from(project));
     }
@@ -51,7 +51,7 @@ public class ProjectController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponse> getById(@PathVariable UUID id) {
-        Project project = projectService.getById(id);
+        ProjectModel project = projectService.getById(id);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 
@@ -59,7 +59,7 @@ public class ProjectController {
     public ResponseEntity<ProjectResponse> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateProjectRequest request) {
-        Project project = projectService.update(id, request);
+        ProjectModel project = projectService.update(id, request);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 

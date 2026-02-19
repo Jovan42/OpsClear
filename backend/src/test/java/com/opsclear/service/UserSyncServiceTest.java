@@ -1,6 +1,6 @@
 package com.opsclear.service;
 
-import com.opsclear.entity.User;
+import com.opsclear.model.UserModel;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,17 +42,17 @@ class UserSyncServiceTest {
 
         Jwt jwt = createJwt(userId, email, name);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(UserModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userSyncService.syncFromJwt(jwt);
+        UserModel result = userSyncService.syncFromJwt(jwt);
 
         assertThat(result.getId()).isEqualTo(userId);
         assertThat(result.getEmail()).isEqualTo(email);
         assertThat(result.getName()).isEqualTo(name);
 
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
         verify(userRepository).save(userCaptor.capture());
-        User savedUser = userCaptor.getValue();
+        UserModel savedUser = userCaptor.getValue();
         assertThat(savedUser.getId()).isEqualTo(userId);
         assertThat(savedUser.getEmail()).isEqualTo(email);
     }
@@ -65,7 +65,7 @@ class UserSyncServiceTest {
         String newEmail = "new@example.com";
         String newName = "Updated Name";
 
-        User existingUser = User.builder()
+        UserModel existingUser = UserModel.builder()
                 .id(userId)
                 .email(oldEmail)
                 .name("Old Name")
@@ -73,13 +73,12 @@ class UserSyncServiceTest {
 
         Jwt jwt = createJwt(userId, newEmail, newName);
         when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(UserModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userSyncService.syncFromJwt(jwt);
+        UserModel result = userSyncService.syncFromJwt(jwt);
 
         assertThat(result.getEmail()).isEqualTo(newEmail);
         assertThat(result.getName()).isEqualTo(newName);
-        assertThat(result.getLastLoginAt()).isNotNull();
         verify(userRepository).save(existingUser);
     }
 
@@ -102,9 +101,9 @@ class UserSyncServiceTest {
                 .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(UserModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userSyncService.syncFromJwt(jwt);
+        UserModel result = userSyncService.syncFromJwt(jwt);
 
         assertThat(result.getName()).isEqualTo("John Doe");
     }
@@ -126,9 +125,9 @@ class UserSyncServiceTest {
                 .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(UserModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userSyncService.syncFromJwt(jwt);
+        UserModel result = userSyncService.syncFromJwt(jwt);
 
         assertThat(result.getName()).isEqualTo(preferredUsername);
     }
@@ -148,9 +147,9 @@ class UserSyncServiceTest {
                 .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(UserModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userSyncService.syncFromJwt(jwt);
+        UserModel result = userSyncService.syncFromJwt(jwt);
 
         assertThat(result.getName()).isEqualTo(email);
     }

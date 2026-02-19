@@ -1,4 +1,6 @@
-# OpsClear - Claude Context
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -15,9 +17,9 @@ OpsClear is an operational tracking app for small/medium businesses (5-50 employ
 | Frontend | React + Vite + TypeScript |
 | Backend | Java 21 + Spring Boot 3.x + Gradle |
 | Database | PostgreSQL 16 + Flyway migrations |
-| Auth | JWT (OAuth2 planned) |
+| Auth | Keycloak (OAuth2 Resource Server + JWT, stateless) |
 | API Docs | SpringDoc OpenAPI |
-| Testing | JUnit 5 + Testcontainers, Vitest, Cypress |
+| Testing | JUnit 5 + Mockito + Testcontainers, Vitest, Cypress |
 | Infra | Monorepo, Docker, VPS, GitHub Actions |
 
 ## Project Structure
@@ -32,10 +34,10 @@ OpsClear/
 │   │   ├── repository/     # JPA repositories
 │   │   ├── entity/         # JPA entities
 │   │   ├── dto/            # Request/response DTOs
-│   │   ├── exception/      # Custom exceptions
-│   │   └── security/       # JWT, auth
+│   │   ├── exception/      # Custom exceptions + GlobalExceptionHandler
+│   │   └── security/       # JWT filter, UserSyncFilter, UserSyncService
 │   └── src/main/resources/
-│       ├── db/migration/   # Flyway migrations
+│       ├── db/migration/   # Flyway migrations (V{n}__{description}.sql)
 │       └── application.yml
 ├── frontend/               # React SPA (not yet scaffolded)
 ├── docs/                   # Docusaurus documentation
@@ -107,19 +109,78 @@ docker-compose up
 # Development (backend only, requires running postgres + keycloak)
 cd backend && ./gradlew bootRun
 
-# Tests
+# Run all tests
 cd backend && ./gradlew test
+
+# Run only unit tests (skip integration tests)
+cd backend && ./gradlew test -PexcludeIntegrationTests
+
+# Run only integration tests
+cd backend && ./gradlew test -PonlyIntegrationTests
+
+# Run a single test class
+cd backend && ./gradlew test --tests "com.opsclear.service.ProjectServiceTest"
+
+# Run a single test method
+cd backend && ./gradlew test --tests "com.opsclear.service.ProjectServiceTest.create_shouldCreateProject_forExistingUser"
 ```
+
+## Backend Architecture Patterns
+
+### Layering
+
+**Controllers** extract the caller's identity from the JWT: `UUID.fromString(auth.getToken().getSubject())`. Return `ResponseEntity` with explicit status codes (201 for POST, 204 for DELETE). Apply `@Valid` on request DTOs.
+
+**Services** annotate write methods `@Transactional`, reads `@Transactional(readOnly = true)`. Throw `NotFoundException` for missing records. Log with `@Slf4j`.
+
+**Repositories** extend `JpaRepository<Entity, UUID>`. All active-record queries filter soft-deleted rows via method naming: `findByIdAndDeletedAtIsNull(...)`.
+
+**DTOs** use a factory method for entity→response conversion: `ProjectResponse.from(Project entity)`. Request DTOs carry Jakarta validation annotations (`@NotBlank`, `@Size`).
+
+### Soft Delete
+
+Entities have a `deletedAt` timestamp. Active records are filtered `WHERE deleted_at IS NULL`. Services call `entity.softDelete()` instead of `repository.delete()`.
+
+### User Sync
+
+`UserSyncFilter` (runs after `BearerTokenAuthenticationFilter`) calls `UserSyncService.syncFromJwt(jwt)` on every authenticated request. It creates the user on first login or updates `lastLoginAt` on subsequent requests. The User UUID primary key matches Keycloak's `sub` claim.
+
+Name extraction fallback chain: `name` claim → `given_name + family_name` → `preferred_username` → `email`.
+
+### Error Responses
+
+`GlobalExceptionHandler` (`@RestControllerAdvice`) returns consistent JSON:
+```json
+{ "error": "Error Type", "message": "Detailed message", "timestamp": "<ISO instant>" }
+```
+`NotFoundException` → 404, `MethodArgumentNotValidException` → 400.
+
+### Security
+
+`SecurityConfig` sets up an OAuth2 Resource Server with stateless JWT validation. Public endpoints: `/api/health`, `/api-docs/**`, `/swagger-ui/**`. Keycloak issuer URI defaults to `http://localhost:8180/realms/opsclear` and is overridable via `KEYCLOAK_ISSUER_URI`.
+
+## Testing Patterns
+
+**Unit tests** use `@ExtendWith(MockitoExtension.class)`, `@Mock` for dependencies, and manually instantiate the service in `@BeforeEach`. Use AssertJ (`assertThat`, `assertThatThrownBy`) and `ArgumentCaptor`. All test classes/methods use `@DisplayName`.
+
+**Integration tests** live in `src/test/java/com/opsclear/integration/` and use:
+- `@SpringBootTest` + `@AutoConfigureMockMvc` + `@ActiveProfiles("test")`
+- `application-test.yml` activates Testcontainers PostgreSQL (Flyway disabled, Hibernate DDL `create-drop`)
+- `@BeforeEach` cleans state via `repository.deleteAll()`
+- MockMvc with mock JWT: `.with(jwt().jwt(jwt -> jwt.subject(userId.toString()).claim("email", "...")))`
+- Assertions on HTTP status + `jsonPath()` + database state after mutations
+
+Test method naming convention: `methodName_shouldExpectedBehavior_whenCondition()`.
 
 ## Access Points (Local Dev)
 
-| Service | URL |
-|---------|-----|
-| Backend API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger-ui.html |
-| Keycloak Admin | http://localhost:8180/admin (admin/admin) |
-| Keycloak Auth | http://localhost:8180/realms/opsclear |
-| pgAdmin | http://localhost:5050 (admin@admin.com/admin) |
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Backend API | http://localhost:8080 | — |
+| Swagger UI | http://localhost:8080/swagger-ui.html | — |
+| Keycloak Admin | http://localhost:8180/admin | admin/admin |
+| Keycloak Auth | http://localhost:8180/realms/opsclear | — |
+| pgAdmin | http://localhost:5050 | admin@admin.com/admin |
 
 ## Test User
 

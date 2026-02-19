@@ -1,6 +1,6 @@
 package com.opsclear.dto;
 
-import com.opsclear.entity.Project;
+import com.opsclear.model.ProjectModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,13 +25,13 @@ public class ProjectResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
-    public static ProjectResponse from(Project project) {
+    public static ProjectResponse from(ProjectModel project) {
         return ProjectResponse.builder()
                 .id(project.getId())
                 .name(project.getName())
                 .description(project.getDescription())
-                .ownerId(project.getOwner().getId())
-                .ownerName(project.getOwner().getName())
+                .ownerId(project.getOwnerId())
+                .ownerName(project.getOwnerName())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .build();

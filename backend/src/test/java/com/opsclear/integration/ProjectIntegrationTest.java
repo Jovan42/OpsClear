@@ -1,7 +1,7 @@
 package com.opsclear.integration;
 
-import com.opsclear.entity.Project;
-import com.opsclear.entity.User;
+import com.opsclear.model.ProjectModel;
+import com.opsclear.model.UserModel;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,6 @@ class ProjectIntegrationTest {
     private UserRepository userRepository;
 
     private UUID userId;
-    private User testUser;
 
     @BeforeEach
     void setUp() {
@@ -48,7 +47,7 @@ class ProjectIntegrationTest {
         userRepository.deleteAll();
 
         userId = UUID.randomUUID();
-        testUser = User.builder()
+        UserModel testUser = UserModel.builder()
                 .id(userId)
                 .email("testuser@example.com")
                 .name("Test User")
@@ -138,7 +137,7 @@ class ProjectIntegrationTest {
     @DisplayName("Should not list soft-deleted projects")
     void listProjects_shouldExcludeDeleted() throws Exception {
         createTestProject("Active Project", null);
-        Project deleted = createTestProject("Deleted Project", null);
+        ProjectModel deleted = createTestProject("Deleted Project", null);
         deleted.softDelete();
         projectRepository.save(deleted);
 
@@ -155,7 +154,7 @@ class ProjectIntegrationTest {
     @Test
     @DisplayName("Should get project by ID")
     void getProject_shouldReturnProject() throws Exception {
-        Project project = createTestProject("Acme Corp", "Description");
+        ProjectModel project = createTestProject("Acme Corp", "Description");
 
         mockMvc.perform(get("/api/projects/" + project.getId())
                         .with(jwt().jwt(jwt -> jwt
@@ -183,7 +182,7 @@ class ProjectIntegrationTest {
     @Test
     @DisplayName("Should update project")
     void updateProject_shouldReturnUpdated() throws Exception {
-        Project project = createTestProject("Old Name", "Old desc");
+        ProjectModel project = createTestProject("Old Name", "Old desc");
 
         String body = """
                 {
@@ -207,7 +206,7 @@ class ProjectIntegrationTest {
     @Test
     @DisplayName("Should soft delete project and return 204")
     void deleteProject_shouldReturn204() throws Exception {
-        Project project = createTestProject("To Delete", null);
+        ProjectModel project = createTestProject("To Delete", null);
 
         mockMvc.perform(delete("/api/projects/" + project.getId())
                         .with(jwt().jwt(jwt -> jwt
@@ -231,11 +230,11 @@ class ProjectIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
-    private Project createTestProject(String name, String description) {
-        Project project = Project.builder()
+    private ProjectModel createTestProject(String name, String description) {
+        ProjectModel project = ProjectModel.builder()
                 .name(name)
                 .description(description)
-                .owner(testUser)
+                .ownerId(userId)
                 .build();
         return projectRepository.save(project);
     }

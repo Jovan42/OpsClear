@@ -2,9 +2,9 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.UpdateProjectRequest;
-import com.opsclear.entity.Project;
-import com.opsclear.entity.User;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.ProjectModel;
+import com.opsclear.model.UserModel;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,14 +37,14 @@ class ProjectServiceTest {
 
     private ProjectService projectService;
 
-    private User testOwner;
+    private UserModel testOwner;
     private UUID ownerId;
 
     @BeforeEach
     void setUp() {
         projectService = new ProjectService(projectRepository, userRepository);
         ownerId = UUID.randomUUID();
-        testOwner = User.builder()
+        testOwner = UserModel.builder()
                 .id(ownerId)
                 .email("owner@example.com")
                 .name("Test Owner")
@@ -60,16 +60,16 @@ class ProjectServiceTest {
                 .build();
 
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
-        when(projectRepository.save(any(Project.class)))
+        when(projectRepository.save(any(ProjectModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Project result = projectService.create(request, ownerId);
+        ProjectModel result = projectService.create(request, ownerId);
 
         assertThat(result.getName()).isEqualTo("Acme Corp");
         assertThat(result.getDescription()).isEqualTo("Main project");
-        assertThat(result.getOwner()).isEqualTo(testOwner);
+        assertThat(result.getOwnerId()).isEqualTo(ownerId);
 
-        ArgumentCaptor<Project> captor = ArgumentCaptor.forClass(Project.class);
+        ArgumentCaptor<ProjectModel> captor = ArgumentCaptor.forClass(ProjectModel.class);
         verify(projectRepository).save(captor.capture());
         assertThat(captor.getValue().getName()).isEqualTo("Acme Corp");
     }
@@ -91,16 +91,17 @@ class ProjectServiceTest {
     @Test
     @DisplayName("Should return projects for owner")
     void getProjectsByOwner_shouldReturnProjects() {
-        Project project = Project.builder()
+        ProjectModel project = ProjectModel.builder()
                 .id(UUID.randomUUID())
                 .name("Acme Corp")
-                .owner(testOwner)
+                .ownerId(ownerId)
+                .ownerName(testOwner.getName())
                 .build();
 
         when(projectRepository.findByOwnerIdAndDeletedAtIsNull(ownerId))
                 .thenReturn(List.of(project));
 
-        List<Project> result = projectService.getProjectsByOwner(ownerId);
+        List<ProjectModel> result = projectService.getProjectsByOwner(ownerId);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Acme Corp");
@@ -110,16 +111,17 @@ class ProjectServiceTest {
     @DisplayName("Should return project by ID")
     void getById_shouldReturnProject() {
         UUID projectId = UUID.randomUUID();
-        Project project = Project.builder()
+        ProjectModel project = ProjectModel.builder()
                 .id(projectId)
                 .name("Acme Corp")
-                .owner(testOwner)
+                .ownerId(ownerId)
+                .ownerName(testOwner.getName())
                 .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId))
                 .thenReturn(Optional.of(project));
 
-        Project result = projectService.getById(projectId);
+        ProjectModel result = projectService.getById(projectId);
 
         assertThat(result.getId()).isEqualTo(projectId);
         assertThat(result.getName()).isEqualTo("Acme Corp");
@@ -141,11 +143,12 @@ class ProjectServiceTest {
     @DisplayName("Should update project name and description")
     void update_shouldUpdateProject() {
         UUID projectId = UUID.randomUUID();
-        Project project = Project.builder()
+        ProjectModel project = ProjectModel.builder()
                 .id(projectId)
                 .name("Old Name")
                 .description("Old desc")
-                .owner(testOwner)
+                .ownerId(ownerId)
+                .ownerName(testOwner.getName())
                 .build();
 
         UpdateProjectRequest request = UpdateProjectRequest.builder()
@@ -155,10 +158,10 @@ class ProjectServiceTest {
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId))
                 .thenReturn(Optional.of(project));
-        when(projectRepository.save(any(Project.class)))
+        when(projectRepository.save(any(ProjectModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Project result = projectService.update(projectId, request);
+        ProjectModel result = projectService.update(projectId, request);
 
         assertThat(result.getName()).isEqualTo("New Name");
         assertThat(result.getDescription()).isEqualTo("New desc");
@@ -168,22 +171,23 @@ class ProjectServiceTest {
     @DisplayName("Should soft delete project")
     void softDelete_shouldSetDeletedAt() {
         UUID projectId = UUID.randomUUID();
-        Project project = Project.builder()
+        ProjectModel project = ProjectModel.builder()
                 .id(projectId)
                 .name("Acme Corp")
-                .owner(testOwner)
+                .ownerId(ownerId)
+                .ownerName(testOwner.getName())
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId))
                 .thenReturn(Optional.of(project));
-        when(projectRepository.save(any(Project.class)))
+        when(projectRepository.save(any(ProjectModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         projectService.softDelete(projectId);
 
-        ArgumentCaptor<Project> captor = ArgumentCaptor.forClass(Project.class);
+        ArgumentCaptor<ProjectModel> captor = ArgumentCaptor.forClass(ProjectModel.class);
         verify(projectRepository).save(captor.capture());
         assertThat(captor.getValue().isDeleted()).isTrue();
         assertThat(captor.getValue().getDeletedAt()).isNotNull();
