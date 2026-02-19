@@ -1,5 +1,6 @@
-package com.opsclear;
+package com.opsclear.integration;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -9,6 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 class OpsClearApplicationTests {
 
     @Test
+    @DisplayName("Spring application context should load successfully")
     void contextLoads() {
     }
 }
