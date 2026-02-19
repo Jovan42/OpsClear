@@ -3,12 +3,9 @@ spring:
     url: jdbc:tc:postgresql:16:///opsclear
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
 
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-
   flyway:
-    enabled: false
+    enabled: true
+    locations: classpath:db/migration
 
   security:
     oauth2:

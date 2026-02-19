@@ -225,6 +225,19 @@ Process:
 
 ---
 
+## Chores & Tech Debt
+
+### jOOQ Migration
+
+- [x] Replace Spring Data JPA / Hibernate with jOOQ
+- [x] Add `nu.studer.jooq` codegen plugin; generate DSL classes from Flyway schema
+- [x] Remove `@Entity` classes; introduce plain model layer (`UserModel`, `ProjectModel`)
+- [x] Rewrite repositories using `DSLContext` (upsert, explicit JOINs, soft-delete queries)
+- [x] Re-enable Flyway in test profile; remove Hibernate `create-drop`
+- [x] Update all unit and integration tests
+
+---
+
 ## Future (Post-MVP)
 
 - [ ] Organizations (group projects under company)

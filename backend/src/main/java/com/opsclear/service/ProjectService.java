@@ -2,9 +2,8 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.UpdateProjectRequest;
-import com.opsclear.entity.Project;
-import com.opsclear.entity.User;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +23,14 @@ public class ProjectService {
     private final UserRepository userRepository;
 
     @Transactional
-    public Project create(CreateProjectRequest request, UUID ownerId) {
-        User owner = userRepository.findById(ownerId)
+    public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
+        userRepository.findById(ownerId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        Project project = Project.builder()
+        ProjectModel project = ProjectModel.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .owner(owner)
+                .ownerId(ownerId)
                 .build();
 
         project = projectRepository.save(project);
@@ -40,19 +39,19 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<Project> getProjectsByOwner(UUID ownerId) {
+    public List<ProjectModel> getProjectsByOwner(UUID ownerId) {
         return projectRepository.findByOwnerIdAndDeletedAtIsNull(ownerId);
     }
 
     @Transactional(readOnly = true)
-    public Project getById(UUID projectId) {
+    public ProjectModel getById(UUID projectId) {
         return projectRepository.findByIdAndDeletedAtIsNull(projectId)
                 .orElseThrow(() -> new NotFoundException("Project not found"));
     }
 
     @Transactional
-    public Project update(UUID projectId, UpdateProjectRequest request) {
-        Project project = getById(projectId);
+    public ProjectModel update(UUID projectId, UpdateProjectRequest request) {
+        ProjectModel project = getById(projectId);
         project.setName(request.getName());
         project.setDescription(request.getDescription());
         log.info("Updated project '{}'", project.getId());
@@ -61,7 +60,7 @@ public class ProjectService {
 
     @Transactional
     public void softDelete(UUID projectId) {
-        Project project = getById(projectId);
+        ProjectModel project = getById(projectId);
         project.softDelete();
         projectRepository.save(project);
         log.info("Soft-deleted project '{}'", projectId);

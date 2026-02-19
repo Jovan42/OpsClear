@@ -1,6 +1,6 @@
 package com.opsclear.service;
 
-import com.opsclear.entity.User;
+import com.opsclear.model.UserModel;
 import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +8,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -19,7 +18,7 @@ public class UserSyncService {
     private final UserRepository userRepository;
 
     @Transactional
-    public User syncFromJwt(Jwt jwt) {
+    public UserModel syncFromJwt(Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         String email = jwt.getClaimAsString("email");
         String name = extractName(jwt);
@@ -29,16 +28,15 @@ public class UserSyncService {
                 .orElseGet(() -> createNewUser(userId, email, name));
     }
 
-    private User updateExistingUser(User user, String email, String name) {
+    private UserModel updateExistingUser(UserModel user, String email, String name) {
         user.setEmail(email);
         user.setName(name);
-        user.setLastLoginAt(Instant.now());
         log.debug("Updated user: {}", user.getEmail());
         return userRepository.save(user);
     }
 
-    private User createNewUser(UUID userId, String email, String name) {
-        User user = User.builder()
+    private UserModel createNewUser(UUID userId, String email, String name) {
+        UserModel user = UserModel.builder()
                 .id(userId)
                 .email(email)
                 .name(name)

@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'nu.studer.jooq' version '9.0'
     id 'checkstyle'
 }
 
@@ -27,7 +28,7 @@ repositories {
 dependencies {
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jooq'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
@@ -44,12 +45,52 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // jOOQ code generation classpath
+    jooqGenerator 'org.postgresql:postgresql'
+
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+jooq {
+    version = dependencyManagement.importedProperties['jooq.version']
+    configurations {
+        main {
+            // Only regenerate when explicitly running ./gradlew generateMainJooqSchemaSource
+            generateSchemaSourceOnCompilation = false
+            generationTool {
+                jdbc {
+                    driver = 'org.postgresql.Driver'
+                    url = 'jdbc:postgresql://localhost:5432/opsclear'
+                    user = 'opsclear'
+                    password = 'opsclear'
+                }
+                generator {
+                    name = 'org.jooq.codegen.DefaultGenerator'
+                    database {
+                        name = 'org.jooq.meta.postgres.PostgresDatabase'
+                        inputSchema = 'public'
+                        excludes = 'flyway_schema_history'
+                    }
+                    generate {
+                        daos = false
+                        records = true
+                        pojos = false
+                        fluentSetters = true
+                        javaTimeTypes = true
+                    }
+                    target {
+                        packageName = 'com.opsclear.generated.jooq'
+                        directory = 'src/main/generated'
+                    }
+                }
+            }
+        }
+    }
 }
 
 tasks.named('test') {
@@ -73,6 +114,7 @@ checkstyle {
 }
 
 tasks.withType(Checkstyle).configureEach {
+    exclude '**/generated/**'
     reports {
         xml.required = true
         html.required = true

@@ -1,6 +1,6 @@
 package com.opsclear.integration;
 
-import com.opsclear.entity.User;
+import com.opsclear.model.UserModel;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -84,7 +84,7 @@ class AuthIntegrationTest {
                                         .claim("name", name))))
                 .andExpect(status().isOk());
 
-        Optional<User> savedUser = userRepository.findById(userId);
+        Optional<UserModel> savedUser = userRepository.findById(userId);
         assertThat(savedUser).isPresent();
         assertThat(savedUser.get().getEmail()).isEqualTo(email);
         assertThat(savedUser.get().getName()).isEqualTo(name);
@@ -106,7 +106,7 @@ class AuthIntegrationTest {
                                         .claim("name", originalName))))
                 .andExpect(status().isOk());
 
-        User originalUser = userRepository.findById(userId).orElseThrow();
+        UserModel originalUser = userRepository.findById(userId).orElseThrow();
         assertThat(originalUser.getName()).isEqualTo(originalName);
 
         mockMvc.perform(get("/api/health")
@@ -117,7 +117,7 @@ class AuthIntegrationTest {
                                         .claim("name", updatedName))))
                 .andExpect(status().isOk());
 
-        User updatedUser = userRepository.findById(userId).orElseThrow();
+        UserModel updatedUser = userRepository.findById(userId).orElseThrow();
         assertThat(updatedUser.getName()).isEqualTo(updatedName);
         assertThat(updatedUser.getLastLoginAt()).isAfter(originalUser.getCreatedAt());
     }
@@ -137,7 +137,7 @@ class AuthIntegrationTest {
                                         .claim("family_name", "Doe"))))
                 .andExpect(status().isOk());
 
-        User user = userRepository.findById(userId).orElseThrow();
+        UserModel user = userRepository.findById(userId).orElseThrow();
         assertThat(user.getName()).isEqualTo("John Doe");
     }
 }
