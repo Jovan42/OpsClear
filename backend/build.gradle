@@ -103,6 +103,14 @@ tasks.named('test') {
     if (project.hasProperty('onlyIntegrationTests')) {
         include '**/integration/**'
     }
+
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
+        exceptionFormat = 'full'
+    }
 }
 
 // Checkstyle configuration
