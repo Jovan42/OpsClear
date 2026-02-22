@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
+import com.opsclear.generated.jooq.tables.ProjectMembers.ProjectMembersPath;
 import com.opsclear.generated.jooq.tables.Projects.ProjectsPath;
 import com.opsclear.generated.jooq.tables.records.UsersRecord;
 
@@ -183,6 +184,19 @@ public class Users extends TableImpl<UsersRecord> {
     @Override
     public List<UniqueKey<UsersRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.UK_USERS_EMAIL);
+    }
+
+    private transient ProjectMembersPath _projectMembers;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.project_members</code> table
+     */
+    public ProjectMembersPath projectMembers() {
+        if (_projectMembers == null)
+            _projectMembers = new ProjectMembersPath(this, null, Keys.PROJECT_MEMBERS__PROJECT_MEMBERS_USER_ID_FKEY.getInverseKey());
+
+        return _projectMembers;
     }
 
     private transient ProjectsPath _projects;

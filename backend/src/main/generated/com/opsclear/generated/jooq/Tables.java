@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
 
@@ -13,6 +14,11 @@ import com.opsclear.generated.jooq.tables.Users;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Tables {
+
+    /**
+     * Project membership — links users to projects with a role
+     */
+    public static final ProjectMembers PROJECT_MEMBERS = ProjectMembers.PROJECT_MEMBERS;
 
     /**
      * Projects - top-level tenant boundary for organizing work

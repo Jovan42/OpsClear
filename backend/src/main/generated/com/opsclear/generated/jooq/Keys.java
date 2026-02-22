@@ -4,8 +4,10 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
+import com.opsclear.generated.jooq.tables.records.ProjectMembersRecord;
 import com.opsclear.generated.jooq.tables.records.ProjectsRecord;
 import com.opsclear.generated.jooq.tables.records.UsersRecord;
 
@@ -27,6 +29,8 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<ProjectMembersRecord> PROJECT_MEMBERS_PKEY = Internal.createUniqueKey(ProjectMembers.PROJECT_MEMBERS, DSL.name("project_members_pkey"), new TableField[] { ProjectMembers.PROJECT_MEMBERS.ID }, true);
+    public static final UniqueKey<ProjectMembersRecord> UK_PROJECT_MEMBER = Internal.createUniqueKey(ProjectMembers.PROJECT_MEMBERS, DSL.name("uk_project_member"), new TableField[] { ProjectMembers.PROJECT_MEMBERS.PROJECT_ID, ProjectMembers.PROJECT_MEMBERS.USER_ID }, true);
     public static final UniqueKey<ProjectsRecord> PROJECTS_PKEY = Internal.createUniqueKey(Projects.PROJECTS, DSL.name("projects_pkey"), new TableField[] { Projects.PROJECTS.ID }, true);
     public static final UniqueKey<ProjectsRecord> UK_PROJECTS_NAME_OWNER = Internal.createUniqueKey(Projects.PROJECTS, DSL.name("uk_projects_name_owner"), new TableField[] { Projects.PROJECTS.NAME, Projects.PROJECTS.OWNER_ID }, true);
     public static final UniqueKey<UsersRecord> UK_USERS_EMAIL = Internal.createUniqueKey(Users.USERS, DSL.name("uk_users_email"), new TableField[] { Users.USERS.EMAIL }, true);
@@ -36,5 +40,7 @@ public class Keys {
     // FOREIGN KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final ForeignKey<ProjectMembersRecord, ProjectsRecord> PROJECT_MEMBERS__PROJECT_MEMBERS_PROJECT_ID_FKEY = Internal.createForeignKey(ProjectMembers.PROJECT_MEMBERS, DSL.name("project_members_project_id_fkey"), new TableField[] { ProjectMembers.PROJECT_MEMBERS.PROJECT_ID }, Keys.PROJECTS_PKEY, new TableField[] { Projects.PROJECTS.ID }, true);
+    public static final ForeignKey<ProjectMembersRecord, UsersRecord> PROJECT_MEMBERS__PROJECT_MEMBERS_USER_ID_FKEY = Internal.createForeignKey(ProjectMembers.PROJECT_MEMBERS, DSL.name("project_members_user_id_fkey"), new TableField[] { ProjectMembers.PROJECT_MEMBERS.USER_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
     public static final ForeignKey<ProjectsRecord, UsersRecord> PROJECTS__PROJECTS_OWNER_ID_FKEY = Internal.createForeignKey(Projects.PROJECTS, DSL.name("projects_owner_id_fkey"), new TableField[] { Projects.PROJECTS.OWNER_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
 }
