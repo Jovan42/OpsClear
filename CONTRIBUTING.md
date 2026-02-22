@@ -125,6 +125,35 @@ Other examples:
 
 ---
 
+## Pull Requests
+
+### Title
+
+Same format as commit messages: `<type>(<scope>): <short summary>`
+
+### Body
+
+```
+## Summary
+
+- <change 1>
+- <change 2>
+
+## Test plan
+
+- [ ] <manual or automated check>
+
+Closes #<issue-number>
+```
+
+### Rules
+
+- **Always include `Closes #<issue>`** to auto-close the GitHub issue on merge
+- **No tool/AI attribution** in PR descriptions
+- **PR title = main commit message** for single-commit PRs
+
+---
+
 ## Code Review Checklist
 
 _To be added when team grows_
