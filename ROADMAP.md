@@ -1,6 +1,6 @@
 # OpsClear - Roadmap & Tasks
 
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-02-22
 
 ---
 
@@ -76,7 +76,7 @@ Process:
 ### Module 2.2: Project Membership
 
 - [x] **DOC:** Write ADR for roles and permissions model
-- [ ] Create Flyway migration: `project_members` table
+- [x] Create Flyway migration: `project_members` table
 - [ ] Implement `ProjectMember` entity (user + project + role)
 - [ ] Implement role enum: `OWNER`, `ADMIN`, `MEMBER`
 - [ ] Implement `ProjectMemberRepository`

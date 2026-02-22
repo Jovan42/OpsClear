@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
 
@@ -23,6 +24,8 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index IDX_PROJECT_MEMBERS_PROJECT = Internal.createIndex(DSL.name("idx_project_members_project"), ProjectMembers.PROJECT_MEMBERS, new OrderField[] { ProjectMembers.PROJECT_MEMBERS.PROJECT_ID }, false);
+    public static final Index IDX_PROJECT_MEMBERS_USER = Internal.createIndex(DSL.name("idx_project_members_user"), ProjectMembers.PROJECT_MEMBERS, new OrderField[] { ProjectMembers.PROJECT_MEMBERS.USER_ID }, false);
     public static final Index IDX_PROJECTS_DELETED = Internal.createIndex(DSL.name("idx_projects_deleted"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.DELETED_AT }, false);
     public static final Index IDX_PROJECTS_OWNER = Internal.createIndex(DSL.name("idx_projects_owner"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.OWNER_ID }, false);
     public static final Index IDX_USERS_EMAIL = Internal.createIndex(DSL.name("idx_users_email"), Users.USERS, new OrderField[] { Users.USERS.EMAIL }, false);

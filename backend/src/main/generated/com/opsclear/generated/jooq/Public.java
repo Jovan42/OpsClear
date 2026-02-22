@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
 
@@ -27,6 +28,11 @@ public class Public extends SchemaImpl {
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * Project membership — links users to projects with a role
+     */
+    public final ProjectMembers PROJECT_MEMBERS = ProjectMembers.PROJECT_MEMBERS;
 
     /**
      * Projects - top-level tenant boundary for organizing work
@@ -54,6 +60,7 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            ProjectMembers.PROJECT_MEMBERS,
             Projects.PROJECTS,
             Users.USERS
         );
