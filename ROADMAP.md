@@ -77,9 +77,9 @@ Process:
 
 - [x] **DOC:** Write ADR for roles and permissions model
 - [x] Create Flyway migration: `project_members` table
-- [ ] Implement `ProjectMember` entity (user + project + role)
-- [ ] Implement role enum: `OWNER`, `ADMIN`, `MEMBER`
-- [ ] Implement `ProjectMemberRepository`
+- [x] Implement `ProjectMember` entity (user + project + role)
+- [x] Implement role enum: `OWNER`, `ADMIN`, `MEMBER`
+- [x] Implement `ProjectMemberRepository`
 - [ ] Implement `ProjectMemberService` (invite, remove, change role)
 - [ ] Create `ProjectMemberController`
 - [ ] Add permission checks to project endpoints
