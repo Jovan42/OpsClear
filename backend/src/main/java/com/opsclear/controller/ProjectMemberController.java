@@ -4,7 +4,6 @@ import com.opsclear.dto.AddMemberRequest;
 import com.opsclear.dto.ProjectMemberResponse;
 import com.opsclear.dto.UpdateMemberRoleRequest;
 import com.opsclear.model.ProjectMemberModel;
-import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.service.ProjectMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
