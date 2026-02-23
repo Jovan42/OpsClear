@@ -1,7 +1,10 @@
 package com.opsclear.integration;
 
+import com.opsclear.model.ProjectMemberModel;
+import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,12 +40,16 @@ class ProjectIntegrationTest {
     private ProjectRepository projectRepository;
 
     @Autowired
+    private ProjectMemberRepository projectMemberRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     private UUID userId;
 
     @BeforeEach
     void setUp() {
+        projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -236,6 +243,12 @@ class ProjectIntegrationTest {
                 .description(description)
                 .ownerId(userId)
                 .build();
-        return projectRepository.save(project);
+        project = projectRepository.save(project);
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project.getId())
+                .userId(userId)
+                .role(ProjectMemberRole.OWNER)
+                .build());
+        return project;
     }
 }

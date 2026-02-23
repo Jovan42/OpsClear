@@ -2,9 +2,13 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.UpdateProjectRequest;
+import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.ProjectMemberModel;
+import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +39,9 @@ class ProjectServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ProjectMemberRepository projectMemberRepository;
+
     private ProjectService projectService;
 
     private UserModel testOwner;
@@ -42,7 +49,7 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, userRepository);
+        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository);
         ownerId = UUID.randomUUID();
         testOwner = UserModel.builder()
                 .id(ownerId)
@@ -52,26 +59,34 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("Should create project for existing user")
-    void create_shouldCreateProject_forExistingUser() {
+    @DisplayName("Should create project and add creator as OWNER member")
+    void create_shouldCreateProjectAndAddOwnerMembership() {
         CreateProjectRequest request = CreateProjectRequest.builder()
                 .name("Acme Corp")
                 .description("Main project")
                 .build();
 
+        ProjectModel saved = ProjectModel.builder()
+                .id(UUID.randomUUID())
+                .name("Acme Corp")
+                .description("Main project")
+                .ownerId(ownerId)
+                .build();
+
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
-        when(projectRepository.save(any(ProjectModel.class)))
+        when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
+        when(projectMemberRepository.save(any(ProjectMemberModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         ProjectModel result = projectService.create(request, ownerId);
 
         assertThat(result.getName()).isEqualTo("Acme Corp");
-        assertThat(result.getDescription()).isEqualTo("Main project");
         assertThat(result.getOwnerId()).isEqualTo(ownerId);
 
-        ArgumentCaptor<ProjectModel> captor = ArgumentCaptor.forClass(ProjectModel.class);
-        verify(projectRepository).save(captor.capture());
-        assertThat(captor.getValue().getName()).isEqualTo("Acme Corp");
+        ArgumentCaptor<ProjectMemberModel> memberCaptor = ArgumentCaptor.forClass(ProjectMemberModel.class);
+        verify(projectMemberRepository).save(memberCaptor.capture());
+        assertThat(memberCaptor.getValue().getRole()).isEqualTo(ProjectMemberRole.OWNER);
+        assertThat(memberCaptor.getValue().getUserId()).isEqualTo(ownerId);
     }
 
     @Test
@@ -89,8 +104,8 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("Should return projects for owner")
-    void getProjectsByOwner_shouldReturnProjects() {
+    @DisplayName("Should return all projects where user is a member")
+    void getProjectsForMember_shouldReturnProjects() {
         ProjectModel project = ProjectModel.builder()
                 .id(UUID.randomUUID())
                 .name("Acme Corp")
@@ -98,18 +113,18 @@ class ProjectServiceTest {
                 .ownerName(testOwner.getName())
                 .build();
 
-        when(projectRepository.findByOwnerIdAndDeletedAtIsNull(ownerId))
+        when(projectRepository.findByMemberIdAndDeletedAtIsNull(ownerId))
                 .thenReturn(List.of(project));
 
-        List<ProjectModel> result = projectService.getProjectsByOwner(ownerId);
+        List<ProjectModel> result = projectService.getProjectsForMember(ownerId);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Acme Corp");
     }
 
     @Test
-    @DisplayName("Should return project by ID")
-    void getById_shouldReturnProject() {
+    @DisplayName("Should return project by ID for a member")
+    void getById_shouldReturnProject_forMember() {
         UUID projectId = UUID.randomUUID();
         ProjectModel project = ProjectModel.builder()
                 .id(projectId)
@@ -118,10 +133,17 @@ class ProjectServiceTest {
                 .ownerName(testOwner.getName())
                 .build();
 
-        when(projectRepository.findByIdAndDeletedAtIsNull(projectId))
-                .thenReturn(Optional.of(project));
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId)
+                .userId(ownerId)
+                .role(ProjectMemberRole.MEMBER)
+                .build();
 
-        ProjectModel result = projectService.getById(projectId);
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(membership));
+
+        ProjectModel result = projectService.getById(projectId, ownerId);
 
         assertThat(result.getId()).isEqualTo(projectId);
         assertThat(result.getName()).isEqualTo("Acme Corp");
@@ -131,17 +153,30 @@ class ProjectServiceTest {
     @DisplayName("Should throw NotFoundException when project not found")
     void getById_shouldThrow_whenNotFound() {
         UUID projectId = UUID.randomUUID();
-        when(projectRepository.findByIdAndDeletedAtIsNull(projectId))
-                .thenReturn(Optional.empty());
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.getById(projectId))
+        assertThatThrownBy(() -> projectService.getById(projectId, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found");
     }
 
     @Test
-    @DisplayName("Should update project name and description")
-    void update_shouldUpdateProject() {
+    @DisplayName("Should throw ForbiddenException when requester is not a member")
+    void getById_shouldThrow_whenNotMember() {
+        UUID projectId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder().id(projectId).name("Acme Corp").ownerId(ownerId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.getById(projectId, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this project");
+    }
+
+    @Test
+    @DisplayName("Should update project name and description for OWNER")
+    void update_shouldUpdateProject_forOwner() {
         UUID projectId = UUID.randomUUID();
         ProjectModel project = ProjectModel.builder()
                 .id(projectId)
@@ -151,25 +186,51 @@ class ProjectServiceTest {
                 .ownerName(testOwner.getName())
                 .build();
 
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId)
+                .userId(ownerId)
+                .role(ProjectMemberRole.OWNER)
+                .build();
+
         UpdateProjectRequest request = UpdateProjectRequest.builder()
                 .name("New Name")
                 .description("New desc")
                 .build();
 
-        when(projectRepository.findByIdAndDeletedAtIsNull(projectId))
-                .thenReturn(Optional.of(project));
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(membership));
         when(projectRepository.save(any(ProjectModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProjectModel result = projectService.update(projectId, request);
+        ProjectModel result = projectService.update(projectId, request, ownerId);
 
         assertThat(result.getName()).isEqualTo("New Name");
         assertThat(result.getDescription()).isEqualTo("New desc");
     }
 
     @Test
-    @DisplayName("Should soft delete project")
-    void softDelete_shouldSetDeletedAt() {
+    @DisplayName("Should throw ForbiddenException when MEMBER tries to update project")
+    void update_shouldThrow_whenMemberRole() {
+        UUID projectId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder().id(projectId).name("Acme").ownerId(ownerId).build();
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(membership));
+
+        assertThatThrownBy(() -> projectService.update(projectId, UpdateProjectRequest.builder()
+                .name("x").build(), memberId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
+    }
+
+    @Test
+    @DisplayName("Should soft delete project for OWNER")
+    void softDelete_shouldSetDeletedAt_forOwner() {
         UUID projectId = UUID.randomUUID();
         ProjectModel project = ProjectModel.builder()
                 .id(projectId)
@@ -180,12 +241,19 @@ class ProjectServiceTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(projectRepository.findByIdAndDeletedAtIsNull(projectId))
-                .thenReturn(Optional.of(project));
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId)
+                .userId(ownerId)
+                .role(ProjectMemberRole.OWNER)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(membership));
         when(projectRepository.save(any(ProjectModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        projectService.softDelete(projectId);
+        projectService.softDelete(projectId, ownerId);
 
         ArgumentCaptor<ProjectModel> captor = ArgumentCaptor.forClass(ProjectModel.class);
         verify(projectRepository).save(captor.capture());
@@ -194,13 +262,30 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw ForbiddenException when ADMIN tries to delete project")
+    void softDelete_shouldThrow_whenAdminRole() {
+        UUID projectId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder().id(projectId).name("Acme").ownerId(ownerId).build();
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId).userId(adminId).role(ProjectMemberRole.ADMIN).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, adminId))
+                .thenReturn(Optional.of(membership));
+
+        assertThatThrownBy(() -> projectService.softDelete(projectId, adminId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Insufficient permissions: OWNER role required");
+    }
+
+    @Test
     @DisplayName("Should throw NotFoundException when soft deleting non-existent project")
     void softDelete_shouldThrow_whenNotFound() {
         UUID projectId = UUID.randomUUID();
-        when(projectRepository.findByIdAndDeletedAtIsNull(projectId))
-                .thenReturn(Optional.empty());
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.softDelete(projectId))
+        assertThatThrownBy(() -> projectService.softDelete(projectId, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found");
     }
