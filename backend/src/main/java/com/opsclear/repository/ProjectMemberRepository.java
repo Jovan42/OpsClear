@@ -81,7 +81,7 @@ public class ProjectMemberRepository {
         dsl.deleteFrom(PROJECT_MEMBERS).execute();
     }
 
-    private Optional<ProjectMemberModel> findById(UUID id) {
+    public Optional<ProjectMemberModel> findById(UUID id) {
         return selectWithUser()
                 .where(PROJECT_MEMBERS.ID.eq(id))
                 .fetchOptional()
