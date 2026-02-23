@@ -1,6 +1,8 @@
 package com.opsclear.integration;
 
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.ProjectMemberRepository;
+import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,10 +31,18 @@ class AuthIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
+    private ProjectMemberRepository projectMemberRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @BeforeEach
     void setUp() {
+        projectMemberRepository.deleteAll();
+        projectRepository.deleteAll();
         userRepository.deleteAll();
     }
 
