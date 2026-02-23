@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.PROJECT_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.PROJECTS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static java.util.List.of;
@@ -49,6 +50,25 @@ public class ProjectRepository {
                         .where(PROJECTS.NAME.eq(name))
                         .and(PROJECTS.OWNER_ID.eq(ownerId))
                         .and(PROJECTS.DELETED_AT.isNull()));
+    }
+
+    public List<ProjectModel> findByMemberIdAndDeletedAtIsNull(UUID userId) {
+        return dsl.select(of(
+                        PROJECTS.ID,
+                        PROJECTS.NAME,
+                        PROJECTS.DESCRIPTION,
+                        PROJECTS.OWNER_ID,
+                        OWNER_NAME,
+                        PROJECTS.CREATED_AT,
+                        PROJECTS.UPDATED_AT,
+                        PROJECTS.DELETED_AT))
+                .from(PROJECTS)
+                .join(USERS).on(PROJECTS.OWNER_ID.eq(USERS.ID))
+                .join(PROJECT_MEMBERS).on(PROJECT_MEMBERS.PROJECT_ID.eq(PROJECTS.ID))
+                .where(PROJECT_MEMBERS.USER_ID.eq(userId))
+                .and(PROJECTS.DELETED_AT.isNull())
+                .fetch()
+                .map(this::toModel);
     }
 
     public Optional<ProjectModel> findById(UUID id) {

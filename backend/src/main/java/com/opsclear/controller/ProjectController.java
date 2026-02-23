@@ -42,7 +42,7 @@ public class ProjectController {
     @GetMapping
     public ResponseEntity<List<ProjectResponse>> listMyProjects(JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
-        List<ProjectResponse> projects = projectService.getProjectsByOwner(userId)
+        List<ProjectResponse> projects = projectService.getProjectsForMember(userId)
                 .stream()
                 .map(ProjectResponse::from)
                 .toList();
@@ -50,22 +50,30 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProjectResponse> getById(@PathVariable UUID id) {
-        ProjectModel project = projectService.getById(id);
+    public ResponseEntity<ProjectResponse> getById(
+            @PathVariable UUID id,
+            JwtAuthenticationToken auth) {
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+        ProjectModel project = projectService.getById(id, userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ProjectResponse> update(
             @PathVariable UUID id,
-            @Valid @RequestBody UpdateProjectRequest request) {
-        ProjectModel project = projectService.update(id, request);
+            @Valid @RequestBody UpdateProjectRequest request,
+            JwtAuthenticationToken auth) {
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+        ProjectModel project = projectService.update(id, request, userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        projectService.softDelete(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID id,
+            JwtAuthenticationToken auth) {
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+        projectService.softDelete(id, userId);
         return ResponseEntity.noContent().build();
     }
 }
