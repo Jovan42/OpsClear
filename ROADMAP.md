@@ -1,6 +1,6 @@
 # OpsClear - Roadmap & Tasks
 
-**Last Updated:** 2026-02-22
+**Last Updated:** 2026-02-24
 
 ---
 
@@ -80,15 +80,16 @@ Process:
 - [x] Implement `ProjectMember` entity (user + project + role)
 - [x] Implement role enum: `OWNER`, `ADMIN`, `MEMBER`
 - [x] Implement `ProjectMemberRepository`
-- [ ] Implement `ProjectMemberService` (invite, remove, change role)
-- [ ] Create `ProjectMemberController`
-- [ ] Add permission checks to project endpoints
-- [ ] Write integration tests
+- [x] Implement `ProjectMemberService` (invite, remove, change role)
+- [x] Create `ProjectMemberController`
+- [x] Add permission checks to project endpoints
+- [x] Write unit tests
+- [x] Write integration tests
 
 ### Module 2.3: Mapper Investigation
 
-- [ ] **DOC:** Investigate MapStruct vs manual mapping, write ADR
-- [ ] Implement mapper layer if beneficial
+- [x] **DOC:** Investigate MapStruct vs manual mapping, write ADR
+- [x] Implement mapper layer if beneficial (decided: keep manual `from()` — see ADR-0006)
 
 ---
 
