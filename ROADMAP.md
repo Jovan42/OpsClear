@@ -99,7 +99,7 @@ Process:
 
 ### Module 3.1: Job Entity & API
 
-- [ ] **DOC:** Write ADR for job model and status flow
+- [x] **DOC:** Write ADR for job model and status flow
 - [ ] Create Flyway migration: `jobs` table
 - [ ] Implement `Job` entity (name, client, responsible, deadline, status)
 - [ ] Implement status enum: `NEW`, `IN_PROGRESS`, `COMPLETED`
