@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
@@ -14,6 +15,11 @@ import com.opsclear.generated.jooq.tables.Users;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Tables {
+
+    /**
+     * Jobs - central unit of work within a project
+     */
+    public static final Jobs JOBS = Jobs.JOBS;
 
     /**
      * Project membership — links users to projects with a role

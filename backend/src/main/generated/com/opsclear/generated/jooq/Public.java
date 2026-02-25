@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
@@ -28,6 +29,11 @@ public class Public extends SchemaImpl {
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * Jobs - central unit of work within a project
+     */
+    public final Jobs JOBS = Jobs.JOBS;
 
     /**
      * Project membership — links users to projects with a role
@@ -60,6 +66,7 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            Jobs.JOBS,
             ProjectMembers.PROJECT_MEMBERS,
             Projects.PROJECTS,
             Users.USERS
