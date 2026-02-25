@@ -101,9 +101,9 @@ Process:
 
 - [x] **DOC:** Write ADR for job model and status flow
 - [x] Create Flyway migration: `jobs` table
-- [ ] Implement `Job` entity (name, client, responsible, deadline, status)
-- [ ] Implement status enum: `NEW`, `IN_PROGRESS`, `COMPLETED`
-- [ ] Implement `JobRepository`
+- [x] Implement `Job` entity (name, client, responsible, deadline, status)
+- [x] Implement status enum: `NEW`, `IN_PROGRESS`, `COMPLETED`
+- [x] Implement `JobRepository`
 - [ ] Implement `JobService` (CRUD, status transitions)
 - [ ] Create `JobController` (CRUD endpoints)
 - [ ] Add project-scoped access (user sees only their project's jobs)

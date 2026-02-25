@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
+import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
 import com.opsclear.generated.jooq.tables.ProjectMembers.ProjectMembersPath;
 import com.opsclear.generated.jooq.tables.Projects.ProjectsPath;
 import com.opsclear.generated.jooq.tables.records.UsersRecord;
@@ -184,6 +185,32 @@ public class Users extends TableImpl<UsersRecord> {
     @Override
     public List<UniqueKey<UsersRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.UK_USERS_EMAIL);
+    }
+
+    private transient JobsPath _jobsAssignedToFkey;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.jobs</code> table,
+     * via the <code>jobs_assigned_to_fkey</code> key
+     */
+    public JobsPath jobsAssignedToFkey() {
+        if (_jobsAssignedToFkey == null)
+            _jobsAssignedToFkey = new JobsPath(this, null, Keys.JOBS__JOBS_ASSIGNED_TO_FKEY.getInverseKey());
+
+        return _jobsAssignedToFkey;
+    }
+
+    private transient JobsPath _jobsCreatedByFkey;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.jobs</code> table,
+     * via the <code>jobs_created_by_fkey</code> key
+     */
+    public JobsPath jobsCreatedByFkey() {
+        if (_jobsCreatedByFkey == null)
+            _jobsCreatedByFkey = new JobsPath(this, null, Keys.JOBS__JOBS_CREATED_BY_FKEY.getInverseKey());
+
+        return _jobsCreatedByFkey;
     }
 
     private transient ProjectMembersPath _projectMembers;
