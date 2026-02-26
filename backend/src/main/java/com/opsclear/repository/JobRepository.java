@@ -89,7 +89,7 @@ public class JobRepository {
         dsl.deleteFrom(JOBS).execute();
     }
 
-    private Optional<JobModel> findById(UUID id) {
+    public Optional<JobModel> findById(UUID id) {
         return selectWithAssignee()
                 .where(JOBS.ID.eq(id))
                 .fetchOptional()

@@ -31,6 +31,12 @@
         <property name="max" value="500"/>
     </module>
 
+    <!-- Suppress FileLength for test files -->
+    <module name="SuppressionSingleFilter">
+        <property name="checks" value="FileLength"/>
+        <property name="files" value=".*Test\.java$"/>
+    </module>
+
     <!-- No trailing whitespace -->
     <module name="RegexpSingleline">
         <property name="format" value="\s+$"/>

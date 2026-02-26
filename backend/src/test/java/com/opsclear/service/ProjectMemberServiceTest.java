@@ -286,6 +286,25 @@ class ProjectMemberServiceTest {
                 .hasMessage("Member not found");
     }
 
+    @Test
+    @DisplayName("Should throw NotFoundException when membership belongs to a different project")
+    void updateRole_shouldThrow_whenMemberFromDifferentProject() {
+        UUID membershipId = UUID.randomUUID();
+        ProjectMemberModel memberFromOtherProject = ProjectMemberModel.builder()
+                .id(membershipId).projectId(UUID.randomUUID()).userId(UUID.randomUUID())
+                .role(ProjectMemberRole.MEMBER).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findById(membershipId)).thenReturn(Optional.of(memberFromOtherProject));
+
+        assertThatThrownBy(() -> projectMemberService.updateRole(
+                projectId, ownerId, membershipId, ProjectMemberRole.ADMIN))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Member not found");
+    }
+
     // ─── removeMember ─────────────────────────────────────────────────────────
 
     @Test
@@ -335,6 +354,24 @@ class ProjectMemberServiceTest {
 
         assertThatThrownBy(() -> projectMemberService.removeMember(
                 projectId, ownerId, missingMembershipId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Member not found");
+    }
+
+    @Test
+    @DisplayName("Should throw NotFoundException when removing a membership from a different project")
+    void removeMember_shouldThrow_whenMemberFromDifferentProject() {
+        UUID membershipId = UUID.randomUUID();
+        ProjectMemberModel memberFromOtherProject = ProjectMemberModel.builder()
+                .id(membershipId).projectId(UUID.randomUUID()).userId(UUID.randomUUID())
+                .role(ProjectMemberRole.MEMBER).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findById(membershipId)).thenReturn(Optional.of(memberFromOtherProject));
+
+        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, ownerId, membershipId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Member not found");
     }

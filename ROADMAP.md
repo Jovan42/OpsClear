@@ -105,10 +105,10 @@ Process:
 - [x] Implement status enum: `NEW`, `IN_PROGRESS`, `COMPLETED`
 - [x] Implement `JobRepository`
 - [x] Implement `JobService` (CRUD, status transitions)
-- [ ] Create `JobController` (CRUD endpoints)
-- [ ] Add project-scoped access (user sees only their project's jobs)
-- [ ] Add permission checks (Member sees assigned only)
-- [ ] Write integration tests
+- [x] Create `JobController` (CRUD endpoints)
+- [x] Add project-scoped access (user sees only their project's jobs)
+- [x] Add permission checks (Member sees assigned only)
+- [x] Write integration tests
 
 ---
 
