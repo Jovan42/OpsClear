@@ -104,7 +104,7 @@ Process:
 - [x] Implement `Job` entity (name, client, responsible, deadline, status)
 - [x] Implement status enum: `NEW`, `IN_PROGRESS`, `COMPLETED`
 - [x] Implement `JobRepository`
-- [ ] Implement `JobService` (CRUD, status transitions)
+- [x] Implement `JobService` (CRUD, status transitions)
 - [ ] Create `JobController` (CRUD endpoints)
 - [ ] Add project-scoped access (user sees only their project's jobs)
 - [ ] Add permission checks (Member sees assigned only)
