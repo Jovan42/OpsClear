@@ -10,7 +10,6 @@ import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
-import com.opsclear.model.UserModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -58,13 +57,23 @@ class JobServiceTest {
         ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();
 
-        project = ProjectModel.builder().id(projectId).name("Test Project").ownerId(ownerId).build();
+        project = ProjectModel.builder()
+                .id(projectId)
+                .name("Test Project")
+                .ownerId(ownerId)
+                .build();
 
         ownerMembership = ProjectMemberModel.builder()
-                .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build();
+                .projectId(projectId)
+                .userId(ownerId)
+                .role(ProjectMemberRole.OWNER)
+                .build();
 
         memberMembership = ProjectMemberModel.builder()
-                .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build();
+                .projectId(projectId)
+                .userId(memberId)
+                .role(ProjectMemberRole.MEMBER)
+                .build();
     }
 
     // --- create ---
@@ -75,11 +84,16 @@ class JobServiceTest {
         CreateJobRequest request = CreateJobRequest.builder().title("Fix bug").build();
 
         JobModel saved = JobModel.builder()
-                .id(UUID.randomUUID()).projectId(projectId).title("Fix bug")
-                .status(JobStatus.NEW).createdBy(ownerId).build();
+                .id(UUID.randomUUID())
+                .projectId(projectId)
+                .title("Fix bug")
+                .status(JobStatus.NEW)
+                .createdBy(ownerId)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.save(any())).thenReturn(saved);
 
         JobModel result = jobService.create(projectId, request, ownerId);
@@ -121,7 +135,8 @@ class JobServiceTest {
         CreateJobRequest request = CreateJobRequest.builder().title("x").assignedTo(unknownUser).build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(userRepository.findById(unknownUser)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> jobService.create(projectId, request, ownerId))
@@ -135,12 +150,23 @@ class JobServiceTest {
     @DisplayName("OWNER should see all jobs in the project")
     void list_shouldReturnAllJobs_forOwner() {
         List<JobModel> allJobs = List.of(
-                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Job 1").status(JobStatus.NEW).build(),
-                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Job 2").status(JobStatus.IN_PROGRESS).build()
+                JobModel.builder()
+                        .id(UUID.randomUUID())
+                        .projectId(projectId)
+                        .title("Job 1")
+                        .status(JobStatus.NEW)
+                        .build(),
+                JobModel.builder()
+                        .id(UUID.randomUUID())
+                        .projectId(projectId)
+                        .title("Job 2")
+                        .status(JobStatus.IN_PROGRESS)
+                        .build()
         );
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).thenReturn(allJobs);
 
         List<JobModel> result = jobService.list(projectId, ownerId);
@@ -152,12 +178,20 @@ class JobServiceTest {
     @DisplayName("MEMBER should see only assigned jobs")
     void list_shouldReturnOnlyAssignedJobs_forMember() {
         List<JobModel> assignedJobs = List.of(
-                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("My Job").assignedTo(memberId).status(JobStatus.NEW).build()
+                JobModel.builder()
+                        .id(UUID.randomUUID())
+                        .projectId(projectId)
+                        .title("My Job")
+                        .assignedTo(memberId)
+                        .status(JobStatus.NEW)
+                        .build()
         );
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByProjectIdAndAssignedToAndDeletedAtIsNull(projectId, memberId)).thenReturn(assignedJobs);
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+        when(jobRepository.findByProjectIdAndAssignedToAndDeletedAtIsNull(projectId, memberId))
+                .thenReturn(assignedJobs);
 
         List<JobModel> result = jobService.list(projectId, memberId);
 
@@ -171,10 +205,16 @@ class JobServiceTest {
     @DisplayName("OWNER should be able to get any job by ID")
     void getById_shouldReturnJob_forOwner() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Fix bug").status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("Fix bug")
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         JobModel result = jobService.getById(projectId, jobId, ownerId);
@@ -186,10 +226,17 @@ class JobServiceTest {
     @DisplayName("Assigned MEMBER should be able to get their own job")
     void getById_shouldReturnJob_forAssignedMember() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("My job").assignedTo(memberId).status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("My job")
+                .assignedTo(memberId)
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         JobModel result = jobService.getById(projectId, jobId, memberId);
@@ -201,11 +248,17 @@ class JobServiceTest {
     @DisplayName("MEMBER should be forbidden from accessing a job not assigned to them")
     void getById_shouldThrow_whenMemberNotAssigned() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Other job")
-                .assignedTo(UUID.randomUUID()).status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("Other job")
+                .assignedTo(UUID.randomUUID())
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.getById(projectId, jobId, memberId))
@@ -217,10 +270,16 @@ class JobServiceTest {
     @DisplayName("Should throw NotFoundException when job belongs to a different project")
     void getById_shouldThrow_whenJobNotInProject() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(UUID.randomUUID()).title("Other project job").status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(UUID.randomUUID())
+                .title("Other project job")
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.getById(projectId, jobId, ownerId))
@@ -234,11 +293,17 @@ class JobServiceTest {
     @DisplayName("OWNER should be able to update job fields")
     void update_shouldUpdateFields_forOwner() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Old title").status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("Old title")
+                .status(JobStatus.NEW)
+                .build();
         UpdateJobRequest request = UpdateJobRequest.builder().title("New title").description("New desc").build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -255,7 +320,8 @@ class JobServiceTest {
         UpdateJobRequest request = UpdateJobRequest.builder().title("x").build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
 
         assertThatThrownBy(() -> jobService.update(projectId, jobId, request, memberId))
                 .isInstanceOf(ForbiddenException.class)
@@ -266,11 +332,17 @@ class JobServiceTest {
     @DisplayName("Should throw NotFoundException when updating a job from a different project")
     void update_shouldThrow_whenJobNotInProject() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(UUID.randomUUID()).title("Other").status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(UUID.randomUUID())
+                .title("Other")
+                .status(JobStatus.NEW)
+                .build();
         UpdateJobRequest request = UpdateJobRequest.builder().title("x").build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
@@ -283,11 +355,17 @@ class JobServiceTest {
     void update_shouldThrow_whenAssignedUserNotFound() {
         UUID jobId = UUID.randomUUID();
         UUID unknownUser = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Job").status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("Job")
+                .status(JobStatus.NEW)
+                .build();
         UpdateJobRequest request = UpdateJobRequest.builder().title("x").assignedTo(unknownUser).build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
         when(userRepository.findById(unknownUser)).thenReturn(Optional.empty());
 
@@ -302,10 +380,16 @@ class JobServiceTest {
     @DisplayName("Should transition NEW → IN_PROGRESS for assigned MEMBER")
     void updateStatus_shouldTransition_newToInProgress_forAssignedMember() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).assignedTo(memberId).status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .assignedTo(memberId)
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -318,10 +402,15 @@ class JobServiceTest {
     @DisplayName("Should transition IN_PROGRESS → COMPLETED for OWNER")
     void updateStatus_shouldTransition_inProgressToCompleted_forOwner() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).status(JobStatus.IN_PROGRESS).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.IN_PROGRESS)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -334,10 +423,15 @@ class JobServiceTest {
     @DisplayName("Should reopen COMPLETED → IN_PROGRESS for OWNER")
     void updateStatus_shouldTransition_completedToInProgress_forOwner() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).status(JobStatus.COMPLETED).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.COMPLETED)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -350,10 +444,15 @@ class JobServiceTest {
     @DisplayName("Should throw BadRequestException for invalid transition NEW → COMPLETED")
     void updateStatus_shouldThrow_whenInvalidTransition_newToCompleted() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, ownerId))
@@ -365,10 +464,15 @@ class JobServiceTest {
     @DisplayName("Should throw BadRequestException when trying to block a job (Phase 4)")
     void updateStatus_shouldThrow_whenBlockingNotSupported() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).status(JobStatus.IN_PROGRESS).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.IN_PROGRESS)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, ownerId))
@@ -380,11 +484,16 @@ class JobServiceTest {
     @DisplayName("Should throw ForbiddenException when MEMBER tries to change status on unassigned job")
     void updateStatus_shouldThrow_whenMemberNotAssigned() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId)
-                .assignedTo(UUID.randomUUID()).status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .assignedTo(UUID.randomUUID())
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, memberId))
@@ -396,11 +505,16 @@ class JobServiceTest {
     @DisplayName("Should throw ForbiddenException when MEMBER tries to reopen a completed job")
     void updateStatus_shouldThrow_whenMemberTriesToReopen() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId)
-                .assignedTo(memberId).status(JobStatus.COMPLETED).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .assignedTo(memberId)
+                .status(JobStatus.COMPLETED)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, memberId))
@@ -412,10 +526,15 @@ class JobServiceTest {
     @DisplayName("Should throw NotFoundException when updating status of a job from a different project")
     void updateStatus_shouldThrow_whenJobNotInProject() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(UUID.randomUUID()).status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(UUID.randomUUID())
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, ownerId))
@@ -429,10 +548,16 @@ class JobServiceTest {
     @DisplayName("OWNER should be able to soft delete a job")
     void softDelete_shouldSetDeletedAt_forOwner() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Fix bug").status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("Fix bug")
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -450,7 +575,8 @@ class JobServiceTest {
         UUID jobId = UUID.randomUUID();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
 
         assertThatThrownBy(() -> jobService.softDelete(projectId, jobId, memberId))
                 .isInstanceOf(ForbiddenException.class)
@@ -463,7 +589,8 @@ class JobServiceTest {
         UUID jobId = UUID.randomUUID();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> jobService.softDelete(projectId, jobId, ownerId))
@@ -475,10 +602,16 @@ class JobServiceTest {
     @DisplayName("Should throw NotFoundException when deleting a job from a different project")
     void softDelete_shouldThrow_whenJobNotInProject() {
         UUID jobId = UUID.randomUUID();
-        JobModel job = JobModel.builder().id(jobId).projectId(UUID.randomUUID()).title("Other").status(JobStatus.NEW).build();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(UUID.randomUUID())
+                .title("Other")
+                .status(JobStatus.NEW)
+                .build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.softDelete(projectId, jobId, ownerId))
