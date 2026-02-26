@@ -72,9 +72,7 @@ public class ProjectMemberService {
         ProjectMemberModel member = projectMemberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException("Member not found"));
 
-        if (!member.getProjectId().equals(projectId)) {
-            throw new NotFoundException("Member not found");
-        }
+        requireMemberInProject(member, projectId);
 
         if (member.getRole() == ProjectMemberRole.OWNER) {
             throw new ForbiddenException("Cannot change the project owner's role");
@@ -94,9 +92,7 @@ public class ProjectMemberService {
         ProjectMemberModel member = projectMemberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException("Member not found"));
 
-        if (!member.getProjectId().equals(projectId)) {
-            throw new NotFoundException("Member not found");
-        }
+        requireMemberInProject(member, projectId);
 
         if (member.getRole() == ProjectMemberRole.OWNER) {
             throw new ForbiddenException("Cannot remove the project owner");
@@ -104,6 +100,12 @@ public class ProjectMemberService {
 
         projectMemberRepository.delete(memberId);
         log.info("Removed member {} from project {}", memberId, projectId);
+    }
+
+    private void requireMemberInProject(ProjectMemberModel member, UUID projectId) {
+        if (!member.getProjectId().equals(projectId)) {
+            throw new NotFoundException("Member not found");
+        }
     }
 
     private void requireProjectExists(UUID projectId) {

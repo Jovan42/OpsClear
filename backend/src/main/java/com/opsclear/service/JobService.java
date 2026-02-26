@@ -76,9 +76,7 @@ public class JobService {
         JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
                 .orElseThrow(() -> new NotFoundException("Job not found"));
 
-        if (!job.getProjectId().equals(projectId)) {
-            throw new NotFoundException("Job not found");
-        }
+        requireJobInProject(job, projectId);
 
         if (requester.getRole() == ProjectMemberRole.MEMBER
                 && !requesterId.equals(job.getAssignedTo())) {
@@ -96,9 +94,7 @@ public class JobService {
         JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
                 .orElseThrow(() -> new NotFoundException("Job not found"));
 
-        if (!job.getProjectId().equals(projectId)) {
-            throw new NotFoundException("Job not found");
-        }
+        requireJobInProject(job, projectId);
 
         if (request.getAssignedTo() != null) {
             userRepository.findById(request.getAssignedTo())
@@ -124,9 +120,7 @@ public class JobService {
         JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
                 .orElseThrow(() -> new NotFoundException("Job not found"));
 
-        if (!job.getProjectId().equals(projectId)) {
-            throw new NotFoundException("Job not found");
-        }
+        requireJobInProject(job, projectId);
 
         validateTransition(job.getStatus(), newStatus, requester, job.getAssignedTo(), requesterId);
 
@@ -144,9 +138,7 @@ public class JobService {
         JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
                 .orElseThrow(() -> new NotFoundException("Job not found"));
 
-        if (!job.getProjectId().equals(projectId)) {
-            throw new NotFoundException("Job not found");
-        }
+        requireJobInProject(job, projectId);
 
         job.softDelete();
         jobRepository.save(job);
@@ -180,6 +172,14 @@ public class JobService {
         }
         if (!isOwnerOrAdmin && !requesterId.equals(assignedTo)) {
             throw new ForbiddenException("Only OWNER, ADMIN, or the assigned member can change job status");
+        }
+    }
+
+    // --- Guards ---
+
+    private void requireJobInProject(JobModel job, UUID projectId) {
+        if (!job.getProjectId().equals(projectId)) {
+            throw new NotFoundException("Job not found");
         }
     }
 
