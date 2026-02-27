@@ -38,11 +38,20 @@ public final class ErrorMessages {
         public static final String ASSIGNED_USER_NOT_FOUND = "Assigned user not found";
         public static final String ACCESS_DENIED_NOT_ASSIGNED =
                 "Access denied: you are not assigned to this job";
-        public static final String BLOCKING_NOT_SUPPORTED = "Blocking is not supported in this phase";
         public static final String INVALID_TRANSITION = "Invalid transition: ";
         public static final String ONLY_OWNER_ADMIN_CAN_REOPEN =
                 "Only OWNER or ADMIN can reopen a completed job";
         public static final String ONLY_OWNER_ADMIN_OR_ASSIGNEE_CAN_CHANGE_STATUS =
                 "Only OWNER, ADMIN, or the assigned member can change job status";
+        public static final String BLOCK_REASON_REQUIRED =
+                "A block reason is required when blocking a job";
+        public static final String JOB_MUST_BE_IN_PROGRESS_TO_BLOCK =
+                "Only IN_PROGRESS jobs can be blocked";
+    }
+
+    public static final class BlockReason {
+        private BlockReason() {}
+
+        public static final String NOT_FOUND = "Block reason not found";
     }
 }

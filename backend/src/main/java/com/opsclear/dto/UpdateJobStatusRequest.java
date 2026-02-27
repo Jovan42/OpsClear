@@ -17,4 +17,7 @@ public class UpdateJobStatusRequest {
 
     @NotNull(message = "Status is required")
     private JobStatus status;
+
+    // Required when status == BLOCKED; ignored for all other transitions
+    private String reason;
 }

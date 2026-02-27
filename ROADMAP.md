@@ -119,11 +119,13 @@ Process:
 ### Module 4.1: Blocking Feature
 
 - [x] **DOC:** Write ADR for blocking model
-- [x] Create Flyway migration: add blocking fields to `jobs`
-- [ ] Update `Job` entity: `blocked`, `blocked_by`, `blocked_reason`, `blocked_at`
-- [ ] Implement block/unblock in `JobService`
-- [ ] Add endpoints: POST /jobs/{id}/block, POST /jobs/{id}/unblock
-- [ ] Write integration tests
+- [x] Create Flyway migration: `project_block_reasons` table + blocking fields on `jobs`
+- [x] Update `Job` entity: `blocked_by`, `blocked_reason_id`, `blocked_reason`, `blocked_at`
+- [x] Implement `BlockReasonModel`, `BlockReasonRepository`, `BlockReasonService`
+- [x] Extend `JobService`: block/unblock via `PATCH /status`, find-or-create block reasons
+- [x] Add `BlockReasonController`: `GET /block-reasons`, `DELETE /block-reasons/{id}`
+- [x] Write unit tests (100% branch coverage on all services)
+- [x] Write integration tests for blocking and block-reason endpoints
 
 ---
 

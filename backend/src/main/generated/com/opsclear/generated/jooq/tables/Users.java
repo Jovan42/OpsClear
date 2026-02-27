@@ -200,6 +200,19 @@ public class Users extends TableImpl<UsersRecord> {
         return _jobsAssignedToFkey;
     }
 
+    private transient JobsPath _jobsBlockedByFkey;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.jobs</code> table,
+     * via the <code>jobs_blocked_by_fkey</code> key
+     */
+    public JobsPath jobsBlockedByFkey() {
+        if (_jobsBlockedByFkey == null)
+            _jobsBlockedByFkey = new JobsPath(this, null, Keys.JOBS__JOBS_BLOCKED_BY_FKEY.getInverseKey());
+
+        return _jobsBlockedByFkey;
+    }
+
     private transient JobsPath _jobsCreatedByFkey;
 
     /**

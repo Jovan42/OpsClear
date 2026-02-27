@@ -5,6 +5,7 @@ package com.opsclear.generated.jooq;
 
 
 import com.opsclear.generated.jooq.tables.Jobs;
+import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
@@ -34,6 +35,11 @@ public class Public extends SchemaImpl {
      * Jobs - central unit of work within a project
      */
     public final Jobs JOBS = Jobs.JOBS;
+
+    /**
+     * Per-project vocabulary of block reasons used in the UI dropdown
+     */
+    public final ProjectBlockReasons PROJECT_BLOCK_REASONS = ProjectBlockReasons.PROJECT_BLOCK_REASONS;
 
     /**
      * Project membership — links users to projects with a role
@@ -67,6 +73,7 @@ public class Public extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.asList(
             Jobs.JOBS,
+            ProjectBlockReasons.PROJECT_BLOCK_REASONS,
             ProjectMembers.PROJECT_MEMBERS,
             Projects.PROJECTS,
             Users.USERS

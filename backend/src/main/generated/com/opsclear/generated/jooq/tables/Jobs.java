@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
+import com.opsclear.generated.jooq.tables.ProjectBlockReasons.ProjectBlockReasonsPath;
 import com.opsclear.generated.jooq.tables.Projects.ProjectsPath;
 import com.opsclear.generated.jooq.tables.Users.UsersPath;
 import com.opsclear.generated.jooq.tables.records.JobsRecord;
@@ -126,6 +127,24 @@ public class Jobs extends TableImpl<JobsRecord> {
      */
     public final TableField<JobsRecord, LocalDateTime> DELETED_AT = createField(DSL.name("deleted_at"), SQLDataType.LOCALDATETIME(6), this, "Soft delete timestamp (NULL = active)");
 
+    /**
+     * The column <code>public.jobs.blocked_by</code>. User who set the block
+     * (OWNER/ADMIN or assigned MEMBER)
+     */
+    public final TableField<JobsRecord, UUID> BLOCKED_BY = createField(DSL.name("blocked_by"), SQLDataType.UUID, this, "User who set the block (OWNER/ADMIN or assigned MEMBER)");
+
+    /**
+     * The column <code>public.jobs.blocked_reason_id</code>. FK to
+     * project_block_reasons — NULL when not blocked
+     */
+    public final TableField<JobsRecord, UUID> BLOCKED_REASON_ID = createField(DSL.name("blocked_reason_id"), SQLDataType.UUID, this, "FK to project_block_reasons — NULL when not blocked");
+
+    /**
+     * The column <code>public.jobs.blocked_at</code>. When the block was set —
+     * NULL when not blocked
+     */
+    public final TableField<JobsRecord, LocalDateTime> BLOCKED_AT = createField(DSL.name("blocked_at"), SQLDataType.LOCALDATETIME(6), this, "When the block was set — NULL when not blocked");
+
     private Jobs(Name alias, Table<JobsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -205,7 +224,7 @@ public class Jobs extends TableImpl<JobsRecord> {
 
     @Override
     public List<ForeignKey<JobsRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.JOBS__JOBS_ASSIGNED_TO_FKEY, Keys.JOBS__JOBS_CREATED_BY_FKEY, Keys.JOBS__JOBS_PROJECT_ID_FKEY);
+        return Arrays.asList(Keys.JOBS__JOBS_ASSIGNED_TO_FKEY, Keys.JOBS__JOBS_BLOCKED_BY_FKEY, Keys.JOBS__JOBS_BLOCKED_REASON_ID_FKEY, Keys.JOBS__JOBS_CREATED_BY_FKEY, Keys.JOBS__JOBS_PROJECT_ID_FKEY);
     }
 
     private transient UsersPath _jobsAssignedToFkey;
@@ -219,6 +238,32 @@ public class Jobs extends TableImpl<JobsRecord> {
             _jobsAssignedToFkey = new UsersPath(this, Keys.JOBS__JOBS_ASSIGNED_TO_FKEY, null);
 
         return _jobsAssignedToFkey;
+    }
+
+    private transient UsersPath _jobsBlockedByFkey;
+
+    /**
+     * Get the implicit join path to the <code>public.users</code> table, via
+     * the <code>jobs_blocked_by_fkey</code> key.
+     */
+    public UsersPath jobsBlockedByFkey() {
+        if (_jobsBlockedByFkey == null)
+            _jobsBlockedByFkey = new UsersPath(this, Keys.JOBS__JOBS_BLOCKED_BY_FKEY, null);
+
+        return _jobsBlockedByFkey;
+    }
+
+    private transient ProjectBlockReasonsPath _projectBlockReasons;
+
+    /**
+     * Get the implicit join path to the
+     * <code>public.project_block_reasons</code> table.
+     */
+    public ProjectBlockReasonsPath projectBlockReasons() {
+        if (_projectBlockReasons == null)
+            _projectBlockReasons = new ProjectBlockReasonsPath(this, Keys.JOBS__JOBS_BLOCKED_REASON_ID_FKEY, null);
+
+        return _projectBlockReasons;
     }
 
     private transient UsersPath _jobsCreatedByFkey;

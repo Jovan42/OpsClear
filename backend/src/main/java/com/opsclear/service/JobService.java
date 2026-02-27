@@ -6,6 +6,7 @@ import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.BlockReasonModel;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +33,7 @@ public class JobService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
+    private final BlockReasonService blockReasonService;
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
@@ -100,17 +103,35 @@ public class JobService {
     }
 
     @Transactional
-    public JobModel updateStatus(UUID projectId, UUID jobId, JobStatus newStatus, UUID requesterId) {
+    public JobModel updateStatus(UUID projectId, UUID jobId, JobStatus newStatus, String reason, UUID requesterId) {
         requireProjectExists(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
 
-        validateTransition(job.getStatus(), newStatus, requester, job.getAssignedTo(), requesterId);
+        JobStatus oldStatus = job.getStatus();
+        validateTransition(oldStatus, newStatus, requester, job.getAssignedTo(), requesterId);
 
-        job.setStatus(newStatus);
+        if (newStatus == JobStatus.BLOCKED) {
+            if (reason == null || reason.isBlank()) {
+                throw new BadRequestException(ErrorMessages.Job.BLOCK_REASON_REQUIRED);
+            }
+            BlockReasonModel blockReason = blockReasonService.findOrCreate(projectId, reason);
+            job.setStatus(JobStatus.BLOCKED);
+            job.setBlockedBy(requesterId);
+            job.setBlockedReasonId(blockReason.getId());
+            job.setBlockedAt(Instant.now());
+        } else if (oldStatus == JobStatus.BLOCKED) {
+            job.setStatus(newStatus);
+            job.setBlockedBy(null);
+            job.setBlockedReasonId(null);
+            job.setBlockedAt(null);
+        } else {
+            job.setStatus(newStatus);
+        }
+
         JobModel updated = jobRepository.save(job);
-        log.info("Job {} status changed from {} to {} by user {}", jobId, job.getStatus(), newStatus, requesterId);
+        log.info("Job {} status changed from {} to {} by user {}", jobId, oldStatus, newStatus, requesterId);
         return updated;
     }
 
@@ -126,17 +147,15 @@ public class JobService {
         log.info("Soft-deleted job '{}' from project {}", jobId, projectId);
     }
 
-    // --- Status transition rules (Phase 3) ---
+    // --- Status transition rules ---
 
     private void validateTransition(JobStatus from, JobStatus to,
                                     ProjectMemberModel requester, UUID assignedTo, UUID requesterId) {
-        if (from == JobStatus.BLOCKED || to == JobStatus.BLOCKED) {
-            throw new BadRequestException(ErrorMessages.Job.BLOCKING_NOT_SUPPORTED);
-        }
-
-        boolean valid = (from == JobStatus.NEW        && to == JobStatus.IN_PROGRESS)
-                     || (from == JobStatus.IN_PROGRESS && to == JobStatus.COMPLETED)
-                     || (from == JobStatus.COMPLETED   && to == JobStatus.IN_PROGRESS);
+        boolean valid = (from == JobStatus.NEW         && to == JobStatus.IN_PROGRESS)
+                     || (from == JobStatus.IN_PROGRESS  && to == JobStatus.COMPLETED)
+                     || (from == JobStatus.IN_PROGRESS  && to == JobStatus.BLOCKED)
+                     || (from == JobStatus.BLOCKED       && to == JobStatus.IN_PROGRESS)
+                     || (from == JobStatus.COMPLETED     && to == JobStatus.IN_PROGRESS);
 
         if (!valid) {
             throw new BadRequestException(ErrorMessages.Job.INVALID_TRANSITION + from + " → " + to);

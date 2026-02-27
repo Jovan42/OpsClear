@@ -6,6 +6,7 @@ import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -39,6 +40,7 @@ class JobIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JobRepository jobRepository;
+    @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private UserRepository userRepository;
@@ -50,6 +52,7 @@ class JobIntegrationTest {
     @BeforeEach
     void setUp() {
         jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();
@@ -409,9 +412,27 @@ class JobIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 400 when transitioning to BLOCKED (not supported in this phase)")
-    void updateStatus_shouldReturn400_toBlocked() throws Exception {
-        JobModel job = createTestJob("Job", null, JobStatus.NEW);
+    @DisplayName("OWNER should block an IN_PROGRESS job with a reason")
+    void updateStatus_shouldReturn200_withBlockedStatus_forOwner() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "BLOCKED", "reason": "Waiting for client sign-off" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("BLOCKED"))
+                .andExpect(jsonPath("$.blockedBy").value(ownerId.toString()))
+                .andExpect(jsonPath("$.blockedReason").value("Waiting for client sign-off"))
+                .andExpect(jsonPath("$.blockedAt").exists());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when blocking without a reason")
+    void updateStatus_shouldReturn400_whenBlockingWithoutReason() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
 
         mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
@@ -424,18 +445,77 @@ class JobIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 400 when transitioning from BLOCKED (not supported in this phase)")
-    void updateStatus_shouldReturn400_fromBlocked() throws Exception {
+    @DisplayName("Should return 400 when blocking with a blank reason")
+    void updateStatus_shouldReturn400_whenBlockingWithBlankReason() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "BLOCKED", "reason": "   " }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for invalid transition BLOCKED → COMPLETED")
+    void updateStatus_shouldReturn400_invalidTransition_blockedToCompleted() throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.BLOCKED);
 
         mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "status": "IN_PROGRESS" }
+                                { "status": "COMPLETED" }
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Bad Request"));
+    }
+
+    @Test
+    @DisplayName("Assigned MEMBER should be able to block their own job")
+    void updateStatus_shouldReturn200_blockedByAssignedMember() throws Exception {
+        JobModel job = createTestJob("Job", memberId, JobStatus.IN_PROGRESS);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "BLOCKED", "reason": "Missing access credentials" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("BLOCKED"))
+                .andExpect(jsonPath("$.blockedBy").value(memberId.toString()))
+                .andExpect(jsonPath("$.blockedReason").value("Missing access credentials"));
+    }
+
+    @Test
+    @DisplayName("OWNER should unblock a BLOCKED job and clear blocking metadata")
+    void updateStatus_shouldReturn200_unblockJob_forOwner() throws Exception {
+        // First block it
+        JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "BLOCKED", "reason": "Waiting for approval" }
+                                """))
+                .andExpect(status().isOk());
+
+        // Then unblock it
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.blockedBy").doesNotExist())
+                .andExpect(jsonPath("$.blockedReason").doesNotExist())
+                .andExpect(jsonPath("$.blockedAt").doesNotExist());
     }
 
     @Test

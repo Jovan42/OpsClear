@@ -207,6 +207,57 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         return (LocalDateTime) get(11);
     }
 
+    /**
+     * Setter for <code>public.jobs.blocked_by</code>. User who set the block
+     * (OWNER/ADMIN or assigned MEMBER)
+     */
+    public JobsRecord setBlockedBy(UUID value) {
+        set(12, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.jobs.blocked_by</code>. User who set the block
+     * (OWNER/ADMIN or assigned MEMBER)
+     */
+    public UUID getBlockedBy() {
+        return (UUID) get(12);
+    }
+
+    /**
+     * Setter for <code>public.jobs.blocked_reason_id</code>. FK to
+     * project_block_reasons — NULL when not blocked
+     */
+    public JobsRecord setBlockedReasonId(UUID value) {
+        set(13, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.jobs.blocked_reason_id</code>. FK to
+     * project_block_reasons — NULL when not blocked
+     */
+    public UUID getBlockedReasonId() {
+        return (UUID) get(13);
+    }
+
+    /**
+     * Setter for <code>public.jobs.blocked_at</code>. When the block was set —
+     * NULL when not blocked
+     */
+    public JobsRecord setBlockedAt(LocalDateTime value) {
+        set(14, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.jobs.blocked_at</code>. When the block was set —
+     * NULL when not blocked
+     */
+    public LocalDateTime getBlockedAt() {
+        return (LocalDateTime) get(14);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -230,7 +281,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
     /**
      * Create a detached, initialised JobsRecord
      */
-    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt) {
         super(Jobs.JOBS);
 
         setId(id);
@@ -245,6 +296,9 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setDeletedAt(deletedAt);
+        setBlockedBy(blockedBy);
+        setBlockedReasonId(blockedReasonId);
+        setBlockedAt(blockedAt);
         resetChangedOnNotNull();
     }
 }

@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.JOBS;
+import static com.opsclear.generated.jooq.Tables.PROJECT_BLOCK_REASONS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static java.util.List.of;
 
@@ -25,6 +26,8 @@ import static java.util.List.of;
 public class JobRepository {
 
     private static final Field<String> ASSIGNED_TO_NAME = USERS.NAME.as("assigned_to_name");
+    private static final Field<String> BLOCKED_REASON_TEXT =
+            PROJECT_BLOCK_REASONS.REASON.as("blocked_reason_text");
 
     private final DSLContext dsl;
 
@@ -78,6 +81,9 @@ public class JobRepository {
                 .set(JOBS.ASSIGNED_TO, job.getAssignedTo())
                 .set(JOBS.DEADLINE, toLocalDateTime(job.getDeadline()))
                 .set(JOBS.STATUS, job.getStatus().name())
+                .set(JOBS.BLOCKED_BY, job.getBlockedBy())
+                .set(JOBS.BLOCKED_REASON_ID, job.getBlockedReasonId())
+                .set(JOBS.BLOCKED_AT, toLocalDateTime(job.getBlockedAt()))
                 .set(JOBS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .set(JOBS.DELETED_AT, toLocalDateTime(job.getDeletedAt()))
                 .where(JOBS.ID.eq(job.getId()))
@@ -110,9 +116,14 @@ public class JobRepository {
                         JOBS.CREATED_AT,
                         JOBS.UPDATED_AT,
                         JOBS.DELETED_AT,
-                        ASSIGNED_TO_NAME))
+                        JOBS.BLOCKED_BY,
+                        JOBS.BLOCKED_REASON_ID,
+                        JOBS.BLOCKED_AT,
+                        ASSIGNED_TO_NAME,
+                        BLOCKED_REASON_TEXT))
                 .from(JOBS)
-                .leftJoin(USERS).on(JOBS.ASSIGNED_TO.eq(USERS.ID));
+                .leftJoin(USERS).on(JOBS.ASSIGNED_TO.eq(USERS.ID))
+                .leftJoin(PROJECT_BLOCK_REASONS).on(JOBS.BLOCKED_REASON_ID.eq(PROJECT_BLOCK_REASONS.ID));
     }
 
     private JobModel toModel(Record r) {
@@ -130,6 +141,10 @@ public class JobRepository {
                 .createdAt(toInstant(r.get(JOBS.CREATED_AT)))
                 .updatedAt(toInstant(r.get(JOBS.UPDATED_AT)))
                 .deletedAt(toInstant(r.get(JOBS.DELETED_AT)))
+                .blockedBy(r.get(JOBS.BLOCKED_BY))
+                .blockedReasonId(r.get(JOBS.BLOCKED_REASON_ID))
+                .blockedReason(r.get(BLOCKED_REASON_TEXT))
+                .blockedAt(toInstant(r.get(JOBS.BLOCKED_AT)))
                 .build();
     }
 
