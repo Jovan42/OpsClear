@@ -188,6 +188,25 @@ class AuthIntegrationTest {
     }
 
     @Test
+    @DisplayName("User sync should fall through to preferred_username when only given_name is present")
+    void userSync_fallsThroughToPreferredUsername_whenOnlyGivenNamePresent() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String email = "user@example.com";
+
+        mockMvc.perform(get("/api/health")
+                        .with(jwt()
+                                .jwt(jwt -> jwt
+                                        .subject(userId.toString())
+                                        .claim("email", email)
+                                        .claim("given_name", "John")
+                                        .claim("preferred_username", "johnsmith"))))
+                .andExpect(status().isOk());
+
+        UserModel user = userRepository.findById(userId).orElseThrow();
+        assertThat(user.getName()).isEqualTo("johnsmith");
+    }
+
+    @Test
     @DisplayName("findById should return null lastLoginAt when last_login_at is null in DB")
     void findById_shouldHandleNullLastLoginAt() {
         UUID userId = UUID.randomUUID();
