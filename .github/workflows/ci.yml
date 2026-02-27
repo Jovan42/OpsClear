@@ -72,7 +72,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: backend
-        run: ./gradlew test -PexcludeIntegrationTests
+        run: ./gradlew test -PexcludeIntegrationTests jacocoServiceCoverageVerification
 
       - name: Publish unit test results
         uses: dorny/test-reporter@v1
@@ -88,6 +88,13 @@ jobs:
         with:
           name: unit-test-results
           path: backend/build/reports/tests/
+
+      - name: Upload unit test coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-coverage
+          path: backend/build/reports/jacoco/test/html/
 
   integration-tests:
     name: Integration Tests
@@ -142,7 +149,7 @@ jobs:
           SPRING_DATASOURCE_USERNAME: opsclear
           SPRING_DATASOURCE_PASSWORD: opsclear
           SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
-        run: ./gradlew test -PonlyIntegrationTests
+        run: ./gradlew test -PonlyIntegrationTests jacocoTestCoverageVerification
 
       - name: Publish integration test results
         uses: dorny/test-reporter@v1
@@ -158,6 +165,13 @@ jobs:
         with:
           name: integration-test-results
           path: backend/build/reports/tests/
+
+      - name: Upload integration test coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-coverage
+          path: backend/build/reports/jacoco/test/html/
 
   lint:
     name: Checkstyle

@@ -229,6 +229,35 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw NotFoundException when project is not found on update")
+    void update_shouldThrow_whenProjectNotFound() {
+        UUID projectId = UUID.randomUUID();
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.update(projectId, UpdateProjectRequest.builder()
+                .name("x").build(), ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Project not found");
+    }
+
+    @Test
+    @DisplayName("Should throw ForbiddenException when non-member tries to update project")
+    void update_shouldThrow_whenNotMember() {
+        UUID projectId = UUID.randomUUID();
+        UUID outsiderId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder().id(projectId).name("Acme").ownerId(ownerId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, outsiderId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.update(projectId, UpdateProjectRequest.builder()
+                .name("x").build(), outsiderId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this project");
+    }
+
+    @Test
     @DisplayName("Should soft delete project for OWNER")
     void softDelete_shouldSetDeletedAt_forOwner() {
         UUID projectId = UUID.randomUUID();
@@ -277,6 +306,22 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> projectService.softDelete(projectId, adminId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Insufficient permissions: OWNER role required");
+    }
+
+    @Test
+    @DisplayName("Should throw ForbiddenException when non-member tries to delete project")
+    void softDelete_shouldThrow_whenNotMember() {
+        UUID projectId = UUID.randomUUID();
+        UUID outsiderId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder().id(projectId).name("Acme").ownerId(ownerId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, outsiderId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.softDelete(projectId, outsiderId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this project");
     }
 
     @Test

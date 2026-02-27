@@ -163,6 +163,22 @@ class ProjectMemberServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw ForbiddenException when non-member tries to add a member")
+    void addMember_shouldThrow_whenNotMember() {
+        UUID outsiderId = UUID.randomUUID();
+        AddMemberRequest request = AddMemberRequest.builder()
+                .userId(UUID.randomUUID()).role(ProjectMemberRole.MEMBER).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, outsiderId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectMemberService.addMember(projectId, outsiderId, request))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this project");
+    }
+
+    @Test
     @DisplayName("Should throw ForbiddenException when trying to assign OWNER role")
     void addMember_shouldThrow_whenAssigningOwnerRole() {
         UUID newUserId = UUID.randomUUID();

@@ -150,4 +150,42 @@ class AuthIntegrationTest {
         UserModel user = userRepository.findById(userId).orElseThrow();
         assertThat(user.getName()).isEqualTo("John Doe");
     }
+
+    @Test
+    @DisplayName("User sync should fall through a blank name claim to given_name and family_name")
+    void userSync_handlesBlankNameClaim() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String email = "user@example.com";
+
+        mockMvc.perform(get("/api/health")
+                        .with(jwt()
+                                .jwt(jwt -> jwt
+                                        .subject(userId.toString())
+                                        .claim("email", email)
+                                        .claim("name", "   ")
+                                        .claim("given_name", "Jane")
+                                        .claim("family_name", "Smith"))))
+                .andExpect(status().isOk());
+
+        UserModel user = userRepository.findById(userId).orElseThrow();
+        assertThat(user.getName()).isEqualTo("Jane Smith");
+    }
+
+    @Test
+    @DisplayName("User sync should fallback to preferred_username when name claims are absent")
+    void userSync_handlesPreferredUsername() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String email = "user@example.com";
+
+        mockMvc.perform(get("/api/health")
+                        .with(jwt()
+                                .jwt(jwt -> jwt
+                                        .subject(userId.toString())
+                                        .claim("email", email)
+                                        .claim("preferred_username", "jsmith"))))
+                .andExpect(status().isOk());
+
+        UserModel user = userRepository.findById(userId).orElseThrow();
+        assertThat(user.getName()).isEqualTo("jsmith");
+    }
 }

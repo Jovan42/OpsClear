@@ -33,24 +33,6 @@ public class UserRepository {
                         .build());
     }
 
-    public Optional<UserModel> findByEmail(String email) {
-        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
-                .from(USERS)
-                .where(USERS.EMAIL.eq(email))
-                .fetchOptional()
-                .map(r -> UserModel.builder()
-                        .id(r.get(USERS.ID))
-                        .email(r.get(USERS.EMAIL))
-                        .name(r.get(USERS.NAME))
-                        .createdAt(toInstant(r.get(USERS.CREATED_AT)))
-                        .lastLoginAt(toInstant(r.get(USERS.LAST_LOGIN_AT)))
-                        .build());
-    }
-
-    public boolean existsByEmail(String email) {
-        return dsl.fetchExists(dsl.selectOne().from(USERS).where(USERS.EMAIL.eq(email)));
-    }
-
     public UserModel save(UserModel user) {
         Instant now = Instant.now();
         dsl.insertInto(USERS)
