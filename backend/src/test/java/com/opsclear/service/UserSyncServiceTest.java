@@ -109,6 +109,31 @@ class UserSyncServiceTest {
     }
 
     @Test
+    @DisplayName("Should fallback to given_name + family_name when name claim is blank")
+    void syncFromJwt_fallsBackToGivenAndFamilyName_whenNameClaimIsBlank() {
+        UUID userId = UUID.randomUUID();
+        String email = "user@example.com";
+
+        Jwt jwt = Jwt.withTokenValue("token")
+                .header("alg", "RS256")
+                .subject(userId.toString())
+                .claim("email", email)
+                .claim("name", "   ")
+                .claim("given_name", "Jane")
+                .claim("family_name", "Doe")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.save(any(UserModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserModel result = userSyncService.syncFromJwt(jwt);
+
+        assertThat(result.getName()).isEqualTo("Jane Doe");
+    }
+
+    @Test
     @DisplayName("Should fallback to preferred_username when only given_name is present without family_name")
     void syncFromJwt_fallsBackToPreferredUsername_whenOnlyGivenNamePresent() {
         UUID userId = UUID.randomUUID();
