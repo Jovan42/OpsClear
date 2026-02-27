@@ -424,6 +424,21 @@ class JobIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should return 400 when transitioning from BLOCKED (not supported in this phase)")
+    void updateStatus_shouldReturn400_fromBlocked() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.BLOCKED);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"));
+    }
+
+    @Test
     @DisplayName("OWNER should transition IN_PROGRESS → COMPLETED")
     void updateStatus_shouldReturn200_inProgressToCompleted_forOwner() throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
