@@ -4,6 +4,7 @@ import com.opsclear.model.UserModel;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,8 +14,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+
+import static com.opsclear.generated.jooq.Tables.USERS;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -27,17 +31,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class AuthIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ProjectMemberRepository projectMemberRepository;
-
-    @Autowired
-    private ProjectRepository projectRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private DSLContext dsl;
+    @Autowired private ProjectMemberRepository projectMemberRepository;
+    @Autowired private ProjectRepository projectRepository;
+    @Autowired private UserRepository userRepository;
 
     @BeforeEach
     void setUp() {
@@ -187,5 +185,21 @@ class AuthIntegrationTest {
 
         UserModel user = userRepository.findById(userId).orElseThrow();
         assertThat(user.getName()).isEqualTo("jsmith");
+    }
+
+    @Test
+    @DisplayName("findById should return null lastLoginAt when last_login_at is null in DB")
+    void findById_shouldHandleNullLastLoginAt() {
+        UUID userId = UUID.randomUUID();
+        dsl.insertInto(USERS)
+                .set(USERS.ID, userId)
+                .set(USERS.EMAIL, "nologin@example.com")
+                .set(USERS.NAME, "No Login User")
+                .set(USERS.CREATED_AT, LocalDateTime.now())
+                .execute();
+
+        Optional<UserModel> user = userRepository.findById(userId);
+        assertThat(user).isPresent();
+        assertThat(user.get().getLastLoginAt()).isNull();
     }
 }
