@@ -21,8 +21,4 @@ public class BlockReasonModel {
     private String reason;
     private Instant createdAt;
     private Instant deletedAt;
-
-    public boolean isDeleted() {
-        return deletedAt != null;
-    }
 }
