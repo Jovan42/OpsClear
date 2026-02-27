@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.UpdateProjectRequest;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ProjectMemberModel;
@@ -29,8 +30,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
-        userRepository.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        requireUserExists(ownerId);
 
         ProjectModel project = ProjectModel.builder()
                 .name(request.getName())
@@ -57,16 +57,14 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectModel getById(UUID projectId, UUID requesterId) {
-        ProjectModel project = projectRepository.findByIdAndDeletedAtIsNull(projectId)
-                .orElseThrow(() -> new NotFoundException("Project not found"));
+        ProjectModel project = requireProject(projectId);
         requireMember(projectId, requesterId);
         return project;
     }
 
     @Transactional
     public ProjectModel update(UUID projectId, UpdateProjectRequest request, UUID requesterId) {
-        ProjectModel project = projectRepository.findByIdAndDeletedAtIsNull(projectId)
-                .orElseThrow(() -> new NotFoundException("Project not found"));
+        ProjectModel project = requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         project.setName(request.getName());
         project.setDescription(request.getDescription());
@@ -76,32 +74,45 @@ public class ProjectService {
 
     @Transactional
     public void softDelete(UUID projectId, UUID requesterId) {
-        ProjectModel project = projectRepository.findByIdAndDeletedAtIsNull(projectId)
-                .orElseThrow(() -> new NotFoundException("Project not found"));
+        ProjectModel project = requireProject(projectId);
         requireOwner(projectId, requesterId);
         project.softDelete();
         projectRepository.save(project);
         log.info("Soft-deleted project '{}'", projectId);
     }
 
+    // --- Guards ---
+
+    private ProjectModel requireProject(UUID projectId) {
+        return projectRepository.findByIdAndDeletedAtIsNull(projectId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
+    }
+
+    private void requireUserExists(UUID userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
+    }
+
+    // --- Permission helpers ---
+
+    private void requireMember(UUID projectId, UUID userId) {
+        projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Member.NOT_A_MEMBER));
+    }
+
     private void requireOwnerOrAdmin(UUID projectId, UUID userId) {
         ProjectMemberModel requester = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new ForbiddenException("You are not a member of this project"));
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Member.NOT_A_MEMBER));
         if (requester.getRole() == ProjectMemberRole.MEMBER) {
-            throw new ForbiddenException("Insufficient permissions: OWNER or ADMIN role required");
+            throw new ForbiddenException(ErrorMessages.Member.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
         }
     }
 
     private void requireOwner(UUID projectId, UUID userId) {
         ProjectMemberModel requester = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new ForbiddenException("You are not a member of this project"));
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Member.NOT_A_MEMBER));
         if (requester.getRole() != ProjectMemberRole.OWNER) {
-            throw new ForbiddenException("Insufficient permissions: OWNER role required");
+            throw new ForbiddenException(ErrorMessages.Member.INSUFFICIENT_PERMISSIONS_OWNER);
         }
-    }
-
-    private void requireMember(UUID projectId, UUID userId) {
-        projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new ForbiddenException("You are not a member of this project"));
     }
 }
