@@ -3,6 +3,7 @@ package com.opsclear.service;
 import com.opsclear.dto.CreateJobRequest;
 import com.opsclear.dto.UpdateJobRequest;
 import com.opsclear.exception.BadRequestException;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobModel;
@@ -35,11 +36,7 @@ public class JobService {
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
         requireProjectExists(projectId);
         requireMember(projectId, requesterId);
-
-        if (request.getAssignedTo() != null) {
-            userRepository.findById(request.getAssignedTo())
-                    .orElseThrow(() -> new NotFoundException("Assigned user not found"));
-        }
+        requireAssignedUserExists(request.getAssignedTo());
 
         JobModel job = JobModel.builder()
                 .projectId(projectId)
@@ -72,15 +69,12 @@ public class JobService {
     public JobModel getById(UUID projectId, UUID jobId, UUID requesterId) {
         requireProjectExists(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
-
-        JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
-                .orElseThrow(() -> new NotFoundException("Job not found"));
-
+        JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
 
         if (requester.getRole() == ProjectMemberRole.MEMBER
                 && !requesterId.equals(job.getAssignedTo())) {
-            throw new ForbiddenException("Access denied: you are not assigned to this job");
+            throw new ForbiddenException(ErrorMessages.Job.ACCESS_DENIED_NOT_ASSIGNED);
         }
 
         return job;
@@ -90,16 +84,9 @@ public class JobService {
     public JobModel update(UUID projectId, UUID jobId, UpdateJobRequest request, UUID requesterId) {
         requireProjectExists(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
-
-        JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
-                .orElseThrow(() -> new NotFoundException("Job not found"));
-
+        JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
-
-        if (request.getAssignedTo() != null) {
-            userRepository.findById(request.getAssignedTo())
-                    .orElseThrow(() -> new NotFoundException("Assigned user not found"));
-        }
+        requireAssignedUserExists(request.getAssignedTo());
 
         job.setTitle(request.getTitle());
         job.setDescription(request.getDescription());
@@ -116,10 +103,7 @@ public class JobService {
     public JobModel updateStatus(UUID projectId, UUID jobId, JobStatus newStatus, UUID requesterId) {
         requireProjectExists(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
-
-        JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
-                .orElseThrow(() -> new NotFoundException("Job not found"));
-
+        JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
 
         validateTransition(job.getStatus(), newStatus, requester, job.getAssignedTo(), requesterId);
@@ -134,10 +118,7 @@ public class JobService {
     public void softDelete(UUID projectId, UUID jobId, UUID requesterId) {
         requireProjectExists(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
-
-        JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
-                .orElseThrow(() -> new NotFoundException("Job not found"));
-
+        JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
 
         job.softDelete();
@@ -149,56 +130,66 @@ public class JobService {
 
     private void validateTransition(JobStatus from, JobStatus to,
                                     ProjectMemberModel requester, UUID assignedTo, UUID requesterId) {
-        // 1. Block Phase 4 transitions early
         if (from == JobStatus.BLOCKED || to == JobStatus.BLOCKED) {
-            throw new BadRequestException("Blocking is not supported in this phase");
+            throw new BadRequestException(ErrorMessages.Job.BLOCKING_NOT_SUPPORTED);
         }
 
-        // 2. Structural validity
         boolean valid = (from == JobStatus.NEW        && to == JobStatus.IN_PROGRESS)
                      || (from == JobStatus.IN_PROGRESS && to == JobStatus.COMPLETED)
                      || (from == JobStatus.COMPLETED   && to == JobStatus.IN_PROGRESS);
 
         if (!valid) {
-            throw new BadRequestException("Invalid transition: " + from + " → " + to);
+            throw new BadRequestException(ErrorMessages.Job.INVALID_TRANSITION + from + " → " + to);
         }
 
-        // 3. Permission check
         boolean isOwnerOrAdmin = requester.getRole() == ProjectMemberRole.OWNER
                 || requester.getRole() == ProjectMemberRole.ADMIN;
 
         if (from == JobStatus.COMPLETED && !isOwnerOrAdmin) {
-            throw new ForbiddenException("Only OWNER or ADMIN can reopen a completed job");
+            throw new ForbiddenException(ErrorMessages.Job.ONLY_OWNER_ADMIN_CAN_REOPEN);
         }
         if (!isOwnerOrAdmin && !requesterId.equals(assignedTo)) {
-            throw new ForbiddenException("Only OWNER, ADMIN, or the assigned member can change job status");
+            throw new ForbiddenException(ErrorMessages.Job.ONLY_OWNER_ADMIN_OR_ASSIGNEE_CAN_CHANGE_STATUS);
         }
     }
 
     // --- Guards ---
 
+    private JobModel requireJob(UUID jobId) {
+        return jobRepository.findByIdAndDeletedAtIsNull(jobId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Job.NOT_FOUND));
+    }
+
+    private void requireAssignedUserExists(UUID userId) {
+        if (userId == null) {
+            return;
+        }
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Job.ASSIGNED_USER_NOT_FOUND));
+    }
+
     private void requireJobInProject(JobModel job, UUID projectId) {
         if (!job.getProjectId().equals(projectId)) {
-            throw new NotFoundException("Job not found");
+            throw new NotFoundException(ErrorMessages.Job.NOT_FOUND);
         }
+    }
+
+    private void requireProjectExists(UUID projectId) {
+        projectRepository.findByIdAndDeletedAtIsNull(projectId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
     }
 
     // --- Permission helpers ---
 
-    private void requireProjectExists(UUID projectId) {
-        projectRepository.findByIdAndDeletedAtIsNull(projectId)
-                .orElseThrow(() -> new NotFoundException("Project not found"));
-    }
-
     private ProjectMemberModel requireMember(UUID projectId, UUID userId) {
         return projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new ForbiddenException("You are not a member of this project"));
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Member.NOT_A_MEMBER));
     }
 
     private void requireOwnerOrAdmin(UUID projectId, UUID userId) {
         ProjectMemberModel requester = requireMember(projectId, userId);
         if (requester.getRole() == ProjectMemberRole.MEMBER) {
-            throw new ForbiddenException("Insufficient permissions: OWNER or ADMIN role required");
+            throw new ForbiddenException(ErrorMessages.Member.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
         }
     }
 }

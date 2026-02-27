@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.dto.AddMemberRequest;
 import com.opsclear.exception.ConflictException;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ProjectMemberModel;
@@ -39,14 +40,13 @@ public class ProjectMemberService {
         requireOwnerOrAdmin(projectId, requesterId);
 
         if (request.getRole() == ProjectMemberRole.OWNER) {
-            throw new ForbiddenException("Cannot assign OWNER role");
+            throw new ForbiddenException(ErrorMessages.Member.CANNOT_ASSIGN_OWNER_ROLE);
         }
 
-        userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        requireUserExists(request.getUserId());
 
         if (projectMemberRepository.existsByProjectIdAndUserId(projectId, request.getUserId())) {
-            throw new ConflictException("User is already a member of this project");
+            throw new ConflictException(ErrorMessages.Member.ALREADY_A_MEMBER);
         }
 
         ProjectMemberModel member = ProjectMemberModel.builder()
@@ -66,16 +66,14 @@ public class ProjectMemberService {
         requireOwnerOrAdmin(projectId, requesterId);
 
         if (newRole == ProjectMemberRole.OWNER) {
-            throw new ForbiddenException("Cannot assign OWNER role");
+            throw new ForbiddenException(ErrorMessages.Member.CANNOT_ASSIGN_OWNER_ROLE);
         }
 
-        ProjectMemberModel member = projectMemberRepository.findById(memberId)
-                .orElseThrow(() -> new NotFoundException("Member not found"));
-
+        ProjectMemberModel member = requireMembership(memberId);
         requireMemberInProject(member, projectId);
 
         if (member.getRole() == ProjectMemberRole.OWNER) {
-            throw new ForbiddenException("Cannot change the project owner's role");
+            throw new ForbiddenException(ErrorMessages.Member.CANNOT_CHANGE_OWNER_ROLE);
         }
 
         member.setRole(newRole);
@@ -89,40 +87,52 @@ public class ProjectMemberService {
         requireProjectExists(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
 
-        ProjectMemberModel member = projectMemberRepository.findById(memberId)
-                .orElseThrow(() -> new NotFoundException("Member not found"));
-
+        ProjectMemberModel member = requireMembership(memberId);
         requireMemberInProject(member, projectId);
 
         if (member.getRole() == ProjectMemberRole.OWNER) {
-            throw new ForbiddenException("Cannot remove the project owner");
+            throw new ForbiddenException(ErrorMessages.Member.CANNOT_REMOVE_OWNER);
         }
 
         projectMemberRepository.delete(memberId);
         log.info("Removed member {} from project {}", memberId, projectId);
     }
 
+    // --- Guards ---
+
+    private ProjectMemberModel requireMembership(UUID memberId) {
+        return projectMemberRepository.findById(memberId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Member.NOT_FOUND));
+    }
+
     private void requireMemberInProject(ProjectMemberModel member, UUID projectId) {
         if (!member.getProjectId().equals(projectId)) {
-            throw new NotFoundException("Member not found");
+            throw new NotFoundException(ErrorMessages.Member.NOT_FOUND);
         }
     }
 
     private void requireProjectExists(UUID projectId) {
         projectRepository.findByIdAndDeletedAtIsNull(projectId)
-                .orElseThrow(() -> new NotFoundException("Project not found"));
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
     }
+
+    private void requireUserExists(UUID userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
+    }
+
+    // --- Permission helpers ---
 
     private void requireOwnerOrAdmin(UUID projectId, UUID userId) {
         ProjectMemberModel requester = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new ForbiddenException("You are not a member of this project"));
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Member.NOT_A_MEMBER));
         if (requester.getRole() == ProjectMemberRole.MEMBER) {
-            throw new ForbiddenException("Insufficient permissions: OWNER or ADMIN role required");
+            throw new ForbiddenException(ErrorMessages.Member.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
         }
     }
 
     private void requireMember(UUID projectId, UUID userId) {
         projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new ForbiddenException("You are not a member of this project"));
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Member.NOT_A_MEMBER));
     }
 }
