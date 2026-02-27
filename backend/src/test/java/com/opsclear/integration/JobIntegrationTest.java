@@ -664,6 +664,7 @@ class JobIntegrationTest {
     @DisplayName("OWNER should be able to soft delete a job and return 204")
     void deleteJob_shouldReturn204_forOwner() throws Exception {
         JobModel job = createTestJob("To Delete", null, JobStatus.NEW);
+        assertThat(jobRepository.findById(job.getId()).orElseThrow().isDeleted()).isFalse();
 
         mockMvc.perform(delete("/api/projects/" + projectId + "/jobs/" + job.getId())
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))

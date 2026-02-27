@@ -165,6 +165,17 @@ class BlockReasonIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should return 403 when requester is not a project member on delete")
+    void deleteBlockReason_shouldReturn403_whenNotMember() throws Exception {
+        UUID outsider = UUID.randomUUID();
+        BlockReasonModel reason = blockReasonRepository.findOrCreate(projectId, "Waiting for approval");
+
+        mockMvc.perform(delete("/api/projects/" + projectId + "/block-reasons/" + reason.getId())
+                        .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("MEMBER should be forbidden from deleting a block reason")
     void deleteBlockReason_shouldReturn403_forMember() throws Exception {
         BlockReasonModel reason = blockReasonRepository.findOrCreate(projectId, "Waiting for approval");
