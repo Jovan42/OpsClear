@@ -119,7 +119,7 @@ Process:
 ### Module 4.1: Blocking Feature
 
 - [x] **DOC:** Write ADR for blocking model
-- [ ] Create Flyway migration: add blocking fields to `jobs`
+- [x] Create Flyway migration: add blocking fields to `jobs`
 - [ ] Update `Job` entity: `blocked`, `blocked_by`, `blocked_reason`, `blocked_at`
 - [ ] Implement block/unblock in `JobService`
 - [ ] Add endpoints: POST /jobs/{id}/block, POST /jobs/{id}/unblock
