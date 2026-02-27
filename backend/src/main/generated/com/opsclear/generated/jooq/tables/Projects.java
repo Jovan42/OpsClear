@@ -8,6 +8,7 @@ import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
 import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
+import com.opsclear.generated.jooq.tables.ProjectBlockReasons.ProjectBlockReasonsPath;
 import com.opsclear.generated.jooq.tables.ProjectMembers.ProjectMembersPath;
 import com.opsclear.generated.jooq.tables.Users.UsersPath;
 import com.opsclear.generated.jooq.tables.records.ProjectsRecord;
@@ -208,6 +209,19 @@ public class Projects extends TableImpl<ProjectsRecord> {
             _jobs = new JobsPath(this, null, Keys.JOBS__JOBS_PROJECT_ID_FKEY.getInverseKey());
 
         return _jobs;
+    }
+
+    private transient ProjectBlockReasonsPath _projectBlockReasons;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.project_block_reasons</code> table
+     */
+    public ProjectBlockReasonsPath projectBlockReasons() {
+        if (_projectBlockReasons == null)
+            _projectBlockReasons = new ProjectBlockReasonsPath(this, null, Keys.PROJECT_BLOCK_REASONS__PROJECT_BLOCK_REASONS_PROJECT_ID_FKEY.getInverseKey());
+
+        return _projectBlockReasons;
     }
 
     private transient ProjectMembersPath _projectMembers;

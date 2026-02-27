@@ -5,6 +5,7 @@ package com.opsclear.generated.jooq;
 
 
 import com.opsclear.generated.jooq.tables.Jobs;
+import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
@@ -20,6 +21,11 @@ public class Tables {
      * Jobs - central unit of work within a project
      */
     public static final Jobs JOBS = Jobs.JOBS;
+
+    /**
+     * Per-project vocabulary of block reasons used in the UI dropdown
+     */
+    public static final ProjectBlockReasons PROJECT_BLOCK_REASONS = ProjectBlockReasons.PROJECT_BLOCK_REASONS;
 
     /**
      * Project membership — links users to projects with a role

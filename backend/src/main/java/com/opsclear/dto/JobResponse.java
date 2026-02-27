@@ -31,6 +31,11 @@ public class JobResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
+    // Blocking metadata — null when not blocked
+    private UUID blockedBy;
+    private String blockedReason;
+    private Instant blockedAt;
+
     public static JobResponse from(JobModel job) {
         return JobResponse.builder()
                 .id(job.getId())
@@ -45,6 +50,9 @@ public class JobResponse {
                 .createdBy(job.getCreatedBy())
                 .createdAt(job.getCreatedAt())
                 .updatedAt(job.getUpdatedAt())
+                .blockedBy(job.getBlockedBy())
+                .blockedReason(job.getBlockedReason())
+                .blockedAt(job.getBlockedAt())
                 .build();
     }
 }

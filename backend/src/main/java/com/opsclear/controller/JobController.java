@@ -78,8 +78,8 @@ public class JobController {
             @Valid @RequestBody UpdateJobStatusRequest request,
             JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
-        return ResponseEntity.ok(
-                JobResponse.from(jobService.updateStatus(projectId, jobId, request.getStatus(), userId)));
+        return ResponseEntity.ok(JobResponse.from(
+                jobService.updateStatus(projectId, jobId, request.getStatus(), request.getReason(), userId)));
     }
 
     @DeleteMapping("/{jobId}")
