@@ -157,9 +157,26 @@ tasks.named('jacocoTestCoverageVerification') {
     }
 }
 
-// Service-layer only coverage check — used by the unit-tests CI job
+// Service-layer only report — used by the unit-tests CI job
+tasks.register('jacocoServiceTestReport', JacocoReport) {
+    dependsOn test
+    executionData.setFrom(layout.buildDirectory.file('jacoco/test.exec'))
+    sourceDirectories.setFrom(sourceSets.main.allSource.srcDirs)
+    classDirectories.setFrom(
+        sourceSets.main.output.asFileTree.matching {
+            include '**/service/**'
+        }
+    )
+    reports {
+        xml.required = true
+        html.required = true
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/service/jacocoServiceReport.xml')
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/service/html')
+    }
+}
+
 tasks.register('jacocoServiceCoverageVerification', JacocoCoverageVerification) {
-    dependsOn jacocoTestReport
+    dependsOn jacocoServiceTestReport
     executionData.setFrom(layout.buildDirectory.file('jacoco/test.exec'))
     sourceDirectories.setFrom(sourceSets.main.allSource.srcDirs)
     classDirectories.setFrom(

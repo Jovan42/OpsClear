@@ -73,7 +73,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: backend
-        run: ./gradlew test -PexcludeIntegrationTests jacocoServiceCoverageVerification
+        run: ./gradlew test -PexcludeIntegrationTests jacocoServiceTestReport jacocoServiceCoverageVerification
 
       - name: Publish unit test results
         uses: dorny/test-reporter@v1
@@ -94,7 +94,7 @@ jobs:
         uses: madrapps/jacoco-report@v1.7.1
         if: always()
         with:
-          paths: backend/build/reports/jacoco/test/jacocoTestReport.xml
+          paths: backend/build/reports/jacoco/service/jacocoServiceReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           title: Unit Test Coverage (Service Layer)
           update-comment: true
