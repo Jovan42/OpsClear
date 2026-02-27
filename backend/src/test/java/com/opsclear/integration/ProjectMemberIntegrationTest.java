@@ -408,4 +408,48 @@ class ProjectMemberIntegrationTest {
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    @DisplayName("Returns 404 when updating a membership that belongs to a different project")
+    void updateRole_shouldReturn404_whenMemberFromDifferentProject() throws Exception {
+        ProjectModel project2 = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project2.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+
+        UUID memberId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(memberId).email("m@example.com").name("Member").build());
+        ProjectMemberModel membershipInProject2 = projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project2.getId()).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        String body = """
+                { "role": "ADMIN" }
+                """;
+
+        mockMvc.perform(put("/api/projects/{id}/members/{mid}", project1Id, membershipInProject2.getId())
+                        .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Returns 404 when removing a membership that belongs to a different project")
+    void removeMember_shouldReturn404_whenMemberFromDifferentProject() throws Exception {
+        ProjectModel project2 = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project2.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+
+        UUID memberId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(memberId).email("m@example.com").name("Member").build());
+        ProjectMemberModel membershipInProject2 = projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project2.getId()).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        mockMvc.perform(delete("/api/projects/{id}/members/{mid}", project1Id, membershipInProject2.getId())
+                        .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
+                .andExpect(status().isNotFound());
+    }
 }

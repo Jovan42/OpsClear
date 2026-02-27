@@ -228,7 +228,7 @@ class ProjectIntegrationTest {
                 .andExpect(status().isNoContent());
 
         assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId())).isEmpty();
-        assertThat(projectRepository.findById(project.getId())).isPresent();
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().isDeleted()).isTrue();
     }
 
     @Test
@@ -240,6 +240,50 @@ class ProjectIntegrationTest {
                                 .claim("email", "testuser@example.com")
                                 .claim("name", "Test User"))))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when MEMBER tries to update project")
+    void updateProject_shouldReturn403_whenMember() throws Exception {
+        ProjectModel project = createTestProject("Test Project", null);
+
+        UUID memberId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(memberId).email("member@example.com").name("Member User").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project.getId()).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        String body = """
+                { "name": "New Name" }
+                """;
+
+        mockMvc.perform(put("/api/projects/" + project.getId())
+                        .with(jwt().jwt(j -> j
+                                .subject(memberId.toString())
+                                .claim("email", "member@example.com")
+                                .claim("name", "Member User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when ADMIN tries to delete project")
+    void deleteProject_shouldReturn403_whenAdmin() throws Exception {
+        ProjectModel project = createTestProject("Test Project", null);
+
+        UUID adminId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(adminId).email("admin@example.com").name("Admin User").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project.getId()).userId(adminId).role(ProjectMemberRole.ADMIN).build());
+
+        mockMvc.perform(delete("/api/projects/" + project.getId())
+                        .with(jwt().jwt(j -> j
+                                .subject(adminId.toString())
+                                .claim("email", "admin@example.com")
+                                .claim("name", "Admin User"))))
+                .andExpect(status().isForbidden());
     }
 
     private ProjectModel createTestProject(String name, String description) {

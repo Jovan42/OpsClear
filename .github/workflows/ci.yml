@@ -47,6 +47,7 @@ jobs:
     permissions:
       checks: write
       contents: read
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,7 +73,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: backend
-        run: ./gradlew test -PexcludeIntegrationTests
+        run: ./gradlew test -PexcludeIntegrationTests jacocoServiceTestReport jacocoServiceCoverageVerification
 
       - name: Publish unit test results
         uses: dorny/test-reporter@v1
@@ -89,6 +90,16 @@ jobs:
           name: unit-test-results
           path: backend/build/reports/tests/
 
+      - name: Publish unit test coverage
+        uses: madrapps/jacoco-report@v1.7.1
+        if: always()
+        with:
+          paths: backend/build/reports/jacoco/service/jacocoServiceReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Unit Test Coverage (Service Layer)
+          update-comment: true
+          min-coverage-overall: 90
+
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
@@ -96,6 +107,7 @@ jobs:
     permissions:
       checks: write
       contents: read
+      pull-requests: write
 
     services:
       postgres:
@@ -142,7 +154,7 @@ jobs:
           SPRING_DATASOURCE_USERNAME: opsclear
           SPRING_DATASOURCE_PASSWORD: opsclear
           SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
-        run: ./gradlew test -PonlyIntegrationTests
+        run: ./gradlew test -PonlyIntegrationTests jacocoTestCoverageVerification
 
       - name: Publish integration test results
         uses: dorny/test-reporter@v1
@@ -158,6 +170,16 @@ jobs:
         with:
           name: integration-test-results
           path: backend/build/reports/tests/
+
+      - name: Publish integration test coverage
+        uses: madrapps/jacoco-report@v1.7.1
+        if: always()
+        with:
+          paths: backend/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Integration Test Coverage
+          update-comment: true
+          min-coverage-overall: 90
 
   lint:
     name: Checkstyle

@@ -141,6 +141,23 @@ class JobIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("Should return 404 when assignedTo user does not exist")
+    void createJob_shouldReturn404_whenAssignedUserNotFound() throws Exception {
+        String body = String.format("""
+                {
+                  "title": "Job",
+                  "assignedTo": "%s"
+                }
+                """, UUID.randomUUID());
+
+        mockMvc.perform(post("/api/projects/" + projectId + "/jobs")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
     // --- GET /api/projects/{projectId}/jobs ---
 
     @Test
@@ -166,6 +183,24 @@ class JobIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].title").value("My Job"));
+    }
+
+    @Test
+    @DisplayName("Should return 403 when requester is not a project member")
+    void listJobs_shouldReturn403_whenNotMember() throws Exception {
+        UUID outsider = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/projects/" + projectId + "/jobs")
+                        .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when project does not exist")
+    void listJobs_shouldReturn404_whenProjectNotFound() throws Exception {
+        mockMvc.perform(get("/api/projects/" + UUID.randomUUID() + "/jobs")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNotFound());
     }
 
     // --- GET /api/projects/{projectId}/jobs/{jobId} ---
@@ -203,6 +238,30 @@ class JobIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @DisplayName("Should return 404 when job does not exist")
+    void getJob_shouldReturn404_whenJobNotFound() throws Exception {
+        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID())
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when job belongs to a different project")
+    void getJob_shouldReturn404_whenJobInDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+        JobModel jobInOtherProject = jobRepository.save(JobModel.builder()
+                .projectId(otherProject.getId()).title("Other Job")
+                .status(JobStatus.NEW).createdBy(ownerId).build());
+
+        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId())
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
     // --- PUT /api/projects/{projectId}/jobs/{jobId} ---
 
     @Test
@@ -227,6 +286,26 @@ class JobIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should update job with a valid assignedTo user")
+    void updateJob_shouldReturn200_withAssignedUser() throws Exception {
+        JobModel job = createTestJob("Old title", null, JobStatus.NEW);
+
+        String body = String.format("""
+                {
+                  "title": "New title",
+                  "assignedTo": "%s"
+                }
+                """, memberId);
+
+        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + job.getId())
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assignedTo").value(memberId.toString()));
+    }
+
+    @Test
     @DisplayName("MEMBER should be forbidden from updating job fields")
     void updateJob_shouldReturn403_forMember() throws Exception {
         JobModel job = createTestJob("Job", memberId, JobStatus.NEW);
@@ -240,6 +319,61 @@ class JobIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when job does not exist on update")
+    void updateJob_shouldReturn404_whenJobNotFound() throws Exception {
+        String body = """
+                { "title": "New title" }
+                """;
+
+        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID())
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when job belongs to a different project on update")
+    void updateJob_shouldReturn404_whenJobInDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+        JobModel jobInOtherProject = jobRepository.save(JobModel.builder()
+                .projectId(otherProject.getId()).title("Other Job")
+                .status(JobStatus.NEW).createdBy(ownerId).build());
+
+        String body = """
+                { "title": "Hijack" }
+                """;
+
+        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId())
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when assignedTo user does not exist on update")
+    void updateJob_shouldReturn404_whenAssignedUserNotFound() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.NEW);
+
+        String body = String.format("""
+                {
+                  "title": "Updated",
+                  "assignedTo": "%s"
+                }
+                """, UUID.randomUUID());
+
+        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + job.getId())
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
     }
 
     // --- PATCH /api/projects/{projectId}/jobs/{jobId}/status ---
@@ -274,6 +408,161 @@ class JobIntegrationTest {
                 .andExpect(jsonPath("$.error").value("Bad Request"));
     }
 
+    @Test
+    @DisplayName("Should return 400 when transitioning to BLOCKED (not supported in this phase)")
+    void updateStatus_shouldReturn400_toBlocked() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.NEW);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "BLOCKED" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"));
+    }
+
+    @Test
+    @DisplayName("OWNER should transition IN_PROGRESS → COMPLETED")
+    void updateStatus_shouldReturn200_inProgressToCompleted_forOwner() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "COMPLETED" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for invalid status transition IN_PROGRESS → NEW")
+    void updateStatus_shouldReturn400_invalidTransition_fromInProgress() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "NEW" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"));
+    }
+
+    @Test
+    @DisplayName("OWNER should transition COMPLETED → IN_PROGRESS (reopen)")
+    void updateStatus_shouldReturn200_completedToInProgress_forOwner() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.COMPLETED);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for invalid status transition COMPLETED → NEW")
+    void updateStatus_shouldReturn400_invalidTransition_fromCompleted() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.COMPLETED);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "NEW" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"));
+    }
+
+    @Test
+    @DisplayName("ADMIN should transition NEW → IN_PROGRESS")
+    void updateStatus_shouldReturn200_forAdmin() throws Exception {
+        UUID adminId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(adminId).email("admin@example.com").name("Admin").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(adminId).role(ProjectMemberRole.ADMIN).build());
+
+        JobModel job = createTestJob("Job", null, JobStatus.NEW);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(adminId.toString()).claim("email", "admin@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    @DisplayName("MEMBER should be forbidden from reopening a completed job")
+    void updateStatus_shouldReturn403_whenMemberReopensCompletedJob() throws Exception {
+        JobModel job = createTestJob("Job", memberId, JobStatus.COMPLETED);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("MEMBER should be forbidden from changing status of a job not assigned to them")
+    void updateStatus_shouldReturn403_whenMemberNotAssigned() throws Exception {
+        JobModel job = createTestJob("Job", ownerId, JobStatus.NEW);
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when job does not exist on status update")
+    void updateStatus_shouldReturn404_whenJobNotFound() throws Exception {
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when job belongs to a different project on status update")
+    void updateStatus_shouldReturn404_whenJobInDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+        JobModel jobInOtherProject = jobRepository.save(JobModel.builder()
+                .projectId(otherProject.getId()).title("Other Job")
+                .status(JobStatus.NEW).createdBy(ownerId).build());
+
+        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId() + "/status")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
     // --- DELETE /api/projects/{projectId}/jobs/{jobId} ---
 
     @Test
@@ -286,7 +575,7 @@ class JobIntegrationTest {
                 .andExpect(status().isNoContent());
 
         assertThat(jobRepository.findByIdAndDeletedAtIsNull(job.getId())).isEmpty();
-        assertThat(jobRepository.findById(job.getId())).isPresent();
+        assertThat(jobRepository.findById(job.getId()).orElseThrow().isDeleted()).isTrue();
     }
 
     @Test
@@ -303,6 +592,22 @@ class JobIntegrationTest {
     @DisplayName("Should return 404 when deleting a non-existent job")
     void deleteJob_shouldReturn404_whenNotFound() throws Exception {
         mockMvc.perform(delete("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID())
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when job belongs to a different project on delete")
+    void deleteJob_shouldReturn404_whenJobInDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+        JobModel jobInOtherProject = jobRepository.save(JobModel.builder()
+                .projectId(otherProject.getId()).title("Other Job")
+                .status(JobStatus.NEW).createdBy(ownerId).build());
+
+        mockMvc.perform(delete("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId())
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }

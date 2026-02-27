@@ -43,15 +43,6 @@ public class ProjectRepository {
                 .map(this::toModel);
     }
 
-    public boolean existsByNameAndOwnerIdAndDeletedAtIsNull(String name, UUID ownerId) {
-        return dsl.fetchExists(
-                dsl.selectOne()
-                        .from(PROJECTS)
-                        .where(PROJECTS.NAME.eq(name))
-                        .and(PROJECTS.OWNER_ID.eq(ownerId))
-                        .and(PROJECTS.DELETED_AT.isNull()));
-    }
-
     public List<ProjectModel> findByMemberIdAndDeletedAtIsNull(UUID userId) {
         return dsl.select(of(
                         PROJECTS.ID,

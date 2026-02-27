@@ -144,6 +144,33 @@ class JobServiceTest {
                 .hasMessage("Assigned user not found");
     }
 
+    @Test
+    @DisplayName("Should create job and resolve assigned user when assignedTo is set")
+    void create_shouldCreateJob_withAssignedUser() {
+        UUID assignedUserId = UUID.randomUUID();
+        CreateJobRequest request = CreateJobRequest.builder().title("Fix bug").assignedTo(assignedUserId).build();
+
+        JobModel saved = JobModel.builder()
+                .id(UUID.randomUUID())
+                .projectId(projectId)
+                .title("Fix bug")
+                .assignedTo(assignedUserId)
+                .status(JobStatus.NEW)
+                .createdBy(ownerId)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(userRepository.findById(assignedUserId))
+                .thenReturn(Optional.of(com.opsclear.model.UserModel.builder().id(assignedUserId).build()));
+        when(jobRepository.save(any())).thenReturn(saved);
+
+        JobModel result = jobService.create(projectId, request, ownerId);
+
+        assertThat(result.getAssignedTo()).isEqualTo(assignedUserId);
+    }
+
     // --- list ---
 
     @Test
@@ -267,6 +294,21 @@ class JobServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw NotFoundException when job does not exist")
+    void getById_shouldThrow_whenJobNotFound() {
+        UUID jobId = UUID.randomUUID();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.getById(projectId, jobId, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Job not found");
+    }
+
+    @Test
     @DisplayName("Should throw NotFoundException when job belongs to a different project")
     void getById_shouldThrow_whenJobNotInProject() {
         UUID jobId = UUID.randomUUID();
@@ -326,6 +368,48 @@ class JobServiceTest {
         assertThatThrownBy(() -> jobService.update(projectId, jobId, request, memberId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
+    }
+
+    @Test
+    @DisplayName("Should throw NotFoundException when job does not exist on update")
+    void update_shouldThrow_whenJobNotFound() {
+        UUID jobId = UUID.randomUUID();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("x").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Job not found");
+    }
+
+    @Test
+    @DisplayName("Should update job and resolve assigned user when assignedTo is set")
+    void update_shouldUpdateJob_withAssignedUser() {
+        UUID jobId = UUID.randomUUID();
+        UUID assignedUserId = UUID.randomUUID();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("Old title")
+                .status(JobStatus.NEW)
+                .build();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("New title").assignedTo(assignedUserId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(userRepository.findById(assignedUserId))
+                .thenReturn(Optional.of(com.opsclear.model.UserModel.builder().id(assignedUserId).build()));
+        when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        JobModel result = jobService.update(projectId, jobId, request, ownerId);
+
+        assertThat(result.getAssignedTo()).isEqualTo(assignedUserId);
     }
 
     @Test
@@ -520,6 +604,21 @@ class JobServiceTest {
         assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, memberId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Only OWNER or ADMIN can reopen a completed job");
+    }
+
+    @Test
+    @DisplayName("Should throw NotFoundException when job does not exist on updateStatus")
+    void updateStatus_shouldThrow_whenJobNotFound() {
+        UUID jobId = UUID.randomUUID();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Job not found");
     }
 
     @Test
