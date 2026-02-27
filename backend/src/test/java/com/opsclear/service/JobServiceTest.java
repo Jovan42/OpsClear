@@ -76,6 +76,14 @@ class JobServiceTest {
                 .build();
     }
 
+    private ProjectMemberModel adminMembership(UUID adminId) {
+        return ProjectMemberModel.builder()
+                .projectId(projectId)
+                .userId(adminId)
+                .role(ProjectMemberRole.ADMIN)
+                .build();
+    }
+
     // --- create ---
 
     @Test
@@ -545,6 +553,48 @@ class JobServiceTest {
     }
 
     @Test
+    @DisplayName("Should transition IN_PROGRESS → COMPLETED for ADMIN")
+    void updateStatus_shouldTransition_inProgressToCompleted_forAdmin() {
+        UUID adminId = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.IN_PROGRESS)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, adminId))
+                .thenReturn(Optional.of(adminMembership(adminId)));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, adminId);
+
+        assertThat(result.getStatus()).isEqualTo(JobStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("Should throw BadRequestException when transitioning from BLOCKED status (Phase 4)")
+    void updateStatus_shouldThrow_whenFromBlocked() {
+        UUID jobId = UUID.randomUUID();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.BLOCKED)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Blocking is not supported in this phase");
+    }
+
+    @Test
     @DisplayName("Should throw BadRequestException when trying to block a job (Phase 4)")
     void updateStatus_shouldThrow_whenBlockingNotSupported() {
         UUID jobId = UUID.randomUUID();
@@ -562,6 +612,46 @@ class JobServiceTest {
         assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Blocking is not supported in this phase");
+    }
+
+    @Test
+    @DisplayName("Should throw BadRequestException for invalid transition IN_PROGRESS → NEW")
+    void updateStatus_shouldThrow_whenInvalidTransition_inProgressToNew() {
+        UUID jobId = UUID.randomUUID();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.IN_PROGRESS)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.NEW, ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Invalid transition: IN_PROGRESS → NEW");
+    }
+
+    @Test
+    @DisplayName("Should throw BadRequestException for invalid transition COMPLETED → NEW")
+    void updateStatus_shouldThrow_whenInvalidTransition_completedToNew() {
+        UUID jobId = UUID.randomUUID();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.COMPLETED)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.NEW, ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Invalid transition: COMPLETED → NEW");
     }
 
     @Test
