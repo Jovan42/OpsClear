@@ -247,6 +247,7 @@ Process:
 - [ ] OAuth (Google, Microsoft)
 - [ ] Webhooks / API integrations
 - [ ] User-facing documentation (Docusaurus)
+- [ ] Cross-project approval queue — `GET /api/approvals/pending` returning all pending approvals across all projects where the caller is OWNER or ADMIN (action queue for the dashboard)
 
 ---
 
