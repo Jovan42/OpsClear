@@ -152,8 +152,8 @@ Process:
 ### Module 6.1: Approvals Feature
 
 - [x] **DOC:** Write ADR for approval workflow (ADR-0010)
-- [ ] Create Flyway migration: `approvals` table
-- [ ] Implement `ApprovalModel` + `ApprovalStatus` enum (`PENDING`, `APPROVED`, `REJECTED`)
+- [x] Create Flyway migration: `approvals` table
+- [x] Implement `ApprovalModel` + `ApprovalStatus` enum (`PENDING`, `APPROVED`, `REJECTED`)
 - [ ] Regenerate jOOQ schema sources + implement `ApprovalRepository`
 - [ ] Implement `ApprovalService` (request, decide, listByJob, listPendingByProject)
 - [ ] Create `ApprovalController` + DTOs + integration tests
