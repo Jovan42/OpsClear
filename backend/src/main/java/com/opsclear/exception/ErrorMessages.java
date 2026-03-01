@@ -60,4 +60,14 @@ public final class ErrorMessages {
 
         public static final String NOT_FOUND = "Note not found";
     }
+
+    public static final class Approval {
+        private Approval() {}
+
+        public static final String NOT_FOUND = "Approval not found";
+        public static final String ALREADY_DECIDED = "This approval has already been decided";
+        public static final String CANNOT_SET_PENDING = "Cannot transition an approval back to PENDING";
+        public static final String ACCESS_DENIED_NOT_ASSIGNED =
+                "Access denied: you are not assigned to this job";
+    }
 }
