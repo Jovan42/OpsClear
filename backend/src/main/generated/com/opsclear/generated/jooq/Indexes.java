@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
@@ -27,6 +28,8 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index IDX_APPROVALS_JOB_ID = Internal.createIndex(DSL.name("idx_approvals_job_id"), Approvals.APPROVALS, new OrderField[] { Approvals.APPROVALS.JOB_ID }, false);
+    public static final Index IDX_APPROVALS_STATUS = Internal.createIndex(DSL.name("idx_approvals_status"), Approvals.APPROVALS, new OrderField[] { Approvals.APPROVALS.STATUS }, false);
     public static final Index IDX_BLOCK_REASONS_PROJECT = Internal.createIndex(DSL.name("idx_block_reasons_project"), ProjectBlockReasons.PROJECT_BLOCK_REASONS, new OrderField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.PROJECT_ID }, false);
     public static final Index IDX_JOBS_ASSIGNED = Internal.createIndex(DSL.name("idx_jobs_assigned"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.ASSIGNED_TO }, false);
     public static final Index IDX_JOBS_PROJECT = Internal.createIndex(DSL.name("idx_jobs_project"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.PROJECT_ID }, false);

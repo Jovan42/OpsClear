@@ -4,12 +4,14 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
+import com.opsclear.generated.jooq.tables.records.ApprovalsRecord;
 import com.opsclear.generated.jooq.tables.records.JobsRecord;
 import com.opsclear.generated.jooq.tables.records.NotesRecord;
 import com.opsclear.generated.jooq.tables.records.ProjectBlockReasonsRecord;
@@ -35,6 +37,7 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<ApprovalsRecord> APPROVALS_PKEY = Internal.createUniqueKey(Approvals.APPROVALS, DSL.name("approvals_pkey"), new TableField[] { Approvals.APPROVALS.ID }, true);
     public static final UniqueKey<JobsRecord> JOBS_PKEY = Internal.createUniqueKey(Jobs.JOBS, DSL.name("jobs_pkey"), new TableField[] { Jobs.JOBS.ID }, true);
     public static final UniqueKey<NotesRecord> NOTES_PKEY = Internal.createUniqueKey(Notes.NOTES, DSL.name("notes_pkey"), new TableField[] { Notes.NOTES.ID }, true);
     public static final UniqueKey<ProjectBlockReasonsRecord> PROJECT_BLOCK_REASONS_PKEY = Internal.createUniqueKey(ProjectBlockReasons.PROJECT_BLOCK_REASONS, DSL.name("project_block_reasons_pkey"), new TableField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.ID }, true);
@@ -50,6 +53,9 @@ public class Keys {
     // FOREIGN KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final ForeignKey<ApprovalsRecord, UsersRecord> APPROVALS__APPROVALS_APPROVER_ID_FKEY = Internal.createForeignKey(Approvals.APPROVALS, DSL.name("approvals_approver_id_fkey"), new TableField[] { Approvals.APPROVALS.APPROVER_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
+    public static final ForeignKey<ApprovalsRecord, JobsRecord> APPROVALS__APPROVALS_JOB_ID_FKEY = Internal.createForeignKey(Approvals.APPROVALS, DSL.name("approvals_job_id_fkey"), new TableField[] { Approvals.APPROVALS.JOB_ID }, Keys.JOBS_PKEY, new TableField[] { Jobs.JOBS.ID }, true);
+    public static final ForeignKey<ApprovalsRecord, UsersRecord> APPROVALS__APPROVALS_REQUESTER_ID_FKEY = Internal.createForeignKey(Approvals.APPROVALS, DSL.name("approvals_requester_id_fkey"), new TableField[] { Approvals.APPROVALS.REQUESTER_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
     public static final ForeignKey<JobsRecord, UsersRecord> JOBS__JOBS_ASSIGNED_TO_FKEY = Internal.createForeignKey(Jobs.JOBS, DSL.name("jobs_assigned_to_fkey"), new TableField[] { Jobs.JOBS.ASSIGNED_TO }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
     public static final ForeignKey<JobsRecord, UsersRecord> JOBS__JOBS_BLOCKED_BY_FKEY = Internal.createForeignKey(Jobs.JOBS, DSL.name("jobs_blocked_by_fkey"), new TableField[] { Jobs.JOBS.BLOCKED_BY }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
     public static final ForeignKey<JobsRecord, ProjectBlockReasonsRecord> JOBS__JOBS_BLOCKED_REASON_ID_FKEY = Internal.createForeignKey(Jobs.JOBS, DSL.name("jobs_blocked_reason_id_fkey"), new TableField[] { Jobs.JOBS.BLOCKED_REASON_ID }, Keys.PROJECT_BLOCK_REASONS_PKEY, new TableField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.ID }, true);

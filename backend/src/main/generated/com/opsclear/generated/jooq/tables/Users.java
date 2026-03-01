@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
+import com.opsclear.generated.jooq.tables.Approvals.ApprovalsPath;
 import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
 import com.opsclear.generated.jooq.tables.Notes.NotesPath;
 import com.opsclear.generated.jooq.tables.ProjectMembers.ProjectMembersPath;
@@ -186,6 +187,32 @@ public class Users extends TableImpl<UsersRecord> {
     @Override
     public List<UniqueKey<UsersRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.UK_USERS_EMAIL);
+    }
+
+    private transient ApprovalsPath _approvalsApproverIdFkey;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.approvals</code>
+     * table, via the <code>approvals_approver_id_fkey</code> key
+     */
+    public ApprovalsPath approvalsApproverIdFkey() {
+        if (_approvalsApproverIdFkey == null)
+            _approvalsApproverIdFkey = new ApprovalsPath(this, null, Keys.APPROVALS__APPROVALS_APPROVER_ID_FKEY.getInverseKey());
+
+        return _approvalsApproverIdFkey;
+    }
+
+    private transient ApprovalsPath _approvalsRequesterIdFkey;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.approvals</code>
+     * table, via the <code>approvals_requester_id_fkey</code> key
+     */
+    public ApprovalsPath approvalsRequesterIdFkey() {
+        if (_approvalsRequesterIdFkey == null)
+            _approvalsRequesterIdFkey = new ApprovalsPath(this, null, Keys.APPROVALS__APPROVALS_REQUESTER_ID_FKEY.getInverseKey());
+
+        return _approvalsRequesterIdFkey;
     }
 
     private transient JobsPath _jobsAssignedToFkey;
