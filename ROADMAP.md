@@ -1,6 +1,6 @@
 # OpsClear - Roadmap & Tasks
 
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-02-24
 
 ---
 
@@ -136,12 +136,12 @@ Process:
 
 ### Module 5.1: Notes Feature
 
-- [x] **DOC:** Write ADR for notes model (immutability, audit)
-- [x] Create Flyway migration: `notes` table
-- [x] Implement `NoteModel` (job_id, author_id, content, created_at — no soft delete)
-- [x] Regenerate jOOQ schema sources + implement `NoteRepository`
-- [x] Implement `NoteService` (create, listByJob, listByProject — no update/delete)
-- [x] Create `NoteController` (POST, GET by job, GET by project grouped) + integration tests
+- [ ] **DOC:** Write ADR for notes model (immutability, audit)
+- [ ] Create Flyway migration: `notes` table
+- [ ] Implement `Note` entity (job_id, author_id, content, created_at)
+- [ ] Implement `NoteRepository`
+- [ ] Implement `NoteService` (create only, no update/delete)
+- [ ] Create `NoteController` (POST, GET list) + integration tests
 
 ---
 
@@ -151,12 +151,13 @@ Process:
 
 ### Module 6.1: Approvals Feature
 
-- [x] **DOC:** Write ADR for approval workflow (ADR-0010)
+- [ ] **DOC:** Write ADR for approval workflow
 - [ ] Create Flyway migration: `approvals` table
-- [ ] Implement `ApprovalModel` + `ApprovalStatus` enum (`PENDING`, `APPROVED`, `REJECTED`)
-- [ ] Regenerate jOOQ schema sources + implement `ApprovalRepository`
-- [ ] Implement `ApprovalService` (request, decide, listByJob, listPendingByProject)
-- [ ] Create `ApprovalController` + DTOs + integration tests
+- [ ] Implement `Approval` entity (job_id, requester, approver, status, comment)
+- [ ] Implement approval status: `PENDING`, `APPROVED`, `REJECTED`
+- [ ] Implement `ApprovalRepository`
+- [ ] Implement `ApprovalService` (request, approve, reject)
+- [ ] Create `ApprovalController` + integration tests
 - [ ] Squash and rename all Flyway migrations into single `V001__init_mvp.sql` (zero-padded format)
 
 ---
