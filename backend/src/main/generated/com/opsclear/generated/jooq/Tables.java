@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
@@ -17,6 +18,11 @@ import com.opsclear.generated.jooq.tables.Users;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Tables {
+
+    /**
+     * The table <code>public.approvals</code>.
+     */
+    public static final Approvals APPROVALS = Approvals.APPROVALS;
 
     /**
      * Jobs - central unit of work within a project

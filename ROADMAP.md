@@ -154,7 +154,7 @@ Process:
 - [x] **DOC:** Write ADR for approval workflow (ADR-0010)
 - [x] Create Flyway migration: `approvals` table
 - [x] Implement `ApprovalModel` + `ApprovalStatus` enum (`PENDING`, `APPROVED`, `REJECTED`)
-- [ ] Regenerate jOOQ schema sources + implement `ApprovalRepository`
+- [x] Regenerate jOOQ schema sources + implement `ApprovalRepository`
 - [ ] Implement `ApprovalService` (request, decide, listByJob, listPendingByProject)
 - [ ] Create `ApprovalController` + DTOs + integration tests
 - [ ] Squash and rename all Flyway migrations into single `V001__init_mvp.sql` (zero-padded format)

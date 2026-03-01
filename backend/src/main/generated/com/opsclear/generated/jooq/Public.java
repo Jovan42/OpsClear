@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
@@ -31,6 +32,11 @@ public class Public extends SchemaImpl {
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.approvals</code>.
+     */
+    public final Approvals APPROVALS = Approvals.APPROVALS;
 
     /**
      * Jobs - central unit of work within a project
@@ -78,6 +84,7 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            Approvals.APPROVALS,
             Jobs.JOBS,
             Notes.NOTES,
             ProjectBlockReasons.PROJECT_BLOCK_REASONS,
