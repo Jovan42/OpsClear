@@ -19,8 +19,9 @@ Examples for Module 1.1 (Auth):
 Process:
 1. Create branch from `main`
 2. Make focused changes (1-3 related tasks)
-3. Create PR, merge to `main`
-4. Update this file: check off completed tasks
+3. **Write tests as part of the same PR** — no separate test tasks
+4. Create PR, merge to `main`
+5. Update this file: check off completed tasks
 
 ---
 
@@ -140,8 +141,7 @@ Process:
 - [ ] Implement `Note` entity (job_id, author_id, content, created_at)
 - [ ] Implement `NoteRepository`
 - [ ] Implement `NoteService` (create only, no update/delete)
-- [ ] Create `NoteController` (POST, GET list)
-- [ ] Write integration tests
+- [ ] Create `NoteController` (POST, GET list) + integration tests
 
 ---
 
@@ -157,8 +157,7 @@ Process:
 - [ ] Implement approval status: `PENDING`, `APPROVED`, `REJECTED`
 - [ ] Implement `ApprovalRepository`
 - [ ] Implement `ApprovalService` (request, approve, reject)
-- [ ] Create `ApprovalController`
-- [ ] Write integration tests
+- [ ] Create `ApprovalController` + integration tests
 - [ ] Squash and rename all Flyway migrations into single `V001__init_mvp.sql` (zero-padded format)
 
 ---
