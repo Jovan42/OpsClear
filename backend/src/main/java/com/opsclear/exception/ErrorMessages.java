@@ -54,4 +54,10 @@ public final class ErrorMessages {
 
         public static final String NOT_FOUND = "Block reason not found";
     }
+
+    public static final class Note {
+        private Note() {}
+
+        public static final String NOT_FOUND = "Note not found";
+    }
 }
