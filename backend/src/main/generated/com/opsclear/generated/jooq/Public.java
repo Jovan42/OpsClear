@@ -5,6 +5,7 @@ package com.opsclear.generated.jooq;
 
 
 import com.opsclear.generated.jooq.tables.Jobs;
+import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
@@ -35,6 +36,11 @@ public class Public extends SchemaImpl {
      * Jobs - central unit of work within a project
      */
     public final Jobs JOBS = Jobs.JOBS;
+
+    /**
+     * Immutable audit notes attached to jobs — no update or delete paths exist
+     */
+    public final Notes NOTES = Notes.NOTES;
 
     /**
      * Per-project vocabulary of block reasons used in the UI dropdown
@@ -73,6 +79,7 @@ public class Public extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.asList(
             Jobs.JOBS,
+            Notes.NOTES,
             ProjectBlockReasons.PROJECT_BLOCK_REASONS,
             ProjectMembers.PROJECT_MEMBERS,
             Projects.PROJECTS,

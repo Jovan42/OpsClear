@@ -5,6 +5,7 @@ package com.opsclear.generated.jooq;
 
 
 import com.opsclear.generated.jooq.tables.Jobs;
+import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
@@ -21,6 +22,11 @@ public class Tables {
      * Jobs - central unit of work within a project
      */
     public static final Jobs JOBS = Jobs.JOBS;
+
+    /**
+     * Immutable audit notes attached to jobs — no update or delete paths exist
+     */
+    public static final Notes NOTES = Notes.NOTES;
 
     /**
      * Per-project vocabulary of block reasons used in the UI dropdown

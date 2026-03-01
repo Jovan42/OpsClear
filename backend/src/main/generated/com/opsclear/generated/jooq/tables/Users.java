@@ -8,6 +8,7 @@ import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
 import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
+import com.opsclear.generated.jooq.tables.Notes.NotesPath;
 import com.opsclear.generated.jooq.tables.ProjectMembers.ProjectMembersPath;
 import com.opsclear.generated.jooq.tables.Projects.ProjectsPath;
 import com.opsclear.generated.jooq.tables.records.UsersRecord;
@@ -224,6 +225,18 @@ public class Users extends TableImpl<UsersRecord> {
             _jobsCreatedByFkey = new JobsPath(this, null, Keys.JOBS__JOBS_CREATED_BY_FKEY.getInverseKey());
 
         return _jobsCreatedByFkey;
+    }
+
+    private transient NotesPath _notes;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.notes</code> table
+     */
+    public NotesPath notes() {
+        if (_notes == null)
+            _notes = new NotesPath(this, null, Keys.NOTES__NOTES_AUTHOR_ID_FKEY.getInverseKey());
+
+        return _notes;
     }
 
     private transient ProjectMembersPath _projectMembers;

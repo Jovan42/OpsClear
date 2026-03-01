@@ -18,6 +18,7 @@ public class NoteModel {
 
     private UUID id;
     private UUID jobId;
+    private String jobName;
     private UUID authorId;
     private String content;
     private Instant createdAt;
