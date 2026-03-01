@@ -1,6 +1,6 @@
 # OpsClear - Roadmap & Tasks
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-01
 
 ---
 
@@ -136,12 +136,12 @@ Process:
 
 ### Module 5.1: Notes Feature
 
-- [ ] **DOC:** Write ADR for notes model (immutability, audit)
-- [ ] Create Flyway migration: `notes` table
-- [ ] Implement `Note` entity (job_id, author_id, content, created_at)
-- [ ] Implement `NoteRepository`
-- [ ] Implement `NoteService` (create only, no update/delete)
-- [ ] Create `NoteController` (POST, GET list) + integration tests
+- [x] **DOC:** Write ADR for notes model (immutability, audit)
+- [x] Create Flyway migration: `notes` table
+- [x] Implement `NoteModel` (job_id, author_id, content, created_at — no soft delete)
+- [x] Regenerate jOOQ schema sources + implement `NoteRepository`
+- [x] Implement `NoteService` (create, listByJob, listByProject — no update/delete)
+- [x] Create `NoteController` (POST, GET by job, GET by project grouped) + integration tests
 
 ---
 
