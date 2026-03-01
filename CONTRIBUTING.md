@@ -151,6 +151,17 @@ Closes #<issue-number>
 - **Always include `Closes #<issue>`** to auto-close the GitHub issue on merge
 - **No tool/AI attribution** in PR descriptions
 - **PR title = main commit message** for single-commit PRs
+- **Tests ship with the PR** — every implementation PR must include its tests; there are no separate "write tests" PRs
+
+---
+
+## Testing
+
+Tests are written **in the same PR as the feature**, not deferred to end-of-phase.
+
+- Every new service method → unit test
+- Every new controller endpoint → integration test
+- PRs without tests for new functionality will not be merged
 
 ---
 
