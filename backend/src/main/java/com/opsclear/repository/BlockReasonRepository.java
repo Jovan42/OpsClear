@@ -1,6 +1,7 @@
 package com.opsclear.repository;
 
 import com.opsclear.model.BlockReasonModel;
+import com.opsclear.generated.jooq.tables.records.ProjectBlockReasonsRecord;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
@@ -26,13 +27,7 @@ public class BlockReasonRepository {
                 .and(PROJECT_BLOCK_REASONS.DELETED_AT.isNull())
                 .orderBy(PROJECT_BLOCK_REASONS.CREATED_AT.asc())
                 .fetch()
-                .map(r -> BlockReasonModel.builder()
-                        .id(r.getId())
-                        .projectId(r.getProjectId())
-                        .reason(r.getReason())
-                        .createdAt(toInstant(r.getCreatedAt()))
-                        .deletedAt(toInstant(r.getDeletedAt()))
-                        .build());
+                .map(this::toModel);
     }
 
     public Optional<BlockReasonModel> findByIdAndDeletedAtIsNull(UUID id) {
@@ -40,13 +35,7 @@ public class BlockReasonRepository {
                 .where(PROJECT_BLOCK_REASONS.ID.eq(id))
                 .and(PROJECT_BLOCK_REASONS.DELETED_AT.isNull())
                 .fetchOptional()
-                .map(r -> BlockReasonModel.builder()
-                        .id(r.getId())
-                        .projectId(r.getProjectId())
-                        .reason(r.getReason())
-                        .createdAt(toInstant(r.getCreatedAt()))
-                        .deletedAt(toInstant(r.getDeletedAt()))
-                        .build());
+                .map(this::toModel);
     }
 
     /**
@@ -67,13 +56,7 @@ public class BlockReasonRepository {
 
         return dsl.selectFrom(PROJECT_BLOCK_REASONS)
                 .where(PROJECT_BLOCK_REASONS.ID.eq(id))
-                .fetchOne(r -> BlockReasonModel.builder()
-                        .id(r.getId())
-                        .projectId(r.getProjectId())
-                        .reason(r.getReason())
-                        .createdAt(toInstant(r.getCreatedAt()))
-                        .deletedAt(toInstant(r.getDeletedAt()))
-                        .build());
+                .fetchOne(this::toModel);
     }
 
     public void softDelete(UUID id) {
@@ -85,6 +68,16 @@ public class BlockReasonRepository {
 
     public void deleteAll() {
         dsl.deleteFrom(PROJECT_BLOCK_REASONS).execute();
+    }
+
+    private BlockReasonModel toModel(ProjectBlockReasonsRecord r) {
+        return BlockReasonModel.builder()
+                .id(r.getId())
+                .projectId(r.getProjectId())
+                .reason(r.getReason())
+                .createdAt(toInstant(r.getCreatedAt()))
+                .deletedAt(toInstant(r.getDeletedAt()))
+                .build();
     }
 
     private static Instant toInstant(LocalDateTime ldt) {
