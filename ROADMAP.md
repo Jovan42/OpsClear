@@ -1,6 +1,6 @@
 # OpsClear - Roadmap & Tasks
 
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-03-02
 
 ---
 
@@ -155,8 +155,8 @@ Process:
 - [x] Create Flyway migration: `approvals` table
 - [x] Implement `ApprovalModel` + `ApprovalStatus` enum (`PENDING`, `APPROVED`, `REJECTED`)
 - [x] Regenerate jOOQ schema sources + implement `ApprovalRepository`
-- [ ] Implement `ApprovalService` (request, decide, listByJob, listPendingByProject)
-- [ ] Create `ApprovalController` + DTOs + integration tests
+- [x] Implement `ApprovalService` (request, decide, listByJob, listPendingByProject)
+- [x] Create `ApprovalController` + DTOs + integration tests
 - [ ] Squash and rename all Flyway migrations into single `V001__init_mvp.sql` (zero-padded format)
 
 ---
