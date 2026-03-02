@@ -86,7 +86,7 @@ class NoteIntegrationTest {
     @Test
     @DisplayName("Any project member should be able to create a note and receive 201")
     void createNote_shouldReturn201_forMember() throws Exception {
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/notes")
+        mockMvc.perform(post(ApiPaths.notes(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("content", "Client confirmed deadline."))))
@@ -101,7 +101,7 @@ class NoteIntegrationTest {
     @Test
     @DisplayName("create should return 400 when content is blank")
     void createNote_shouldReturn400_whenContentBlank() throws Exception {
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/notes")
+        mockMvc.perform(post(ApiPaths.notes(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("content", "   "))))
@@ -112,7 +112,7 @@ class NoteIntegrationTest {
     @DisplayName("create should return 400 when content exceeds 2000 characters")
     void createNote_shouldReturn400_whenContentTooLong() throws Exception {
         String tooLong = "x".repeat(2001);
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/notes")
+        mockMvc.perform(post(ApiPaths.notes(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("content", tooLong))))
@@ -123,7 +123,7 @@ class NoteIntegrationTest {
     @DisplayName("create should return 403 when caller is not a project member")
     void createNote_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/notes")
+        mockMvc.perform(post(ApiPaths.notes(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("content", "Some note"))))
@@ -133,7 +133,7 @@ class NoteIntegrationTest {
     @Test
     @DisplayName("create should return 404 when job does not exist")
     void createNote_shouldReturn404_whenJobNotFound() throws Exception {
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID() + "/notes")
+        mockMvc.perform(post(ApiPaths.notes(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("content", "Some note"))))
@@ -154,7 +154,7 @@ class NoteIntegrationTest {
                 .createdBy(otherOwnerId)
                 .build());
 
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId() + "/notes")
+        mockMvc.perform(post(ApiPaths.notes(projectId, jobInOtherProject.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("content", "Some note"))))
@@ -164,7 +164,7 @@ class NoteIntegrationTest {
     @Test
     @DisplayName("create should return 404 when project does not exist")
     void createNote_shouldReturn404_whenProjectNotFound() throws Exception {
-        mockMvc.perform(post("/api/projects/" + UUID.randomUUID() + "/jobs/" + jobId + "/notes")
+        mockMvc.perform(post(ApiPaths.notes(UUID.randomUUID(), jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("content", "Some note"))))
@@ -179,7 +179,7 @@ class NoteIntegrationTest {
         noteRepository.insert(jobId, ownerId, "First note");
         noteRepository.insert(jobId, memberId, "Second note");
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + jobId + "/notes")
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -190,7 +190,7 @@ class NoteIntegrationTest {
     @Test
     @DisplayName("listByJob should return empty array when job has no notes")
     void listByJob_shouldReturnEmptyArray_whenNoNotes() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + jobId + "/notes")
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -200,7 +200,7 @@ class NoteIntegrationTest {
     @DisplayName("listByJob should return 403 when caller is not a project member")
     void listByJob_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + jobId + "/notes")
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -208,7 +208,7 @@ class NoteIntegrationTest {
     @Test
     @DisplayName("listByJob should return 404 when job does not exist")
     void listByJob_shouldReturn404_whenJobNotFound() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID() + "/notes")
+        mockMvc.perform(get(ApiPaths.notes(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isNotFound());
     }
@@ -228,7 +228,7 @@ class NoteIntegrationTest {
         noteRepository.insert(job2.getId(), ownerId, "Older note on job2");
         noteRepository.insert(jobId, memberId, "Note on job1");
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/notes")
+        mockMvc.perform(get(ApiPaths.projectNotes(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -244,7 +244,7 @@ class NoteIntegrationTest {
     @Test
     @DisplayName("listByProject should return empty array when project has no notes")
     void listByProject_shouldReturnEmptyArray_whenNoNotes() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/notes")
+        mockMvc.perform(get(ApiPaths.projectNotes(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -254,7 +254,7 @@ class NoteIntegrationTest {
     @DisplayName("listByProject should return 403 when caller is not a project member")
     void listByProject_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
-        mockMvc.perform(get("/api/projects/" + projectId + "/notes")
+        mockMvc.perform(get(ApiPaths.projectNotes(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -262,7 +262,7 @@ class NoteIntegrationTest {
     @Test
     @DisplayName("listByProject should return 404 when project does not exist")
     void listByProject_shouldReturn404_whenProjectNotFound() throws Exception {
-        mockMvc.perform(get("/api/projects/" + UUID.randomUUID() + "/notes")
+        mockMvc.perform(get(ApiPaths.projectNotes(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isNotFound());
     }

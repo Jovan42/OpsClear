@@ -92,7 +92,7 @@ class ProjectMemberIntegrationTest {
                 { "userId": "%s", "role": "MEMBER" }
                 """.formatted(newUserId);
 
-        mockMvc.perform(post("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(post(ApiPaths.members(project1Id))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -120,7 +120,7 @@ class ProjectMemberIntegrationTest {
                 { "userId": "%s", "role": "MEMBER" }
                 """.formatted(newUserId);
 
-        mockMvc.perform(post("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(post(ApiPaths.members(project1Id))
                         .with(jwtFor(adminId, "admin@example.com", "Admin User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -144,7 +144,7 @@ class ProjectMemberIntegrationTest {
                 { "userId": "%s", "role": "MEMBER" }
                 """.formatted(newUserId);
 
-        mockMvc.perform(post("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(post(ApiPaths.members(project1Id))
                         .with(jwtFor(memberId, "member@example.com", "Member User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -166,7 +166,7 @@ class ProjectMemberIntegrationTest {
                 { "userId": "%s", "role": "MEMBER" }
                 """.formatted(newUserId);
 
-        mockMvc.perform(post("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(post(ApiPaths.members(project1Id))
                         .with(jwtFor(outsiderId, "outsider@example.com", "Outsider"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -184,7 +184,7 @@ class ProjectMemberIntegrationTest {
                 { "userId": "%s", "role": "OWNER" }
                 """.formatted(newUserId);
 
-        mockMvc.perform(post("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(post(ApiPaths.members(project1Id))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -199,7 +199,7 @@ class ProjectMemberIntegrationTest {
                 { "userId": "%s", "role": "MEMBER" }
                 """.formatted(ownerId);
 
-        mockMvc.perform(post("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(post(ApiPaths.members(project1Id))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -214,7 +214,7 @@ class ProjectMemberIntegrationTest {
                 { "userId": "%s", "role": "MEMBER" }
                 """.formatted(UUID.randomUUID());
 
-        mockMvc.perform(post("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(post(ApiPaths.members(project1Id))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -228,7 +228,7 @@ class ProjectMemberIntegrationTest {
                 { "userId": "%s", "role": "MEMBER" }
                 """.formatted(UUID.randomUUID());
 
-        mockMvc.perform(post("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(post(ApiPaths.members(project1Id))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isUnauthorized());
@@ -245,7 +245,7 @@ class ProjectMemberIntegrationTest {
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project1Id).userId(memberId).role(ProjectMemberRole.MEMBER).build());
 
-        mockMvc.perform(get("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(get(ApiPaths.members(project1Id))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -261,7 +261,7 @@ class ProjectMemberIntegrationTest {
         userRepository.save(UserModel.builder()
                 .id(outsiderId).email("out@example.com").name("Outsider").build());
 
-        mockMvc.perform(get("/api/projects/{id}/members", project1Id)
+        mockMvc.perform(get(ApiPaths.members(project1Id))
                         .with(jwtFor(outsiderId, "out@example.com", "Outsider")))
                 .andExpect(status().isForbidden());
     }
@@ -281,7 +281,7 @@ class ProjectMemberIntegrationTest {
                 { "role": "ADMIN" }
                 """;
 
-        mockMvc.perform(put("/api/projects/{id}/members/{mid}", project1Id, membership.getId())
+        mockMvc.perform(put(ApiPaths.member(project1Id, membership.getId()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -307,7 +307,7 @@ class ProjectMemberIntegrationTest {
                 { "role": "ADMIN" }
                 """;
 
-        mockMvc.perform(put("/api/projects/{id}/members/{mid}", project1Id, target.getId())
+        mockMvc.perform(put(ApiPaths.member(project1Id, target.getId()))
                         .with(jwtFor(memberId, "m1@example.com", "Member 1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -327,7 +327,7 @@ class ProjectMemberIntegrationTest {
                 { "role": "OWNER" }
                 """;
 
-        mockMvc.perform(put("/api/projects/{id}/members/{mid}", project1Id, membership.getId())
+        mockMvc.perform(put(ApiPaths.member(project1Id, membership.getId()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -344,7 +344,7 @@ class ProjectMemberIntegrationTest {
                 { "role": "ADMIN" }
                 """;
 
-        mockMvc.perform(put("/api/projects/{id}/members/{mid}", project1Id, ownerMembership.getId())
+        mockMvc.perform(put(ApiPaths.member(project1Id, ownerMembership.getId()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -363,7 +363,7 @@ class ProjectMemberIntegrationTest {
         ProjectMemberModel membership = projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project1Id).userId(memberId).role(ProjectMemberRole.MEMBER).build());
 
-        mockMvc.perform(delete("/api/projects/{id}/members/{mid}", project1Id, membership.getId())
+        mockMvc.perform(delete(ApiPaths.member(project1Id, membership.getId()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
                 .andExpect(status().isNoContent());
 
@@ -384,7 +384,7 @@ class ProjectMemberIntegrationTest {
         ProjectMemberModel target = projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project1Id).userId(otherMemberId).role(ProjectMemberRole.MEMBER).build());
 
-        mockMvc.perform(delete("/api/projects/{id}/members/{mid}", project1Id, target.getId())
+        mockMvc.perform(delete(ApiPaths.member(project1Id, target.getId()))
                         .with(jwtFor(memberId, "m1@example.com", "Member 1")))
                 .andExpect(status().isForbidden());
     }
@@ -395,7 +395,7 @@ class ProjectMemberIntegrationTest {
         ProjectMemberModel ownerMembership = projectMemberRepository
                 .findByProjectIdAndUserId(project1Id, ownerId).orElseThrow();
 
-        mockMvc.perform(delete("/api/projects/{id}/members/{mid}", project1Id, ownerMembership.getId())
+        mockMvc.perform(delete(ApiPaths.member(project1Id, ownerMembership.getId()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("Cannot remove the project owner"));
@@ -404,7 +404,7 @@ class ProjectMemberIntegrationTest {
     @Test
     @DisplayName("Returns 404 when removing a non-existent member")
     void removeMember_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(delete("/api/projects/{id}/members/{mid}", project1Id, UUID.randomUUID())
+        mockMvc.perform(delete(ApiPaths.member(project1Id, UUID.randomUUID()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
                 .andExpect(status().isNotFound());
     }
@@ -427,7 +427,7 @@ class ProjectMemberIntegrationTest {
                 { "role": "ADMIN" }
                 """;
 
-        mockMvc.perform(put("/api/projects/{id}/members/{mid}", project1Id, membershipInProject2.getId())
+        mockMvc.perform(put(ApiPaths.member(project1Id, membershipInProject2.getId()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -448,7 +448,7 @@ class ProjectMemberIntegrationTest {
         ProjectMemberModel membershipInProject2 = projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project2.getId()).userId(memberId).role(ProjectMemberRole.MEMBER).build());
 
-        mockMvc.perform(delete("/api/projects/{id}/members/{mid}", project1Id, membershipInProject2.getId())
+        mockMvc.perform(delete(ApiPaths.member(project1Id, membershipInProject2.getId()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
                 .andExpect(status().isNotFound());
     }

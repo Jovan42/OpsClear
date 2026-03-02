@@ -169,6 +169,7 @@ Name extraction fallback chain: `name` claim → `given_name + family_name` → 
 - `@BeforeEach` cleans state via `repository.deleteAll()`
 - MockMvc with mock JWT: `.with(jwt().jwt(jwt -> jwt.subject(userId.toString()).claim("email", "...")))`
 - Assertions on HTTP status + `jsonPath()` + database state after mutations
+- **URL strings**: always use `ApiPaths` helper methods — never raw string concatenation in `perform()` calls. `ApiPaths` lives in the same package so no import is needed. Add a new method there whenever a new endpoint is introduced.
 
 Test method naming convention: `methodName_shouldExpectedBehavior_whenCondition()`.
 
