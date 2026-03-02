@@ -56,6 +56,17 @@ services:
       postgres:
         condition: service_healthy
 
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: opsclear-portainer
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   pgadmin_data:
+  portainer_data:
