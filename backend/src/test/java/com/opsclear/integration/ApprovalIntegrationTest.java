@@ -177,6 +177,27 @@ class ApprovalIntegrationTest {
     }
 
     @Test
+    @DisplayName("request should return 404 when job belongs to a different project")
+    void request_shouldReturn404_whenJobInDifferentProject() throws Exception {
+        UUID otherOwnerId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(otherOwnerId).email("otherowner@example.com").name("Other Owner").build());
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(otherOwnerId).build());
+        JobModel jobInOtherProject = jobRepository.save(JobModel.builder()
+                .projectId(otherProject.getId())
+                .title("Other job")
+                .status(JobStatus.NEW)
+                .createdBy(otherOwnerId)
+                .build());
+
+        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId() + "/approvals")
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("description", "Need approval."))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("request should return 404 when project does not exist")
     void request_shouldReturn404_whenProjectNotFound() throws Exception {
         mockMvc.perform(post("/api/projects/" + UUID.randomUUID() + "/jobs/" + jobId + "/approvals")
