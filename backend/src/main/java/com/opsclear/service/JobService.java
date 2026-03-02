@@ -151,11 +151,11 @@ public class JobService {
 
     private void validateTransition(JobStatus from, JobStatus to,
                                     ProjectMemberModel requester, UUID assignedTo, UUID requesterId) {
-        boolean valid = (from == JobStatus.NEW         && to == JobStatus.IN_PROGRESS)
-                     || (from == JobStatus.IN_PROGRESS  && to == JobStatus.COMPLETED)
-                     || (from == JobStatus.IN_PROGRESS  && to == JobStatus.BLOCKED)
-                     || (from == JobStatus.BLOCKED       && to == JobStatus.IN_PROGRESS)
-                     || (from == JobStatus.COMPLETED     && to == JobStatus.IN_PROGRESS);
+        boolean valid = (from == JobStatus.NEW && to == JobStatus.IN_PROGRESS)
+                || (from == JobStatus.IN_PROGRESS && to == JobStatus.COMPLETED)
+                || (from == JobStatus.IN_PROGRESS && to == JobStatus.BLOCKED)
+                || (from == JobStatus.BLOCKED && to == JobStatus.IN_PROGRESS)
+                || (from == JobStatus.COMPLETED && to == JobStatus.IN_PROGRESS);
 
         if (!valid) {
             throw new BadRequestException(ErrorMessages.Job.INVALID_TRANSITION + from + " → " + to);

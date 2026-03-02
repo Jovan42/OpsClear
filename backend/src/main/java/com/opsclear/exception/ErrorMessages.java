@@ -2,23 +2,24 @@ package com.opsclear.exception;
 
 public final class ErrorMessages {
 
-    private ErrorMessages() {}
+    private ErrorMessages() {
+    }
 
     public static final class Project {
-        private Project() {}
-
         public static final String NOT_FOUND = "Project not found";
+
+        private Project() {
+        }
     }
 
     public static final class User {
-        private User() {}
-
         public static final String NOT_FOUND = "User not found";
+
+        private User() {
+        }
     }
 
     public static final class Member {
-        private Member() {}
-
         public static final String NOT_FOUND = "Member not found";
         public static final String NOT_A_MEMBER = "You are not a member of this project";
         public static final String INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN =
@@ -29,11 +30,11 @@ public final class ErrorMessages {
         public static final String ALREADY_A_MEMBER = "User is already a member of this project";
         public static final String CANNOT_CHANGE_OWNER_ROLE = "Cannot change the project owner's role";
         public static final String CANNOT_REMOVE_OWNER = "Cannot remove the project owner";
+        private Member() {
+        }
     }
 
     public static final class Job {
-        private Job() {}
-
         public static final String NOT_FOUND = "Job not found";
         public static final String ASSIGNED_USER_NOT_FOUND = "Assigned user not found";
         public static final String ACCESS_DENIED_NOT_ASSIGNED =
@@ -45,29 +46,24 @@ public final class ErrorMessages {
                 "Only OWNER, ADMIN, or the assigned member can change job status";
         public static final String BLOCK_REASON_REQUIRED =
                 "A block reason is required when blocking a job";
-        public static final String JOB_MUST_BE_IN_PROGRESS_TO_BLOCK =
-                "Only IN_PROGRESS jobs can be blocked";
+        private Job() {
+        }
     }
 
     public static final class BlockReason {
-        private BlockReason() {}
-
         public static final String NOT_FOUND = "Block reason not found";
-    }
 
-    public static final class Note {
-        private Note() {}
-
-        public static final String NOT_FOUND = "Note not found";
+        private BlockReason() {
+        }
     }
 
     public static final class Approval {
-        private Approval() {}
-
         public static final String NOT_FOUND = "Approval not found";
         public static final String ALREADY_DECIDED = "This approval has already been decided";
         public static final String CANNOT_SET_PENDING = "Cannot transition an approval back to PENDING";
         public static final String ACCESS_DENIED_NOT_ASSIGNED =
                 "Access denied: you are not assigned to this job";
+        private Approval() {
+        }
     }
 }

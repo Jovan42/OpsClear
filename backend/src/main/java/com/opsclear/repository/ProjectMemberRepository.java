@@ -29,6 +29,10 @@ public class ProjectMemberRepository {
 
     private final DSLContext dsl;
 
+    private static Instant toInstant(LocalDateTime ldt) {
+        return ldt.toInstant(ZoneOffset.UTC);
+    }
+
     public Optional<ProjectMemberModel> findByProjectIdAndUserId(UUID projectId, UUID userId) {
         return selectWithUser()
                 .where(PROJECT_MEMBERS.PROJECT_ID.eq(projectId))
@@ -111,9 +115,5 @@ public class ProjectMemberRepository {
                 .userName(r.get(MEMBER_NAME))
                 .userEmail(r.get(MEMBER_EMAIL))
                 .build();
-    }
-
-    private static Instant toInstant(LocalDateTime ldt) {
-        return ldt.toInstant(ZoneOffset.UTC);
     }
 }

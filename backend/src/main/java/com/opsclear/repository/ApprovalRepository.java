@@ -28,6 +28,14 @@ public class ApprovalRepository {
 
     private final DSLContext dsl;
 
+    private static Instant toInstant(LocalDateTime ldt) {
+        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
+    }
+
+    private static LocalDateTime toLocalDateTime(Instant instant) {
+        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+    }
+
     public ApprovalModel insert(UUID jobId, UUID requesterId, String description) {
         UUID id = dsl.insertInto(APPROVALS)
                 .set(APPROVALS.JOB_ID, jobId)
@@ -116,13 +124,5 @@ public class ApprovalRepository {
                 .requestedAt(r.get(APPROVALS.REQUESTED_AT).toInstant(ZoneOffset.UTC))
                 .decidedAt(toInstant(r.get(APPROVALS.DECIDED_AT)))
                 .build();
-    }
-
-    private static Instant toInstant(LocalDateTime ldt) {
-        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
-    }
-
-    private static LocalDateTime toLocalDateTime(Instant instant) {
-        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 }

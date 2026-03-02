@@ -31,6 +31,14 @@ public class JobRepository {
 
     private final DSLContext dsl;
 
+    private static Instant toInstant(LocalDateTime ldt) {
+        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
+    }
+
+    private static LocalDateTime toLocalDateTime(Instant instant) {
+        return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
+    }
+
     public Optional<JobModel> findByIdAndDeletedAtIsNull(UUID id) {
         return selectWithAssignee()
                 .where(JOBS.ID.eq(id))
@@ -146,13 +154,5 @@ public class JobRepository {
                 .blockedReason(r.get(BLOCKED_REASON_TEXT))
                 .blockedAt(toInstant(r.get(JOBS.BLOCKED_AT)))
                 .build();
-    }
-
-    private static Instant toInstant(LocalDateTime ldt) {
-        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
-    }
-
-    private static LocalDateTime toLocalDateTime(Instant instant) {
-        return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
     }
 }

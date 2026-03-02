@@ -1,7 +1,7 @@
 package com.opsclear.repository;
 
-import com.opsclear.model.BlockReasonModel;
 import com.opsclear.generated.jooq.tables.records.ProjectBlockReasonsRecord;
+import com.opsclear.model.BlockReasonModel;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
@@ -20,6 +20,10 @@ import static com.opsclear.generated.jooq.Tables.PROJECT_BLOCK_REASONS;
 public class BlockReasonRepository {
 
     private final DSLContext dsl;
+
+    private static Instant toInstant(LocalDateTime ldt) {
+        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
+    }
 
     public List<BlockReasonModel> findActiveByProjectId(UUID projectId) {
         return dsl.selectFrom(PROJECT_BLOCK_REASONS)
@@ -78,9 +82,5 @@ public class BlockReasonRepository {
                 .createdAt(toInstant(r.getCreatedAt()))
                 .deletedAt(toInstant(r.getDeletedAt()))
                 .build();
-    }
-
-    private static Instant toInstant(LocalDateTime ldt) {
-        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
     }
 }
