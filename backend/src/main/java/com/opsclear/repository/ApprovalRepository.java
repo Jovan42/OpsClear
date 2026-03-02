@@ -34,7 +34,7 @@ public class ApprovalRepository {
                 .set(APPROVALS.REQUESTER_ID, requesterId)
                 .set(APPROVALS.DESCRIPTION, description)
                 .returning(APPROVALS.ID)
-                .fetchOne()
+                .fetchSingle()
                 .getId();
 
         return findById(id);
@@ -84,7 +84,7 @@ public class ApprovalRepository {
     private ApprovalModel findById(UUID id) {
         return selectWithJob()
                 .where(APPROVALS.ID.eq(id))
-                .fetchOne(this::toModel);
+                .fetchSingle(this::toModel);
     }
 
     private SelectOnConditionStep<Record> selectWithJob() {

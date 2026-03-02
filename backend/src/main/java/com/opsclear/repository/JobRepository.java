@@ -70,7 +70,7 @@ public class JobRepository {
                     .set(JOBS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(JOBS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .returning(JOBS.ID)
-                    .fetchOne()
+                    .fetchSingle()
                     .getId();
             return findById(id).orElseThrow();
         }

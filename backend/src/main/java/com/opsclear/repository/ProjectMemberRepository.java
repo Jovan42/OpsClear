@@ -60,7 +60,7 @@ public class ProjectMemberRepository {
                     .set(PROJECT_MEMBERS.ROLE, member.getRole().name())
                     .set(PROJECT_MEMBERS.JOINED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .returning(PROJECT_MEMBERS.ID)
-                    .fetchOne()
+                    .fetchSingle()
                     .getId();
             return findById(id).orElseThrow();
         }
