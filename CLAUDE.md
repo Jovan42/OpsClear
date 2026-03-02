@@ -177,11 +177,13 @@ Test method naming convention: `methodName_shouldExpectedBehavior_whenCondition(
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
+| Frontend | http://localhost:5173 | — |
 | Backend API | http://localhost:8080 | — |
 | Swagger UI | http://localhost:8080/swagger-ui.html | — |
 | Keycloak Admin | http://localhost:8180/admin | admin/admin |
 | Keycloak Auth | http://localhost:8180/realms/opsclear | — |
 | pgAdmin | http://localhost:5050 | admin@admin.com/admin |
+| Portainer | http://localhost:9000 | set on first run |
 
 ## Test User
 

@@ -234,17 +234,54 @@ NOT for every change.
 
 ---
 
-## Next Steps
+## Local Development
 
-- [ ] Define MVP feature list
-- [ ] Design wireframes
-- [ ] Choose tech stack
-- [ ] Build prototype
-- [ ] Find pilot customer
+### Prerequisites
+
+- Docker + Docker Compose
+- Java 21 (for backend)
+- Node.js 22 (for frontend)
+
+### Start all services
+
+```bash
+docker-compose up
+```
+
+### Access Points
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **Frontend** | http://localhost:5173 | — (start separately with `npm run dev`) |
+| **Backend API** | http://localhost:8080 | — |
+| **Swagger UI** | http://localhost:8080/swagger-ui.html | — |
+| **Keycloak Admin** | http://localhost:8180/admin | admin / admin |
+| **Keycloak Auth** | http://localhost:8180/realms/opsclear | — |
+| **pgAdmin** | http://localhost:5050 | admin@admin.com / admin |
+| **Portainer** | http://localhost:9000 | set on first run |
+
+### Test User
+
+| Field | Value |
+|-------|-------|
+| Email | testuser@example.com |
+| Password | password123 |
+
+### Start backend (API only)
+
+```bash
+cd backend && ./gradlew bootRun
+```
+
+### Start frontend (dev server)
+
+```bash
+cd frontend && npm install && npm run dev
+```
 
 ---
 
 ## Project Status
 
-**Phase:** Planning
+**Phase:** Active development — backend complete, frontend in progress
 **Created:** 2026-02-03
