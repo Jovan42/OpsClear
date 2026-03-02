@@ -55,3 +55,4 @@ See [0000-template.md](0000-template.md) for the ADR template.
 | 0008 | [Blocking Model](0008-blocking-model.md) | Accepted | 2026-02-27 |
 | 0009 | [Notes Model](0009-notes-model.md) | Accepted | 2026-02-27 |
 | 0010 | [Approval Model](0010-approval-model.md) | Accepted | 2026-03-01 |
+| 0011 | [Frontend Architecture](0011-frontend-architecture.md) | Accepted | 2026-03-02 |
