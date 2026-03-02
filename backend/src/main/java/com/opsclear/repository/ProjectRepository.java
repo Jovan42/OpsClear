@@ -78,7 +78,7 @@ public class ProjectRepository {
                     .set(PROJECTS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(PROJECTS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .returning(PROJECTS.ID)
-                    .fetchOne()
+                    .fetchSingle()
                     .getId();
             return findById(id).orElseThrow();
         }

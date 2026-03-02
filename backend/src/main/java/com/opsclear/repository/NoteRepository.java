@@ -34,7 +34,7 @@ public class NoteRepository {
                 .set(NOTES.AUTHOR_ID, authorId)
                 .set(NOTES.CONTENT, content)
                 .returning(NOTES.ID)
-                .fetchOne()
+                .fetchSingle()
                 .getId();
 
         return findById(id);
@@ -65,7 +65,7 @@ public class NoteRepository {
     private NoteModel findById(UUID id) {
         return selectWithJob()
                 .where(NOTES.ID.eq(id))
-                .fetchOne(this::toModel);
+                .fetchSingle(this::toModel);
     }
 
     private SelectOnConditionStep<Record> selectWithJob() {
@@ -86,6 +86,6 @@ public class NoteRepository {
     }
 
     private static Instant toInstant(LocalDateTime ldt) {
-        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
+        return ldt.toInstant(ZoneOffset.UTC);
     }
 }

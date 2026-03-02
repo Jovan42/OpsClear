@@ -51,12 +51,12 @@ public class BlockReasonRepository {
                 .doUpdate()
                 .set(PROJECT_BLOCK_REASONS.DELETED_AT, (LocalDateTime) null)
                 .returning(PROJECT_BLOCK_REASONS.ID)
-                .fetchOne()
+                .fetchSingle()
                 .getId();
 
         return dsl.selectFrom(PROJECT_BLOCK_REASONS)
                 .where(PROJECT_BLOCK_REASONS.ID.eq(id))
-                .fetchOne(this::toModel);
+                .fetchSingle(this::toModel);
     }
 
     public void softDelete(UUID id) {

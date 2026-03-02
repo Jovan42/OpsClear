@@ -122,7 +122,8 @@ class JobServiceTest {
     void create_shouldThrow_whenProjectNotFound() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> jobService.create(projectId, CreateJobRequest.builder().title("x").build(), ownerId))
+        CreateJobRequest request = CreateJobRequest.builder().title("x").build();
+        assertThatThrownBy(() -> jobService.create(projectId, request, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found");
     }
@@ -133,7 +134,8 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> jobService.create(projectId, CreateJobRequest.builder().title("x").build(), ownerId))
+        CreateJobRequest request = CreateJobRequest.builder().title("x").build();
+        assertThatThrownBy(() -> jobService.create(projectId, request, ownerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("You are not a member of this project");
     }
@@ -233,7 +235,7 @@ class JobServiceTest {
         List<JobModel> result = jobService.list(projectId, memberId);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getAssignedTo()).isEqualTo(memberId);
+        assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
     }
 
     // --- getById ---

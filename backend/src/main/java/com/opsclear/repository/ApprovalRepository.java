@@ -34,7 +34,7 @@ public class ApprovalRepository {
                 .set(APPROVALS.REQUESTER_ID, requesterId)
                 .set(APPROVALS.DESCRIPTION, description)
                 .returning(APPROVALS.ID)
-                .fetchOne()
+                .fetchSingle()
                 .getId();
 
         return findById(id);
@@ -84,7 +84,7 @@ public class ApprovalRepository {
     private ApprovalModel findById(UUID id) {
         return selectWithJob()
                 .where(APPROVALS.ID.eq(id))
-                .fetchOne(this::toModel);
+                .fetchSingle(this::toModel);
     }
 
     private SelectOnConditionStep<Record> selectWithJob() {
@@ -113,7 +113,7 @@ public class ApprovalRepository {
                 .description(r.get(APPROVALS.DESCRIPTION))
                 .status(ApprovalStatus.valueOf(r.get(APPROVALS.STATUS)))
                 .comment(r.get(APPROVALS.COMMENT))
-                .requestedAt(toInstant(r.get(APPROVALS.REQUESTED_AT)))
+                .requestedAt(r.get(APPROVALS.REQUESTED_AT).toInstant(ZoneOffset.UTC))
                 .decidedAt(toInstant(r.get(APPROVALS.DECIDED_AT)))
                 .build();
     }
@@ -123,6 +123,6 @@ public class ApprovalRepository {
     }
 
     private static LocalDateTime toLocalDateTime(Instant instant) {
-        return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
+        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 }

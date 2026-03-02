@@ -189,7 +189,7 @@ class NoteServiceTest {
         List<NoteModel> result = noteService.listByJob(projectId, jobId, callerId);
 
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getContent()).isEqualTo("First note");
+        assertThat(result.getFirst().getContent()).isEqualTo("First note");
         assertThat(result.get(1).getContent()).isEqualTo("Second note");
     }
 
@@ -244,7 +244,7 @@ class NoteServiceTest {
         List<NoteModel> result = noteService.listByProject(projectId, callerId);
 
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getJobName()).isEqualTo("Install panel");
+        assertThat(result.getFirst().getJobName()).isEqualTo("Install panel");
         assertThat(result.get(1).getJobName()).isEqualTo("Roof inspection");
     }
 

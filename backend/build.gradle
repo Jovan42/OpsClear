@@ -10,6 +10,10 @@ plugins {
 group = 'com.opsclear'
 version = '0.0.1-SNAPSHOT'
 
+ext {
+    set('postgresql.version', '42.7.7')
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)

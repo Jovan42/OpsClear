@@ -393,7 +393,7 @@ class ApprovalServiceTest {
         List<ApprovalModel> result = approvalService.listPendingByProject(projectId, callerId);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getStatus()).isEqualTo(ApprovalStatus.PENDING);
+        assertThat(result.getFirst().getStatus()).isEqualTo(ApprovalStatus.PENDING);
     }
 
     @Test
