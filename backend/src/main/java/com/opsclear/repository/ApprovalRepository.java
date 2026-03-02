@@ -113,7 +113,7 @@ public class ApprovalRepository {
                 .description(r.get(APPROVALS.DESCRIPTION))
                 .status(ApprovalStatus.valueOf(r.get(APPROVALS.STATUS)))
                 .comment(r.get(APPROVALS.COMMENT))
-                .requestedAt(toInstant(r.get(APPROVALS.REQUESTED_AT)))
+                .requestedAt(r.get(APPROVALS.REQUESTED_AT).toInstant(ZoneOffset.UTC))
                 .decidedAt(toInstant(r.get(APPROVALS.DECIDED_AT)))
                 .build();
     }

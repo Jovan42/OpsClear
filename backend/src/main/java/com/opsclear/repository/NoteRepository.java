@@ -86,6 +86,6 @@ public class NoteRepository {
     }
 
     private static Instant toInstant(LocalDateTime ldt) {
-        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
+        return ldt.toInstant(ZoneOffset.UTC);
     }
 }
