@@ -162,7 +162,7 @@ class BlockReasonIntegrationTest {
 
     @Test
     @DisplayName("Soft-deleted reason can be restored via find-or-create (blocking a job with same text)")
-    void deleteBlockReason_canBeRestoredOnNextBlock() throws Exception {
+    void deleteBlockReason_canBeRestoredOnNextBlock() {
         BlockReasonModel reason = blockReasonRepository.findOrCreate(projectId, "Same text");
         blockReasonRepository.softDelete(reason.getId());
 

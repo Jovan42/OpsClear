@@ -119,7 +119,7 @@ class ProjectServiceTest {
         List<ProjectModel> result = projectService.getProjectsForMember(ownerId);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo("Acme Corp");
+        assertThat(result.getFirst().getName()).isEqualTo("Acme Corp");
     }
 
     @Test
@@ -222,8 +222,8 @@ class ProjectServiceTest {
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(membership));
 
-        assertThatThrownBy(() -> projectService.update(projectId, UpdateProjectRequest.builder()
-                .name("x").build(), memberId))
+        UpdateProjectRequest request = UpdateProjectRequest.builder().name("x").build();
+        assertThatThrownBy(() -> projectService.update(projectId, request, memberId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
     }
@@ -234,8 +234,8 @@ class ProjectServiceTest {
         UUID projectId = UUID.randomUUID();
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.update(projectId, UpdateProjectRequest.builder()
-                .name("x").build(), ownerId))
+        UpdateProjectRequest request = UpdateProjectRequest.builder().name("x").build();
+        assertThatThrownBy(() -> projectService.update(projectId, request, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found");
     }
@@ -251,8 +251,8 @@ class ProjectServiceTest {
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, outsiderId))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.update(projectId, UpdateProjectRequest.builder()
-                .name("x").build(), outsiderId))
+        UpdateProjectRequest request = UpdateProjectRequest.builder().name("x").build();
+        assertThatThrownBy(() -> projectService.update(projectId, request, outsiderId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("You are not a member of this project");
     }

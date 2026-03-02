@@ -85,7 +85,7 @@ class BlockReasonServiceTest {
         List<BlockReasonModel> result = blockReasonService.listActive(projectId, memberId);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getReason()).isEqualTo("Waiting for approval");
+        assertThat(result.getFirst().getReason()).isEqualTo("Waiting for approval");
     }
 
     @Test
