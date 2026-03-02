@@ -14,6 +14,9 @@ import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -429,34 +433,26 @@ class JobIntegrationTest {
                 .andExpect(jsonPath("$.blockedAt").exists());
     }
 
-    @Test
-    @DisplayName("Should return 400 when blocking without a reason")
-    void updateStatus_shouldReturn400_whenBlockingWithoutReason() throws Exception {
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("invalidStatusBodiesFromInProgress")
+    @DisplayName("Should return 400 for invalid status update from IN_PROGRESS")
+    void updateStatus_shouldReturn400_fromInProgress(String body, String displayName) throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
 
         mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "status": "BLOCKED" }
-                                """))
+                        .content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Bad Request"));
     }
 
-    @Test
-    @DisplayName("Should return 400 when blocking with a blank reason")
-    void updateStatus_shouldReturn400_whenBlockingWithBlankReason() throws Exception {
-        JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
-
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
-                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "status": "BLOCKED", "reason": "   " }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"));
+    static Stream<Arguments> invalidStatusBodiesFromInProgress() {
+        return Stream.of(
+                Arguments.of("{ \"status\": \"BLOCKED\" }", "blocking without a reason"),
+                Arguments.of("{ \"status\": \"BLOCKED\", \"reason\": \"   \" }", "blocking with a blank reason"),
+                Arguments.of("{ \"status\": \"NEW\" }", "invalid transition IN_PROGRESS → NEW")
+        );
     }
 
     @Test
@@ -531,21 +527,6 @@ class JobIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
-    }
-
-    @Test
-    @DisplayName("Should return 400 for invalid status transition IN_PROGRESS → NEW")
-    void updateStatus_shouldReturn400_invalidTransition_fromInProgress() throws Exception {
-        JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
-
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
-                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "status": "NEW" }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Bad Request"));
     }
 
     @Test
