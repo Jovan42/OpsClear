@@ -157,7 +157,7 @@ Process:
 - [x] Regenerate jOOQ schema sources + implement `ApprovalRepository`
 - [x] Implement `ApprovalService` (request, decide, listByJob, listPendingByProject)
 - [x] Create `ApprovalController` + DTOs + integration tests
-- [ ] Squash and rename all Flyway migrations into single `V001__init_mvp.sql` (zero-padded format)
+- [x] Squash and rename all Flyway migrations into single `V001__init_mvp.sql` (zero-padded format)
 
 ---
 
