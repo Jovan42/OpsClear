@@ -28,6 +28,10 @@ public class NoteRepository {
 
     private final DSLContext dsl;
 
+    private static Instant toInstant(LocalDateTime ldt) {
+        return ldt.toInstant(ZoneOffset.UTC);
+    }
+
     public NoteModel insert(UUID jobId, UUID authorId, String content) {
         UUID id = dsl.insertInto(NOTES)
                 .set(NOTES.JOB_ID, jobId)
@@ -83,9 +87,5 @@ public class NoteRepository {
                 .content(r.get(NOTES.CONTENT))
                 .createdAt(toInstant(r.get(NOTES.CREATED_AT)))
                 .build();
-    }
-
-    private static Instant toInstant(LocalDateTime ldt) {
-        return ldt.toInstant(ZoneOffset.UTC);
     }
 }

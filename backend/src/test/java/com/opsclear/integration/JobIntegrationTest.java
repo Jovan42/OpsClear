@@ -90,7 +90,7 @@ class JobIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs")
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -111,7 +111,7 @@ class JobIntegrationTest {
                 { "description": "No title" }
                 """;
 
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs")
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -127,7 +127,7 @@ class JobIntegrationTest {
                 { "title": "Job" }
                 """;
 
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs")
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -141,7 +141,7 @@ class JobIntegrationTest {
                 { "title": "Job" }
                 """;
 
-        mockMvc.perform(post("/api/projects/" + UUID.randomUUID() + "/jobs")
+        mockMvc.perform(post(ApiPaths.jobs(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -158,7 +158,7 @@ class JobIntegrationTest {
                 }
                 """, UUID.randomUUID());
 
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs")
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -173,7 +173,7 @@ class JobIntegrationTest {
         createTestJob("Job 1", null, JobStatus.NEW);
         createTestJob("Job 2", memberId, JobStatus.IN_PROGRESS);
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs")
+        mockMvc.perform(get(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
@@ -185,7 +185,7 @@ class JobIntegrationTest {
         createTestJob("My Job", memberId, JobStatus.NEW);
         createTestJob("Others Job", null, JobStatus.NEW);
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs")
+        mockMvc.perform(get(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -197,7 +197,7 @@ class JobIntegrationTest {
     void listJobs_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs")
+        mockMvc.perform(get(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -205,7 +205,7 @@ class JobIntegrationTest {
     @Test
     @DisplayName("Should return 404 when project does not exist")
     void listJobs_shouldReturn404_whenProjectNotFound() throws Exception {
-        mockMvc.perform(get("/api/projects/" + UUID.randomUUID() + "/jobs")
+        mockMvc.perform(get(ApiPaths.jobs(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }
@@ -217,7 +217,7 @@ class JobIntegrationTest {
     void getJob_shouldReturn200_forOwner() throws Exception {
         JobModel job = createTestJob("Fix bug", null, JobStatus.NEW);
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(get(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Fix bug"))
@@ -229,7 +229,7 @@ class JobIntegrationTest {
     void getJob_shouldReturn200_forAssignedMember() throws Exception {
         JobModel job = createTestJob("My Job", memberId, JobStatus.NEW);
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(get(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("My Job"));
@@ -240,7 +240,7 @@ class JobIntegrationTest {
     void getJob_shouldReturn403_whenMemberNotAssigned() throws Exception {
         JobModel job = createTestJob("Others Job", null, JobStatus.NEW);
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(get(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -248,7 +248,7 @@ class JobIntegrationTest {
     @Test
     @DisplayName("Should return 404 when job does not exist")
     void getJob_shouldReturn404_whenJobNotFound() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID())
+        mockMvc.perform(get(ApiPaths.job(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }
@@ -264,7 +264,7 @@ class JobIntegrationTest {
                 .projectId(otherProject.getId()).title("Other Job")
                 .status(JobStatus.NEW).createdBy(ownerId).build());
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId())
+        mockMvc.perform(get(ApiPaths.job(projectId, jobInOtherProject.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }
@@ -283,7 +283,7 @@ class JobIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -304,7 +304,7 @@ class JobIntegrationTest {
                 }
                 """, memberId);
 
-        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -321,7 +321,7 @@ class JobIntegrationTest {
                 { "title": "Hacked" }
                 """;
 
-        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -335,7 +335,7 @@ class JobIntegrationTest {
                 { "title": "New title" }
                 """;
 
-        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID())
+        mockMvc.perform(put(ApiPaths.job(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -357,7 +357,7 @@ class JobIntegrationTest {
                 { "title": "Hijack" }
                 """;
 
-        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId())
+        mockMvc.perform(put(ApiPaths.job(projectId, jobInOtherProject.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -376,7 +376,7 @@ class JobIntegrationTest {
                 }
                 """, UUID.randomUUID());
 
-        mockMvc.perform(put("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -390,7 +390,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn200_forAssignedMember() throws Exception {
         JobModel job = createTestJob("My Job", memberId, JobStatus.NEW);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -405,7 +405,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn400_forInvalidTransition() throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.NEW);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -420,7 +420,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn200_withBlockedStatus_forOwner() throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -439,7 +439,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn400_fromInProgress(String body, String displayName) throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
@@ -460,7 +460,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn400_invalidTransition_blockedToCompleted() throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.BLOCKED);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -475,7 +475,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn200_blockedByAssignedMember() throws Exception {
         JobModel job = createTestJob("Job", memberId, JobStatus.IN_PROGRESS);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -492,7 +492,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn200_unblockJob_forOwner() throws Exception {
         // First block it
         JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -501,7 +501,7 @@ class JobIntegrationTest {
                 .andExpect(status().isOk());
 
         // Then unblock it
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -519,7 +519,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn200_inProgressToCompleted_forOwner() throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.IN_PROGRESS);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -534,7 +534,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn200_completedToInProgress_forOwner() throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.COMPLETED);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -549,7 +549,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn400_invalidTransition_fromCompleted() throws Exception {
         JobModel job = createTestJob("Job", null, JobStatus.COMPLETED);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -569,7 +569,7 @@ class JobIntegrationTest {
 
         JobModel job = createTestJob("Job", null, JobStatus.NEW);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(adminId.toString()).claim("email", "admin@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -584,7 +584,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn403_whenMemberReopensCompletedJob() throws Exception {
         JobModel job = createTestJob("Job", memberId, JobStatus.COMPLETED);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -598,7 +598,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn403_whenMemberNotAssigned() throws Exception {
         JobModel job = createTestJob("Job", ownerId, JobStatus.NEW);
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + job.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -610,7 +610,7 @@ class JobIntegrationTest {
     @Test
     @DisplayName("Should return 404 when job does not exist on status update")
     void updateStatus_shouldReturn404_whenJobNotFound() throws Exception {
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -630,7 +630,7 @@ class JobIntegrationTest {
                 .projectId(otherProject.getId()).title("Other Job")
                 .status(JobStatus.NEW).createdBy(ownerId).build());
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId() + "/status")
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, jobInOtherProject.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -647,7 +647,7 @@ class JobIntegrationTest {
         JobModel job = createTestJob("To Delete", null, JobStatus.NEW);
         assertThat(jobRepository.findById(job.getId()).orElseThrow().isDeleted()).isFalse();
 
-        mockMvc.perform(delete("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(delete(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNoContent());
 
@@ -660,7 +660,7 @@ class JobIntegrationTest {
     void deleteJob_shouldReturn403_forMember() throws Exception {
         JobModel job = createTestJob("Job", memberId, JobStatus.NEW);
 
-        mockMvc.perform(delete("/api/projects/" + projectId + "/jobs/" + job.getId())
+        mockMvc.perform(delete(ApiPaths.job(projectId, job.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -668,7 +668,7 @@ class JobIntegrationTest {
     @Test
     @DisplayName("Should return 404 when deleting a non-existent job")
     void deleteJob_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(delete("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID())
+        mockMvc.perform(delete(ApiPaths.job(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }
@@ -684,7 +684,7 @@ class JobIntegrationTest {
                 .projectId(otherProject.getId()).title("Other Job")
                 .status(JobStatus.NEW).createdBy(ownerId).build());
 
-        mockMvc.perform(delete("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId())
+        mockMvc.perform(delete(ApiPaths.job(projectId, jobInOtherProject.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }

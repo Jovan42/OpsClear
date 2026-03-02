@@ -77,7 +77,7 @@ class ProjectIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/projects")
+        mockMvc.perform(post(ApiPaths.PROJECTS)
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -102,7 +102,7 @@ class ProjectIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/projects")
+        mockMvc.perform(post(ApiPaths.PROJECTS)
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -122,7 +122,7 @@ class ProjectIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/projects")
+        mockMvc.perform(post(ApiPaths.PROJECTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isUnauthorized());
@@ -134,7 +134,7 @@ class ProjectIntegrationTest {
         createTestProject("Project A", null);
         createTestProject("Project B", null);
 
-        mockMvc.perform(get("/api/projects")
+        mockMvc.perform(get(ApiPaths.PROJECTS)
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -153,7 +153,7 @@ class ProjectIntegrationTest {
         deleted.softDelete();
         projectRepository.save(deleted);
 
-        mockMvc.perform(get("/api/projects")
+        mockMvc.perform(get(ApiPaths.PROJECTS)
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -168,7 +168,7 @@ class ProjectIntegrationTest {
     void getProject_shouldReturnProject() throws Exception {
         ProjectModel project = createTestProject("Acme Corp", "Description");
 
-        mockMvc.perform(get("/api/projects/" + project.getId())
+        mockMvc.perform(get(ApiPaths.project(project.getId()))
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -182,7 +182,7 @@ class ProjectIntegrationTest {
     @Test
     @DisplayName("Should return 404 for non-existent project")
     void getProject_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(get("/api/projects/" + UUID.randomUUID())
+        mockMvc.perform(get(ApiPaths.project(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -203,7 +203,7 @@ class ProjectIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/projects/" + project.getId())
+        mockMvc.perform(put(ApiPaths.project(project.getId()))
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -220,7 +220,7 @@ class ProjectIntegrationTest {
     void deleteProject_shouldReturn204() throws Exception {
         ProjectModel project = createTestProject("To Delete", null);
 
-        mockMvc.perform(delete("/api/projects/" + project.getId())
+        mockMvc.perform(delete(ApiPaths.project(project.getId()))
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -234,7 +234,7 @@ class ProjectIntegrationTest {
     @Test
     @DisplayName("Should return 404 when deleting non-existent project")
     void deleteProject_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(delete("/api/projects/" + UUID.randomUUID())
+        mockMvc.perform(delete(ApiPaths.project(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
                                 .claim("email", "testuser@example.com")
@@ -257,7 +257,7 @@ class ProjectIntegrationTest {
                 { "name": "New Name" }
                 """;
 
-        mockMvc.perform(put("/api/projects/" + project.getId())
+        mockMvc.perform(put(ApiPaths.project(project.getId()))
                         .with(jwt().jwt(j -> j
                                 .subject(memberId.toString())
                                 .claim("email", "member@example.com")
@@ -278,7 +278,7 @@ class ProjectIntegrationTest {
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project.getId()).userId(adminId).role(ProjectMemberRole.ADMIN).build());
 
-        mockMvc.perform(delete("/api/projects/" + project.getId())
+        mockMvc.perform(delete(ApiPaths.project(project.getId()))
                         .with(jwt().jwt(j -> j
                                 .subject(adminId.toString())
                                 .claim("email", "admin@example.com")

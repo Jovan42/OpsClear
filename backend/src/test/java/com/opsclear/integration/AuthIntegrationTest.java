@@ -56,7 +56,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("Health endpoint should be accessible without authentication")
     void healthEndpoint_isAccessibleWithoutAuth() throws Exception {
-        mockMvc.perform(get("/api/health"))
+        mockMvc.perform(get(ApiPaths.HEALTH))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));
     }
@@ -64,7 +64,7 @@ class AuthIntegrationTest {
     @Test
     @DisplayName("Protected endpoint should return 401 without authentication")
     void protectedEndpoint_returns401_withoutAuth() throws Exception {
-        mockMvc.perform(get("/api/protected"))
+        mockMvc.perform(get(ApiPaths.PROTECTED))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -75,7 +75,7 @@ class AuthIntegrationTest {
         String email = "test@example.com";
         String name = "Test User";
 
-        mockMvc.perform(get("/api/health")
+        mockMvc.perform(get(ApiPaths.HEALTH)
                         .with(jwt()
                                 .jwt(jwt -> jwt
                                         .subject(userId.toString())
@@ -93,7 +93,7 @@ class AuthIntegrationTest {
 
         assertThat(userRepository.findById(userId)).isEmpty();
 
-        mockMvc.perform(get("/api/health")
+        mockMvc.perform(get(ApiPaths.HEALTH)
                         .with(jwt()
                                 .jwt(jwt -> jwt
                                         .subject(userId.toString())
@@ -115,7 +115,7 @@ class AuthIntegrationTest {
         String originalName = "Original Name";
         String updatedName = "Updated Name";
 
-        mockMvc.perform(get("/api/health")
+        mockMvc.perform(get(ApiPaths.HEALTH)
                         .with(jwt()
                                 .jwt(jwt -> jwt
                                         .subject(userId.toString())
@@ -126,7 +126,7 @@ class AuthIntegrationTest {
         UserModel originalUser = userRepository.findById(userId).orElseThrow();
         assertThat(originalUser.getName()).isEqualTo(originalName);
 
-        mockMvc.perform(get("/api/health")
+        mockMvc.perform(get(ApiPaths.HEALTH)
                         .with(jwt()
                                 .jwt(jwt -> jwt
                                         .subject(userId.toString())
@@ -145,7 +145,7 @@ class AuthIntegrationTest {
         UUID userId = UUID.randomUUID();
         String email = "user@example.com";
 
-        mockMvc.perform(get("/api/health")
+        mockMvc.perform(get(ApiPaths.HEALTH)
                         .with(jwt()
                                 .jwt(jwt -> jwt
                                         .subject(userId.toString())
@@ -164,7 +164,7 @@ class AuthIntegrationTest {
         UUID userId = UUID.randomUUID();
         String email = "user@example.com";
 
-        mockMvc.perform(get("/api/health")
+        mockMvc.perform(get(ApiPaths.HEALTH)
                         .with(jwt()
                                 .jwt(jwt -> jwt
                                         .subject(userId.toString())
@@ -184,7 +184,7 @@ class AuthIntegrationTest {
         UUID userId = UUID.randomUUID();
         String email = "user@example.com";
 
-        mockMvc.perform(get("/api/health")
+        mockMvc.perform(get(ApiPaths.HEALTH)
                         .with(jwt()
                                 .jwt(jwt -> jwt
                                         .subject(userId.toString())
@@ -202,7 +202,7 @@ class AuthIntegrationTest {
         UUID userId = UUID.randomUUID();
         String email = "user@example.com";
 
-        mockMvc.perform(get("/api/health")
+        mockMvc.perform(get(ApiPaths.HEALTH)
                         .with(jwt()
                                 .jwt(jwt -> jwt
                                         .subject(userId.toString())

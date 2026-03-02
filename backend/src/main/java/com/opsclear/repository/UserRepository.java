@@ -19,6 +19,14 @@ public class UserRepository {
 
     private final DSLContext dsl;
 
+    private static Instant toInstant(LocalDateTime ldt) {
+        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
+    }
+
+    private static LocalDateTime toLocalDateTime(Instant instant) {
+        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+    }
+
     public Optional<UserModel> findById(UUID id) {
         return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
                 .from(USERS)
@@ -52,13 +60,5 @@ public class UserRepository {
 
     public void deleteAll() {
         dsl.deleteFrom(USERS).execute();
-    }
-
-    private static Instant toInstant(LocalDateTime ldt) {
-        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
-    }
-
-    private static LocalDateTime toLocalDateTime(Instant instant) {
-        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 }

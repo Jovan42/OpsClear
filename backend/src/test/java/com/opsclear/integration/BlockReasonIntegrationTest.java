@@ -82,7 +82,7 @@ class BlockReasonIntegrationTest {
         blockReasonRepository.findOrCreate(projectId, "Waiting for approval");
         blockReasonRepository.findOrCreate(projectId, "Missing access credentials");
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/block-reasons")
+        mockMvc.perform(get(ApiPaths.project(projectId) + "/block-reasons")
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -93,7 +93,7 @@ class BlockReasonIntegrationTest {
     @Test
     @DisplayName("Should return empty list when no block reasons exist")
     void listBlockReasons_shouldReturnEmptyList_whenNoneExist() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/block-reasons")
+        mockMvc.perform(get(ApiPaths.project(projectId) + "/block-reasons")
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -106,7 +106,7 @@ class BlockReasonIntegrationTest {
         BlockReasonModel toDelete = blockReasonRepository.findOrCreate(projectId, "Deleted reason");
         blockReasonRepository.softDelete(toDelete.getId());
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/block-reasons")
+        mockMvc.perform(get(ApiPaths.project(projectId) + "/block-reasons")
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -118,7 +118,7 @@ class BlockReasonIntegrationTest {
     void listBlockReasons_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/block-reasons")
+        mockMvc.perform(get(ApiPaths.project(projectId) + "/block-reasons")
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -126,7 +126,7 @@ class BlockReasonIntegrationTest {
     @Test
     @DisplayName("Should return 404 when project does not exist")
     void listBlockReasons_shouldReturn404_whenProjectNotFound() throws Exception {
-        mockMvc.perform(get("/api/projects/" + UUID.randomUUID() + "/block-reasons")
+        mockMvc.perform(get(ApiPaths.blockReasons(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }
@@ -138,7 +138,7 @@ class BlockReasonIntegrationTest {
     void deleteBlockReason_shouldReturn204_forOwner() throws Exception {
         BlockReasonModel reason = blockReasonRepository.findOrCreate(projectId, "Waiting for approval");
 
-        mockMvc.perform(delete("/api/projects/" + projectId + "/block-reasons/" + reason.getId())
+        mockMvc.perform(delete(ApiPaths.blockReason(projectId, reason.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNoContent());
 
@@ -150,11 +150,11 @@ class BlockReasonIntegrationTest {
     void deleteBlockReason_shouldHideFromList_afterDeletion() throws Exception {
         BlockReasonModel reason = blockReasonRepository.findOrCreate(projectId, "To be removed");
 
-        mockMvc.perform(delete("/api/projects/" + projectId + "/block-reasons/" + reason.getId())
+        mockMvc.perform(delete(ApiPaths.blockReason(projectId, reason.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/block-reasons")
+        mockMvc.perform(get(ApiPaths.project(projectId) + "/block-reasons")
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -179,7 +179,7 @@ class BlockReasonIntegrationTest {
         UUID outsider = UUID.randomUUID();
         BlockReasonModel reason = blockReasonRepository.findOrCreate(projectId, "Waiting for approval");
 
-        mockMvc.perform(delete("/api/projects/" + projectId + "/block-reasons/" + reason.getId())
+        mockMvc.perform(delete(ApiPaths.blockReason(projectId, reason.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -189,7 +189,7 @@ class BlockReasonIntegrationTest {
     void deleteBlockReason_shouldReturn403_forMember() throws Exception {
         BlockReasonModel reason = blockReasonRepository.findOrCreate(projectId, "Waiting for approval");
 
-        mockMvc.perform(delete("/api/projects/" + projectId + "/block-reasons/" + reason.getId())
+        mockMvc.perform(delete(ApiPaths.blockReason(projectId, reason.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -197,7 +197,7 @@ class BlockReasonIntegrationTest {
     @Test
     @DisplayName("Should return 404 when block reason does not exist")
     void deleteBlockReason_shouldReturn404_whenNotFound() throws Exception {
-        mockMvc.perform(delete("/api/projects/" + projectId + "/block-reasons/" + UUID.randomUUID())
+        mockMvc.perform(delete(ApiPaths.blockReason(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }
@@ -205,7 +205,7 @@ class BlockReasonIntegrationTest {
     @Test
     @DisplayName("Should return 404 when project does not exist on delete")
     void deleteBlockReason_shouldReturn404_whenProjectNotFound() throws Exception {
-        mockMvc.perform(delete("/api/projects/" + UUID.randomUUID() + "/block-reasons/" + UUID.randomUUID())
+        mockMvc.perform(delete(ApiPaths.blockReason(UUID.randomUUID(), UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }

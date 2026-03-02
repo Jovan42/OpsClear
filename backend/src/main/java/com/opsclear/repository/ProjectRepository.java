@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.opsclear.generated.jooq.Tables.PROJECT_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.PROJECTS;
+import static com.opsclear.generated.jooq.Tables.PROJECT_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static java.util.List.of;
 
@@ -26,6 +26,14 @@ public class ProjectRepository {
     private static final Field<String> OWNER_NAME = USERS.NAME.as("owner_name");
 
     private final DSLContext dsl;
+
+    private static Instant toInstant(LocalDateTime ldt) {
+        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
+    }
+
+    private static LocalDateTime toLocalDateTime(Instant instant) {
+        return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
+    }
 
     public Optional<ProjectModel> findByIdAndDeletedAtIsNull(UUID id) {
         return selectWithOwner()
@@ -121,13 +129,5 @@ public class ProjectRepository {
                 .updatedAt(toInstant(r.get(PROJECTS.UPDATED_AT)))
                 .deletedAt(toInstant(r.get(PROJECTS.DELETED_AT)))
                 .build();
-    }
-
-    private static Instant toInstant(LocalDateTime ldt) {
-        return ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null;
-    }
-
-    private static LocalDateTime toLocalDateTime(Instant instant) {
-        return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
     }
 }

@@ -95,7 +95,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("request should return 201 when owner requests approval on any job")
     void request_shouldReturn201_whenOwnerRequests() throws Exception {
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("description", "Need a decision on this."))))
@@ -114,7 +114,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("request should return 201 when assigned member requests approval on their job")
     void request_shouldReturn201_whenAssignedMemberRequests() throws Exception {
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("description", "Client is pushing for delivery."))))
@@ -126,7 +126,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("request should return 403 when unassigned member requests approval on a job they don't own")
     void request_shouldReturn403_whenUnassignedMemberRequests() throws Exception {
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(unassignedMemberId.toString())
                                 .claim("email", "other@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -137,7 +137,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("request should return 400 when description is blank")
     void request_shouldReturn400_whenDescriptionIsBlank() throws Exception {
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("description", "   "))))
@@ -148,7 +148,7 @@ class ApprovalIntegrationTest {
     @DisplayName("request should return 400 when description exceeds 500 characters")
     void request_shouldReturn400_whenDescriptionTooLong() throws Exception {
         String tooLong = "x".repeat(501);
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("description", tooLong))))
@@ -159,7 +159,7 @@ class ApprovalIntegrationTest {
     @DisplayName("request should return 403 when caller is not a project member")
     void request_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("description", "Need approval."))))
@@ -169,7 +169,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("request should return 404 when job does not exist")
     void request_shouldReturn404_whenJobNotFound() throws Exception {
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID() + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("description", "Need approval."))))
@@ -190,7 +190,7 @@ class ApprovalIntegrationTest {
                 .createdBy(otherOwnerId)
                 .build());
 
-        mockMvc.perform(post("/api/projects/" + projectId + "/jobs/" + jobInOtherProject.getId() + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobInOtherProject.getId()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("description", "Need approval."))))
@@ -200,7 +200,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("request should return 404 when project does not exist")
     void request_shouldReturn404_whenProjectNotFound() throws Exception {
-        mockMvc.perform(post("/api/projects/" + UUID.randomUUID() + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(post(ApiPaths.approvals(UUID.randomUUID(), jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("description", "Need approval."))))
@@ -214,7 +214,7 @@ class ApprovalIntegrationTest {
     void decide_shouldReturn200_whenOwnerApproves() throws Exception {
         UUID approvalId = approvalRepository.insert(jobId, memberId, "Need a go-ahead.").getId();
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals/" + approvalId + "/status")
+        mockMvc.perform(patch(ApiPaths.approvalStatus(projectId, jobId, approvalId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("status", "APPROVED", "comment", "Looks good."))))
@@ -231,7 +231,7 @@ class ApprovalIntegrationTest {
     void decide_shouldReturn200_whenOwnerRejects() throws Exception {
         UUID approvalId = approvalRepository.insert(jobId, memberId, "Need a go-ahead.").getId();
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals/" + approvalId + "/status")
+        mockMvc.perform(patch(ApiPaths.approvalStatus(projectId, jobId, approvalId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("status", "REJECTED", "comment", "Not ready."))))
@@ -246,7 +246,7 @@ class ApprovalIntegrationTest {
         UUID approvalId = approvalRepository.insert(jobId, memberId, "Need a decision.").getId();
         approvalRepository.updateDecision(approvalId, ownerId, com.opsclear.model.ApprovalStatus.APPROVED, "OK", Instant.now());
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals/" + approvalId + "/status")
+        mockMvc.perform(patch(ApiPaths.approvalStatus(projectId, jobId, approvalId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("status", "REJECTED"))))
@@ -258,7 +258,7 @@ class ApprovalIntegrationTest {
     void decide_shouldReturn400_whenStatusIsPending() throws Exception {
         UUID approvalId = approvalRepository.insert(jobId, memberId, "Need a decision.").getId();
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals/" + approvalId + "/status")
+        mockMvc.perform(patch(ApiPaths.approvalStatus(projectId, jobId, approvalId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("status", "PENDING"))))
@@ -270,7 +270,7 @@ class ApprovalIntegrationTest {
     void decide_shouldReturn403_whenMemberDecides() throws Exception {
         UUID approvalId = approvalRepository.insert(jobId, memberId, "Need a go-ahead.").getId();
 
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals/" + approvalId + "/status")
+        mockMvc.perform(patch(ApiPaths.approvalStatus(projectId, jobId, approvalId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("status", "APPROVED"))))
@@ -280,7 +280,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("decide should return 404 when approval does not exist")
     void decide_shouldReturn404_whenApprovalNotFound() throws Exception {
-        mockMvc.perform(patch("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals/" + UUID.randomUUID())
+        mockMvc.perform(patch(ApiPaths.approvalStatus(projectId, jobId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("status", "APPROVED"))))
@@ -295,7 +295,7 @@ class ApprovalIntegrationTest {
         approvalRepository.insert(jobId, memberId, "First request");
         approvalRepository.insert(jobId, ownerId, "Second request");
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(get(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -306,7 +306,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("listByJob should return empty array when job has no approvals")
     void listByJob_shouldReturnEmptyArray_whenNone() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(get(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -316,7 +316,7 @@ class ApprovalIntegrationTest {
     @DisplayName("listByJob should return 403 when caller is not a project member")
     void listByJob_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + jobId + "/approvals")
+        mockMvc.perform(get(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -324,7 +324,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("listByJob should return 404 when job does not exist")
     void listByJob_shouldReturn404_whenJobNotFound() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/jobs/" + UUID.randomUUID() + "/approvals")
+        mockMvc.perform(get(ApiPaths.approvals(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isNotFound());
     }
@@ -339,7 +339,7 @@ class ApprovalIntegrationTest {
         approvalRepository.updateDecision(
                 decidedId, ownerId, com.opsclear.model.ApprovalStatus.APPROVED, null, Instant.now());
 
-        mockMvc.perform(get("/api/projects/" + projectId + "/approvals/pending")
+        mockMvc.perform(get(ApiPaths.pendingApprovals(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -351,7 +351,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("listPendingByProject should return empty array when no pending approvals exist")
     void listPending_shouldReturnEmptyArray_whenNone() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/approvals/pending")
+        mockMvc.perform(get(ApiPaths.pendingApprovals(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -360,7 +360,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("listPendingByProject should return 403 when a member requests the pending queue")
     void listPending_shouldReturn403_whenMemberRequests() throws Exception {
-        mockMvc.perform(get("/api/projects/" + projectId + "/approvals/pending")
+        mockMvc.perform(get(ApiPaths.pendingApprovals(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isForbidden());
     }
@@ -368,7 +368,7 @@ class ApprovalIntegrationTest {
     @Test
     @DisplayName("listPendingByProject should return 404 when project does not exist")
     void listPending_shouldReturn404_whenProjectNotFound() throws Exception {
-        mockMvc.perform(get("/api/projects/" + UUID.randomUUID() + "/approvals/pending")
+        mockMvc.perform(get(ApiPaths.pendingApprovals(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }

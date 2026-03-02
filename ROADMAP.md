@@ -236,6 +236,12 @@ Process:
 - [x] Rewrite repositories using `DSLContext` (upsert, explicit JOINs, soft-delete queries)
 - [x] Re-enable Flyway in test profile; remove Hibernate `create-drop`
 - [x] Update all unit and integration tests
+- [x] Replace `fetchOne()` with `fetchSingle()` across all jOOQ repositories (#130)
+
+### Code Quality
+
+- [x] Bump `postgresql` driver to 42.7.7 — CVE-2025-49146 (#130)
+- [x] Extract `ApiPaths` test helper — centralise all integration test URL strings (#133)
 
 ---
 
