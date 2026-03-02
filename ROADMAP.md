@@ -169,8 +169,8 @@ Process:
 
 - [x] **DOC:** Write ADR for frontend architecture (state management, routing, styling)
 - [x] Scaffold React + Vite + TypeScript
-- [ ] Set up routing (React Router)
-- [ ] Set up API client (axios/fetch + JWT handling)
+- [x] Set up routing (React Router)
+- [x] Set up API client (axios/fetch + JWT handling)
 - [x] Set up styling approach (Tailwind / CSS modules / etc)
 
 ### Module 7.2: Auth Screens
