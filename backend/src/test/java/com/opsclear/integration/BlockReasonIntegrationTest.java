@@ -5,7 +5,10 @@ import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.BlockReasonRepository;
+import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -33,6 +36,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BlockReasonIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
+    @Autowired private ApprovalRepository approvalRepository;
+    @Autowired private NoteRepository noteRepository;
+    @Autowired private JobRepository jobRepository;
     @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
@@ -44,6 +50,9 @@ class BlockReasonIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        approvalRepository.deleteAll();
+        noteRepository.deleteAll();
+        jobRepository.deleteAll();
         blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
