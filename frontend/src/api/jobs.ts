@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { JobResponse, BlockReasonResponse, JobStatus } from '../types';
+import type { JobResponse, JobStatus } from '../types';
 
 export const jobsApi = {
   list: (projectId: string) =>
@@ -14,7 +14,7 @@ export const jobsApi = {
 
   create: (
     projectId: string,
-    body: { title: string; client?: string; responsibleUserId?: string; deadline?: string },
+    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string },
   ) =>
     apiClient
       .post<JobResponse>(`/api/projects/${projectId}/jobs`, body)
@@ -23,7 +23,7 @@ export const jobsApi = {
   update: (
     projectId: string,
     jobId: string,
-    body: { title: string; client?: string; responsibleUserId?: string; deadline?: string },
+    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string },
   ) =>
     apiClient
       .put<JobResponse>(`/api/projects/${projectId}/jobs/${jobId}`, body)
@@ -41,11 +41,4 @@ export const jobsApi = {
   delete: (projectId: string, jobId: string) =>
     apiClient.delete(`/api/projects/${projectId}/jobs/${jobId}`),
 
-  listBlockReasons: (projectId: string) =>
-    apiClient
-      .get<BlockReasonResponse[]>(`/api/projects/${projectId}/block-reasons`)
-      .then((r) => r.data),
-
-  deleteBlockReason: (projectId: string, reasonId: string) =>
-    apiClient.delete(`/api/projects/${projectId}/block-reasons/${reasonId}`),
 };

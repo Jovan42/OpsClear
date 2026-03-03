@@ -3,7 +3,7 @@ import type { JobStatus } from '../types';
 const config: Record<JobStatus, { label: string; className: string }> = {
   NEW: {
     label: 'New',
-    className: 'bg-gray-100 text-gray-600',
+    className: 'bg-amber-100 text-amber-700',
   },
   IN_PROGRESS: {
     label: 'In Progress',
