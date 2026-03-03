@@ -44,27 +44,41 @@ export default function ProjectListPage() {
           {projects?.map((project) => {
             const isOwner = project.ownerId === userId;
             return (
-              <button
+              <div
                 key={project.id}
-                onClick={() => navigate(`/projects/${project.id}/jobs`)}
-                className="text-left bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
+                className="relative text-left bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-sm transition-all"
               >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h2 className="font-semibold text-gray-900 text-sm leading-snug">
-                    {project.name}
-                  </h2>
-                  {isOwner && (
-                    <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-light text-brand">
-                      Owner
-                    </span>
+                <button
+                  onClick={() => navigate(`/projects/${project.id}/jobs`)}
+                  className="w-full text-left cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h2 className="font-semibold text-gray-900 text-sm leading-snug">
+                      {project.name}
+                    </h2>
+                    {isOwner && (
+                      <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-light text-brand">
+                        Owner
+                      </span>
+                    )}
+                  </div>
+                  {project.description && (
+                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                      {project.description}
+                    </p>
                   )}
-                </div>
-                {project.description && (
-                  <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-                    {project.description}
-                  </p>
-                )}
-              </button>
+                </button>
+                <button
+                  onClick={() => navigate(`/projects/${project.id}/settings`)}
+                  className="absolute bottom-3 right-3 p-1 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
+                  title="Project settings"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                </button>
+              </div>
             );
           })}
         </div>

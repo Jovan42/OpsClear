@@ -1,11 +1,3 @@
-// ---- Users ----
-
-export interface UserModel {
-  id: string;
-  email: string;
-  name: string;
-}
-
 // ---- Projects ----
 
 export interface ProjectResponse {
@@ -17,10 +9,19 @@ export interface ProjectResponse {
 }
 
 export interface ProjectMemberResponse {
+  id: string;
   userId: string;
   projectId: string;
+  userName: string;
+  userEmail: string;
   role: 'OWNER' | 'ADMIN' | 'MEMBER';
   joinedAt: string;
+}
+
+export interface UserSearchResponse {
+  id: string;
+  name: string;
+  email: string;
 }
 
 // ---- Jobs ----
