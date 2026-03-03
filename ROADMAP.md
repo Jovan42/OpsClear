@@ -175,12 +175,13 @@ Process:
 
 ### Module 7.2: Auth Screens
 
-- [ ] **DOC:** Write ADR for auth UI approach (Keycloak redirect vs custom UI)
-- [ ] Login page (custom UI proxying to Keycloak, no redirect)
-- [ ] Register page (custom UI via Keycloak Admin API)
-- [ ] Password reset flow
-- [ ] Auth state management
-- [ ] Protected route wrapper
+- [x] **DOC:** Write ADR for auth UI approach — decided: Keycloak redirect (Auth Code + PKCE)
+- [x] Login page — handled natively by Keycloak (no custom page needed for MVP)
+- [x] Register page — handled natively by Keycloak (no custom page needed for MVP)
+- [x] Password reset flow — handled natively by Keycloak (no custom page needed for MVP)
+- [x] Auth state management — `AuthProvider` + `useAuth` hook (keycloak-js)
+- [x] Protected route wrapper — entire app gated via `onLoad: 'login-required'`
+- [ ] **Future (#146):** Fully custom login/register/reset pages via FTL template overrides
 
 ### Module 7.3: Projects Screens
 
