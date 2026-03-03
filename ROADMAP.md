@@ -186,9 +186,9 @@ Process:
 ### Module 7.3: Projects Screens
 
 - [x] **DOC:** Write ADR for projects screens (app shell, card list, modal create, settings, role guards, query key conventions)
-- [ ] Project list + create project modal
-- [ ] Project settings (edit details, members, delete)
-- [ ] Member management (invite by UUID, role change, remove)
+- [x] Project list + create project modal
+- [x] Project settings (edit details, members, delete)
+- [x] Member management (invite by email typeahead, role change, remove)
 
 ### Module 7.4: Jobs Screens
 
