@@ -56,3 +56,4 @@ See [0000-template.md](0000-template.md) for the ADR template.
 | 0009 | [Notes Model](0009-notes-model.md) | Accepted | 2026-02-27 |
 | 0010 | [Approval Model](0010-approval-model.md) | Accepted | 2026-03-01 |
 | 0011 | [Frontend Architecture](0011-frontend-architecture.md) | Accepted | 2026-03-02 |
+| 0012 | [Auth UI Approach](0012-auth-ui-approach.md) | Accepted | 2026-03-03 |
