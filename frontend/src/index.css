@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+/*
+ * Brand color (emerald). Alternatives:
+ *   indigo : #4f46e5  dark: #4338ca  light: #e0e7ff
+ *   blue   : #2563eb  dark: #1d4ed8  light: #dbeafe
+ *   emerald: #059669  dark: #047857  light: #d1fae5  ← active
+ */
+:root {
+  --brand: #059669;
+  --brand-dark: #047857;
+  --brand-light: #d1fae5;
+}
+
+@theme inline {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-light: var(--brand-light);
+
+  /* Job status badge colors */
+  --color-status-new-bg: var(--color-gray-100);
+  --color-status-new-text: var(--color-gray-600);
+
+  --color-status-in-progress-bg: var(--color-blue-100);
+  --color-status-in-progress-text: var(--color-blue-700);
+
+  --color-status-blocked-bg: var(--color-red-100);
+  --color-status-blocked-text: var(--color-red-700);
+
+  --color-status-completed-bg: var(--color-green-100);
+  --color-status-completed-text: var(--color-green-700);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans), sans-serif;
+    background-color: var(--color-gray-50);
+    color: var(--color-gray-900);
+    -webkit-font-smoothing: antialiased;
+  }
+}
