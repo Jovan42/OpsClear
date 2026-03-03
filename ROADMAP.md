@@ -1,6 +1,6 @@
 # OpsClear - Roadmap & Tasks
 
-**Last Updated:** 2026-03-02
+**Last Updated:** 2026-03-03
 
 ---
 
@@ -185,10 +185,10 @@ Process:
 
 ### Module 7.3: Projects Screens
 
-- [ ] Project list
-- [ ] Create project
-- [ ] Project settings
-- [ ] Member management (invite, remove, change role)
+- [x] **DOC:** Write ADR for projects screens (app shell, card list, modal create, settings, role guards, query key conventions)
+- [ ] Project list + create project modal
+- [ ] Project settings (edit details, members, delete)
+- [ ] Member management (invite by UUID, role change, remove)
 
 ### Module 7.4: Jobs Screens
 
