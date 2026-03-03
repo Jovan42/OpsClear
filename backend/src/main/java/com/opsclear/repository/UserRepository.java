@@ -3,11 +3,13 @@ package com.opsclear.repository;
 import com.opsclear.model.UserModel;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,18 +29,32 @@ public class UserRepository {
         return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 
+    private UserModel toModel(Record r) {
+        return UserModel.builder()
+                .id(r.get(USERS.ID))
+                .email(r.get(USERS.EMAIL))
+                .name(r.get(USERS.NAME))
+                .createdAt(toInstant(r.get(USERS.CREATED_AT)))
+                .lastLoginAt(toInstant(r.get(USERS.LAST_LOGIN_AT)))
+                .build();
+    }
+
     public Optional<UserModel> findById(UUID id) {
         return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
                 .from(USERS)
                 .where(USERS.ID.eq(id))
                 .fetchOptional()
-                .map(r -> UserModel.builder()
-                        .id(r.get(USERS.ID))
-                        .email(r.get(USERS.EMAIL))
-                        .name(r.get(USERS.NAME))
-                        .createdAt(toInstant(r.get(USERS.CREATED_AT)))
-                        .lastLoginAt(toInstant(r.get(USERS.LAST_LOGIN_AT)))
-                        .build());
+                .map(this::toModel);
+    }
+
+    public List<UserModel> searchByEmail(String emailPrefix, int limit) {
+        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
+                .from(USERS)
+                .where(USERS.EMAIL.likeIgnoreCase(emailPrefix + "%"))
+                .orderBy(USERS.EMAIL.asc())
+                .limit(limit)
+                .fetch()
+                .map(this::toModel);
     }
 
     public UserModel save(UserModel user) {

@@ -452,4 +452,20 @@ class ProjectMemberIntegrationTest {
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
                 .andExpect(status().isNotFound());
     }
+
+    // ─── Validation ───────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("addMember_shouldReturn400WithMultipleMessages_whenBothFieldsMissing")
+    void addMember_shouldReturn400WithMultipleMessages_whenBothFieldsMissing() throws Exception {
+        // Empty body: both userId and role are @NotNull, producing two field errors
+        // simultaneously and exercising the reduce((a, b) -> a + "; " + b) branch
+        // in handleValidation.
+        mockMvc.perform(post(ApiPaths.members(project1Id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}")
+                        .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString(";")));
+    }
 }

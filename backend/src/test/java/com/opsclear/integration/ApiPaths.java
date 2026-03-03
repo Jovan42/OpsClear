@@ -11,6 +11,13 @@ final class ApiPaths {
     static final String HEALTH    = "/api/health";
     static final String PROTECTED = "/api/protected";
     static final String PROJECTS  = "/api/projects";
+    static final String USERS     = "/api/users";
+
+    // --- Users ---
+
+    static String usersSearch(String emailPrefix) {
+        return "/api/users?email=" + emailPrefix;
+    }
 
     // --- Projects ---
 
