@@ -192,9 +192,9 @@ Process:
 
 ### Module 7.4: Jobs Screens
 
-- [ ] Job list (with filters)
+- [x] Job list (with filters)
 - [ ] Job detail view
-- [ ] Create/edit job form
+- [x] Create/edit job form
 - [ ] Status change controls
 - [ ] Block/unblock modal
 - [ ] Notes section

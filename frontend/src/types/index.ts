@@ -32,24 +32,18 @@ export interface JobResponse {
   id: string;
   projectId: string;
   title: string;
+  description: string | null;
   client: string | null;
-  responsibleUserId: string | null;
+  assignedTo: string | null;
+  assignedToName: string | null;
   deadline: string | null;
   status: JobStatus;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
   blockedBy: string | null;
-  blockedReasonId: string | null;
   blockedReason: string | null;
   blockedAt: string | null;
-  createdAt: string;
-}
-
-// ---- Block Reasons ----
-
-export interface BlockReasonResponse {
-  id: string;
-  projectId: string;
-  reason: string;
-  createdAt: string;
 }
 
 // ---- Notes ----
