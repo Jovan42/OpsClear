@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
@@ -44,6 +45,7 @@ export default function JobDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const [approvalOpen, setApprovalOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(true);
   const [approvalsExpanded, setApprovalsExpanded] = useState(false);
   const [kebabOpen, setKebabOpen] = useState(false);
@@ -67,7 +69,6 @@ export default function JobDetailPage() {
 
   function handleDelete() {
     if (!job) return;
-    if (!window.confirm(`Delete "${job.title}"? This cannot be undone.`)) return;
     deleteJob(job.id, {
       onSuccess: () => navigate(`/projects/${projectId}/jobs`),
     });
@@ -128,8 +129,7 @@ export default function JobDetailPage() {
                     />
                     <div className="absolute right-0 z-20 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
                       <button
-                        onClick={() => { setKebabOpen(false); handleDelete(); }}
-                        disabled={isDeleting}
+                        onClick={() => { setKebabOpen(false); setDeleteOpen(true); }}
                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
                       >
                         Delete Job
@@ -204,7 +204,7 @@ export default function JobDetailPage() {
           <span className="text-gray-400">{notesExpanded ? '▲' : '▼'}</span>
         </button>
         {notesExpanded && (
-          <div className="px-6 pb-4 border-t border-gray-100">
+          <div className="px-6 pt-4 pb-4 border-t border-gray-100">
             <NoteThread projectId={projectId} jobId={jobId} members={members} />
           </div>
         )}
@@ -227,7 +227,7 @@ export default function JobDetailPage() {
           <span className="text-gray-400">{approvalsExpanded ? '▲' : '▼'}</span>
         </button>
         {approvalsExpanded && (
-          <div className="px-6 pb-4 border-t border-gray-100">
+          <div className="px-6 pt-4 pb-4 border-t border-gray-100">
             <ApprovalList projectId={projectId} jobId={jobId} role={role} members={members} />
           </div>
         )}
@@ -254,6 +254,17 @@ export default function JobDetailPage() {
         onClose={() => setApprovalOpen(false)}
         projectId={projectId}
         jobId={jobId}
+      />
+
+      <ConfirmModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Job"
+        message={`Delete "${job.title}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        isPending={isDeleting}
       />
     </div>
   );

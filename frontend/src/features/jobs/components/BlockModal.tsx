@@ -19,12 +19,8 @@ export default function BlockModal({ open, onClose, projectId, onConfirm, isPend
   const { data: reasons = [] } = useBlockReasons(projectId, open);
 
   const filtered = inputValue.length > 0
-    ? reasons.filter((r) => r.toLowerCase().includes(inputValue.toLowerCase()))
+    ? reasons.filter((r) => r.reason.toLowerCase().includes(inputValue.toLowerCase()))
     : reasons;
-
-  useEffect(() => {
-    if (!open) setInputValue('');
-  }, [open]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -64,17 +60,17 @@ export default function BlockModal({ open, onClose, projectId, onConfirm, isPend
             />
             {dropdownOpen && filtered.length > 0 && (
               <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-                {filtered.map((reason) => (
-                  <li key={reason}>
+                {filtered.map((r) => (
+                  <li key={r.id}>
                     <button
                       type="button"
                       onClick={() => {
-                        setInputValue(reason);
+                        setInputValue(r.reason);
                         setDropdownOpen(false);
                       }}
                       className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                     >
-                      {reason}
+                      {r.reason}
                     </button>
                   </li>
                 ))}

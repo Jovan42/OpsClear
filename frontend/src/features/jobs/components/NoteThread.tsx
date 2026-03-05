@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Button from '../../../components/Button';
+import ConfirmModal from '../../../components/ConfirmModal';
 import { useNotes, useAddNote } from '../useNotes';
 import type { ProjectMemberResponse } from '../../../types';
 
@@ -30,6 +31,7 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
   const { data: notes = [] } = useNotes(projectId, jobId);
   const { mutate: addNote, isPending } = useAddNote(projectId, jobId);
   const [content, setContent] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const isOverLimit = content.length > NOTE_MAX;
   const isEmpty = content.trim().length === 0;
@@ -39,16 +41,17 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
 
     const confirmed = sessionStorage.getItem(SESSION_KEY) === 'true';
     if (!confirmed) {
-      const ok = window.confirm(
-        'Notes cannot be edited or deleted. Add anyway?',
-      );
-      if (!ok) return;
-      sessionStorage.setItem(SESSION_KEY, 'true');
+      setConfirmOpen(true);
+      return;
     }
 
-    addNote(content.trim(), {
-      onSuccess: () => setContent(''),
-    });
+    addNote(content.trim(), { onSuccess: () => setContent('') });
+  }
+
+  function handleConfirmNote() {
+    sessionStorage.setItem(SESSION_KEY, 'true');
+    setConfirmOpen(false);
+    addNote(content.trim(), { onSuccess: () => setContent('') });
   }
 
   return (
@@ -91,6 +94,16 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
           </Button>
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmNote}
+        title="Add Note"
+        message="Notes cannot be edited or deleted. Add anyway?"
+        confirmLabel="Add Note"
+        isPending={isPending}
+      />
     </div>
   );
 }

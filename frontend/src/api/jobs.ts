@@ -43,6 +43,6 @@ export const jobsApi = {
 
   blockReasons: (projectId: string) =>
     apiClient
-      .get<string[]>(`/api/projects/${projectId}/block-reasons`)
+      .get<{ id: string; reason: string }[]>(`/api/projects/${projectId}/block-reasons`)
       .then((r) => r.data),
 };

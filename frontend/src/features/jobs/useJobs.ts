@@ -65,9 +65,12 @@ export function useUpdateJobStatus(projectId: string) {
       status: JobStatus;
       reason?: string;
     }) => jobsApi.updateStatus(projectId, jobId, { status, reason }),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, data.id] });
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
+      if (variables.status === 'BLOCKED') {
+        void queryClient.invalidateQueries({ queryKey: ['block-reasons', projectId] });
+      }
     },
   });
 }
