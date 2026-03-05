@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
-import { useCreateJob } from './useJobs';
+import { useCreateJob, useUpdateJob } from './useJobs';
 import { useProjectMembers } from '../projects/useProjects';
-import type { ProjectMemberResponse } from '../../types';
+import type { JobResponse, ProjectMemberResponse } from '../../types';
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Max 255 characters'),
@@ -20,10 +20,15 @@ interface Props {
   open: boolean;
   onClose: () => void;
   projectId: string;
+  job?: JobResponse; // if provided, modal is in edit mode
 }
 
-export default function NewJobModal({ open, onClose, projectId }: Props) {
-  const { mutate: createJob, isPending } = useCreateJob(projectId);
+export default function NewJobModal({ open, onClose, projectId, job }: Props) {
+  const isEdit = Boolean(job);
+  const { mutate: createJob, isPending: isCreating } = useCreateJob(projectId);
+  const { mutate: updateJob, isPending: isUpdating } = useUpdateJob(projectId);
+  const isPending = isCreating || isUpdating;
+
   const { data: members = [] } = useProjectMembers(projectId);
 
   const [assignedTo, setAssignedTo] = useState<ProjectMemberResponse | null>(null);
@@ -56,6 +61,27 @@ export default function NewJobModal({ open, onClose, projectId }: Props) {
     reset,
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
+  // Pre-fill form when opening in edit mode
+  useEffect(() => {
+    if (open && job) {
+      reset({
+        title: job.title,
+        description: job.description ?? '',
+        client: job.client ?? '',
+        deadline: job.deadline
+          ? new Date(job.deadline).toISOString().split('T')[0]
+          : '',
+      });
+      const assignedMember = members.find((m) => m.userId === job.assignedTo) ?? null;
+      setAssignedTo(assignedMember);
+      setMemberSearch('');
+    } else if (open && !job) {
+      reset({ title: '', description: '', client: '', deadline: '' });
+      setAssignedTo(null);
+      setMemberSearch('');
+    }
+  }, [open, job, members, reset]);
+
   function handleClose() {
     reset();
     setAssignedTo(null);
@@ -64,20 +90,23 @@ export default function NewJobModal({ open, onClose, projectId }: Props) {
   }
 
   function onSubmit(values: FormValues) {
-    createJob(
-      {
-        title: values.title,
-        description: values.description || undefined,
-        client: values.client || undefined,
-        assignedTo: assignedTo?.userId || undefined,
-        deadline: values.deadline ? new Date(values.deadline).toISOString() : undefined,
-      },
-      { onSuccess: handleClose },
-    );
+    const body = {
+      title: values.title,
+      description: values.description || undefined,
+      client: values.client || undefined,
+      assignedTo: assignedTo?.userId || undefined,
+      deadline: values.deadline ? new Date(values.deadline).toISOString() : undefined,
+    };
+
+    if (isEdit && job) {
+      updateJob({ jobId: job.id, body }, { onSuccess: handleClose });
+    } else {
+      createJob(body, { onSuccess: handleClose });
+    }
   }
 
   return (
-    <Modal open={open} onClose={handleClose} title="New Job">
+    <Modal open={open} onClose={handleClose} title={isEdit ? 'Edit Job' : 'New Job'}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -180,7 +209,7 @@ export default function NewJobModal({ open, onClose, projectId }: Props) {
             Cancel
           </Button>
           <Button type="submit" loading={isPending}>
-            Create job
+            {isEdit ? 'Save changes' : 'Create job'}
           </Button>
         </div>
       </form>

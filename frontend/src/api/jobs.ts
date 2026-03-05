@@ -41,4 +41,8 @@ export const jobsApi = {
   delete: (projectId: string, jobId: string) =>
     apiClient.delete(`/api/projects/${projectId}/jobs/${jobId}`),
 
+  blockReasons: (projectId: string) =>
+    apiClient
+      .get<string[]>(`/api/projects/${projectId}/block-reasons`)
+      .then((r) => r.data),
 };
