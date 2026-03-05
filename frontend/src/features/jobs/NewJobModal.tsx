@@ -36,6 +36,18 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Sync assignedTo/memberSearch when the modal opens or switches job — React
+  // render-time state update (recommended pattern for "adjusting state on prop change")
+  const [prevKey, setPrevKey] = useState('');
+  const currentKey = open ? (job?.id ?? 'new') : '';
+  if (currentKey !== prevKey) {
+    setPrevKey(currentKey);
+    if (open) {
+      setAssignedTo(job ? (members.find((m) => m.userId === job.assignedTo) ?? null) : null);
+      setMemberSearch('');
+    }
+  }
+
   const filteredMembers = memberSearch.length >= 1
     ? members.filter(
         (m) =>
@@ -61,26 +73,20 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
     reset,
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
-  // Pre-fill form when opening in edit mode
+  // Reset react-hook-form fields when the modal opens (form reset is an external API, not setState)
   useEffect(() => {
-    if (open && job) {
+    if (!open) return;
+    if (job) {
       reset({
         title: job.title,
         description: job.description ?? '',
         client: job.client ?? '',
-        deadline: job.deadline
-          ? new Date(job.deadline).toISOString().split('T')[0]
-          : '',
+        deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
       });
-      const assignedMember = members.find((m) => m.userId === job.assignedTo) ?? null;
-      setAssignedTo(assignedMember);
-      setMemberSearch('');
-    } else if (open && !job) {
+    } else {
       reset({ title: '', description: '', client: '', deadline: '' });
-      setAssignedTo(null);
-      setMemberSearch('');
     }
-  }, [open, job, members, reset]);
+  }, [open, job, reset]);
 
   function handleClose() {
     reset();
