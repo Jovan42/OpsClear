@@ -192,6 +192,8 @@ Process:
 
 ### Module 7.4: Jobs Screens
 
+- [x] **DOC:** Write ADR for jobs screens (list, create/edit modal, navigation, query keys)
+- [x] **DOC:** Write ADR for job detail and inline actions (layout, status bar, block modal, notes, approvals, permission guards)
 - [x] Job list (with filters)
 - [ ] Job detail view
 - [x] Create/edit job form
