@@ -18,6 +18,9 @@ function ProjectNav({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex items-center gap-5">
+      <NavLink to={`/projects/${projectId}/dashboard`} className={linkClass}>
+        Dashboard
+      </NavLink>
       <NavLink to={`/projects/${projectId}/jobs`} className={linkClass}>
         Jobs
       </NavLink>
