@@ -15,8 +15,11 @@ The approve/reject modal (`ApprovalDecisionModal`) was already implemented as pa
 access guard, nav badge, and conflict handling.
 
 The backend provides `GET /api/projects/:projectId/approvals/pending` which returns a flat list
-of `PendingApprovalResponse` items. Each item includes `jobId`, `jobTitle`, `requesterId`,
-`description`, and `requestedAt` — enough to render a grouped view without additional requests.
+of `ApprovalResponse` items (the same DTO used for per-job approval endpoints). Each item
+includes `jobId`, `jobTitle`, `requesterId`, `description`, and `requestedAt` — enough to render
+a grouped view without additional requests. The frontend narrows this to a `PendingApprovalResponse`
+type that omits decision-related fields (`approverId`, `comment`, `decidedAt`) since the queue
+only shows pending items.
 
 ---
 
