@@ -2,29 +2,45 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import Button from '../../components/Button';
+import PageError from '../../components/PageError';
+import Skeleton from '../../components/Skeleton';
 import NewProjectModal from './NewProjectModal';
 import { useProjectList } from './useProjects';
+
+function ProjectListSkeleton() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 space-y-2">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function ProjectListPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const { userId } = useAuth();
   const navigate = useNavigate();
-  const { data: projects, isLoading, isError } = useProjectList();
+  const { data: projects, isLoading, isError, refetch } = useProjectList();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-        Loading projects…
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Skeleton className="h-7 w-24" />
+          <Skeleton className="h-9 w-32 rounded-lg" />
+        </div>
+        <ProjectListSkeleton />
       </div>
     );
   }
 
   if (isError) {
-    return (
-      <div className="flex items-center justify-center h-64 text-red-500 text-sm">
-        Failed to load projects. Please refresh.
-      </div>
-    );
+    return <PageError message="Failed to load projects." onRetry={() => void refetch()} />;
   }
 
   return (

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useAuth } from '../../auth/AuthContext';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
+import Skeleton from '../../components/Skeleton';
 import RoleBadge from '../../components/RoleBadge';
 import AddMemberForm from './AddMemberForm';
 import {
@@ -72,8 +73,27 @@ export default function ProjectSettingsPage() {
 
   if (projectLoading || membersLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-        Loading…
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+        <Skeleton className="h-7 w-40" />
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-10 rounded-lg" />
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-9 w-24 rounded-lg" />
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-20" />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between py-2">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

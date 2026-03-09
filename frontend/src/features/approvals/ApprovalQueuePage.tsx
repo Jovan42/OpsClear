@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/Button';
+import PageError from '../../components/PageError';
+import Skeleton from '../../components/Skeleton';
 import ApprovalDecisionModal from '../jobs/components/ApprovalDecisionModal';
 import { useApprovalQueue } from './useApprovalQueue';
 import { useProjectMembers, useProjectRole } from '../projects/useProjects';
@@ -66,7 +68,7 @@ export default function ApprovalQueuePage() {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
   const role = useProjectRole(projectId);
-  const { data: approvals = [], isLoading, isError } = useApprovalQueue(projectId);
+  const { data: approvals = [], isLoading, isError, refetch } = useApprovalQueue(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
   const [decision, setDecision] = useState<DecisionState>(null);
 
@@ -78,18 +80,26 @@ export default function ApprovalQueuePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-        Loading…
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <Skeleton className="h-7 w-32 mb-6" />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="border border-gray-200 rounded-lg px-4 py-3 bg-white space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+              <div className="flex gap-2 pt-1">
+                <Skeleton className="h-7 w-16 rounded-lg" />
+                <Skeleton className="h-7 w-16 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (isError) {
-    return (
-      <div className="flex items-center justify-center h-64 text-red-500 text-sm">
-        Failed to load approvals. Please refresh.
-      </div>
-    );
+    return <PageError message="Failed to load approvals." onRetry={() => void refetch()} />;
   }
 
   // Group by jobId, sort jobs by oldest request

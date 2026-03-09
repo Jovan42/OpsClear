@@ -1,6 +1,8 @@
 import { type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import PageError from '../../components/PageError';
+import Skeleton from '../../components/Skeleton';
 import { useDashboard } from './useDashboard';
 import { useProjectRole } from '../projects/useProjects';
 import type { DashboardSummary, JobSummary, PendingApprovalResponse } from '../../types';
@@ -271,24 +273,34 @@ export default function DashboardPage() {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
   const role = useProjectRole(projectId);
-  const { data, isLoading, isError } = useDashboard(projectId);
+  const { data, isLoading, isError, refetch } = useDashboard(projectId);
 
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-        Loading…
+      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton className="h-56 rounded-xl" />
+          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+            <Skeleton className="h-4 w-20" />
+            <div className="grid grid-cols-2 gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-lg" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-24" />
+          {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+        </div>
       </div>
     );
   }
 
   if (isError || !data) {
-    return (
-      <div className="flex items-center justify-center h-64 text-red-500 text-sm">
-        Failed to load dashboard. Please refresh.
-      </div>
-    );
+    return <PageError message="Failed to load dashboard." onRetry={() => void refetch()} />;
   }
 
   const { summary, blockedJobs, overdueJobs, pendingApprovals } = data;

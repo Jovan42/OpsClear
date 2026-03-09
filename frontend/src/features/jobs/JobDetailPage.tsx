@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
+import PageError from '../../components/PageError';
+import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
 import BlockedBanner from './components/BlockedBanner';
@@ -35,7 +37,7 @@ export default function JobDetailPage() {
   const navigate = useNavigate();
   const { userId } = useAuth();
 
-  const { data: job, isLoading, isError } = useJob(projectId, jobId);
+  const { data: job, isLoading, isError, refetch } = useJob(projectId, jobId);
   const { data: members = [] } = useProjectMembers(projectId);
   const { data: approvals = [] } = useApprovals(projectId, jobId);
   const role = useProjectRole(projectId);
@@ -76,18 +78,27 @@ export default function JobDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-        Loading…
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="space-y-1">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-24 rounded-xl" />
+        <Skeleton className="h-24 rounded-xl" />
       </div>
     );
   }
 
   if (isError || !job) {
-    return (
-      <div className="flex items-center justify-center h-64 text-red-500 text-sm">
-        Failed to load job. Please refresh.
-      </div>
-    );
+    return <PageError message="Failed to load job." onRetry={() => void refetch()} />;
   }
 
   return (
