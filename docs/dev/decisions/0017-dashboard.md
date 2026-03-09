@@ -15,8 +15,9 @@ Module 8.1 adds a dedicated dashboard per project that answers this question imm
 on entry, without requiring the user to filter or scroll.
 
 The key decisions are: scope (per-project vs cross-project), data aggregation strategy
-(dedicated endpoint vs frontend assembly from existing endpoints), what to show, MEMBER
-vs OWNER/ADMIN visibility, and the frontend layout.
+(dedicated endpoint vs frontend assembly from existing endpoints), `DashboardService`
+implementation pattern (service-to-service vs repositories directly), what to show,
+whether to include a chart, MEMBER vs OWNER/ADMIN visibility, and the frontend layout.
 
 ---
 
@@ -38,18 +39,14 @@ future feature.
 ### 2. Data aggregation — single dedicated endpoint
 
 A dedicated `GET /api/projects/:projectId/dashboard` endpoint returns everything the
-dashboard needs in one request. A `DashboardService` queries the database using jOOQ
-and returns a single `DashboardResponse`.
+dashboard needs in one request. A `DashboardService` queries the database and returns
+a single `DashboardResponse`.
 
 **Why not assemble from existing endpoints on the frontend:**
 
 - The job list endpoint (`GET /jobs`) returns full job records for all jobs in the
   project — the dashboard only needs a subset of fields for a subset of jobs. Fetching
   the full list and filtering client-side wastes bandwidth on larger projects.
-- The pending approvals endpoint (`GET /approvals/pending`) is already scoped to the
-  project — it can be reused directly inside `DashboardService` or called separately.
-  For simplicity, `DashboardService` calls existing service methods internally rather
-  than duplicating queries.
 - A single round-trip gives the dashboard a fast, reliable load with no waterfall.
 
 ### 3. Dashboard response shape
@@ -66,9 +63,9 @@ GET /api/projects/:projectId/dashboard
       overdueCount: int,
       pendingApprovalsCount: int
     },
-    blockedJobs:  JobSummary[],   // status = BLOCKED, oldest blocked_at first
-    overdueJobs:  JobSummary[],   // deadline < now, status != COMPLETED, deadline asc
-    pendingApprovals: ApprovalResponse[]  // reuses existing ApprovalResponse DTO
+    blockedJobs:       JobSummary[],      // status = BLOCKED, oldest blocked_at first
+    overdueJobs:       JobSummary[],      // deadline < now && status != COMPLETED, deadline asc
+    pendingApprovals:  ApprovalResponse[] // reuses existing DTO, shown to OWNER/ADMIN only
   }
 
 JobSummary {
@@ -81,9 +78,9 @@ JobSummary {
 `description`, `createdBy`, `createdAt`, `updatedAt`, `blockedReasonId` to keep
 the payload compact.
 
-**Counts in `summary`:** computed in `DashboardService` by grouping the full job list
-by status in Java (not a separate SQL `GROUP BY` query) — the full list is already
-fetched to build `blockedJobs` and `overdueJobs`, so there is no extra query cost.
+**Counts in `summary`:** computed in `DashboardService` by grouping the job list by
+status in Java — the list is already fetched to build `blockedJobs` and `overdueJobs`,
+so there is no extra query cost.
 
 **`overdueCount`** = jobs where `deadline < now` and `status != COMPLETED` (including
 BLOCKED jobs — a blocked job with a missed deadline is doubly urgent).
@@ -91,49 +88,90 @@ BLOCKED jobs — a blocked job with a missed deadline is doubly urgent).
 **`pendingApprovalsCount`** = `pendingApprovals.size()` — derived from the list,
 not a separate count query.
 
-### 4. DashboardService implementation
+### 4. DashboardService — service-to-service calls as a deliberate exception
 
-`DashboardService` reuses existing service methods to avoid duplicating repository logic:
+The established pattern in this codebase is controller → service → repository; services
+do not call other services. `DashboardService` is an explicit, documented exception to
+this rule.
+
+**Rationale:** The dashboard is a read-only aggregation across multiple domains (jobs,
+approvals). The MEMBER visibility scoping logic (`if role == MEMBER → filter by
+assignedTo`) and the soft-delete filtering (`WHERE deleted_at IS NULL`) already live
+in `JobService.list()` and `ApprovalService.listPendingByProject()`. Bypassing those
+services to go directly to repositories would require duplicating that logic in
+`DashboardService` — a worse trade-off than the service-to-service call.
+
+`DashboardService` calls **only read methods** on other services and introduces no
+circular dependencies:
 
 ```
 DashboardService.get(projectId, callerId):
-  1. jobs = jobService.list(projectId, callerId)          // respects MEMBER visibility
-  2. pending = approvalService.listPendingByProject(...)   // existing method
-  3. Derive summary counts from jobs list (Java stream)
-  4. Filter blockedJobs  = jobs where status == BLOCKED, sort by blockedAt asc
-  5. Filter overdueJobs  = jobs where deadline < now && status != COMPLETED, sort by deadline asc
-  6. Return DashboardResponse
+  1. requireProjectMember(projectId, callerId)  // single access check here
+  2. jobs    = jobService.list(projectId, callerId)           // respects MEMBER visibility
+  3. pending = approvalService.listPendingByProject(projectId, callerId)
+  4. Derive summary counts from jobs list (Java stream)
+  5. Filter blockedJobs  = jobs where status == BLOCKED, sort by blockedAt asc
+  6. Filter overdueJobs  = jobs where deadline < now && status != COMPLETED, sort by deadline asc
+  7. Return DashboardResponse
 ```
 
-No new repository methods needed for MVP — the dashboard is assembled from data already
-fetched by existing service calls.
+This pattern must not be generalised — `DashboardService` is the only service
+permitted to call other services. Any future cross-domain reads should follow the
+same pattern: one aggregation service, documented as an exception.
 
 ### 5. MEMBER visibility
 
 `jobService.list()` already applies MEMBER scoping (MEMBERs only see their assigned
-jobs). `DashboardService` inherits this automatically by calling through the service
-layer. A MEMBER's dashboard shows:
+jobs). `DashboardService` inherits this automatically. A MEMBER's dashboard shows:
 
 - Summary counts scoped to their assigned jobs only
 - Blocked jobs: only their assigned blocked jobs
 - Overdue jobs: only their assigned overdue jobs
-- Pending approvals: all pending in the project (MEMBERs can see approvals — they
-  may have requested them; they just cannot decide them)
+- Pending approvals section: **hidden** for MEMBERs (they cannot decide approvals;
+  the section is only operationally useful to OWNER/ADMIN)
 
-### 6. Frontend layout
+### 6. Status distribution chart
 
-The dashboard replaces the job list as the project landing page. The job list is still
+The dashboard includes a **donut chart** showing the proportion of jobs by status
+(NEW / IN_PROGRESS / BLOCKED / COMPLETED). It sits alongside the summary count cards
+and gives an immediate visual read on project health.
+
+**Why a donut chart, not a bar or line chart:**
+- A donut encodes proportion — exactly the question "what fraction of our work is
+  blocked/complete?" — better than a bar chart, which implies comparison over a
+  dimension.
+- A line/trend chart (jobs completed over time) would require time-series data not
+  present in the current schema and implies a burndown mindset that conflicts with
+  OpsClear's "truth today" philosophy.
+
+**Chart library: Recharts** — lightweight (~100 kB gzip), React-native API, no
+canvas/WebGL dependency. Sufficient for a single donut chart; avoids bringing in a
+heavier library (Chart.js, D3) for one use case.
+
+**Chart data** is derived entirely from `summary` counts already in `DashboardResponse`
+— no additional API data needed.
+
+**Empty state:** the chart is hidden if `summary.total === 0` (no jobs yet).
+
+### 7. Frontend layout
+
+The dashboard replaces the job list as the project landing page. The job list remains
 accessible via the "Jobs" nav link.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  Summary cards                                             │
-│  ┌──────┐ ┌─────────────┐ ┌─────────┐ ┌───────────────┐  │
-│  │NEW  2│ │IN PROGRESS 4│ │BLOCKED 2│ │COMPLETED    4 │  │
-│  └──────┘ └─────────────┘ └─────────┘ └───────────────┘  │
-│  ┌──────────────┐ ┌──────────────────┐                    │
-│  │OVERDUE      1│ │PENDING APPROVALS3│                    │
-│  └──────────────┘ └──────────────────┘                    │
+│  ┌──────────────────────────┐  ┌─────────────────────────┐ │
+│  │  Status donut chart      │  │  Summary cards          │ │
+│  │                          │  │  ┌──────┐ ┌──────────┐  │ │
+│  │    ●NEW  ●IN_PROGRESS    │  │  │NEW  2│ │IN PROG. 4│  │ │
+│  │    ●BLOCKED  ●COMPLETED  │  │  └──────┘ └──────────┘  │ │
+│  │                          │  │  ┌──────┐ ┌──────────┐  │ │
+│  └──────────────────────────┘  │  │BLKD 2│ │DONE     4│  │ │
+│                                │  └──────┘ └──────────┘  │ │
+│                                │  ┌───────┐ ┌──────────┐ │ │
+│                                │  │OVERD 1│ │APPROVALS3│ │ │
+│                                │  └───────┘ └──────────┘ │ │
+│                                └─────────────────────────┘ │
 ├────────────────────────────────────────────────────────────┤
 │  Blocked  (2)                                              │
 │  ┌──────────────────────────────────────────────────────┐ │
@@ -146,7 +184,7 @@ accessible via the "Jobs" nav link.
 │  │ Replace HVAC · Alex Smith · due Mar 1           [→]  │ │
 │  └──────────────────────────────────────────────────────┘ │
 ├────────────────────────────────────────────────────────────┤
-│  Pending Approvals  (3)                             [→ Queue]│
+│  Pending Approvals  (3)                        [→ Queue]   │
 │  ┌──────────────────────────────────────────────────────┐ │
 │  │ Need to purchase transformer — €800                  │ │
 │  │ Install transformer · Jane Doe · Mar 3               │ │
@@ -154,40 +192,39 @@ accessible via the "Jobs" nav link.
 └────────────────────────────────────────────────────────────┘
 ```
 
-- Each **summary card** is clickable — clicking a status card navigates to the job list
-  pre-filtered to that status.
+- The **donut chart + summary cards** sit side by side in a two-column row at the top.
+- Each **summary card** is clickable — navigates to the job list pre-filtered to that status.
 - Each **blocked / overdue row** has a `[→]` link to the job detail page.
 - The **Pending Approvals** section shows up to 5 items with a `[→ Queue]` link to
-  the full approval queue. Only shown to OWNER/ADMIN.
+  the full approval queue. Hidden for MEMBERs.
 - Sections with zero items are **hidden entirely** — an empty dashboard shows only the
-  summary cards.
+  chart and summary cards.
 
-### 7. Dashboard as project landing page
+### 8. Dashboard as project landing page
 
-Navigating to `/projects/:projectId` (or clicking a project card) redirects to
-`/projects/:projectId/dashboard`. The "Jobs" nav link navigates to
-`/projects/:projectId/jobs` as before.
+Navigating to `/projects/:projectId` redirects to `/projects/:projectId/dashboard`.
+The "Jobs" nav link navigates to `/projects/:projectId/jobs` as before. A "Dashboard"
+link is added to the project nav alongside Jobs / Approvals / Settings.
 
-The router redirect:
+Router:
 ```
 { path: 'projects/:projectId', element: <Navigate to="dashboard" replace /> }
+{ path: 'projects/:projectId/dashboard', element: <DashboardPage /> }
 ```
 
-### 8. TanStack Query key and refresh
+### 9. TanStack Query key and refresh
 
 | Key | Usage |
 |-----|-------|
-| `['dashboard', projectId]` | Dashboard data |
+| `['dashboard', projectId]` | Full dashboard response |
 
-- **`staleTime`: 30 seconds** — dashboard is operational data; users expect near-realtime
-  accuracy. 30s is short enough to catch updates from co-workers, long enough to avoid
-  hammering the API on quick navigations away and back.
-- **Refetch on window focus**: enabled (default TanStack Query behaviour) — switching
-  back to the tab refreshes the dashboard.
-- Mutations that change job status, block/unblock, decide approvals, or add a note
-  **invalidate `['dashboard', projectId]`** alongside their existing invalidations.
+- **`staleTime`: 30 seconds** — operational data; short enough to catch co-worker
+  updates, long enough to avoid hammering the API on quick navigations away and back.
+- **Refetch on window focus**: enabled (default TanStack Query behaviour).
+- Mutations that change job status, block/unblock, decide approvals invalidate
+  `['dashboard', projectId]` alongside their existing query keys.
 
-### 9. Feature folder structure
+### 10. Feature folder structure
 
 ```
 features/dashboard/
@@ -195,9 +232,9 @@ features/dashboard/
 └── useDashboard.ts
 
 api/
-└── dashboard.ts          # dashboardApi.get(projectId)
+└── dashboard.ts       # dashboardApi.get(projectId)
 
-types/index.ts            # DashboardResponse, JobSummary added
+types/index.ts         # DashboardResponse, JobSummary added
 ```
 
 ---
@@ -206,47 +243,69 @@ types/index.ts            # DashboardResponse, JobSummary added
 
 ### Alternative 1: Frontend assembles dashboard from existing endpoints
 
-The frontend calls `GET /jobs`, `GET /approvals/pending`, derives counts and filters
-in the browser. No backend changes needed.
+The frontend calls `GET /jobs` and `GET /approvals/pending` separately and assembles
+the dashboard in the browser.
 
 **Pros:** Zero backend work; reuses cached TanStack Query data.
 
-**Cons:** Fetches full job records (including description, audit timestamps) when only
-a subset is needed. Two separate requests with no coordination. As projects grow,
-the over-fetch becomes meaningful.
+**Cons:** Fetches full `JobResponse` records when only `JobSummary` fields are needed.
+Two separate requests with no coordination.
 
-**Why rejected:** A dedicated endpoint is a small backend addition that pays off
-immediately in payload size and round-trip count. The `DashboardService` delegates
-to existing services so there is almost no new logic to write.
+**Why rejected:** A dedicated endpoint pays off immediately in payload size and
+round-trip count. The backend addition is small.
 
-### Alternative 2: Cross-project dashboard as the app home screen
+### Alternative 2: DashboardService uses repositories directly
 
-After login, show a global dashboard across all the user's projects: total blocked,
-total overdue, total pending approvals.
+`DashboardService` injects `JobRepository` and `ApprovalRepository` directly,
+bypassing the service layer entirely.
 
-**Pros:** Single view of the entire operational picture; no need to navigate into a
-project to see the health of all work.
+**Pros:** Consistent with the controller → service → repository pattern; avoids
+service-to-service calls; could write a single optimised jOOQ query.
 
-**Cons:** Requires querying across N projects, which means N times the data volume.
-Pagination or limits would be needed to avoid overloading the response. The UX
-for drilling down ("which project is this blocked job in?") adds complexity.
+**Cons:** Requires duplicating MEMBER visibility scoping (`if role == MEMBER → filter
+by assignedTo`) and soft-delete filtering that already live in `JobService` and
+`ApprovalService`. Duplication is a worse trade-off than the controlled exception.
 
-**Why rejected for MVP:** Per-project scoping is consistent with all existing screens
-and keeps the backend queries simple. Cross-project aggregation is tracked in #131.
+**Why rejected:** The MEMBER scoping logic is not trivial boilerplate — it involves
+a role lookup and a conditional query branch. Duplicating it creates a second place
+to update when the visibility rules change. The service-to-service call is documented
+as a deliberate, bounded exception.
 
-### Alternative 3: Real-time dashboard via WebSockets / SSE
+### Alternative 3: Cross-project dashboard as the app home screen
 
-Push dashboard updates to the client whenever any job status changes, without requiring
-a page refresh or poll.
+Global dashboard across all projects after login.
 
-**Pros:** Always current; no stale data window.
+**Pros:** Single view of the entire operational picture.
 
-**Cons:** Significant infrastructure — SSE emitters or WebSocket sessions per connected
-user, fan-out on every mutation. Tracked separately in #80 (future).
+**Cons:** Requires querying across N projects. UX for drill-down adds complexity.
 
-**Why rejected:** 30-second staleTime with refetch-on-focus gives sufficient freshness
-for an operational tool used by 5–50 people. Real-time push is a polish feature, not
-an MVP requirement.
+**Why rejected for MVP:** Tracked in #131. Per-project is consistent with all existing
+screens.
+
+### Alternative 4: Rich charts (bar, trend line, burndown)
+
+Additional charts showing jobs completed over time, time-in-status distributions,
+approval turnaround rates.
+
+**Pros:** Deeper operational insight.
+
+**Cons:** Requires time-series data not present in the current schema. Implies a
+project-management / analytics mindset that contradicts OpsClear's "truth today,
+not trends" philosophy.
+
+**Why rejected:** A single donut chart answers the relevant question (what is the
+current status breakdown?) without adding schema complexity or analytical overhead.
+Trend charts are a future consideration once the data model matures.
+
+### Alternative 5: Real-time dashboard via SSE
+
+Push updates to the client on every mutation.
+
+**Pros:** Always current.
+
+**Cons:** Significant infrastructure. Tracked in #80 (future).
+
+**Why rejected:** 30s staleTime + refetch-on-focus is sufficient for 5–50 users.
 
 ---
 
@@ -255,23 +314,25 @@ an MVP requirement.
 ### Positive
 
 - Single endpoint gives the dashboard a fast, waterfall-free load
-- `DashboardService` delegates to existing services — no new repository queries for MVP
+- Service-to-service delegation is bounded, documented, and avoids logic duplication
+- Donut chart gives instant visual health signal with zero additional API data
 - Sections hidden when empty keep the dashboard clean for healthy projects
-- 30s staleTime + refetch-on-focus keeps data fresh without polling overhead
+- 30s staleTime + refetch-on-focus keeps data fresh without polling
 
 ### Negative
 
-- A new `JobSummary` DTO adds a small amount of mapping code alongside the existing
-  `JobResponse`
-- Mutations in other features must remember to also invalidate `['dashboard', projectId]`
-  — a convention that needs to be followed consistently
+- `DashboardService` breaks the service layering rule — must be clearly documented
+  so it is not used as a precedent for ad-hoc service coupling elsewhere
+- Mutations across jobs, approvals, and status changes must all invalidate
+  `['dashboard', projectId]` — a convention that must be enforced consistently
+- Adding Recharts adds ~100 kB to the bundle (gzip); acceptable for one chart
 
 ### Neutral
 
-- MEMBER scoping is inherited from `jobService.list()` — no additional access-control
+- `JobSummary` DTO is a small mapping addition; `pendingApprovals` reuses
+  `ApprovalResponse` — no second new DTO needed
+- MEMBER scoping is inherited from existing service methods — no new access-control
   logic in `DashboardService`
-- `pendingApprovals` on the dashboard reuses `ApprovalResponse` — no new DTO needed
-  for that section
 
 ---
 
