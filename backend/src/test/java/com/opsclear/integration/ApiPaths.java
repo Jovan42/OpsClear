@@ -83,6 +83,12 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/approvals/pending";
     }
 
+    // --- Dashboard ---
+
+    static String dashboard(UUID projectId) {
+        return "/api/projects/" + projectId + "/dashboard";
+    }
+
     private ApiPaths() {
     }
 }

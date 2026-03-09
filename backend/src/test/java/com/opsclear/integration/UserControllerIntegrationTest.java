@@ -1,6 +1,7 @@
 package com.opsclear.integration;
 
 import com.opsclear.repository.ApprovalRepository;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -31,6 +32,7 @@ class UserControllerIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ApprovalRepository approvalRepository;
+    @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
@@ -44,6 +46,7 @@ class UserControllerIntegrationTest {
         approvalRepository.deleteAll();
         noteRepository.deleteAll();
         jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();
