@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
+import RouteErrorPage from './components/RouteErrorPage';
 import ProjectListPage from './features/projects/ProjectListPage';
 import ProjectSettingsPage from './features/projects/ProjectSettingsPage';
 import JobListPage from './features/jobs/JobListPage';
@@ -12,6 +13,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <AppLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="/projects" replace /> },
       { path: 'projects', element: <ProjectListPage /> },

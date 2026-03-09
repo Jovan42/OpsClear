@@ -1,10 +1,31 @@
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button';
+import PageError from '../../components/PageError';
+import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
 import { useJobList } from './useJobs';
 import type { JobStatus } from '../../types';
+
+function JobListSkeleton() {
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex gap-8">
+        {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-3 w-16" />)}
+      </div>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex gap-8 px-4 py-3 border-b border-gray-100 bg-white">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 type Filter = 'ALL' | JobStatus;
 type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status';
@@ -64,7 +85,7 @@ export default function JobListPage() {
     else { setSortKey(key); setSortDir('asc'); }
   }
 
-  const { data: jobs = [], isLoading, isError } = useJobList(projectId);
+  const { data: jobs = [], isLoading, isError, refetch } = useJobList(projectId);
 
   const counts: Record<JobStatus, number> = {
     NEW: jobs.filter((j) => j.status === 'NEW').length,
@@ -93,18 +114,18 @@ export default function JobListPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-        Loading…
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Skeleton className="h-7 w-16" />
+          <Skeleton className="h-9 w-28 rounded-lg" />
+        </div>
+        <JobListSkeleton />
       </div>
     );
   }
 
   if (isError) {
-    return (
-      <div className="flex items-center justify-center h-64 text-red-500 text-sm">
-        Failed to load jobs. Please refresh.
-      </div>
-    );
+    return <PageError message="Failed to load jobs." onRetry={() => void refetch()} />;
   }
 
   return (
