@@ -13,8 +13,10 @@ export function useRequestApproval(projectId: string, jobId: string) {
   return useMutation({
     mutationFn: (description: string) =>
       approvalsApi.request(projectId, jobId, { description }),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId, 'approvals'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId, 'approvals'] });
+      void queryClient.invalidateQueries({ queryKey: ['approvals', projectId, 'pending'] });
+    },
   });
 }
 
@@ -30,7 +32,9 @@ export function useDecideApproval(projectId: string, jobId: string) {
       status: 'APPROVED' | 'REJECTED';
       comment?: string;
     }) => approvalsApi.decide(projectId, jobId, approvalId, { status, comment }),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId, 'approvals'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId, 'approvals'] });
+      void queryClient.invalidateQueries({ queryKey: ['approvals', projectId, 'pending'] });
+    },
   });
 }
