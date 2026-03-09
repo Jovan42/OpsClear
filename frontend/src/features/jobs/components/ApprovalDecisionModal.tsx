@@ -6,6 +6,7 @@ import { useDecideApproval } from '../useApprovals';
 interface Props {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   projectId: string;
   jobId: string;
   approvalId: string;
@@ -15,23 +16,27 @@ interface Props {
 export default function ApprovalDecisionModal({
   open,
   onClose,
+  onSuccess,
   projectId,
   jobId,
   approvalId,
   decision,
 }: Props) {
   const [comment, setComment] = useState('');
-  const { mutate: decide, isPending } = useDecideApproval(projectId, jobId);
+  const { mutate: decide, isPending, error, reset } = useDecideApproval(projectId, jobId);
+
+  const is409 = (error as { response?: { status?: number } } | null)?.response?.status === 409;
 
   function handleClose() {
     setComment('');
+    reset();
     onClose();
   }
 
   function handleSubmit() {
     decide(
       { approvalId, status: decision, comment: comment.trim() || undefined },
-      { onSuccess: handleClose },
+      { onSuccess: () => { handleClose(); onSuccess?.(); } },
     );
   }
 
@@ -40,6 +45,11 @@ export default function ApprovalDecisionModal({
   return (
     <Modal open={open} onClose={handleClose} title={isApprove ? 'Approve Request' : 'Reject Request'}>
       <div className="space-y-4">
+        {is409 && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            This approval was already decided by another user.
+          </p>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Comment <span className="text-gray-400 font-normal">(optional)</span>
