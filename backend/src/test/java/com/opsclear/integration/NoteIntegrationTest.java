@@ -7,6 +7,7 @@ import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -38,6 +39,7 @@ class NoteIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private ProjectRepository projectRepository;
@@ -53,6 +55,7 @@ class NoteIntegrationTest {
     void setUp() {
         noteRepository.deleteAll();
         jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();

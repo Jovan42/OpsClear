@@ -2,6 +2,7 @@ package com.opsclear.integration;
 
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApprovalRepository;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -37,6 +38,7 @@ class AuthIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private DSLContext dsl;
     @Autowired private ApprovalRepository approvalRepository;
+    @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
@@ -48,6 +50,7 @@ class AuthIntegrationTest {
         approvalRepository.deleteAll();
         noteRepository.deleteAll();
         jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();

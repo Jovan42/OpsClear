@@ -4,6 +4,7 @@ import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -38,6 +39,9 @@ class ProjectIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
+    private BlockReasonRepository blockReasonRepository;
+
+    @Autowired
     private JobRepository jobRepository;
 
     @Autowired
@@ -54,6 +58,7 @@ class ProjectIntegrationTest {
     @BeforeEach
     void setUp() {
         jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();

@@ -8,6 +8,7 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApprovalRepository;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -41,6 +42,7 @@ class ApprovalIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private ApprovalRepository approvalRepository;
+    @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
@@ -56,6 +58,7 @@ class ApprovalIntegrationTest {
     void setUp() {
         approvalRepository.deleteAll();
         jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();
