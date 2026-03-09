@@ -195,12 +195,12 @@ Process:
 - [x] **DOC:** Write ADR for jobs screens (list, create/edit modal, navigation, query keys)
 - [x] **DOC:** Write ADR for job detail and inline actions (layout, status bar, block modal, notes, approvals, permission guards)
 - [x] Job list (with filters)
-- [ ] Job detail view
+- [x] Job detail view
 - [x] Create/edit job form
-- [ ] Status change controls
-- [ ] Block/unblock modal
-- [ ] Notes section
-- [ ] Request approval button
+- [x] Status change controls
+- [x] Block/unblock modal
+- [x] Notes section
+- [x] Request approval button
 
 ### Module 7.5: Approvals Screens
 
