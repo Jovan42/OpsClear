@@ -65,7 +65,6 @@ function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalC
 export default function ApprovalQueuePage() {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const role = useProjectRole(projectId);
   const { data: approvals = [], isLoading, isError } = useApprovalQueue(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
