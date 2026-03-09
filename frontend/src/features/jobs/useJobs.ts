@@ -26,7 +26,10 @@ export function useCreateJob(projectId: string) {
       assignedTo?: string;
       deadline?: string;
     }) => jobsApi.create(projectId, body),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
+    },
   });
 }
 
@@ -49,6 +52,7 @@ export function useUpdateJob(projectId: string) {
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, data.id] });
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
   });
 }
@@ -68,6 +72,7 @@ export function useUpdateJobStatus(projectId: string) {
     onSuccess: (data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, data.id] });
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       if (variables.status === 'BLOCKED') {
         void queryClient.invalidateQueries({ queryKey: ['block-reasons', projectId] });
       }
@@ -82,6 +87,7 @@ export function useDeleteJob(projectId: string) {
     onSuccess: (_, jobId) => {
       queryClient.removeQueries({ queryKey: ['jobs', projectId, jobId] });
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId], exact: true });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
   });
 }

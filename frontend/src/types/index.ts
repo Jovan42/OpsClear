@@ -80,3 +80,35 @@ export interface PendingApprovalResponse {
   description: string;
   requestedAt: string;
 }
+
+// ---- Dashboard ----
+
+export interface JobSummary {
+  id: string;
+  title: string;
+  client: string | null;
+  assignedTo: string | null;
+  assignedToName: string | null;
+  deadline: string | null;
+  status: JobStatus;
+  blockedReason: string | null;
+  blockedAt: string | null;
+  blockedBy: string | null;
+}
+
+export interface DashboardSummary {
+  total: number;
+  newCount: number;
+  inProgressCount: number;
+  blockedCount: number;
+  completedCount: number;
+  overdueCount: number;
+  pendingApprovalsCount: number;
+}
+
+export interface DashboardResponse {
+  summary: DashboardSummary;
+  blockedJobs: JobSummary[];
+  overdueJobs: JobSummary[];
+  pendingApprovals: PendingApprovalResponse[];
+}

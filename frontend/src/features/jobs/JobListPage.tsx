@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
@@ -46,7 +46,15 @@ function isOverdue(deadline: string | null, status: JobStatus): boolean {
 export default function JobListPage() {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<Filter>('ALL');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusParam = searchParams.get('status');
+  const filter: Filter = statusParam && FILTERS.some((f) => f.key === statusParam)
+    ? (statusParam as Filter)
+    : 'ALL';
+  const setFilter = (key: Filter) => {
+    if (key === 'ALL') setSearchParams({}, { replace: true });
+    else setSearchParams({ status: key }, { replace: true });
+  };
   const [sortKey, setSortKey] = useState<SortKey>('status');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [modalOpen, setModalOpen] = useState(false);

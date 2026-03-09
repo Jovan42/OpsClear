@@ -16,6 +16,7 @@ export function useRequestApproval(projectId: string, jobId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId, 'approvals'] });
       void queryClient.invalidateQueries({ queryKey: ['approvals', projectId, 'pending'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
   });
 }
@@ -35,6 +36,7 @@ export function useDecideApproval(projectId: string, jobId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId, 'approvals'] });
       void queryClient.invalidateQueries({ queryKey: ['approvals', projectId, 'pending'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
   });
 }

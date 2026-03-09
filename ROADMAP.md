@@ -204,8 +204,8 @@ Process:
 
 ### Module 7.5: Approvals Screens
 
-- [ ] Approval queue (for Owner/Admin)
-- [ ] Approve/reject modal
+- [x] Approval queue (for Owner/Admin)
+- [x] Approve/reject modal
 
 ---
 
@@ -215,9 +215,9 @@ Process:
 
 ### Module 8.1: Dashboard
 
-- [ ] **DOC:** Write ADR for dashboard data aggregation
-- [ ] Backend: `DashboardService` + `DashboardController`
-- [ ] Frontend: Dashboard home screen (blocked, in-progress, awaiting)
+- [x] **DOC:** Write ADR for dashboard data aggregation
+- [x] Backend: `DashboardService` + `DashboardController`
+- [x] Frontend: Dashboard home screen (blocked, in-progress, awaiting)
 
 ### Module 8.2: Polish
 
