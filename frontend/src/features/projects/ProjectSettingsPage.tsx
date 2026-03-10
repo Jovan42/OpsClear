@@ -42,6 +42,7 @@ export default function ProjectSettingsPage() {
   const { mutate: removeMember } = useRemoveMember(projectId);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
 
   const {
     register,
@@ -242,20 +243,38 @@ export default function ProjectSettingsPage() {
       {/* ── Delete confirmation modal ── */}
       <Modal
         open={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
+        onClose={() => { setDeleteModalOpen(false); setDeleteConfirmInput(''); }}
         title="Delete project?"
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-300">
             This will permanently delete{' '}
             <span className="font-semibold">{project?.name}</span> and all its jobs, notes,
-            and approvals. This cannot be undone.
+            and approvals. <span className="font-medium text-red-600 dark:text-red-400">This cannot be undone.</span>
           </p>
+          <div>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1.5">
+              To confirm, type the project name:{' '}
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{project?.name}</span>
+            </label>
+            <input
+              value={deleteConfirmInput}
+              onChange={(e) => setDeleteConfirmInput(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+              placeholder={project?.name}
+              autoComplete="off"
+            />
+          </div>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
+            <Button variant="secondary" onClick={() => { setDeleteModalOpen(false); setDeleteConfirmInput(''); }}>
               Cancel
             </Button>
-            <Button variant="danger" loading={deleting} onClick={handleDeleteConfirm}>
+            <Button
+              variant="danger"
+              loading={deleting}
+              disabled={deleteConfirmInput !== project?.name}
+              onClick={handleDeleteConfirm}
+            >
               Delete project
             </Button>
           </div>
