@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.UpdateProjectRequest;
+import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
@@ -31,6 +32,7 @@ public class ProjectService {
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
         requireUserExists(ownerId);
+        requireNameAvailable(request.getName(), ownerId);
 
         ProjectModel project = ProjectModel.builder()
                 .name(request.getName())
@@ -66,6 +68,7 @@ public class ProjectService {
     public ProjectModel update(UUID projectId, UpdateProjectRequest request, UUID requesterId) {
         ProjectModel project = requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
+        requireNameAvailableForUpdate(request.getName(), project.getOwnerId(), projectId);
         project.setName(request.getName());
         project.setDescription(request.getDescription());
         log.info("Updated project '{}'", project.getId());
@@ -79,6 +82,20 @@ public class ProjectService {
         project.softDelete();
         projectRepository.save(project);
         log.info("Soft-deleted project '{}'", projectId);
+    }
+
+    // --- Name uniqueness ---
+
+    private void requireNameAvailable(String name, UUID ownerId) {
+        if (projectRepository.existsByNameAndOwnerIdAndDeletedAtIsNull(name, ownerId)) {
+            throw new ConflictException(ErrorMessages.Project.NAME_ALREADY_EXISTS);
+        }
+    }
+
+    private void requireNameAvailableForUpdate(String name, UUID ownerId, UUID excludeProjectId) {
+        if (projectRepository.existsByNameAndOwnerIdAndIdNotAndDeletedAtIsNull(name, ownerId, excludeProjectId)) {
+            throw new ConflictException(ErrorMessages.Project.NAME_ALREADY_EXISTS);
+        }
     }
 
     // --- Guards ---

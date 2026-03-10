@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.UpdateProjectRequest;
+import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ProjectMemberModel;
@@ -87,6 +88,21 @@ class ProjectServiceTest {
         verify(projectMemberRepository).save(memberCaptor.capture());
         assertThat(memberCaptor.getValue().getRole()).isEqualTo(ProjectMemberRole.OWNER);
         assertThat(memberCaptor.getValue().getUserId()).isEqualTo(ownerId);
+    }
+
+    @Test
+    @DisplayName("create_shouldThrowConflictException_whenNameAlreadyExistsForSameOwner")
+    void create_shouldThrow_whenNameAlreadyExistsForSameOwner() {
+        CreateProjectRequest request = CreateProjectRequest.builder()
+                .name("Acme Corp")
+                .build();
+
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
+        when(projectRepository.existsByNameAndOwnerIdAndDeletedAtIsNull("Acme Corp", ownerId)).thenReturn(true);
+
+        assertThatThrownBy(() -> projectService.create(request, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A project with this name already exists");
     }
 
     @Test
@@ -207,6 +223,27 @@ class ProjectServiceTest {
 
         assertThat(result.getName()).isEqualTo("New Name");
         assertThat(result.getDescription()).isEqualTo("New desc");
+    }
+
+    @Test
+    @DisplayName("update_shouldThrowConflictException_whenNameTakenByAnotherActiveProject")
+    void update_shouldThrow_whenNameTakenByAnotherActiveProject() {
+        UUID projectId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder()
+                .id(projectId).name("Old Name").ownerId(ownerId).build();
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(membership));
+        when(projectRepository.existsByNameAndOwnerIdAndIdNotAndDeletedAtIsNull("Taken Name", ownerId, projectId))
+                .thenReturn(true);
+
+        UpdateProjectRequest request = UpdateProjectRequest.builder().name("Taken Name").build();
+        assertThatThrownBy(() -> projectService.update(projectId, request, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A project with this name already exists");
     }
 
     @Test

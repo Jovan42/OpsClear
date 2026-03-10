@@ -7,6 +7,7 @@ public final class ErrorMessages {
 
     public static final class Project {
         public static final String NOT_FOUND = "Project not found";
+        public static final String NAME_ALREADY_EXISTS = "A project with this name already exists";
 
         private Project() {
         }
