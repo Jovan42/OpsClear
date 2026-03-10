@@ -1,0 +1,71 @@
+package com.opsclear.integration;
+
+import com.opsclear.repository.ApprovalRepository;
+import com.opsclear.repository.BlockReasonRepository;
+import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.NoteRepository;
+import com.opsclear.repository.ProjectMemberRepository;
+import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.UserRepository;
+import com.opsclear.service.ProjectService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@DisplayName("GlobalExceptionHandler — generic error handler wired into Spring context")
+class GlobalExceptionHandlerIntegrationTest {
+
+    @Autowired private MockMvc mockMvc;
+    @MockBean  private ProjectService projectService;
+    @Autowired private ApprovalRepository approvalRepository;
+    @Autowired private BlockReasonRepository blockReasonRepository;
+    @Autowired private NoteRepository noteRepository;
+    @Autowired private JobRepository jobRepository;
+    @Autowired private ProjectMemberRepository projectMemberRepository;
+    @Autowired private ProjectRepository projectRepository;
+    @Autowired private UserRepository userRepository;
+
+    @BeforeEach
+    void setUp() {
+        approvalRepository.deleteAll();
+        noteRepository.deleteAll();
+        jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
+        projectMemberRepository.deleteAll();
+        projectRepository.deleteAll();
+        userRepository.deleteAll();
+    }
+
+    @Test
+    @DisplayName("handleGeneric_shouldReturn500WithGenericMessage_whenUnexpectedExceptionThrown")
+    void handleGeneric_shouldReturn500WithGenericMessage_whenUnexpectedExceptionThrown() throws Exception {
+        when(projectService.getProjectsForMember(any())).thenThrow(new RuntimeException("unexpected db failure"));
+
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(j -> j.subject(UUID.randomUUID().toString()).claim("email", "u@example.com"))))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Internal Server Error"))
+                .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.trace").doesNotExist())
+                .andExpect(jsonPath("$.stackTrace").doesNotExist());
+    }
+}

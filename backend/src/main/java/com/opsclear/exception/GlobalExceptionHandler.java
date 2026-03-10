@@ -78,4 +78,14 @@ public class GlobalExceptionHandler {
                 "timestamp", Instant.now().toString()
         ));
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
+        log.error("Unexpected error: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "error", "Internal Server Error",
+                "message", "An unexpected error occurred",
+                "timestamp", Instant.now().toString()
+        ));
+    }
 }
