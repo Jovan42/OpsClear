@@ -55,10 +55,6 @@ export default function JobDetailPage() {
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
 
-  // Expand approvals section if there are pending approvals (on first load)
-  // We use a derived default; once user collapses it's controlled by state.
-  // Actually we track this with state initialized based on pending count.
-
   function handleStatusChange(status: JobStatus) {
     if (!job) return;
     updateStatus({ jobId: job.id, status });
@@ -107,14 +103,14 @@ export default function JobDetailPage() {
       <div>
         <button
           onClick={() => navigate(`/projects/${projectId}/jobs`)}
-          className="text-sm text-gray-500 hover:text-gray-700 mb-3 flex items-center gap-1 cursor-pointer"
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-3 flex items-center gap-1 cursor-pointer"
         >
           ← Back to jobs
         </button>
 
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-semibold text-gray-900">{job.title}</h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{job.title}</h1>
             <StatusBadge status={job.status} />
           </div>
 
@@ -128,7 +124,7 @@ export default function JobDetailPage() {
               <div className="relative">
                 <button
                   onClick={() => setKebabOpen((v) => !v)}
-                  className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 cursor-pointer"
+                  className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                 >
                   ⋮
                 </button>
@@ -138,10 +134,10 @@ export default function JobDetailPage() {
                       className="fixed inset-0 z-10"
                       onClick={() => setKebabOpen(false)}
                     />
-                    <div className="absolute right-0 z-20 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    <div className="absolute right-0 z-20 mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
                       <button
                         onClick={() => { setKebabOpen(false); setDeleteOpen(true); }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
                       >
                         Delete Job
                       </button>
@@ -158,42 +154,42 @@ export default function JobDetailPage() {
       <BlockedBanner job={job} />
 
       {/* Info section */}
-      <div className="bg-white border border-gray-200 rounded-xl px-6 py-4 space-y-3">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-4 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div>
-            <span className="text-gray-500">Client</span>
-            <p className="font-medium text-gray-900 mt-0.5">{job.client ?? '—'}</p>
+            <span className="text-gray-500 dark:text-gray-400">Client</span>
+            <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">{job.client ?? '—'}</p>
           </div>
           <div>
-            <span className="text-gray-500">Assigned to</span>
-            <p className="font-medium text-gray-900 mt-0.5">{job.assignedToName ?? '—'}</p>
+            <span className="text-gray-500 dark:text-gray-400">Assigned to</span>
+            <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">{job.assignedToName ?? '—'}</p>
           </div>
           <div>
-            <span className="text-gray-500">Deadline</span>
+            <span className="text-gray-500 dark:text-gray-400">Deadline</span>
             <p
               className={`font-medium mt-0.5 ${
-                isOverdue(job.deadline, job.status) ? 'text-red-600' : 'text-gray-900'
+                isOverdue(job.deadline, job.status) ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'
               }`}
             >
               {formatDate(job.deadline)}
             </p>
           </div>
           <div>
-            <span className="text-gray-500">Created</span>
-            <p className="font-medium text-gray-900 mt-0.5">{formatDate(job.createdAt)}</p>
+            <span className="text-gray-500 dark:text-gray-400">Created</span>
+            <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">{formatDate(job.createdAt)}</p>
           </div>
         </div>
 
         {job.description && (
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-sm text-gray-500 mb-1">Description</p>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{job.description}</p>
+          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Description</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{job.description}</p>
           </div>
         )}
       </div>
 
       {/* Action bar */}
-      <div className="bg-white border border-gray-200 rounded-xl px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-4">
         <JobStatusBar
           job={job}
           role={role}
@@ -206,39 +202,39 @@ export default function JobDetailPage() {
       </div>
 
       {/* Notes accordion */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         <button
           onClick={() => setNotesExpanded((v) => !v)}
-          className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 hover:bg-gray-50 cursor-pointer"
+          className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
         >
           <span>Notes</span>
-          <span className="text-gray-400">{notesExpanded ? '▲' : '▼'}</span>
+          <span className="text-gray-400 dark:text-gray-500">{notesExpanded ? '▲' : '▼'}</span>
         </button>
         {notesExpanded && (
-          <div className="px-6 pt-4 pb-4 border-t border-gray-100">
+          <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
             <NoteThread projectId={projectId} jobId={jobId} members={members} />
           </div>
         )}
       </div>
 
       {/* Approvals accordion */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         <button
           onClick={() => setApprovalsExpanded((v) => !v)}
-          className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 hover:bg-gray-50 cursor-pointer"
+          className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
         >
           <div className="flex items-center gap-2">
             <span>Approvals</span>
             {pendingCount > 0 && (
-              <span className="bg-orange-100 text-orange-700 text-xs font-medium px-1.5 py-0.5 rounded-full">
+              <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-medium px-1.5 py-0.5 rounded-full">
                 {pendingCount} pending
               </span>
             )}
           </div>
-          <span className="text-gray-400">{approvalsExpanded ? '▲' : '▼'}</span>
+          <span className="text-gray-400 dark:text-gray-500">{approvalsExpanded ? '▲' : '▼'}</span>
         </button>
         {approvalsExpanded && (
-          <div className="px-6 pt-4 pb-4 border-t border-gray-100">
+          <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
             <ApprovalList projectId={projectId} jobId={jobId} role={role} members={members} />
           </div>
         )}

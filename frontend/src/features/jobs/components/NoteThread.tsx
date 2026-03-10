@@ -57,31 +57,31 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
   return (
     <div className="space-y-3">
       {notes.length === 0 && (
-        <p className="text-sm text-gray-400 py-2">No notes yet.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">No notes yet.</p>
       )}
 
       {notes.map((note) => (
-        <div key={note.id} className="bg-gray-50 rounded-lg px-4 py-3">
+        <div key={note.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-3">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-800">
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
               {memberName(members, note.authorId)}
             </span>
-            <span className="text-xs text-gray-400">{formatDateTime(note.createdAt)}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateTime(note.createdAt)}</span>
           </div>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{note.content}</p>
         </div>
       ))}
 
       <div className="mt-3">
         <textarea
           rows={3}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent resize-none"
+          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent resize-none"
           placeholder="Add a note…"
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
         <div className="flex items-center justify-between mt-1">
-          <span className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-gray-400'}`}>
+          <span className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>
             {content.length}/{NOTE_MAX}
           </span>
           <Button

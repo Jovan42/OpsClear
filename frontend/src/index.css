@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode — applied by useTheme hook toggling .dark on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Brand color (emerald). Alternatives:
  *   indigo : #4f46e5  dark: #4338ca  light: #e0e7ff
@@ -40,5 +43,10 @@
     background-color: var(--color-gray-50);
     color: var(--color-gray-900);
     -webkit-font-smoothing: antialiased;
+  }
+
+  .dark body {
+    background-color: var(--color-gray-900);
+    color: var(--color-gray-100);
   }
 }

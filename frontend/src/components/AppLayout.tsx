@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useProjectRole } from '../features/projects/useProjects';
 import { useApprovalQueue } from '../features/approvals/useApprovalQueue';
 import UserMenu from './UserMenu';
+import { useTheme } from '../hooks/useTheme';
 
 function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
   const role = useProjectRole(projectId);
@@ -44,6 +45,7 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
 }
 
 export default function AppLayout() {
+  useTheme();
   const { name } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,7 +59,7 @@ export default function AppLayout() {
   const isRoot = location.pathname === '/projects';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <nav
         className="shrink-0 px-4 text-white"
         style={{ backgroundColor: 'var(--brand)' }}

@@ -11,7 +11,7 @@ function ProjectListSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 space-y-2">
+        <div key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-2">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-full" />
           <Skeleton className="h-3 w-2/3" />
@@ -46,13 +46,13 @@ export default function ProjectListPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Projects</h1>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Projects</h1>
         <Button onClick={() => setModalOpen(true)}>+ New Project</Button>
       </div>
 
       {projects?.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-gray-500 text-sm mb-4">No projects yet.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">No projects yet.</p>
           <Button onClick={() => setModalOpen(true)}>Create your first project</Button>
         </div>
       ) : (
@@ -62,31 +62,31 @@ export default function ProjectListPage() {
             return (
               <div
                 key={project.id}
-                className="relative text-left bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-sm transition-all"
+                className="relative text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all"
               >
                 <button
                   onClick={() => navigate(`/projects/${project.id}/dashboard`)}
                   className="w-full text-left cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h2 className="font-semibold text-gray-900 text-sm leading-snug">
+                    <h2 className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug">
                       {project.name}
                     </h2>
                     {isOwner && (
-                      <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-light text-brand">
+                      <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-light text-brand dark:bg-green-900/40 dark:text-green-300">
                         Owner
                       </span>
                     )}
                   </div>
                   {project.description && (
-                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
                       {project.description}
                     </p>
                   )}
                 </button>
                 <button
                   onClick={() => navigate(`/projects/${project.id}/settings`)}
-                  className="absolute bottom-3 right-3 p-1 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
+                  className="absolute bottom-3 right-3 p-1 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors cursor-pointer"
                   title="Project settings"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

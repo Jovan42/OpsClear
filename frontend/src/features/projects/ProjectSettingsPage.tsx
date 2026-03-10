@@ -100,30 +100,30 @@ export default function ProjectSettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-10">
-      <h1 className="text-xl font-semibold text-gray-900">Project Settings</h1>
+      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Project Settings</h1>
 
       {/* ── Project details ── */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
           Details
         </h2>
         <form onSubmit={handleSubmit(onSaveDetails)} className="space-y-4">
           <div>
-            <label htmlFor="proj-name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="proj-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Name
             </label>
             <input
               id="proj-name"
               {...register('name')}
               disabled={!canEdit}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500"
             />
             {errors.name && (
               <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
             )}
           </div>
           <div>
-            <label htmlFor="proj-desc" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="proj-desc" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Description
             </label>
             <textarea
@@ -131,7 +131,7 @@ export default function ProjectSettingsPage() {
               {...register('description')}
               disabled={!canEdit}
               rows={3}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent resize-none disabled:bg-gray-50 disabled:text-gray-400"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent resize-none disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500"
             />
             {errors.description && (
               <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>
@@ -154,30 +154,30 @@ export default function ProjectSettingsPage() {
 
       {/* ── Members ── */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
           Members
         </h2>
         <div className="space-y-4">
           {canEdit && <AddMemberForm projectId={projectId} />}
-          <div className="border border-gray-200 rounded-xl overflow-x-auto">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-x-auto">
             <table className="w-full text-sm min-w-[28rem]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Member</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Role</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400">Member</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400">Role</th>
                   {canEdit && <th className="px-4 py-2.5" />}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {members.map((member) => {
                   const isSelf = member.userId === userId;
                   const isTargetOwner = member.role === 'OWNER';
                   const canModify = canEdit && !isSelf && !(isTargetOwner && !isOwner);
                   return (
-                    <tr key={member.id} className="bg-white">
+                    <tr key={member.id} className="bg-white dark:bg-gray-800">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900">{member.userName}</p>
-                        <p className="text-xs text-gray-500">{member.userEmail}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{member.userName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{member.userEmail}</p>
                       </td>
                       <td className="px-4 py-3">
                         {canModify ? (
@@ -186,7 +186,7 @@ export default function ProjectSettingsPage() {
                             onChange={(e) =>
                               updateMember({ memberId: member.id, role: e.target.value })
                             }
-                            className="rounded-lg border border-gray-200 px-2 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:border-transparent"
+                            className="rounded-lg border border-gray-200 dark:border-gray-600 px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:border-transparent"
                           >
                             {ROLES.map((r) => (
                               <option key={r} value={r}>
@@ -225,10 +225,10 @@ export default function ProjectSettingsPage() {
           <h2 className="text-sm font-semibold text-red-500 uppercase tracking-widest mb-4">
             Danger zone
           </h2>
-          <div className="border border-red-200 rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="border border-red-200 dark:border-red-900/50 rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">Delete this project</p>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Delete this project</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 Permanently removes the project and all its jobs. This cannot be undone.
               </p>
             </div>
@@ -246,7 +246,7 @@ export default function ProjectSettingsPage() {
         title="Delete project?"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             This will permanently delete{' '}
             <span className="font-semibold">{project?.name}</span> and all its jobs, notes,
             and approvals. This cannot be undone.

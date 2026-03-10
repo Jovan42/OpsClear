@@ -17,14 +17,14 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
     >
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-xl"
+        className="relative z-10 w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none cursor-pointer"
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors text-xl leading-none cursor-pointer"
           >
             ×
           </button>
