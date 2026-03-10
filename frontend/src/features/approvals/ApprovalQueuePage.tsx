@@ -5,7 +5,8 @@ import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
 import ApprovalDecisionModal from '../jobs/components/ApprovalDecisionModal';
 import { useApprovalQueue } from './useApprovalQueue';
-import { useProjectMembers, useProjectRole } from '../projects/useProjects';
+import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import type { PendingApprovalResponse, ProjectMemberResponse } from '../../types';
 
 function formatDateTime(dateStr: string) {
@@ -67,9 +68,11 @@ function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalC
 export default function ApprovalQueuePage() {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
+  const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);
   const { data: approvals = [], isLoading, isError, refetch } = useApprovalQueue(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
+  usePageTitle('Approvals', project?.name);
   const [decision, setDecision] = useState<DecisionState>(null);
 
   if (role === 'MEMBER') {

@@ -1,5 +1,6 @@
 import { usePreferences } from '../../hooks/usePreferences';
 import type { Theme } from '../../hooks/usePreferences';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -8,6 +9,7 @@ const THEME_OPTIONS: { value: Theme; label: string }[] = [
 ];
 
 export default function SettingsPage() {
+  usePageTitle('Settings');
   const { prefs, update } = usePreferences();
 
   return (

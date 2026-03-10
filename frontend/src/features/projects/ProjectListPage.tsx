@@ -6,6 +6,7 @@ import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
 import NewProjectModal from './NewProjectModal';
 import { useProjectList } from './useProjects';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 function ProjectListSkeleton() {
   return (
@@ -25,6 +26,7 @@ export default function ProjectListPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const { userId } = useAuth();
   const navigate = useNavigate();
+  usePageTitle('Projects');
   const { data: projects, isLoading, isError, refetch } = useProjectList();
 
   if (isLoading) {

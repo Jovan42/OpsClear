@@ -6,6 +6,8 @@ import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
 import { useJobList } from './useJobs';
+import { useProject } from '../projects/useProjects';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import type { JobStatus } from '../../types';
 
 function JobListSkeleton() {
@@ -67,6 +69,8 @@ function isOverdue(deadline: string | null, status: JobStatus): boolean {
 export default function JobListPage() {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
+  const { data: project } = useProject(projectId);
+  usePageTitle('Jobs', project?.name);
   const [searchParams, setSearchParams] = useSearchParams();
   const statusParam = searchParams.get('status');
   const filter: Filter = statusParam && FILTERS.some((f) => f.key === statusParam)
