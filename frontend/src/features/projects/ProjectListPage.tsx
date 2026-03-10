@@ -29,7 +29,7 @@ export default function ProjectListPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <Skeleton className="h-7 w-24" />
           <Skeleton className="h-9 w-32 rounded-lg" />
@@ -44,7 +44,7 @@ export default function ProjectListPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900">Projects</h1>
         <Button onClick={() => setModalOpen(true)}>+ New Project</Button>

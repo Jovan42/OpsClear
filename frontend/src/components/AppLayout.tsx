@@ -59,9 +59,10 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <nav
-        className="shrink-0 px-4 flex flex-col justify-center text-white"
-        style={{ backgroundColor: 'var(--brand)', minHeight: '3.5rem' }}
+        className="shrink-0 px-4 text-white"
+        style={{ backgroundColor: 'var(--brand)' }}
       >
+        {/* Main header row */}
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-2">
             {!isRoot && (
@@ -79,9 +80,13 @@ export default function AppLayout() {
           </div>
 
           <div className="flex items-center gap-6">
-            {projectId && <ProjectNav projectId={projectId} />}
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-white/80">{name}</span>
+            {projectId && (
+              <div className="hidden md:block">
+                <ProjectNav projectId={projectId} />
+              </div>
+            )}
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span className="hidden sm:inline text-sm text-white/80">{name}</span>
               <button
                 onClick={() => keycloak.logout()}
                 className="text-sm text-white/80 hover:text-white transition-colors cursor-pointer"
@@ -91,6 +96,13 @@ export default function AppLayout() {
             </div>
           </div>
         </div>
+
+        {/* Project nav second row — mobile only */}
+        {projectId && (
+          <div className="md:hidden overflow-x-auto -mx-4 px-4 pb-2">
+            <ProjectNav projectId={projectId} />
+          </div>
+        )}
       </nav>
       <main className="flex-1">
         <Outlet />

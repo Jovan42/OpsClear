@@ -279,7 +279,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Skeleton className="h-56 rounded-xl" />
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
@@ -307,7 +307,7 @@ export default function DashboardPage() {
   const visibleApprovals = isOwnerOrAdmin ? pendingApprovals.slice(0, 5) : [];
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       {/* Top row: chart + summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatusDonut summary={summary} />

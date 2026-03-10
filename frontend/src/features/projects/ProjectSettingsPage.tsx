@@ -73,7 +73,7 @@ export default function ProjectSettingsPage() {
 
   if (projectLoading || membersLoading) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         <Skeleton className="h-7 w-40" />
         <div className="space-y-3">
           <Skeleton className="h-3 w-12" />
@@ -99,7 +99,7 @@ export default function ProjectSettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-10">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-10">
       <h1 className="text-xl font-semibold text-gray-900">Project Settings</h1>
 
       {/* ── Project details ── */}
@@ -159,8 +159,8 @@ export default function ProjectSettingsPage() {
         </h2>
         <div className="space-y-4">
           {canEdit && <AddMemberForm projectId={projectId} />}
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="border border-gray-200 rounded-xl overflow-x-auto">
+            <table className="w-full text-sm min-w-[28rem]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Member</th>
@@ -225,7 +225,7 @@ export default function ProjectSettingsPage() {
           <h2 className="text-sm font-semibold text-red-500 uppercase tracking-widest mb-4">
             Danger zone
           </h2>
-          <div className="border border-red-200 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="border border-red-200 rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900">Delete this project</p>
               <p className="text-xs text-gray-500 mt-0.5">

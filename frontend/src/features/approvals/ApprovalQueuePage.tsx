@@ -80,7 +80,7 @@ export default function ApprovalQueuePage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <Skeleton className="h-7 w-32 mb-6" />
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -129,7 +129,7 @@ export default function ApprovalQueuePage() {
   const totalPending = approvals.length;
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900">
           Approvals
