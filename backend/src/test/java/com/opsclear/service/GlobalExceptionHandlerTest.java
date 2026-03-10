@@ -1,12 +1,11 @@
 package com.opsclear.service;
 
+import com.opsclear.exception.ErrorResponse;
 import com.opsclear.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,16 +17,13 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleGeneric_shouldReturn500_withGenericMessageAndNoInternalDetails")
     void handleGeneric_shouldReturn500_withGenericMessageAndNoInternalDetails() {
-        ResponseEntity<Map<String, Object>> response =
+        ResponseEntity<ErrorResponse> response =
                 handler.handleGeneric(new RuntimeException("unexpected db failure"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody())
-                .containsEntry("error", "Internal Server Error")
-                .containsEntry("message", "An unexpected error occurred")
-                .containsKey("timestamp")
-                .doesNotContainKey("trace")
-                .doesNotContainKey("stackTrace")
-                .doesNotContainValue("unexpected db failure");
+        assertThat(response.getBody().error()).isEqualTo("Internal Server Error");
+        assertThat(response.getBody().message()).isEqualTo("An unexpected error occurred");
+        assertThat(response.getBody().timestamp()).isNotBlank();
+        assertThat(response.getBody().message()).doesNotContain("unexpected db failure");
     }
 }

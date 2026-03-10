@@ -8,84 +8,60 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.Instant;
-import java.util.Map;
-
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
-                "error", "Forbidden",
-                "message", ex.getMessage(),
-                "timestamp", Instant.now().toString()
-        ));
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of("Forbidden", ex.getMessage()));
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                "error", "Conflict",
-                "message", ex.getMessage(),
-                "timestamp", Instant.now().toString()
-        ));
+    public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of("Conflict", ex.getMessage()));
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(NotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                "error", "Not Found",
-                "message", ex.getMessage(),
-                "timestamp", Instant.now().toString()
-        ));
+    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of("Not Found", ex.getMessage()));
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                "error", "Bad Request",
-                "message", ex.getMessage(),
-                "timestamp", Instant.now().toString()
-        ));
+    public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("Bad Request", ex.getMessage()));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
         String message = ex.getConstraintViolations().stream()
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .reduce((a, b) -> a + "; " + b)
                 .orElse("Validation failed");
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                "error", "Validation Error",
-                "message", message,
-                "timestamp", Instant.now().toString()
-        ));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("Validation Error", message));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .reduce((a, b) -> a + "; " + b)
                 .orElse("Validation failed");
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                "error", "Validation Error",
-                "message", message,
-                "timestamp", Instant.now().toString()
-        ));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("Validation Error", message));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "error", "Internal Server Error",
-                "message", "An unexpected error occurred",
-                "timestamp", Instant.now().toString()
-        ));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.of("Internal Server Error", "An unexpected error occurred"));
     }
 }
