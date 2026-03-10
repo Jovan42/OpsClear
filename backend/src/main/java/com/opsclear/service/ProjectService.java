@@ -9,6 +9,7 @@ import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -28,6 +29,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final BlockReasonRepository blockReasonRepository;
 
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
@@ -47,6 +49,14 @@ public class ProjectService {
                 .userId(ownerId)
                 .role(ProjectMemberRole.OWNER)
                 .build());
+
+        if (request.getBlockReasons() != null) {
+            UUID projectId = project.getId();
+            request.getBlockReasons().stream()
+                    .map(String::strip)
+                    .distinct()
+                    .forEach(r -> blockReasonRepository.findOrCreate(projectId, r));
+        }
 
         log.info("Created project '{}' for user {}", project.getName(), ownerId);
         return project;

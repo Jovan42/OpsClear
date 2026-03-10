@@ -32,7 +32,7 @@ export function useProjectRole(projectId: string) {
 export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; description?: string }) =>
+    mutationFn: (body: { name: string; description?: string; blockReasons?: string[] }) =>
       projectsApi.create(body),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['projects'] }),
   });
