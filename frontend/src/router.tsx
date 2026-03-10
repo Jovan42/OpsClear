@@ -7,6 +7,7 @@ import JobListPage from './features/jobs/JobListPage';
 import JobDetailPage from './features/jobs/JobDetailPage';
 import ApprovalQueuePage from './features/approvals/ApprovalQueuePage';
 import DashboardPage from './features/dashboard/DashboardPage';
+import SettingsPage from './features/settings/SettingsPage';
 import DesignPage from './dev/DesignPage';
 
 export const router = createBrowserRouter([
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: 'projects/:projectId/jobs/:jobId', element: <JobDetailPage /> },
       { path: 'projects/:projectId/approvals', element: <ApprovalQueuePage /> },
       { path: 'projects/:projectId/settings', element: <ProjectSettingsPage /> },
+      { path: 'settings', element: <SettingsPage /> },
       { path: 'design', element: <DesignPage /> },
     ],
   },
