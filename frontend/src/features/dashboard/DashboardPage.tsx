@@ -46,8 +46,8 @@ function StatusDonut({ summary }: Readonly<{ summary: DashboardSummary }>) {
   ].filter((d) => d.value > 0);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col">
-      <h2 className="text-sm font-semibold text-gray-700 mb-3">Status distribution</h2>
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 flex flex-col">
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Status distribution</h2>
       <div className="flex-1" style={{ minHeight: 180 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -90,11 +90,11 @@ function SummaryCard({ label, value, colorClass, onClick }: SummaryCardProps) {
     <button
       onClick={onClick}
       className={`flex flex-col items-start px-4 py-3 rounded-lg border text-left transition-colors ${
-        onClick ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'
-      } bg-white border-gray-200`}
+        onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : 'cursor-default'
+      } bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700`}
     >
       <span className={`text-2xl font-bold ${colorClass}`}>{value}</span>
-      <span className="text-xs text-gray-500 mt-0.5">{label}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</span>
     </button>
   );
 }
@@ -116,8 +116,8 @@ function SummaryCards({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5">
-      <h2 className="text-sm font-semibold text-gray-700 mb-3">Summary</h2>
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Summary</h2>
       <div className="grid grid-cols-2 gap-2">
         <SummaryCard
           label="New"
@@ -166,15 +166,15 @@ function SummaryCards({
 function BlockedJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId: string }>) {
   const navigate = useNavigate();
   return (
-    <div className="flex items-start justify-between gap-3 border border-gray-200 rounded-lg px-4 py-3 bg-white">
+    <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{job.title}</p>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{job.title}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {job.assignedToName ?? 'Unassigned'}
           {job.blockedAt && <> · blocked {blockedFor(job.blockedAt)}</>}
         </p>
         {job.blockedReason && (
-          <p className="text-xs text-red-600 mt-1 italic">"{job.blockedReason}"</p>
+          <p className="text-xs text-red-600 dark:text-red-400 mt-1 italic">"{job.blockedReason}"</p>
         )}
       </div>
       <button
@@ -192,10 +192,10 @@ function BlockedJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId
 function OverdueJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId: string }>) {
   const navigate = useNavigate();
   return (
-    <div className="flex items-start justify-between gap-3 border border-gray-200 rounded-lg px-4 py-3 bg-white">
+    <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{job.title}</p>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{job.title}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {job.assignedToName ?? 'Unassigned'}
           {job.deadline && <> · due {formatDate(job.deadline)}</>}
         </p>
@@ -221,10 +221,10 @@ function PendingApprovalRow({
 }>) {
   const navigate = useNavigate();
   return (
-    <div className="flex items-start justify-between gap-3 border border-gray-200 rounded-lg px-4 py-3 bg-white">
+    <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{approval.description}</p>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{approval.description}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {approval.jobTitle} · {formatDate(approval.requestedAt)}
         </p>
       </div>
@@ -254,9 +254,9 @@ function Section({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-800">
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
           {title}
-          <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+          <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
             {count}
           </span>
         </h2>
@@ -282,7 +282,7 @@ export default function DashboardPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Skeleton className="h-56 rounded-xl" />
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-3">
             <Skeleton className="h-4 w-20" />
             <div className="grid grid-cols-2 gap-2">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -357,13 +357,13 @@ export default function DashboardPage() {
       {/* Empty state */}
       {blockedJobs.length === 0 && overdueJobs.length === 0 && (!isOwnerOrAdmin || pendingApprovals.length === 0) && summary.total > 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-gray-500 text-sm">All clear — no blocked, overdue, or pending items.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">All clear — no blocked, overdue, or pending items.</p>
         </div>
       )}
 
       {summary.total === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-gray-500 text-sm">No jobs yet.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">No jobs yet.</p>
           <button
             onClick={() => navigate(`/projects/${projectId}/jobs`)}
             className="mt-2 text-sm text-brand hover:underline cursor-pointer"

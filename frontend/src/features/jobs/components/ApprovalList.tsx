@@ -22,9 +22,9 @@ function memberName(members: ProjectMemberResponse[], userId: string): string {
 
 function StatusBadge({ status }: { status: ApprovalResponse['status'] }) {
   const config = {
-    PENDING: 'bg-orange-100 text-orange-700',
-    APPROVED: 'bg-green-100 text-green-700',
-    REJECTED: 'bg-red-100 text-red-700',
+    PENDING: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    APPROVED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config[status]}`}>
@@ -50,16 +50,16 @@ export default function ApprovalList({ projectId, jobId, role, members }: Props)
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
   if (approvals.length === 0) {
-    return <p className="text-sm text-gray-400 py-2">No approval requests.</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500 py-2">No approval requests.</p>;
   }
 
   return (
     <>
       <div className="space-y-3">
         {approvals.map((approval) => (
-          <div key={approval.id} className="border border-gray-200 rounded-lg px-4 py-3">
-            <p className="text-sm font-medium text-gray-900 mb-1">{approval.description}</p>
-            <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+          <div key={approval.id} className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{approval.description}</p>
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
               <span>Requested by {memberName(members, approval.requesterId)}</span>
               <span>·</span>
               <span>{formatDateTime(approval.requestedAt)}</span>
@@ -67,7 +67,7 @@ export default function ApprovalList({ projectId, jobId, role, members }: Props)
             </div>
 
             {approval.status !== 'PENDING' && (
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {approval.approverId && (
                   <span>
                     {approval.status === 'APPROVED' ? 'Approved' : 'Rejected'} by{' '}

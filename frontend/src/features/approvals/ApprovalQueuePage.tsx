@@ -37,9 +37,9 @@ interface ApprovalCardProps {
 
 function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalCardProps) {
   return (
-    <div className="border border-gray-200 rounded-lg px-4 py-3 bg-white">
-      <p className="text-sm font-medium text-gray-900 mb-1">{approval.description}</p>
-      <p className="text-xs text-gray-500 mb-3">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
+      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{approval.description}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
         Requested by {memberName(members, approval.requesterId)} · {formatDateTime(approval.requestedAt)}
       </p>
       {isOwnerOrAdmin && (
@@ -72,7 +72,6 @@ export default function ApprovalQueuePage() {
   const { data: members = [] } = useProjectMembers(projectId);
   const [decision, setDecision] = useState<DecisionState>(null);
 
-  // Redirect MEMBER away from this page
   if (role === 'MEMBER') {
     navigate(`/projects/${projectId}/jobs`, { replace: true });
     return null;
@@ -84,7 +83,7 @@ export default function ApprovalQueuePage() {
         <Skeleton className="h-7 w-32 mb-6" />
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="border border-gray-200 rounded-lg px-4 py-3 bg-white space-y-2">
+            <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800 space-y-2">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3 w-1/2" />
               <div className="flex gap-2 pt-1">
@@ -102,7 +101,6 @@ export default function ApprovalQueuePage() {
     return <PageError message="Failed to load approvals." onRetry={() => void refetch()} />;
   }
 
-  // Group by jobId, sort jobs by oldest request
   const groupMap = new Map<string, { jobTitle: string; approvals: PendingApprovalResponse[] }>();
   for (const a of approvals) {
     if (!groupMap.has(a.jobId)) {
@@ -111,14 +109,12 @@ export default function ApprovalQueuePage() {
     groupMap.get(a.jobId)!.approvals.push(a);
   }
 
-  // Sort approvals within each group oldest-first
   for (const group of groupMap.values()) {
     group.approvals.sort(
       (a, b) => new Date(a.requestedAt).getTime() - new Date(b.requestedAt).getTime(),
     );
   }
 
-  // Sort job groups by oldest request across the group
   const groups = [...groupMap.entries()].sort(([, a], [, b]) => {
     const oldestA = Math.min(...a.approvals.map((x) => new Date(x.requestedAt).getTime()));
     const oldestB = Math.min(...b.approvals.map((x) => new Date(x.requestedAt).getTime()));
@@ -131,10 +127,10 @@ export default function ApprovalQueuePage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
           Approvals
           {totalPending > 0 && (
-            <span className="ml-2 text-sm font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+            <span className="ml-2 text-sm font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
               {totalPending} pending
             </span>
           )}
@@ -143,14 +139,14 @@ export default function ApprovalQueuePage() {
 
       {groups.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-gray-500 text-sm">All caught up — no pending approvals.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">All caught up — no pending approvals.</p>
         </div>
       ) : (
         <div className="space-y-8">
           {groups.map(([jobId, group]) => (
             <div key={jobId}>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-800">{group.jobTitle}</h2>
+                <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{group.jobTitle}</h2>
                 <button
                   onClick={() => navigate(`/projects/${projectId}/jobs/${jobId}`)}
                   className="text-xs text-brand hover:underline cursor-pointer"

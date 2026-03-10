@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { createContext, useContext } from 'react';
 
 const STORAGE_KEY = 'opsclear:preferences';
 
@@ -8,23 +8,19 @@ export interface Preferences {
   theme: Theme;
 }
 
-const defaults: Preferences = { theme: 'system' };
+export const defaults: Preferences = { theme: 'system' };
 
-export function usePreferences() {
-  const [prefs, setPrefs] = useState<Preferences>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
-    } catch {
-      return defaults;
-    }
-  });
+export const PREFERENCES_STORAGE_KEY = STORAGE_KEY;
 
-  const update = (patch: Partial<Preferences>) => {
-    const next = { ...prefs, ...patch };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setPrefs(next);
-  };
+export interface PreferencesContextValue {
+  prefs: Preferences;
+  update: (patch: Partial<Preferences>) => void;
+}
 
-  return { prefs, update };
+export const PreferencesContext = createContext<PreferencesContextValue | null>(null);
+
+export function usePreferences(): PreferencesContextValue {
+  const ctx = useContext(PreferencesContext);
+  if (!ctx) throw new Error('usePreferences must be used inside PreferencesProvider');
+  return ctx;
 }

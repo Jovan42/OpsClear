@@ -25,7 +25,7 @@ export default function ConfirmModal({
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <div className="space-y-4">
-        <p className="text-sm text-gray-600">{message}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300">{message}</p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
             Cancel

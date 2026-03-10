@@ -42,12 +42,12 @@ export default function BlockModal({ open, onClose, projectId, onConfirm, isPend
     <Modal open={open} onClose={onClose} title="Block Job">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Block reason <span className="text-red-500">*</span>
           </label>
           <div className="relative" ref={containerRef}>
             <input
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
               placeholder="Select or type a reason…"
               value={inputValue}
               onChange={(e) => {
@@ -59,7 +59,7 @@ export default function BlockModal({ open, onClose, projectId, onConfirm, isPend
               autoComplete="off"
             />
             {dropdownOpen && filtered.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+              <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
                 {filtered.map((r) => (
                   <li key={r.id}>
                     <button
@@ -68,7 +68,7 @@ export default function BlockModal({ open, onClose, projectId, onConfirm, isPend
                         setInputValue(r.reason);
                         setDropdownOpen(false);
                       }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                      className="w-full text-left px-3 py-2 text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"
                     >
                       {r.reason}
                     </button>

@@ -10,12 +10,12 @@ import type { JobStatus } from '../../types';
 
 function JobListSkeleton() {
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
-      <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex gap-8">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+      <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex gap-8">
         {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-3 w-16" />)}
       </div>
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex gap-8 px-4 py-3 border-b border-gray-100 bg-white">
+        <div key={i} className="flex gap-8 px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-4 w-24" />
@@ -44,10 +44,10 @@ const FILTERS: { key: Filter; label: string }[] = [
 ];
 
 const STATUS_COLORS: Record<JobStatus, { badge: string; text: string }> = {
-  NEW:         { badge: 'bg-amber-100 text-amber-700', text: 'text-amber-700' },
-  IN_PROGRESS: { badge: 'bg-blue-100 text-blue-700',  text: 'text-blue-700'  },
-  BLOCKED:     { badge: 'bg-red-100 text-red-700',    text: 'text-red-700'   },
-  COMPLETED:   { badge: 'bg-green-100 text-green-700',text: 'text-green-700' },
+  NEW:         { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', text: 'text-amber-700 dark:text-amber-400' },
+  IN_PROGRESS: { badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',   text: 'text-blue-700 dark:text-blue-400'   },
+  BLOCKED:     { badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',       text: 'text-red-700 dark:text-red-400'     },
+  COMPLETED:   { badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', text: 'text-green-700 dark:text-green-400' },
 };
 
 function formatDeadline(deadline: string | null): string {
@@ -131,27 +131,27 @@ export default function JobListPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Jobs</h1>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Jobs</h1>
         <Button onClick={() => setModalOpen(true)}>+ New Job</Button>
       </div>
 
       {/* Status filter tabs */}
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-      <div className="flex gap-1 mb-4 border-b border-gray-200 min-w-max sm:min-w-0">
+      <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 min-w-max sm:min-w-0">
         {FILTERS.map(({ key, label }) => {
           const count = key === 'ALL' ? jobs.length : counts[key as JobStatus];
           const isActive = filter === key;
           const hasJobs = count > 0;
           const colors = key !== 'ALL' ? STATUS_COLORS[key as JobStatus] : null;
           const labelColor = !hasJobs && key !== 'ALL'
-            ? 'text-gray-400'
+            ? 'text-gray-400 dark:text-gray-500'
             : key === 'ALL'
-              ? isActive ? 'text-brand' : 'text-gray-500'
+              ? isActive ? 'text-brand' : 'text-gray-500 dark:text-gray-400'
               : colors!.text;
           const badgeColor = !hasJobs && key !== 'ALL'
-            ? 'bg-gray-100 text-gray-400'
+            ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
             : key === 'ALL'
-              ? 'bg-gray-100 text-gray-600'
+              ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
               : colors!.badge;
 
           return (
@@ -159,7 +159,7 @@ export default function JobListPage() {
               key={key}
               onClick={() => setFilter(key)}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer ${
-                isActive ? 'border-brand' : 'border-transparent hover:border-gray-200'
+                isActive ? 'border-brand' : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
               } ${!hasJobs && key !== 'ALL' ? 'opacity-50' : ''}`}
             >
               <span className={labelColor}>{label}</span>
@@ -175,7 +175,7 @@ export default function JobListPage() {
       {/* Jobs table / card list */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-gray-500 text-sm mb-4">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
             {jobs.length === 0 ? 'No jobs yet.' : 'No jobs match this filter.'}
           </p>
           {jobs.length === 0 && (
@@ -190,23 +190,23 @@ export default function JobListPage() {
               <button
                 key={job.id}
                 onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
-                className={`w-full text-left bg-white border border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer ${
+                className={`w-full text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
                   job.status === 'BLOCKED' ? 'border-l-4 border-l-red-400' : ''
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-gray-900 flex-1">{job.title}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{job.title}</p>
                   <StatusBadge status={job.status} />
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
                   {job.client && (
-                    <span className="text-xs text-gray-500">{job.client}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{job.client}</span>
                   )}
                   {job.assignedToName && (
-                    <span className="text-xs text-gray-500">{job.assignedToName}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{job.assignedToName}</span>
                   )}
                   {job.deadline && (
-                    <span className={`text-xs ${isOverdue(job.deadline, job.status) ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                    <span className={`text-xs ${isOverdue(job.deadline, job.status) ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
                       {formatDeadline(job.deadline)}
                     </span>
                   )}
@@ -216,9 +216,9 @@ export default function JobListPage() {
           </div>
 
           {/* Desktop table view */}
-          <div className="hidden md:block border border-gray-200 rounded-xl overflow-hidden">
+          <div className="hidden md:block border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   {(
                     [
@@ -232,33 +232,33 @@ export default function JobListPage() {
                     <th
                       key={key}
                       onClick={() => toggleSort(key)}
-                      className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 select-none cursor-pointer hover:text-gray-700 whitespace-nowrap"
+                      className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 select-none cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 whitespace-nowrap"
                     >
                       {label}
                       <span className="ml-1 inline-block w-3 text-center">
-                        {sortKey === key ? (sortDir === 'asc' ? '↑' : '↓') : <span className="text-gray-300">↕</span>}
+                        {sortKey === key ? (sortDir === 'asc' ? '↑' : '↓') : <span className="text-gray-300 dark:text-gray-600">↕</span>}
                       </span>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {filtered.map((job) => (
                   <tr
                     key={job.id}
                     onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
-                    className={`bg-white hover:bg-gray-50 cursor-pointer transition-colors ${
+                    className={`bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
                       job.status === 'BLOCKED' ? 'border-l-2 border-l-red-400' : ''
                     }`}
                   >
-                    <td className="px-4 py-3 font-medium text-gray-900">{job.title}</td>
-                    <td className="px-4 py-3 text-gray-500">{job.client ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{job.assignedToName ?? '—'}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{job.title}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.client ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.assignedToName ?? '—'}</td>
                     <td
                       className={`px-4 py-3 ${
                         isOverdue(job.deadline, job.status)
                           ? 'text-red-600 font-medium'
-                          : 'text-gray-500'
+                          : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
                       {formatDeadline(job.deadline)}
