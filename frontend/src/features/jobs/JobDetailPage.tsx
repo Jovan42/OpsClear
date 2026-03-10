@@ -17,6 +17,7 @@ import { useProject, useProjectMembers, useProjectRole } from '../projects/usePr
 import { useAuth } from '../../auth/AuthContext';
 import { useApprovals } from './useApprovals';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import Markdown from '../../components/Markdown';
 import type { JobStatus } from '../../types';
 
 function formatDate(dateStr: string | null) {
@@ -190,7 +191,7 @@ export default function JobDetailPage() {
         {job.description && (
           <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Description</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{job.description}</p>
+            <Markdown className="text-sm text-gray-700 dark:text-gray-300">{job.description}</Markdown>
           </div>
         )}
       </div>

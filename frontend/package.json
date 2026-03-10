@@ -12,14 +12,18 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.80.7",
     "axios": "^1.9.0",
     "keycloak-js": "^26.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.57.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.6.2",
     "recharts": "^3.8.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "zod": "^3.25.67"
   },
   "devDependencies": {

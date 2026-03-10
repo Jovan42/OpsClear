@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '../../../components/Button';
 import ConfirmModal from '../../../components/ConfirmModal';
+import Markdown from '../../../components/Markdown';
 import { useNotes, useAddNote } from '../useNotes';
 import type { ProjectMemberResponse } from '../../../types';
 
@@ -31,6 +32,7 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
   const { data: notes = [] } = useNotes(projectId, jobId);
   const { mutate: addNote, isPending } = useAddNote(projectId, jobId);
   const [content, setContent] = useState('');
+  const [tab, setTab] = useState<'write' | 'preview'>('write');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const isOverLimit = content.length > NOTE_MAX;
@@ -45,13 +47,13 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
       return;
     }
 
-    addNote(content.trim(), { onSuccess: () => setContent('') });
+    addNote(content.trim(), { onSuccess: () => { setContent(''); setTab('write'); } });
   }
 
   function handleConfirmNote() {
     sessionStorage.setItem(SESSION_KEY, 'true');
     setConfirmOpen(false);
-    addNote(content.trim(), { onSuccess: () => setContent('') });
+    addNote(content.trim(), { onSuccess: () => { setContent(''); setTab('write'); } });
   }
 
   return (
@@ -68,31 +70,61 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
             </span>
             <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateTime(note.createdAt)}</span>
           </div>
-          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{note.content}</p>
+          <Markdown className="text-sm text-gray-700 dark:text-gray-300">{note.content}</Markdown>
         </div>
       ))}
 
-      <div className="mt-3">
-        <textarea
-          rows={3}
-          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent resize-none"
-          placeholder="Add a note…"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
-        <div className="flex items-center justify-between mt-1">
-          <span className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>
-            {content.length}/{NOTE_MAX}
-          </span>
-          <Button
-            size="sm"
-            onClick={handleSubmit}
-            disabled={isEmpty || isOverLimit}
-            loading={isPending}
-          >
-            Add Note
-          </Button>
+      <div className="mt-3 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+          {(['write', 'preview'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`px-4 py-2 text-xs font-medium capitalize transition-colors cursor-pointer ${
+                tab === t
+                  ? 'text-gray-900 dark:text-gray-100 border-b-2 border-brand -mb-px bg-white dark:bg-gray-900'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              {t}
+            </button>
+          ))}
         </div>
+
+        {/* Content */}
+        {tab === 'write' ? (
+          <textarea
+            rows={4}
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none resize-none"
+            placeholder="Add a note… (markdown supported)"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+        ) : (
+          <div className="min-h-[96px] px-3 py-2 bg-white dark:bg-gray-900">
+            {content.trim() ? (
+              <Markdown className="text-sm text-gray-700 dark:text-gray-300">{content}</Markdown>
+            ) : (
+              <p className="text-sm text-gray-400 dark:text-gray-500 italic">Nothing to preview.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between mt-1">
+        <span className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>
+          {content.length}/{NOTE_MAX}
+        </span>
+        <Button
+          size="sm"
+          onClick={handleSubmit}
+          disabled={isEmpty || isOverLimit}
+          loading={isPending}
+        >
+          Add Note
+        </Button>
       </div>
 
       <ConfirmModal
