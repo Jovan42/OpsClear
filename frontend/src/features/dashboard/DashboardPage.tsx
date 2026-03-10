@@ -4,7 +4,8 @@ import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
 import { useDashboard } from './useDashboard';
-import { useProjectRole } from '../projects/useProjects';
+import { useProject, useProjectRole } from '../projects/useProjects';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import type { DashboardSummary, JobSummary, PendingApprovalResponse } from '../../types';
 
 // ---- helpers ----
@@ -272,8 +273,10 @@ function Section({
 export default function DashboardPage() {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
+  const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);
   const { data, isLoading, isError, refetch } = useDashboard(projectId);
+  usePageTitle('Dashboard', project?.name);
 
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 

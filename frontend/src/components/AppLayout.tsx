@@ -1,6 +1,6 @@
-import { Outlet, useLocation, useNavigate, NavLink } from 'react-router-dom';
+import { Outlet, useLocation, NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { useProjectRole } from '../features/projects/useProjects';
+import { useProject, useProjectRole } from '../features/projects/useProjects';
 import { useApprovalQueue } from '../features/approvals/useApprovalQueue';
 import UserMenu from './UserMenu';
 import { useTheme } from '../hooks/useTheme';
@@ -44,19 +44,32 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
   );
 }
 
+function ProjectBreadcrumb({ projectId }: Readonly<{ projectId: string }>) {
+  const { data: project } = useProject(projectId);
+  if (!project) return null;
+  return (
+    <>
+      <span className="text-white/40 text-lg font-light">/</span>
+      <Link
+        to={`/projects/${projectId}/dashboard`}
+        className="text-sm font-medium text-white/80 hover:text-white transition-colors truncate max-w-[160px] sm:max-w-xs"
+      >
+        {project.name}
+      </Link>
+    </>
+  );
+}
+
 export default function AppLayout() {
   useTheme();
   const { name } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const segments = location.pathname.split('/');
   const projectId =
     segments[1] === 'projects' && segments[2] && segments[2].length > 8
       ? segments[2]
       : null;
-
-  const isRoot = location.pathname === '/projects';
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -66,19 +79,14 @@ export default function AppLayout() {
       >
         {/* Main header row */}
         <div className="flex items-center justify-between h-14">
-          <div className="flex items-center gap-2">
-            {!isRoot && (
-              <button
-                onClick={() => navigate(-1)}
-                className="flex items-center justify-center w-8 h-8 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                aria-label="Go back"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4L6 9L11 14" />
-                </svg>
-              </button>
-            )}
-            <span className="font-semibold text-lg tracking-tight">OpsClear</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <Link
+              to="/projects"
+              className="font-semibold text-lg tracking-tight text-white hover:text-white/80 transition-colors shrink-0"
+            >
+              OpsClear
+            </Link>
+            {projectId && <ProjectBreadcrumb projectId={projectId} />}
           </div>
 
           <div className="flex items-center gap-6">

@@ -22,6 +22,7 @@ import {
   useBlockReasons,
   useDeleteBlockReason,
 } from '../jobs/useBlockReasons';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 const detailsSchema = z.object({
   name: z.string().min(1, 'Name is required').max(80, 'Max 80 characters'),
@@ -39,6 +40,7 @@ export default function ProjectSettingsPage() {
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: members = [], isLoading: membersLoading } = useProjectMembers(projectId);
   const role = useProjectRole(projectId);
+  usePageTitle('Settings', project?.name);
 
   const { mutate: updateProject, isPending: saving } = useUpdateProject();
   const { mutate: deleteProject, isPending: deleting } = useDeleteProject();

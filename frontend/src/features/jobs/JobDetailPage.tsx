@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
@@ -13,9 +13,10 @@ import NoteThread from './components/NoteThread';
 import ApprovalList from './components/ApprovalList';
 import RequestApprovalModal from './components/RequestApprovalModal';
 import { useJob, useUpdateJobStatus, useDeleteJob } from './useJobs';
-import { useProjectMembers, useProjectRole } from '../projects/useProjects';
+import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
 import { useAuth } from '../../auth/AuthContext';
 import { useApprovals } from './useApprovals';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import type { JobStatus } from '../../types';
 
 function formatDate(dateStr: string | null) {
@@ -38,9 +39,11 @@ export default function JobDetailPage() {
   const { userId } = useAuth();
 
   const { data: job, isLoading, isError, refetch } = useJob(projectId, jobId);
+  const { data: project } = useProject(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
   const { data: approvals = [] } = useApprovals(projectId, jobId);
   const role = useProjectRole(projectId);
+  usePageTitle(job?.title, project?.name);
   const { mutate: updateStatus, isPending: isStatusPending } = useUpdateJobStatus(projectId);
   const { mutate: deleteJob, isPending: isDeleting } = useDeleteJob(projectId);
 
@@ -101,12 +104,16 @@ export default function JobDetailPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       {/* Header */}
       <div>
-        <button
-          onClick={() => navigate(`/projects/${projectId}/jobs`)}
-          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-3 flex items-center gap-1 cursor-pointer"
-        >
-          ← Back to jobs
-        </button>
+        <nav className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-3">
+          <Link
+            to={`/projects/${projectId}/jobs`}
+            className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            Jobs
+          </Link>
+          <span>/</span>
+          <span className="text-gray-700 dark:text-gray-200 truncate">{job.title}</span>
+        </nav>
 
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 flex-wrap">
