@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -72,6 +74,54 @@ class BlockReasonIntegrationTest {
                 .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build());
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+    }
+
+    // --- POST /api/projects (with blockReasons) ---
+
+    @Test
+    @DisplayName("Block reasons should be seeded when provided at project creation")
+    void createProject_shouldSeedBlockReasons_whenProvided() throws Exception {
+        mockMvc.perform(post(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Project With Reasons",
+                                  "blockReasons": ["Waiting on client", "Missing spec"]
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Project With Reasons"));
+
+        UUID newProjectId = projectRepository.findByMemberIdAndDeletedAtIsNull(ownerId)
+                .stream()
+                .filter(p -> p.getName().equals("Project With Reasons"))
+                .findFirst()
+                .orElseThrow()
+                .getId();
+
+        assertThat(blockReasonRepository.findActiveByProjectId(newProjectId)).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("No block reasons should be created when field is omitted from project creation")
+    void createProject_shouldNotSeedBlockReasons_whenFieldOmitted() throws Exception {
+        mockMvc.perform(post(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "name": "Project Without Reasons" }
+                                """))
+                .andExpect(status().isCreated());
+
+        UUID newProjectId = projectRepository.findByMemberIdAndDeletedAtIsNull(ownerId)
+                .stream()
+                .filter(p -> p.getName().equals("Project Without Reasons"))
+                .findFirst()
+                .orElseThrow()
+                .getId();
+
+        assertThat(blockReasonRepository.findActiveByProjectId(newProjectId)).isEmpty();
     }
 
     // --- GET /api/projects/{projectId}/block-reasons ---

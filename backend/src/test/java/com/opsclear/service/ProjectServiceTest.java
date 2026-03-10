@@ -9,6 +9,7 @@ import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -24,6 +25,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,6 +47,9 @@ class ProjectServiceTest {
     @Mock
     private ProjectMemberRepository projectMemberRepository;
 
+    @Mock
+    private BlockReasonRepository blockReasonRepository;
+
     private ProjectService projectService;
 
     private UserModel testOwner;
@@ -50,7 +57,7 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository);
+        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository, blockReasonRepository);
         ownerId = UUID.randomUUID();
         testOwner = UserModel.builder()
                 .id(ownerId)
@@ -88,6 +95,53 @@ class ProjectServiceTest {
         verify(projectMemberRepository).save(memberCaptor.capture());
         assertThat(memberCaptor.getValue().getRole()).isEqualTo(ProjectMemberRole.OWNER);
         assertThat(memberCaptor.getValue().getUserId()).isEqualTo(ownerId);
+    }
+
+    @Test
+    @DisplayName("Should seed block reasons when provided at project creation")
+    void create_shouldSeedBlockReasons_whenProvided() {
+        CreateProjectRequest request = CreateProjectRequest.builder()
+                .name("Acme Corp")
+                .blockReasons(List.of("Waiting on client", "Missing spec"))
+                .build();
+
+        ProjectModel saved = ProjectModel.builder()
+                .id(UUID.randomUUID())
+                .name("Acme Corp")
+                .ownerId(ownerId)
+                .build();
+
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
+        when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
+        when(projectMemberRepository.save(any(ProjectMemberModel.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        projectService.create(request, ownerId);
+
+        verify(blockReasonRepository, times(2)).findOrCreate(any(UUID.class), any(String.class));
+    }
+
+    @Test
+    @DisplayName("Should not call blockReasonRepository when no block reasons provided")
+    void create_shouldNotSeedBlockReasons_whenNoneProvided() {
+        CreateProjectRequest request = CreateProjectRequest.builder()
+                .name("Acme Corp")
+                .build();
+
+        ProjectModel saved = ProjectModel.builder()
+                .id(UUID.randomUUID())
+                .name("Acme Corp")
+                .ownerId(ownerId)
+                .build();
+
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
+        when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
+        when(projectMemberRepository.save(any(ProjectMemberModel.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        projectService.create(request, ownerId);
+
+        verify(blockReasonRepository, never()).findOrCreate(any(UUID.class), any(String.class));
     }
 
     @Test
