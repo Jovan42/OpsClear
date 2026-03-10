@@ -8,7 +8,7 @@ export const projectsApi = {
   get: (projectId: string) =>
     apiClient.get<ProjectResponse>(`/api/projects/${projectId}`).then((r) => r.data),
 
-  create: (body: { name: string; description?: string }) =>
+  create: (body: { name: string; description?: string; blockReasons?: string[] }) =>
     apiClient.post<ProjectResponse>('/api/projects', body).then((r) => r.data),
 
   update: (projectId: string, body: { name: string; description?: string }) =>

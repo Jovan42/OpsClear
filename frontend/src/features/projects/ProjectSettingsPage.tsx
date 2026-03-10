@@ -18,6 +18,10 @@ import {
   useUpdateMember,
   useRemoveMember,
 } from './useProjects';
+import {
+  useBlockReasons,
+  useDeleteBlockReason,
+} from '../jobs/useBlockReasons';
 
 const detailsSchema = z.object({
   name: z.string().min(1, 'Name is required').max(80, 'Max 80 characters'),
@@ -40,6 +44,9 @@ export default function ProjectSettingsPage() {
   const { mutate: deleteProject, isPending: deleting } = useDeleteProject();
   const { mutate: updateMember } = useUpdateMember(projectId);
   const { mutate: removeMember } = useRemoveMember(projectId);
+
+  const { data: blockReasons = [] } = useBlockReasons(projectId, !!projectId);
+  const { mutate: deleteBlockReason } = useDeleteBlockReason(projectId);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
@@ -219,6 +226,39 @@ export default function ProjectSettingsPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Block reasons ── */}
+      {canEdit && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
+            Block Reasons
+          </h2>
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Pre-configured reasons team members can select when blocking a job.
+            </p>
+            {blockReasons.length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-gray-500 italic">
+                No block reasons configured. Set them when creating the project.
+              </p>
+            ) : (
+              <ul className="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+                {blockReasons.map((br) => (
+                  <li key={br.id} className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-800 first:rounded-t-xl last:rounded-b-xl">
+                    <span className="text-sm text-gray-800 dark:text-gray-200">{br.reason}</span>
+                    <button
+                      onClick={() => deleteBlockReason(br.id)}
+                      className="text-xs text-red-500 hover:text-red-700 transition-colors cursor-pointer ml-4 shrink-0"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ── Danger zone ── */}
       {isOwner && (
