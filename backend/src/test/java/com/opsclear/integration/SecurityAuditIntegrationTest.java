@@ -127,4 +127,5 @@ class SecurityAuditIntegrationTest {
                 .andExpect(jsonPath("$.stackTrace").doesNotExist())
                 .andExpect(jsonPath("$.exception").doesNotExist());
     }
+
 }
