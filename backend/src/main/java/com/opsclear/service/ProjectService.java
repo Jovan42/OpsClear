@@ -53,7 +53,6 @@ public class ProjectService {
         if (request.getBlockReasons() != null) {
             UUID projectId = project.getId();
             request.getBlockReasons().stream()
-                    .filter(r -> r != null && !r.isBlank())
                     .map(String::strip)
                     .distinct()
                     .forEach(r -> blockReasonRepository.findOrCreate(projectId, r));
