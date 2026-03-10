@@ -4,7 +4,7 @@ import { useProjectRole } from '../features/projects/useProjects';
 import { useApprovalQueue } from '../features/approvals/useApprovalQueue';
 import UserMenu from './UserMenu';
 
-function ProjectNav({ projectId }: { projectId: string }) {
+function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
   const role = useProjectRole(projectId);
   const { data: pending = [] } = useApprovalQueue(projectId);
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
@@ -85,7 +85,7 @@ export default function AppLayout() {
                 <ProjectNav projectId={projectId} />
               </div>
             )}
-            <UserMenu name={name} />
+            <UserMenu name={name ?? ''} />
           </div>
         </div>
 

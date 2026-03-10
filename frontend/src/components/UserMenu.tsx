@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import keycloak from '../auth/keycloak';
 
 interface UserMenuProps {
-  name: string;
+  readonly name: string;
 }
 
-export default function UserMenu({ name }: UserMenuProps) {
+export default function UserMenu({ name }: Readonly<UserMenuProps>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
