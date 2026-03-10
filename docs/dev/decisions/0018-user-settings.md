@@ -44,11 +44,39 @@ is an unnecessary dependency. Keycloak attribute management has no standard REST
 that can be called from the resource server — it would require either the admin REST
 API (grants too much privilege) or a custom Keycloak SPI. Disproportionate complexity.
 
-**Migration path:** If cross-device sync becomes a requirement after launch, a
-`JSONB preferences DEFAULT '{}'` column can be added to `users` with a single Flyway
-migration and a `GET /api/users/me/settings` + `PATCH /api/users/me/settings` API
-(tracked in Future Considerations). The frontend `usePreferences` hook is the only
-code that needs to change — consumers are insulated.
+**Migration path:** If cross-device sync becomes a requirement after launch, introduce
+a dedicated `user_settings` table with per-device override support:
+
+```sql
+CREATE TABLE user_settings (
+    user_id    UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_id  VARCHAR(128) NOT NULL DEFAULT 'global',
+    key        VARCHAR(64)  NOT NULL,
+    value      TEXT         NOT NULL,
+    updated_at TIMESTAMP    NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, device_id, key)
+);
+```
+
+`device_id = 'global'` means a user-level setting that applies to all devices.
+A specific `device_id` (a UUID generated on first browser visit and persisted in
+`localStorage` as `opsclear:device_id`) is a device-level override.
+
+Resolution order: **device setting → global setting → app default**
+
+This allows a user to have dark mode on their phone and light mode on their desktop
+without either overriding the other. The global setting acts as the user's default
+for any device that has no override.
+
+Expose via:
+```
+GET  /api/users/me/settings?deviceId=<uuid>   → resolved settings (device + global merged)
+PATCH /api/users/me/settings?deviceId=<uuid>  → write to device-specific row
+PATCH /api/users/me/settings                  → write to global row
+```
+
+The frontend `usePreferences` hook is the only code that needs to change —
+consumers are insulated.
 
 ### 2. Frontend abstraction — `usePreferences` hook
 
