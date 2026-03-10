@@ -291,6 +291,90 @@ class ProjectIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @DisplayName("Should return 409 when project name already exists for the same owner")
+    void createProject_shouldReturn409_whenNameAlreadyExistsForSameOwner() throws Exception {
+        createTestProject("Acme Corp", null);
+
+        String body = """
+                { "name": "Acme Corp" }
+                """;
+
+        mockMvc.perform(post(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
+    @DisplayName("Should return 201 when project name is reused after soft delete")
+    void createProject_shouldReturn201_whenNameReusedAfterSoftDelete() throws Exception {
+        ProjectModel deleted = createTestProject("Reusable Name", null);
+        deleted.softDelete();
+        projectRepository.save(deleted);
+
+        String body = """
+                { "name": "Reusable Name" }
+                """;
+
+        mockMvc.perform(post(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Reusable Name"));
+    }
+
+    @Test
+    @DisplayName("Should return 409 when updating project name to one taken by another active project")
+    void updateProject_shouldReturn409_whenNameTakenByAnotherActiveProject() throws Exception {
+        createTestProject("Taken Name", null);
+        ProjectModel other = createTestProject("Other Project", null);
+
+        String body = """
+                { "name": "Taken Name" }
+                """;
+
+        mockMvc.perform(put(ApiPaths.project(other.getId()))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
+    @DisplayName("Should return 200 when updating project with unchanged name")
+    void updateProject_shouldReturn200_whenNameIsUnchanged() throws Exception {
+        ProjectModel project = createTestProject("Same Name", null);
+
+        String body = """
+                { "name": "Same Name", "description": "Updated desc" }
+                """;
+
+        mockMvc.perform(put(ApiPaths.project(project.getId()))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Same Name"))
+                .andExpect(jsonPath("$.description").value("Updated desc"));
+    }
+
     private ProjectModel createTestProject(String name, String description) {
         ProjectModel project = ProjectModel.builder()
                 .name(name)

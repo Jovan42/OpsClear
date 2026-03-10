@@ -70,6 +70,25 @@ public class ProjectRepository {
                 .map(this::toModel);
     }
 
+    public boolean existsByNameAndOwnerIdAndDeletedAtIsNull(String name, UUID ownerId) {
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(PROJECTS)
+                        .where(PROJECTS.NAME.equalIgnoreCase(name))
+                        .and(PROJECTS.OWNER_ID.eq(ownerId))
+                        .and(PROJECTS.DELETED_AT.isNull()));
+    }
+
+    public boolean existsByNameAndOwnerIdAndIdNotAndDeletedAtIsNull(String name, UUID ownerId, UUID excludeId) {
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(PROJECTS)
+                        .where(PROJECTS.NAME.equalIgnoreCase(name))
+                        .and(PROJECTS.OWNER_ID.eq(ownerId))
+                        .and(PROJECTS.ID.notEqual(excludeId))
+                        .and(PROJECTS.DELETED_AT.isNull()));
+    }
+
     public Optional<ProjectModel> findById(UUID id) {
         return selectWithOwner()
                 .where(PROJECTS.ID.eq(id))
