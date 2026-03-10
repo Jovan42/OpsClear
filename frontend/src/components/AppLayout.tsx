@@ -1,8 +1,8 @@
 import { Outlet, useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import keycloak from '../auth/keycloak';
 import { useProjectRole } from '../features/projects/useProjects';
 import { useApprovalQueue } from '../features/approvals/useApprovalQueue';
+import UserMenu from './UserMenu';
 
 function ProjectNav({ projectId }: { projectId: string }) {
   const role = useProjectRole(projectId);
@@ -85,15 +85,7 @@ export default function AppLayout() {
                 <ProjectNav projectId={projectId} />
               </div>
             )}
-            <div className="flex items-center gap-3 sm:gap-4">
-              <span className="hidden sm:inline text-sm text-white/80">{name}</span>
-              <button
-                onClick={() => keycloak.logout()}
-                className="text-sm text-white/80 hover:text-white transition-colors cursor-pointer"
-              >
-                Sign out
-              </button>
-            </div>
+            <UserMenu name={name} />
           </div>
         </div>
 
