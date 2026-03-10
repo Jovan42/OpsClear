@@ -223,7 +223,6 @@ Process:
 
 - [x] Mobile responsive design
 - [x] Loading states, error handling
-- [ ] In-app notifications
 - [ ] Performance optimization
 - [x] Security audit
 
