@@ -51,6 +51,10 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs";
     }
 
+    static String jobsSearch(UUID projectId, String q) {
+        return "/api/projects/" + projectId + "/jobs?q=" + q;
+    }
+
     static String job(UUID projectId, UUID jobId) {
         return "/api/projects/" + projectId + "/jobs/" + jobId;
     }

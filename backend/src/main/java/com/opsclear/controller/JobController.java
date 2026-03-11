@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -43,9 +44,10 @@ public class JobController {
     @GetMapping
     public ResponseEntity<List<JobResponse>> list(
             @PathVariable UUID projectId,
+            @RequestParam(required = false) String q,
             JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
-        List<JobResponse> jobs = jobService.list(projectId, userId)
+        List<JobResponse> jobs = jobService.list(projectId, userId, q)
                 .stream()
                 .map(JobResponse::from)
                 .toList();

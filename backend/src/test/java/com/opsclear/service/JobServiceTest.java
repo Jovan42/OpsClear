@@ -208,7 +208,7 @@ class JobServiceTest {
                 .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).thenReturn(allJobs);
 
-        List<JobModel> result = jobService.list(projectId, ownerId);
+        List<JobModel> result = jobService.list(projectId, ownerId, null);
 
         assertThat(result).hasSize(2);
     }
@@ -232,10 +232,63 @@ class JobServiceTest {
         when(jobRepository.findByProjectIdAndAssignedToAndDeletedAtIsNull(projectId, memberId))
                 .thenReturn(assignedJobs);
 
-        List<JobModel> result = jobService.list(projectId, memberId);
+        List<JobModel> result = jobService.list(projectId, memberId, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
+    }
+
+    @Test
+    @DisplayName("OWNER search should delegate to repository with null assignedTo filter")
+    void list_shouldSearchAllJobs_forOwnerWithQuery() {
+        List<JobModel> results = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Fix login bug").status(JobStatus.NEW).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, null, "login")).thenReturn(results);
+
+        List<JobModel> result = jobService.list(projectId, ownerId, "login");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getTitle()).isEqualTo("Fix login bug");
+    }
+
+    @Test
+    @DisplayName("MEMBER search should delegate to repository scoped to their own jobs")
+    void list_shouldSearchOnlyAssignedJobs_forMemberWithQuery() {
+        List<JobModel> results = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Invoice task").assignedTo(memberId).status(JobStatus.NEW).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+        when(jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, memberId, "invoice")).thenReturn(results);
+
+        List<JobModel> result = jobService.list(projectId, memberId, "invoice");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
+    }
+
+    @Test
+    @DisplayName("Blank query string should fall through to normal list, not search")
+    void list_shouldIgnoreBlankQuery_andReturnAllJobs() {
+        List<JobModel> allJobs = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Job A").status(JobStatus.NEW).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).thenReturn(allJobs);
+
+        List<JobModel> result = jobService.list(projectId, ownerId, "   ");
+
+        assertThat(result).hasSize(1);
     }
 
     // --- getById ---
