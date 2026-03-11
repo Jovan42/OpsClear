@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
+import MarkdownEditor from '../../components/MarkdownEditor';
 import { useCreateJob, useUpdateJob } from './useJobs';
 import { useProjectMembers } from '../projects/useProjects';
 import type { JobResponse, ProjectMemberResponse } from '../../types';
@@ -67,6 +68,7 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
     reset,
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
@@ -129,11 +131,17 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
 
         <div>
           <label className={labelClass}>Description</label>
-          <textarea
-            {...register('description')}
-            rows={2}
-            className={`${inputClass} resize-none`}
-            placeholder="Optional details…"
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <MarkdownEditor
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                placeholder="Optional details… (markdown supported)"
+                rows={8}
+              />
+            )}
           />
           {errors.description && (
             <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>

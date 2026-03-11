@@ -80,11 +80,6 @@ export default function ProjectListPage() {
                       </span>
                     )}
                   </div>
-                  {project.description && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                      {project.description}
-                    </p>
-                  )}
                 </button>
                 <button
                   onClick={() => navigate(`/projects/${project.id}/settings`)}

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Button from '../../../components/Button';
 import ConfirmModal from '../../../components/ConfirmModal';
+import Markdown from '../../../components/Markdown';
+import MarkdownEditor from '../../../components/MarkdownEditor';
 import { useNotes, useAddNote } from '../useNotes';
 import type { ProjectMemberResponse } from '../../../types';
 
@@ -68,31 +70,31 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
             </span>
             <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateTime(note.createdAt)}</span>
           </div>
-          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{note.content}</p>
+          <Markdown className="text-sm text-gray-700 dark:text-gray-300">{note.content}</Markdown>
         </div>
       ))}
 
       <div className="mt-3">
-        <textarea
-          rows={3}
-          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent resize-none"
-          placeholder="Add a note…"
+        <MarkdownEditor
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={setContent}
+          placeholder="Add a note… (markdown supported)"
+          rows={4}
         />
-        <div className="flex items-center justify-between mt-1">
-          <span className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>
-            {content.length}/{NOTE_MAX}
-          </span>
-          <Button
-            size="sm"
-            onClick={handleSubmit}
-            disabled={isEmpty || isOverLimit}
-            loading={isPending}
-          >
-            Add Note
-          </Button>
-        </div>
+      </div>
+
+      <div className="flex items-center justify-between mt-1">
+        <span className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>
+          {content.length}/{NOTE_MAX}
+        </span>
+        <Button
+          size="sm"
+          onClick={handleSubmit}
+          disabled={isEmpty || isOverLimit}
+          loading={isPending}
+        >
+          Add Note
+        </Button>
       </div>
 
       <ConfirmModal
