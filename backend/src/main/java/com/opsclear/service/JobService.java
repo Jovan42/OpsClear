@@ -72,7 +72,8 @@ public class JobService {
 
         if (priority != null) {
             if (isMember) {
-                return jobRepository.findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(projectId, priority, requesterId);
+                return jobRepository
+                        .findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(projectId, priority, requesterId);
             }
             return jobRepository.findByProjectIdAndPriorityAndDeletedAtIsNull(projectId, priority);
         }

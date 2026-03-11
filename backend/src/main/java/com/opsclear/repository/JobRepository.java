@@ -68,7 +68,8 @@ public class JobRepository {
                 .map(this::toModel);
     }
 
-    public List<JobModel> findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(UUID projectId, JobPriority priority, UUID assignedTo) {
+    public List<JobModel> findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(
+            UUID projectId, JobPriority priority, UUID assignedTo) {
         return selectWithAssignee()
                 .where(JOBS.PROJECT_ID.eq(projectId))
                 .and(JOBS.DELETED_AT.isNull())
@@ -115,7 +116,8 @@ public class JobRepository {
                     .set(JOBS.ASSIGNED_TO, job.getAssignedTo())
                     .set(JOBS.DEADLINE, toLocalDateTime(job.getDeadline()))
                     .set(JOBS.STATUS, job.getStatus().name())
-                    .set(JOBS.PRIORITY, job.getPriority() != null ? job.getPriority().name() : JobPriority.MEDIUM.name())
+                    .set(JOBS.PRIORITY,
+                            job.getPriority() != null ? job.getPriority().name() : JobPriority.MEDIUM.name())
                     .set(JOBS.CREATED_BY, job.getCreatedBy())
                     .set(JOBS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(JOBS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
