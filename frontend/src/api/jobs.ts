@@ -2,9 +2,9 @@ import apiClient from './client';
 import type { JobResponse, JobStatus } from '../types';
 
 export const jobsApi = {
-  list: (projectId: string) =>
+  list: (projectId: string, q?: string) =>
     apiClient
-      .get<JobResponse[]>(`/api/projects/${projectId}/jobs`)
+      .get<JobResponse[]>(`/api/projects/${projectId}/jobs`, { params: q ? { q } : undefined })
       .then((r) => r.data),
 
   get: (projectId: string, jobId: string) =>

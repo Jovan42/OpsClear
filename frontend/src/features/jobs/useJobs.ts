@@ -1,11 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobsApi } from '../../api/jobs';
 import type { JobStatus } from '../../types';
 
-export function useJobList(projectId: string) {
+export function useJobList(projectId: string, q?: string) {
   return useQuery({
-    queryKey: ['jobs', projectId],
-    queryFn: () => jobsApi.list(projectId),
+    queryKey: ['jobs', projectId, q ?? ''],
+    queryFn: () => jobsApi.list(projectId, q),
+    placeholderData: keepPreviousData,
   });
 }
 
