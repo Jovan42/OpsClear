@@ -7,6 +7,7 @@ import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
 import { useJobList } from './useJobs';
 import { useProject } from '../projects/useProjects';
+import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import type { JobStatus } from '../../types';
 
@@ -83,13 +84,15 @@ export default function JobListPage() {
   const [sortKey, setSortKey] = useState<SortKey>('status');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortKey(key); setSortDir('asc'); }
   }
 
-  const { data: jobs = [], isLoading, isError, refetch } = useJobList(projectId);
+  const { data: jobs = [], isLoading, isError, refetch } = useJobList(projectId, debouncedSearch || undefined);
 
   const counts: Record<JobStatus, number> = {
     NEW: jobs.filter((j) => j.status === 'NEW').length,
@@ -139,6 +142,17 @@ export default function JobListPage() {
         <Button onClick={() => setModalOpen(true)}>+ New Job</Button>
       </div>
 
+      {/* Search */}
+      <div className="mb-4">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by title, client, or assignee…"
+          className="w-full sm:max-w-sm rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
+        />
+      </div>
+
       {/* Status filter tabs */}
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 min-w-max sm:min-w-0">
@@ -180,9 +194,13 @@ export default function JobListPage() {
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-            {jobs.length === 0 ? 'No jobs yet.' : 'No jobs match this filter.'}
+            {debouncedSearch
+              ? `No results for "${debouncedSearch}".`
+              : jobs.length === 0
+                ? 'No jobs yet.'
+                : 'No jobs match this filter.'}
           </p>
-          {jobs.length === 0 && (
+          {!debouncedSearch && jobs.length === 0 && (
             <Button onClick={() => setModalOpen(true)}>Create first job</Button>
           )}
         </div>
