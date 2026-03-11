@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import Markdown from '../../components/Markdown';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
 import { useDashboard } from './useDashboard';
@@ -311,6 +312,13 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      {/* Project description */}
+      {project?.description && (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-4">
+          <Markdown className="text-sm text-gray-700 dark:text-gray-300">{project.description}</Markdown>
+        </div>
+      )}
+
       {/* Top row: chart + summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatusDonut summary={summary} />
