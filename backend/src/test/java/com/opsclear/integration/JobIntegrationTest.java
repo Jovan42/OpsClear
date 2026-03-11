@@ -689,6 +689,108 @@ class JobIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // --- GET /api/projects/{projectId}/jobs?q= (search) ---
+
+    @Test
+    @DisplayName("Empty q param should fall through to normal list — all jobs returned")
+    void searchJobs_shouldReturnAllJobs_whenQueryIsEmpty() throws Exception {
+        createTestJob("Job Alpha", null, JobStatus.NEW);
+        createTestJob("Job Beta", null, JobStatus.IN_PROGRESS);
+
+        mockMvc.perform(get(ApiPaths.jobsSearch(projectId, ""))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("Blank q param should fall through to normal list — all jobs returned")
+    void searchJobs_shouldReturnAllJobs_whenQueryIsBlank() throws Exception {
+        createTestJob("Job Alpha", null, JobStatus.NEW);
+        createTestJob("Job Beta", null, JobStatus.IN_PROGRESS);
+
+        mockMvc.perform(get(ApiPaths.jobsSearch(projectId, "   "))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("OWNER search should return jobs matching title")
+    void searchJobs_shouldReturnMatchingByTitle_forOwner() throws Exception {
+        createTestJob("Fix login bug", null, JobStatus.NEW);
+        createTestJob("Deploy to staging", null, JobStatus.IN_PROGRESS);
+
+        mockMvc.perform(get(ApiPaths.jobsSearch(projectId, "login"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Fix login bug"));
+    }
+
+    @Test
+    @DisplayName("Search should be case-insensitive")
+    void searchJobs_shouldBeCaseInsensitive() throws Exception {
+        createTestJob("Fix Login Bug", null, JobStatus.NEW);
+
+        mockMvc.perform(get(ApiPaths.jobsSearch(projectId, "LOGIN"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("OWNER search should match jobs by client name")
+    void searchJobs_shouldReturnMatchingByClient_forOwner() throws Exception {
+        jobRepository.save(JobModel.builder()
+                .projectId(projectId).title("Quarterly report").client("Acme Corp")
+                .status(JobStatus.NEW).createdBy(ownerId).build());
+        createTestJob("Internal task", null, JobStatus.NEW);
+
+        mockMvc.perform(get(ApiPaths.jobsSearch(projectId, "acme"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].client").value("Acme Corp"));
+    }
+
+    @Test
+    @DisplayName("OWNER search should match jobs by assigned user name")
+    void searchJobs_shouldReturnMatchingByAssigneeName_forOwner() throws Exception {
+        createTestJob("Assigned task", memberId, JobStatus.NEW);
+        createTestJob("Unassigned task", null, JobStatus.NEW);
+
+        mockMvc.perform(get(ApiPaths.jobsSearch(projectId, "Member"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].assignedToName").value("Member"));
+    }
+
+    @Test
+    @DisplayName("Search returning no matches should return empty list")
+    void searchJobs_shouldReturnEmpty_whenNoMatch() throws Exception {
+        createTestJob("Fix login bug", null, JobStatus.NEW);
+
+        mockMvc.perform(get(ApiPaths.jobsSearch(projectId, "xyz123"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("MEMBER search should only return matching jobs assigned to them")
+    void searchJobs_shouldBeScoped_forMember() throws Exception {
+        createTestJob("Member login task", memberId, JobStatus.NEW);
+        createTestJob("Owner login task", ownerId, JobStatus.NEW);
+
+        mockMvc.perform(get(ApiPaths.jobsSearch(projectId, "login"))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Member login task"));
+    }
+
     // --- helpers ---
 
     private JobModel createTestJob(String title, UUID assignedTo, JobStatus status) {

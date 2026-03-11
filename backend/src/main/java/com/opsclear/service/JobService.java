@@ -58,11 +58,17 @@ public class JobService {
     }
 
     @Transactional(readOnly = true)
-    public List<JobModel> list(UUID projectId, UUID requesterId) {
+    public List<JobModel> list(UUID projectId, UUID requesterId, String q) {
         requireProjectExists(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
+        boolean isMember = requester.getRole() == ProjectMemberRole.MEMBER;
 
-        if (requester.getRole() == ProjectMemberRole.MEMBER) {
+        if (q != null && !q.isBlank()) {
+            UUID assignedTo = isMember ? requesterId : null;
+            return jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, assignedTo, q.trim());
+        }
+
+        if (isMember) {
             return jobRepository.findByProjectIdAndAssignedToAndDeletedAtIsNull(projectId, requesterId);
         }
         return jobRepository.findByProjectIdAndDeletedAtIsNull(projectId);

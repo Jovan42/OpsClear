@@ -7,6 +7,7 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.SelectOnConditionStep;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -51,6 +52,22 @@ public class JobRepository {
         return selectWithAssignee()
                 .where(JOBS.PROJECT_ID.eq(projectId))
                 .and(JOBS.DELETED_AT.isNull())
+                .fetch()
+                .map(this::toModel);
+    }
+
+    public List<JobModel> searchByProjectIdAndDeletedAtIsNull(UUID projectId, UUID assignedTo, String q) {
+        String pattern = "%" + q.toLowerCase() + "%";
+        return selectWithAssignee()
+                .where(JOBS.PROJECT_ID.eq(projectId))
+                .and(JOBS.DELETED_AT.isNull())
+                .and(assignedTo != null ? JOBS.ASSIGNED_TO.eq(assignedTo) : DSL.noCondition())
+                .and(DSL.or(
+                        JOBS.TITLE.likeIgnoreCase(pattern),
+                        JOBS.DESCRIPTION.likeIgnoreCase(pattern),
+                        JOBS.CLIENT.likeIgnoreCase(pattern),
+                        USERS.NAME.likeIgnoreCase(pattern)
+                ))
                 .fetch()
                 .map(this::toModel);
     }

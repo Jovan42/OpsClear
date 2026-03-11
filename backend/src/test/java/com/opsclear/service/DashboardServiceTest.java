@@ -111,7 +111,7 @@ class DashboardServiceTest {
     @DisplayName("get — returns correct summary counts for all statuses")
     void get_shouldReturnCorrectSummaryCounts_whenProjectHasJobsInVariousStatuses() {
         List<JobModel> jobs = List.of(newJob, inProgressJob, blockedJobOlder, completedJob);
-        when(jobService.list(projectId, ownerId)).thenReturn(jobs);
+        when(jobService.list(projectId, ownerId, null)).thenReturn(jobs);
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
@@ -128,7 +128,7 @@ class DashboardServiceTest {
     @Test
     @DisplayName("get — returns blocked jobs sorted by blockedAt ascending (oldest first)")
     void get_shouldReturnBlockedJobs_sortedByBlockedAtAsc() {
-        when(jobService.list(projectId, ownerId)).thenReturn(List.of(blockedJobNewer, blockedJobOlder));
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of(blockedJobNewer, blockedJobOlder));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
@@ -143,7 +143,7 @@ class DashboardServiceTest {
     @Test
     @DisplayName("get — returns overdue jobs sorted by deadline ascending (earliest deadline first)")
     void get_shouldReturnOverdueJobs_sortedByDeadlineAsc() {
-        when(jobService.list(projectId, ownerId)).thenReturn(List.of(overdueJobLater, overdueJobEarlier));
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of(overdueJobLater, overdueJobEarlier));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
@@ -158,7 +158,7 @@ class DashboardServiceTest {
     @Test
     @DisplayName("get — does not include completed jobs in overdue list even if past deadline")
     void get_shouldNotIncludeCompletedJobs_inOverdueList() {
-        when(jobService.list(projectId, ownerId)).thenReturn(List.of(overdueButCompletedJob, overdueJobEarlier));
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of(overdueButCompletedJob, overdueJobEarlier));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
@@ -178,7 +178,7 @@ class DashboardServiceTest {
                 .blockedBy(ownerId).blockedAt(Instant.now().minus(3, ChronoUnit.DAYS))
                 .deadline(Instant.now().minus(1, ChronoUnit.DAYS)).build();
 
-        when(jobService.list(projectId, ownerId)).thenReturn(List.of(blockedAndOverdue));
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of(blockedAndOverdue));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
@@ -199,7 +199,7 @@ class DashboardServiceTest {
                 .requesterId(memberId).description("Need budget approval")
                 .status(ApprovalStatus.PENDING).requestedAt(Instant.now()).build();
 
-        when(jobService.list(projectId, ownerId)).thenReturn(List.of());
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of());
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of(approval));
@@ -214,7 +214,7 @@ class DashboardServiceTest {
     @Test
     @DisplayName("get — returns empty pending approvals for MEMBER without calling ApprovalService")
     void get_shouldReturnEmptyPendingApprovals_whenCallerIsMember() {
-        when(jobService.list(projectId, memberId)).thenReturn(List.of(newJob));
+        when(jobService.list(projectId, memberId, null)).thenReturn(List.of(newJob));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
 
@@ -226,9 +226,66 @@ class DashboardServiceTest {
     }
 
     @Test
+    @DisplayName("get — does not include jobs with null deadline in overdue list")
+    void get_shouldNotIncludeJobsWithNullDeadline_inOverdueList() {
+        JobModel noDeadline = JobModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).title("No Deadline")
+                .status(JobStatus.IN_PROGRESS).deadline(null).build();
+
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of(noDeadline));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
+
+        DashboardResponse result = dashboardService.get(projectId, ownerId);
+
+        assertThat(result.getOverdueJobs()).isEmpty();
+        assertThat(result.getSummary().getOverdueCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("get — does not include jobs with a future deadline in overdue list")
+    void get_shouldNotIncludeJobsWithFutureDeadline_inOverdueList() {
+        JobModel futureDeadline = JobModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).title("Future Deadline")
+                .status(JobStatus.IN_PROGRESS)
+                .deadline(Instant.now().plus(5, ChronoUnit.DAYS)).build();
+
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of(futureDeadline));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
+
+        DashboardResponse result = dashboardService.get(projectId, ownerId);
+
+        assertThat(result.getOverdueJobs()).isEmpty();
+        assertThat(result.getSummary().getOverdueCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("get — includes NEW status jobs with past deadline in overdue list")
+    void get_shouldIncludeNewJob_inOverdueList_whenPastDeadline() {
+        JobModel overdueNew = JobModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).title("Overdue New Job")
+                .status(JobStatus.NEW)
+                .deadline(Instant.now().minus(3, ChronoUnit.DAYS)).build();
+
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of(overdueNew));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
+
+        DashboardResponse result = dashboardService.get(projectId, ownerId);
+
+        assertThat(result.getOverdueJobs()).hasSize(1);
+        assertThat(result.getOverdueJobs().get(0).getTitle()).isEqualTo("Overdue New Job");
+        assertThat(result.getSummary().getOverdueCount()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("get — returns empty lists when project has no jobs")
     void get_shouldReturnEmptyDashboard_whenProjectHasNoJobs() {
-        when(jobService.list(projectId, ownerId)).thenReturn(List.of());
+        when(jobService.list(projectId, ownerId, null)).thenReturn(List.of());
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
