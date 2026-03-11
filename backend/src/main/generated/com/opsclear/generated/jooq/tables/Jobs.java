@@ -147,6 +147,11 @@ public class Jobs extends TableImpl<JobsRecord> {
      */
     public final TableField<JobsRecord, LocalDateTime> BLOCKED_AT = createField(DSL.name("blocked_at"), SQLDataType.LOCALDATETIME(6), this, "When the block was set — NULL when not blocked");
 
+    /**
+     * The column <code>public.jobs.priority</code>.
+     */
+    public final TableField<JobsRecord, String> PRIORITY = createField(DSL.name("priority"), SQLDataType.VARCHAR(10).nullable(false).defaultValue(DSL.field(DSL.raw("'MEDIUM'::character varying"), SQLDataType.VARCHAR)), this, "");
+
     private Jobs(Name alias, Table<JobsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -216,7 +221,7 @@ public class Jobs extends TableImpl<JobsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_JOBS_ASSIGNED, Indexes.IDX_JOBS_PROJECT, Indexes.IDX_JOBS_STATUS);
+        return Arrays.asList(Indexes.IDX_JOBS_ASSIGNED, Indexes.IDX_JOBS_PRIORITY, Indexes.IDX_JOBS_PROJECT, Indexes.IDX_JOBS_STATUS);
     }
 
     @Override
@@ -321,6 +326,7 @@ public class Jobs extends TableImpl<JobsRecord> {
     @Override
     public List<Check<JobsRecord>> getChecks() {
         return Arrays.asList(
+            Internal.createCheck(this, DSL.name("chk_job_priority"), "(((priority)::text = ANY ((ARRAY['LOW'::character varying, 'MEDIUM'::character varying, 'HIGH'::character varying, 'CRITICAL'::character varying])::text[])))", true),
             Internal.createCheck(this, DSL.name("chk_job_status"), "(((status)::text = ANY ((ARRAY['NEW'::character varying, 'IN_PROGRESS'::character varying, 'BLOCKED'::character varying, 'COMPLETED'::character varying])::text[])))", true)
         );
     }

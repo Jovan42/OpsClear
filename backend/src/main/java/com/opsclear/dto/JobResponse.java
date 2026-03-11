@@ -1,6 +1,7 @@
 package com.opsclear.dto;
 
 import com.opsclear.model.JobModel;
+import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,6 +28,7 @@ public class JobResponse {
     private String assignedToName;
     private Instant deadline;
     private JobStatus status;
+    private JobPriority priority;
     private UUID createdBy;
     private Instant createdAt;
     private Instant updatedAt;
@@ -47,6 +49,7 @@ public class JobResponse {
                 .assignedToName(job.getAssignedToName())
                 .deadline(job.getDeadline())
                 .status(job.getStatus())
+                .priority(job.getPriority())
                 .createdBy(job.getCreatedBy())
                 .createdAt(job.getCreatedAt())
                 .updatedAt(job.getUpdatedAt())

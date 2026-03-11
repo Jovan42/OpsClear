@@ -1,6 +1,7 @@
 package com.opsclear.integration;
 
 import com.opsclear.model.JobModel;
+import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -381,6 +382,36 @@ class JobIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("update_shouldChangePriority_whenPriorityProvided")
+    void updateJob_shouldChangePriority_whenPriorityProvided() throws Exception {
+        JobModel job = createTestJobWithPriority("Job", null, JobPriority.LOW);
+
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Job","priority":"CRITICAL"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priority").value("CRITICAL"));
+    }
+
+    @Test
+    @DisplayName("update_shouldKeepExistingPriority_whenPriorityOmitted")
+    void updateJob_shouldKeepExistingPriority_whenPriorityOmitted() throws Exception {
+        JobModel job = createTestJobWithPriority("Job", null, JobPriority.HIGH);
+
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Job"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priority").value("HIGH"));
     }
 
     // --- PATCH /api/projects/{projectId}/jobs/{jobId}/status ---
@@ -791,6 +822,72 @@ class JobIntegrationTest {
                 .andExpect(jsonPath("$[0].title").value("Member login task"));
     }
 
+    // --- GET /api/projects/{projectId}/jobs?priority= (priority filter) ---
+
+    @Test
+    @DisplayName("list_shouldReturnOnlyHighPriorityJobs_whenPriorityFilterApplied")
+    void list_shouldReturnOnlyHighPriorityJobs_whenPriorityFilterApplied() throws Exception {
+        createTestJobWithPriority("High job", null, JobPriority.HIGH);
+        createTestJobWithPriority("Low job", null, JobPriority.LOW);
+
+        mockMvc.perform(get(ApiPaths.jobsByPriority(projectId, "HIGH"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("High job"))
+                .andExpect(jsonPath("$[0].priority").value("HIGH"));
+    }
+
+    @Test
+    @DisplayName("list_shouldReturnEmptyList_whenNoPriorityMatches")
+    void list_shouldReturnEmptyList_whenNoPriorityMatches() throws Exception {
+        createTestJobWithPriority("Medium job", null, JobPriority.MEDIUM);
+
+        mockMvc.perform(get(ApiPaths.jobsByPriority(projectId, "CRITICAL"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("list_shouldReturnOnlyMemberAssignedJobs_whenMemberFiltersByPriority")
+    void list_shouldReturnOnlyMemberAssignedJobs_whenMemberFiltersByPriority() throws Exception {
+        createTestJobWithPriority("Member critical job", memberId, JobPriority.CRITICAL);
+        createTestJobWithPriority("Other critical job", ownerId, JobPriority.CRITICAL);
+
+        mockMvc.perform(get(ApiPaths.jobsByPriority(projectId, "CRITICAL"))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Member critical job"));
+    }
+
+    @Test
+    @DisplayName("create_shouldReturnHighPriority_whenPrioritySpecified")
+    void create_shouldReturnHighPriority_whenPrioritySpecified() throws Exception {
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Urgent task","priority":"HIGH"}
+                                """)
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.priority").value("HIGH"));
+    }
+
+    @Test
+    @DisplayName("create_shouldDefaultToMediumPriority_whenNotSpecified")
+    void create_shouldDefaultToMediumPriority_whenNotSpecified() throws Exception {
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"No priority job"}
+                                """)
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.priority").value("MEDIUM"));
+    }
+
     // --- helpers ---
 
     private JobModel createTestJob(String title, UUID assignedTo, JobStatus status) {
@@ -799,6 +896,17 @@ class JobIntegrationTest {
                 .title(title)
                 .assignedTo(assignedTo)
                 .status(status)
+                .createdBy(ownerId)
+                .build());
+    }
+
+    private JobModel createTestJobWithPriority(String title, UUID assignedTo, JobPriority priority) {
+        return jobRepository.save(JobModel.builder()
+                .projectId(projectId)
+                .title(title)
+                .assignedTo(assignedTo)
+                .status(JobStatus.NEW)
+                .priority(priority)
                 .createdBy(ownerId)
                 .build());
     }

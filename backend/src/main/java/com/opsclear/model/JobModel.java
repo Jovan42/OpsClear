@@ -25,6 +25,7 @@ public class JobModel {
     private String assignedToName;
     private Instant deadline;
     private JobStatus status;
+    private JobPriority priority;
     private UUID createdBy;
     private Instant createdAt;
     private Instant updatedAt;
