@@ -116,8 +116,7 @@ public class JobRepository {
                     .set(JOBS.ASSIGNED_TO, job.getAssignedTo())
                     .set(JOBS.DEADLINE, toLocalDateTime(job.getDeadline()))
                     .set(JOBS.STATUS, job.getStatus().name())
-                    .set(JOBS.PRIORITY,
-                            job.getPriority() != null ? job.getPriority().name() : JobPriority.MEDIUM.name())
+                    .set(JOBS.PRIORITY, job.getPriority().name())
                     .set(JOBS.CREATED_BY, job.getCreatedBy())
                     .set(JOBS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(JOBS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
@@ -133,7 +132,7 @@ public class JobRepository {
                 .set(JOBS.ASSIGNED_TO, job.getAssignedTo())
                 .set(JOBS.DEADLINE, toLocalDateTime(job.getDeadline()))
                 .set(JOBS.STATUS, job.getStatus().name())
-                .set(JOBS.PRIORITY, job.getPriority() != null ? job.getPriority().name() : JobPriority.MEDIUM.name())
+                .set(JOBS.PRIORITY, job.getPriority().name())
                 .set(JOBS.BLOCKED_BY, job.getBlockedBy())
                 .set(JOBS.BLOCKED_REASON_ID, job.getBlockedReasonId())
                 .set(JOBS.BLOCKED_AT, toLocalDateTime(job.getBlockedAt()))

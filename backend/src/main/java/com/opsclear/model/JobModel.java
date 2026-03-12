@@ -25,7 +25,8 @@ public class JobModel {
     private String assignedToName;
     private Instant deadline;
     private JobStatus status;
-    private JobPriority priority;
+    @Builder.Default
+    private JobPriority priority = JobPriority.MEDIUM;
     private UUID createdBy;
     private Instant createdAt;
     private Instant updatedAt;
