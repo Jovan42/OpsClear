@@ -7,13 +7,21 @@ import Button from '../../components/Button';
 import MarkdownEditor from '../../components/MarkdownEditor';
 import { useCreateJob, useUpdateJob } from './useJobs';
 import { useProjectMembers } from '../projects/useProjects';
-import type { JobResponse, ProjectMemberResponse } from '../../types';
+import type { JobPriority, JobResponse, ProjectMemberResponse } from '../../types';
+
+const PRIORITIES: { value: JobPriority; label: string }[] = [
+  { value: 'LOW',      label: 'Low' },
+  { value: 'MEDIUM',   label: 'Medium' },
+  { value: 'HIGH',     label: 'High' },
+  { value: 'CRITICAL', label: 'Critical' },
+];
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Max 255 characters'),
   description: z.string().max(1000, 'Max 1000 characters').optional(),
   client: z.string().max(255, 'Max 255 characters').optional(),
   deadline: z.string().optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -81,9 +89,10 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
         description: job.description ?? '',
         client: job.client ?? '',
         deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
+        priority: job.priority,
       });
     } else {
-      reset({ title: '', description: '', client: '', deadline: '' });
+      reset({ title: '', description: '', client: '', deadline: '', priority: 'MEDIUM' });
     }
   }, [open, job, reset]);
 
@@ -101,6 +110,7 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
       client: values.client || undefined,
       assignedTo: assignedTo?.userId || undefined,
       deadline: values.deadline ? new Date(values.deadline).toISOString() : undefined,
+      priority: values.priority,
     };
 
     if (isEdit && job) {
@@ -169,6 +179,15 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
               className={inputClass}
             />
           </div>
+        </div>
+
+        <div>
+          <label className={labelClass}>Priority</label>
+          <select {...register('priority')} className={inputClass}>
+            {PRIORITIES.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         </div>
 
         <div>

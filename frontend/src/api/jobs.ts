@@ -1,10 +1,12 @@
 import apiClient from './client';
-import type { JobResponse, JobStatus } from '../types';
+import type { JobPriority, JobResponse, JobStatus } from '../types';
 
 export const jobsApi = {
-  list: (projectId: string, q?: string) =>
+  list: (projectId: string, q?: string, priority?: JobPriority) =>
     apiClient
-      .get<JobResponse[]>(`/api/projects/${projectId}/jobs`, { params: q ? { q } : undefined })
+      .get<JobResponse[]>(`/api/projects/${projectId}/jobs`, {
+        params: { ...(q ? { q } : {}), ...(priority ? { priority } : {}) },
+      })
       .then((r) => r.data),
 
   get: (projectId: string, jobId: string) =>
@@ -14,7 +16,7 @@ export const jobsApi = {
 
   create: (
     projectId: string,
-    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string },
+    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string; priority?: JobPriority },
   ) =>
     apiClient
       .post<JobResponse>(`/api/projects/${projectId}/jobs`, body)
@@ -23,7 +25,7 @@ export const jobsApi = {
   update: (
     projectId: string,
     jobId: string,
-    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string },
+    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string; priority?: JobPriority },
   ) =>
     apiClient
       .put<JobResponse>(`/api/projects/${projectId}/jobs/${jobId}`, body)

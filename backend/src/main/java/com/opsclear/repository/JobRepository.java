@@ -50,57 +50,22 @@ public class JobRepository {
     }
 
     public List<JobModel> findByProjectIdAndDeletedAtIsNull(UUID projectId) {
-        return selectWithAssignee()
-                .where(JOBS.PROJECT_ID.eq(projectId))
-                .and(JOBS.DELETED_AT.isNull())
-                .orderBy(JOBS.PRIORITY.sortDesc(), JOBS.CREATED_AT.desc())
-                .fetch()
-                .map(this::toModel);
+        return findByFilters(projectId, null, null, null);
     }
 
-    public List<JobModel> findByProjectIdAndPriorityAndDeletedAtIsNull(UUID projectId, JobPriority priority) {
-        return selectWithAssignee()
-                .where(JOBS.PROJECT_ID.eq(projectId))
-                .and(JOBS.DELETED_AT.isNull())
-                .and(JOBS.PRIORITY.eq(priority.name()))
-                .orderBy(JOBS.CREATED_AT.desc())
-                .fetch()
-                .map(this::toModel);
-    }
-
-    public List<JobModel> findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(
-            UUID projectId, JobPriority priority, UUID assignedTo) {
-        return selectWithAssignee()
-                .where(JOBS.PROJECT_ID.eq(projectId))
-                .and(JOBS.DELETED_AT.isNull())
-                .and(JOBS.PRIORITY.eq(priority.name()))
-                .and(JOBS.ASSIGNED_TO.eq(assignedTo))
-                .orderBy(JOBS.CREATED_AT.desc())
-                .fetch()
-                .map(this::toModel);
-    }
-
-    public List<JobModel> searchByProjectIdAndDeletedAtIsNull(UUID projectId, UUID assignedTo, String q) {
-        String pattern = "%" + q.toLowerCase() + "%";
+    public List<JobModel> findByFilters(UUID projectId, UUID assignedTo, String q, JobPriority priority) {
+        String pattern = q != null ? "%" + q.toLowerCase() + "%" : null;
         return selectWithAssignee()
                 .where(JOBS.PROJECT_ID.eq(projectId))
                 .and(JOBS.DELETED_AT.isNull())
                 .and(assignedTo != null ? JOBS.ASSIGNED_TO.eq(assignedTo) : DSL.noCondition())
-                .and(DSL.or(
+                .and(priority != null ? JOBS.PRIORITY.eq(priority.name()) : DSL.noCondition())
+                .and(pattern != null ? DSL.or(
                         JOBS.TITLE.likeIgnoreCase(pattern),
                         JOBS.DESCRIPTION.likeIgnoreCase(pattern),
                         JOBS.CLIENT.likeIgnoreCase(pattern),
                         USERS.NAME.likeIgnoreCase(pattern)
-                ))
-                .fetch()
-                .map(this::toModel);
-    }
-
-    public List<JobModel> findByProjectIdAndAssignedToAndDeletedAtIsNull(UUID projectId, UUID assignedTo) {
-        return selectWithAssignee()
-                .where(JOBS.PROJECT_ID.eq(projectId))
-                .and(JOBS.ASSIGNED_TO.eq(assignedTo))
-                .and(JOBS.DELETED_AT.isNull())
+                ) : DSL.noCondition())
                 .orderBy(JOBS.PRIORITY.sortDesc(), JOBS.CREATED_AT.desc())
                 .fetch()
                 .map(this::toModel);
