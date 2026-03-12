@@ -1,6 +1,7 @@
 package com.opsclear.repository;
 
 import com.opsclear.model.JobModel;
+import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -52,6 +53,29 @@ public class JobRepository {
         return selectWithAssignee()
                 .where(JOBS.PROJECT_ID.eq(projectId))
                 .and(JOBS.DELETED_AT.isNull())
+                .orderBy(JOBS.PRIORITY.sortDesc(), JOBS.CREATED_AT.desc())
+                .fetch()
+                .map(this::toModel);
+    }
+
+    public List<JobModel> findByProjectIdAndPriorityAndDeletedAtIsNull(UUID projectId, JobPriority priority) {
+        return selectWithAssignee()
+                .where(JOBS.PROJECT_ID.eq(projectId))
+                .and(JOBS.DELETED_AT.isNull())
+                .and(JOBS.PRIORITY.eq(priority.name()))
+                .orderBy(JOBS.CREATED_AT.desc())
+                .fetch()
+                .map(this::toModel);
+    }
+
+    public List<JobModel> findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(
+            UUID projectId, JobPriority priority, UUID assignedTo) {
+        return selectWithAssignee()
+                .where(JOBS.PROJECT_ID.eq(projectId))
+                .and(JOBS.DELETED_AT.isNull())
+                .and(JOBS.PRIORITY.eq(priority.name()))
+                .and(JOBS.ASSIGNED_TO.eq(assignedTo))
+                .orderBy(JOBS.CREATED_AT.desc())
                 .fetch()
                 .map(this::toModel);
     }
@@ -77,6 +101,7 @@ public class JobRepository {
                 .where(JOBS.PROJECT_ID.eq(projectId))
                 .and(JOBS.ASSIGNED_TO.eq(assignedTo))
                 .and(JOBS.DELETED_AT.isNull())
+                .orderBy(JOBS.PRIORITY.sortDesc(), JOBS.CREATED_AT.desc())
                 .fetch()
                 .map(this::toModel);
     }
@@ -91,6 +116,7 @@ public class JobRepository {
                     .set(JOBS.ASSIGNED_TO, job.getAssignedTo())
                     .set(JOBS.DEADLINE, toLocalDateTime(job.getDeadline()))
                     .set(JOBS.STATUS, job.getStatus().name())
+                    .set(JOBS.PRIORITY, job.getPriority().name())
                     .set(JOBS.CREATED_BY, job.getCreatedBy())
                     .set(JOBS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(JOBS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
@@ -106,6 +132,7 @@ public class JobRepository {
                 .set(JOBS.ASSIGNED_TO, job.getAssignedTo())
                 .set(JOBS.DEADLINE, toLocalDateTime(job.getDeadline()))
                 .set(JOBS.STATUS, job.getStatus().name())
+                .set(JOBS.PRIORITY, job.getPriority().name())
                 .set(JOBS.BLOCKED_BY, job.getBlockedBy())
                 .set(JOBS.BLOCKED_REASON_ID, job.getBlockedReasonId())
                 .set(JOBS.BLOCKED_AT, toLocalDateTime(job.getBlockedAt()))
@@ -137,6 +164,7 @@ public class JobRepository {
                         JOBS.ASSIGNED_TO,
                         JOBS.DEADLINE,
                         JOBS.STATUS,
+                        JOBS.PRIORITY,
                         JOBS.CREATED_BY,
                         JOBS.CREATED_AT,
                         JOBS.UPDATED_AT,
@@ -162,6 +190,7 @@ public class JobRepository {
                 .assignedToName(r.get(ASSIGNED_TO_NAME))
                 .deadline(toInstant(r.get(JOBS.DEADLINE)))
                 .status(JobStatus.valueOf(r.get(JOBS.STATUS)))
+                .priority(JobPriority.valueOf(r.get(JOBS.PRIORITY)))
                 .createdBy(r.get(JOBS.CREATED_BY))
                 .createdAt(toInstant(r.get(JOBS.CREATED_AT)))
                 .updatedAt(toInstant(r.get(JOBS.UPDATED_AT)))

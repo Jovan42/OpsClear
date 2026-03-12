@@ -6,6 +6,7 @@ import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobModel;
+import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -208,7 +209,7 @@ class JobServiceTest {
                 .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).thenReturn(allJobs);
 
-        List<JobModel> result = jobService.list(projectId, ownerId, null);
+        List<JobModel> result = jobService.list(projectId, ownerId, null, null);
 
         assertThat(result).hasSize(2);
     }
@@ -232,7 +233,7 @@ class JobServiceTest {
         when(jobRepository.findByProjectIdAndAssignedToAndDeletedAtIsNull(projectId, memberId))
                 .thenReturn(assignedJobs);
 
-        List<JobModel> result = jobService.list(projectId, memberId, null);
+        List<JobModel> result = jobService.list(projectId, memberId, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
@@ -250,7 +251,7 @@ class JobServiceTest {
                 .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, null, "login")).thenReturn(results);
 
-        List<JobModel> result = jobService.list(projectId, ownerId, "login");
+        List<JobModel> result = jobService.list(projectId, ownerId, "login", null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getTitle()).isEqualTo("Fix login bug");
@@ -268,7 +269,7 @@ class JobServiceTest {
                 .thenReturn(Optional.of(memberMembership));
         when(jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, memberId, "invoice")).thenReturn(results);
 
-        List<JobModel> result = jobService.list(projectId, memberId, "invoice");
+        List<JobModel> result = jobService.list(projectId, memberId, "invoice", null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
@@ -286,7 +287,7 @@ class JobServiceTest {
                 .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).thenReturn(allJobs);
 
-        List<JobModel> result = jobService.list(projectId, ownerId, "   ");
+        List<JobModel> result = jobService.list(projectId, ownerId, "   ", null);
 
         assertThat(result).hasSize(1);
     }
@@ -521,6 +522,54 @@ class JobServiceTest {
         assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Assigned user not found");
+    }
+
+    @Test
+    @DisplayName("update should change priority when priority is provided")
+    void update_shouldChangePriority_whenPriorityProvided() {
+        UUID jobId = UUID.randomUUID();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("Job")
+                .status(JobStatus.NEW)
+                .priority(JobPriority.LOW)
+                .build();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("Job").priority(JobPriority.CRITICAL).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        JobModel result = jobService.update(projectId, jobId, request, ownerId);
+
+        assertThat(result.getPriority()).isEqualTo(JobPriority.CRITICAL);
+    }
+
+    @Test
+    @DisplayName("update should keep existing priority when priority is null in request")
+    void update_shouldKeepExistingPriority_whenPriorityNotProvided() {
+        UUID jobId = UUID.randomUUID();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .title("Job")
+                .status(JobStatus.NEW)
+                .priority(JobPriority.HIGH)
+                .build();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("Job").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        JobModel result = jobService.update(projectId, jobId, request, ownerId);
+
+        assertThat(result.getPriority()).isEqualTo(JobPriority.HIGH);
     }
 
     // --- updateStatus ---
@@ -941,5 +990,97 @@ class JobServiceTest {
         assertThatThrownBy(() -> jobService.softDelete(projectId, jobId, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Job not found");
+    }
+
+    // --- priority filter ---
+
+    @Test
+    @DisplayName("OWNER filtering by priority should return only jobs with that priority")
+    void list_shouldFilterByPriority_forOwner() {
+        List<JobModel> highJobs = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("High job").status(JobStatus.NEW).priority(JobPriority.HIGH).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByProjectIdAndPriorityAndDeletedAtIsNull(projectId, JobPriority.HIGH))
+                .thenReturn(highJobs);
+
+        List<JobModel> result = jobService.list(projectId, ownerId, null, JobPriority.HIGH);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getPriority()).isEqualTo(JobPriority.HIGH);
+    }
+
+    @Test
+    @DisplayName("MEMBER filtering by priority should only see their own jobs")
+    void list_shouldFilterByPriorityAndAssignee_forMember() {
+        List<JobModel> memberHighJobs = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("My high job").status(JobStatus.NEW).priority(JobPriority.HIGH).assignedTo(memberId).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+        when(jobRepository.findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(projectId, JobPriority.HIGH, memberId))
+                .thenReturn(memberHighJobs);
+
+        List<JobModel> result = jobService.list(projectId, memberId, null, JobPriority.HIGH);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
+    }
+
+    @Test
+    @DisplayName("create should default to MEDIUM priority when none specified")
+    void create_shouldDefaultToMediumPriority_whenNotProvided() {
+        CreateJobRequest request = CreateJobRequest.builder().title("No priority").build();
+
+        JobModel saved = JobModel.builder()
+                .id(UUID.randomUUID())
+                .projectId(projectId)
+                .title("No priority")
+                .status(JobStatus.NEW)
+                .priority(JobPriority.MEDIUM)
+                .createdBy(ownerId)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.save(any())).thenReturn(saved);
+
+        jobService.create(projectId, request, ownerId);
+
+        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
+        verify(jobRepository).save(captor.capture());
+        assertThat(captor.getValue().getPriority()).isEqualTo(JobPriority.MEDIUM);
+    }
+
+    @Test
+    @DisplayName("create should use the specified priority")
+    void create_shouldUseProvidedPriority_whenSpecified() {
+        CreateJobRequest request = CreateJobRequest.builder().title("Critical task").priority(JobPriority.CRITICAL).build();
+
+        JobModel saved = JobModel.builder()
+                .id(UUID.randomUUID())
+                .projectId(projectId)
+                .title("Critical task")
+                .status(JobStatus.NEW)
+                .priority(JobPriority.CRITICAL)
+                .createdBy(ownerId)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.save(any())).thenReturn(saved);
+
+        jobService.create(projectId, request, ownerId);
+
+        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
+        verify(jobRepository).save(captor.capture());
+        assertThat(captor.getValue().getPriority()).isEqualTo(JobPriority.CRITICAL);
     }
 }

@@ -32,6 +32,7 @@ public class Indexes {
     public static final Index IDX_APPROVALS_STATUS = Internal.createIndex(DSL.name("idx_approvals_status"), Approvals.APPROVALS, new OrderField[] { Approvals.APPROVALS.STATUS }, false);
     public static final Index IDX_BLOCK_REASONS_PROJECT = Internal.createIndex(DSL.name("idx_block_reasons_project"), ProjectBlockReasons.PROJECT_BLOCK_REASONS, new OrderField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.PROJECT_ID }, false);
     public static final Index IDX_JOBS_ASSIGNED = Internal.createIndex(DSL.name("idx_jobs_assigned"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.ASSIGNED_TO }, false);
+    public static final Index IDX_JOBS_PRIORITY = Internal.createIndex(DSL.name("idx_jobs_priority"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.PROJECT_ID, Jobs.JOBS.PRIORITY }, false);
     public static final Index IDX_JOBS_PROJECT = Internal.createIndex(DSL.name("idx_jobs_project"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.PROJECT_ID }, false);
     public static final Index IDX_JOBS_STATUS = Internal.createIndex(DSL.name("idx_jobs_status"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.PROJECT_ID, Jobs.JOBS.STATUS }, false);
     public static final Index IDX_NOTES_JOB_ID = Internal.createIndex(DSL.name("idx_notes_job_id"), Notes.NOTES, new OrderField[] { Notes.NOTES.JOB_ID }, false);

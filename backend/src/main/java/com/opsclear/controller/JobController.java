@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import com.opsclear.model.JobPriority;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,9 +46,10 @@ public class JobController {
     public ResponseEntity<List<JobResponse>> list(
             @PathVariable UUID projectId,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) JobPriority priority,
             JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
-        List<JobResponse> jobs = jobService.list(projectId, userId, q)
+        List<JobResponse> jobs = jobService.list(projectId, userId, q, priority)
                 .stream()
                 .map(JobResponse::from)
                 .toList();

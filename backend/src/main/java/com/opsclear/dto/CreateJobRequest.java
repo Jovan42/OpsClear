@@ -1,5 +1,6 @@
 package com.opsclear.dto;
 
+import com.opsclear.model.JobPriority;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -30,4 +31,6 @@ public class CreateJobRequest {
     private UUID assignedTo;
 
     private Instant deadline;
+
+    private JobPriority priority;
 }

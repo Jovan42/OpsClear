@@ -8,6 +8,7 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.BlockReasonModel;
 import com.opsclear.model.JobModel;
+import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -49,6 +50,7 @@ public class JobService {
                 .assignedTo(request.getAssignedTo())
                 .deadline(request.getDeadline())
                 .status(JobStatus.NEW)
+                .priority(request.getPriority() != null ? request.getPriority() : JobPriority.MEDIUM)
                 .createdBy(requesterId)
                 .build();
 
@@ -58,7 +60,7 @@ public class JobService {
     }
 
     @Transactional(readOnly = true)
-    public List<JobModel> list(UUID projectId, UUID requesterId, String q) {
+    public List<JobModel> list(UUID projectId, UUID requesterId, String q, JobPriority priority) {
         requireProjectExists(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         boolean isMember = requester.getRole() == ProjectMemberRole.MEMBER;
@@ -66,6 +68,14 @@ public class JobService {
         if (q != null && !q.isBlank()) {
             UUID assignedTo = isMember ? requesterId : null;
             return jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, assignedTo, q.trim());
+        }
+
+        if (priority != null) {
+            if (isMember) {
+                return jobRepository
+                        .findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(projectId, priority, requesterId);
+            }
+            return jobRepository.findByProjectIdAndPriorityAndDeletedAtIsNull(projectId, priority);
         }
 
         if (isMember) {
@@ -102,6 +112,9 @@ public class JobService {
         job.setClient(request.getClient());
         job.setAssignedTo(request.getAssignedTo());
         job.setDeadline(request.getDeadline());
+        if (request.getPriority() != null) {
+            job.setPriority(request.getPriority());
+        }
 
         JobModel updated = jobRepository.save(job);
         log.info("Updated job '{}' in project {}", jobId, projectId);
