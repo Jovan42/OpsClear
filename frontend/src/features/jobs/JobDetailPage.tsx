@@ -4,6 +4,7 @@ import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
+import PriorityBadge from '../../components/PriorityBadge';
 import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
 import BlockedBanner from './components/BlockedBanner';
@@ -119,6 +120,7 @@ export default function JobDetailPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{job.title}</h1>
+            <PriorityBadge priority={job.priority} />
             <StatusBadge status={job.status} />
           </div>
 

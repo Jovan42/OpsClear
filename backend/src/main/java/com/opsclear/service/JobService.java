@@ -64,24 +64,9 @@ public class JobService {
         requireProjectExists(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         boolean isMember = requester.getRole() == ProjectMemberRole.MEMBER;
-
-        if (q != null && !q.isBlank()) {
-            UUID assignedTo = isMember ? requesterId : null;
-            return jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, assignedTo, q.trim());
-        }
-
-        if (priority != null) {
-            if (isMember) {
-                return jobRepository
-                        .findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(projectId, priority, requesterId);
-            }
-            return jobRepository.findByProjectIdAndPriorityAndDeletedAtIsNull(projectId, priority);
-        }
-
-        if (isMember) {
-            return jobRepository.findByProjectIdAndAssignedToAndDeletedAtIsNull(projectId, requesterId);
-        }
-        return jobRepository.findByProjectIdAndDeletedAtIsNull(projectId);
+        UUID assignedTo = isMember ? requesterId : null;
+        String trimmedQ = (q != null && !q.isBlank()) ? q.trim() : null;
+        return jobRepository.findByFilters(projectId, assignedTo, trimmedQ, priority);
     }
 
     @Transactional(readOnly = true)

@@ -59,6 +59,10 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs?priority=" + priority;
     }
 
+    static String jobsBySearchAndPriority(UUID projectId, String q, String priority) {
+        return "/api/projects/" + projectId + "/jobs?q=" + q + "&priority=" + priority;
+    }
+
     static String job(UUID projectId, UUID jobId) {
         return "/api/projects/" + projectId + "/jobs/" + jobId;
     }

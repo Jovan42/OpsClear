@@ -1,11 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobsApi } from '../../api/jobs';
-import type { JobStatus } from '../../types';
+import type { JobPriority, JobStatus } from '../../types';
 
-export function useJobList(projectId: string, q?: string) {
+export function useJobList(projectId: string, q?: string, priority?: JobPriority) {
   return useQuery({
-    queryKey: ['jobs', projectId, q ?? ''],
-    queryFn: () => jobsApi.list(projectId, q),
+    queryKey: ['jobs', projectId, q ?? '', priority ?? ''],
+    queryFn: () => jobsApi.list(projectId, q, priority),
     placeholderData: keepPreviousData,
   });
 }
@@ -26,6 +26,7 @@ export function useCreateJob(projectId: string) {
       client?: string;
       assignedTo?: string;
       deadline?: string;
+      priority?: JobPriority;
     }) => jobsApi.create(projectId, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
@@ -48,6 +49,7 @@ export function useUpdateJob(projectId: string) {
         client?: string;
         assignedTo?: string;
         deadline?: string;
+        priority?: JobPriority;
       };
     }) => jobsApi.update(projectId, jobId, body),
     onSuccess: (data) => {

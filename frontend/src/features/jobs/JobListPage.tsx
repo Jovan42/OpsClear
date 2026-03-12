@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
+import PriorityBadge from '../../components/PriorityBadge';
 import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
@@ -9,7 +10,7 @@ import { useJobList } from './useJobs';
 import { useProject } from '../projects/useProjects';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import type { JobStatus } from '../../types';
+import type { JobPriority, JobStatus } from '../../types';
 
 function JobListSkeleton() {
   return (
@@ -31,8 +32,20 @@ function JobListSkeleton() {
 }
 
 type Filter = 'ALL' | JobStatus;
-type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status';
+type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status' | 'priority';
 type SortDir = 'asc' | 'desc';
+
+const PRIORITY_ORDER: Record<JobPriority, number> = {
+  CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3,
+};
+
+const PRIORITY_FILTERS: { key: JobPriority | 'ALL'; label: string }[] = [
+  { key: 'ALL',      label: 'All priorities' },
+  { key: 'CRITICAL', label: 'Critical' },
+  { key: 'HIGH',     label: 'High' },
+  { key: 'MEDIUM',   label: 'Medium' },
+  { key: 'LOW',      label: 'Low' },
+];
 
 const STATUS_ORDER: Record<JobStatus, number> = {
   BLOCKED: 0, IN_PROGRESS: 1, NEW: 2, COMPLETED: 3,
@@ -86,13 +99,18 @@ export default function JobListPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
+  const [priorityFilter, setPriorityFilter] = useState<JobPriority | 'ALL'>('ALL');
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortKey(key); setSortDir('asc'); }
   }
 
-  const { data: jobs = [], isLoading, isError, refetch } = useJobList(projectId, debouncedSearch || undefined);
+  const { data: jobs = [], isLoading, isError, refetch } = useJobList(
+    projectId,
+    debouncedSearch || undefined,
+    priorityFilter !== 'ALL' ? priorityFilter : undefined,
+  );
 
   const counts: Record<JobStatus, number> = {
     NEW: jobs.filter((j) => j.status === 'NEW').length,
@@ -111,6 +129,8 @@ export default function JobListPage() {
         cmp = da - db;
       } else if (sortKey === 'status') {
         cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+      } else if (sortKey === 'priority') {
+        cmp = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
       } else {
         const va = (a[sortKey] ?? '').toLowerCase();
         const vb = (b[sortKey] ?? '').toLowerCase();
@@ -142,15 +162,24 @@ export default function JobListPage() {
         <Button onClick={() => setModalOpen(true)}>+ New Job</Button>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
+      {/* Search + Priority filter */}
+      <div className="flex flex-wrap gap-2 mb-4">
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by title, client, or assignee…"
-          className="w-full sm:max-w-sm rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
+          className="flex-1 min-w-0 sm:max-w-sm rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
         />
+        <select
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value as JobPriority | 'ALL')}
+          className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+        >
+          {PRIORITY_FILTERS.map(({ key, label }) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
       </div>
 
       {/* Status filter tabs */}
@@ -218,7 +247,10 @@ export default function JobListPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{job.title}</p>
-                  <StatusBadge status={job.status} />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <PriorityBadge priority={job.priority} />
+                    <StatusBadge status={job.status} />
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
                   {job.client && (
@@ -248,6 +280,7 @@ export default function JobListPage() {
                       { key: 'client',         label: 'Client' },
                       { key: 'assignedToName', label: 'Assigned to' },
                       { key: 'deadline',       label: 'Deadline' },
+                      { key: 'priority',       label: 'Priority' },
                       { key: 'status',         label: 'Status' },
                     ] as { key: SortKey; label: string }[]
                   ).map(({ key, label }) => (
@@ -284,6 +317,9 @@ export default function JobListPage() {
                       }`}
                     >
                       {formatDeadline(job.deadline)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <PriorityBadge priority={job.priority} />
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={job.status} />

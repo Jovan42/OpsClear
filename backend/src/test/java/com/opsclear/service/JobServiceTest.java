@@ -190,24 +190,14 @@ class JobServiceTest {
     @DisplayName("OWNER should see all jobs in the project")
     void list_shouldReturnAllJobs_forOwner() {
         List<JobModel> allJobs = List.of(
-                JobModel.builder()
-                        .id(UUID.randomUUID())
-                        .projectId(projectId)
-                        .title("Job 1")
-                        .status(JobStatus.NEW)
-                        .build(),
-                JobModel.builder()
-                        .id(UUID.randomUUID())
-                        .projectId(projectId)
-                        .title("Job 2")
-                        .status(JobStatus.IN_PROGRESS)
-                        .build()
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Job 1").status(JobStatus.NEW).build(),
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Job 2").status(JobStatus.IN_PROGRESS).build()
         );
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).thenReturn(allJobs);
+        when(jobRepository.findByFilters(projectId, null, null, null)).thenReturn(allJobs);
 
         List<JobModel> result = jobService.list(projectId, ownerId, null, null);
 
@@ -218,20 +208,13 @@ class JobServiceTest {
     @DisplayName("MEMBER should see only assigned jobs")
     void list_shouldReturnOnlyAssignedJobs_forMember() {
         List<JobModel> assignedJobs = List.of(
-                JobModel.builder()
-                        .id(UUID.randomUUID())
-                        .projectId(projectId)
-                        .title("My Job")
-                        .assignedTo(memberId)
-                        .status(JobStatus.NEW)
-                        .build()
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("My Job").assignedTo(memberId).status(JobStatus.NEW).build()
         );
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByProjectIdAndAssignedToAndDeletedAtIsNull(projectId, memberId))
-                .thenReturn(assignedJobs);
+        when(jobRepository.findByFilters(projectId, memberId, null, null)).thenReturn(assignedJobs);
 
         List<JobModel> result = jobService.list(projectId, memberId, null, null);
 
@@ -249,7 +232,7 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, null, "login")).thenReturn(results);
+        when(jobRepository.findByFilters(projectId, null, "login", null)).thenReturn(results);
 
         List<JobModel> result = jobService.list(projectId, ownerId, "login", null);
 
@@ -267,7 +250,7 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.searchByProjectIdAndDeletedAtIsNull(projectId, memberId, "invoice")).thenReturn(results);
+        when(jobRepository.findByFilters(projectId, memberId, "invoice", null)).thenReturn(results);
 
         List<JobModel> result = jobService.list(projectId, memberId, "invoice", null);
 
@@ -276,7 +259,7 @@ class JobServiceTest {
     }
 
     @Test
-    @DisplayName("Blank query string should fall through to normal list, not search")
+    @DisplayName("Blank query string should be treated as no query")
     void list_shouldIgnoreBlankQuery_andReturnAllJobs() {
         List<JobModel> allJobs = List.of(
                 JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Job A").status(JobStatus.NEW).build()
@@ -285,7 +268,7 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).thenReturn(allJobs);
+        when(jobRepository.findByFilters(projectId, null, null, null)).thenReturn(allJobs);
 
         List<JobModel> result = jobService.list(projectId, ownerId, "   ", null);
 
@@ -1004,8 +987,7 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByProjectIdAndPriorityAndDeletedAtIsNull(projectId, JobPriority.HIGH))
-                .thenReturn(highJobs);
+        when(jobRepository.findByFilters(projectId, null, null, JobPriority.HIGH)).thenReturn(highJobs);
 
         List<JobModel> result = jobService.list(projectId, ownerId, null, JobPriority.HIGH);
 
@@ -1023,13 +1005,50 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByProjectIdAndPriorityAndAssignedToAndDeletedAtIsNull(projectId, JobPriority.HIGH, memberId))
-                .thenReturn(memberHighJobs);
+        when(jobRepository.findByFilters(projectId, memberId, null, JobPriority.HIGH)).thenReturn(memberHighJobs);
 
         List<JobModel> result = jobService.list(projectId, memberId, null, JobPriority.HIGH);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
+    }
+
+    @Test
+    @DisplayName("OWNER should be able to combine search query with priority filter")
+    void list_shouldCombineQueryAndPriority_forOwner() {
+        List<JobModel> results = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Critical login bug").status(JobStatus.NEW).priority(JobPriority.CRITICAL).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByFilters(projectId, null, "login", JobPriority.CRITICAL)).thenReturn(results);
+
+        List<JobModel> result = jobService.list(projectId, ownerId, "login", JobPriority.CRITICAL);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getPriority()).isEqualTo(JobPriority.CRITICAL);
+        assertThat(result.getFirst().getTitle()).contains("login");
+    }
+
+    @Test
+    @DisplayName("MEMBER combining search and priority should only see their own jobs")
+    void list_shouldCombineQueryAndPriority_forMember() {
+        List<JobModel> results = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("High invoice task").status(JobStatus.NEW).priority(JobPriority.HIGH).assignedTo(memberId).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+        when(jobRepository.findByFilters(projectId, memberId, "invoice", JobPriority.HIGH)).thenReturn(results);
+
+        List<JobModel> result = jobService.list(projectId, memberId, "invoice", JobPriority.HIGH);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
+        assertThat(result.getFirst().getPriority()).isEqualTo(JobPriority.HIGH);
     }
 
     @Test

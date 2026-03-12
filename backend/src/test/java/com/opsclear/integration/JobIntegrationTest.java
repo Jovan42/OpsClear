@@ -888,6 +888,58 @@ class JobIntegrationTest {
                 .andExpect(jsonPath("$.priority").value("MEDIUM"));
     }
 
+    // --- GET /api/projects/{projectId}/jobs?q=&priority= (combined search + priority) ---
+
+    @Test
+    @DisplayName("Should return only jobs matching both query and priority")
+    void list_shouldReturnJobsMatchingQueryAndPriority() throws Exception {
+        createTestJobWithPriority("Critical login bug",   null, JobPriority.CRITICAL);
+        createTestJobWithPriority("Critical deploy task", null, JobPriority.CRITICAL);
+        createTestJobWithPriority("High login task",      null, JobPriority.HIGH);
+
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Critical login bug"))
+                .andExpect(jsonPath("$[0].priority").value("CRITICAL"));
+    }
+
+    @Test
+    @DisplayName("Should return empty list when query matches but priority does not")
+    void list_shouldReturnEmpty_whenQueryMatchesButPriorityDoesNot() throws Exception {
+        createTestJobWithPriority("High login task", null, JobPriority.HIGH);
+
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("Should return empty list when priority matches but query does not")
+    void list_shouldReturnEmpty_whenPriorityMatchesButQueryDoesNot() throws Exception {
+        createTestJobWithPriority("Critical deploy task", null, JobPriority.CRITICAL);
+
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("MEMBER combining search and priority should only see their own matching jobs")
+    void list_shouldScopeQueryAndPriority_forMember() throws Exception {
+        createTestJobWithPriority("Member critical login", memberId, JobPriority.CRITICAL);
+        createTestJobWithPriority("Owner critical login",  ownerId,  JobPriority.CRITICAL);
+
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Member critical login"));
+    }
+
     // --- helpers ---
 
     private JobModel createTestJob(String title, UUID assignedTo, JobStatus status) {
@@ -910,4 +962,5 @@ class JobIntegrationTest {
                 .createdBy(ownerId)
                 .build());
     }
+
 }

@@ -28,6 +28,8 @@ export interface UserSearchResponse {
 
 export type JobStatus = 'NEW' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED';
 
+export type JobPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
 export interface JobResponse {
   id: string;
   projectId: string;
@@ -38,6 +40,7 @@ export interface JobResponse {
   assignedToName: string | null;
   deadline: string | null;
   status: JobStatus;
+  priority: JobPriority;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
