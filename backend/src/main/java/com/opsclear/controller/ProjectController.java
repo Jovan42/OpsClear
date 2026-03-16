@@ -48,7 +48,8 @@ public class ProjectController {
             @RequestParam(name = "status", required = false, defaultValue = "ACTIVE") String statusParam,
             JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
-        ProjectStatus status = "ALL".equalsIgnoreCase(statusParam) ? null : ProjectStatus.valueOf(statusParam.toUpperCase());
+        ProjectStatus status = "ALL".equalsIgnoreCase(statusParam)
+                ? null : ProjectStatus.valueOf(statusParam.toUpperCase());
         List<ProjectResponse> projects = projectService.getProjectsForMember(userId, status)
                 .stream()
                 .map(ProjectResponse::from)
