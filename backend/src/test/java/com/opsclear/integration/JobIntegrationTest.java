@@ -171,6 +171,44 @@ class JobIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("Should create a job with a valid milestoneId and return 201")
+    void createJob_shouldReturn201_whenValidMilestoneId() throws Exception {
+        MilestoneModel milestone = milestoneRepository.save(
+                MilestoneModel.builder().projectId(projectId).name("Sprint 1").build());
+
+        String body = String.format("""
+                {
+                  "title": "Milestone task",
+                  "milestoneId": "%s"
+                }
+                """, milestone.getId());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.milestoneId").value(milestone.getId().toString()));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when milestoneId does not exist on create")
+    void createJob_shouldReturn404_whenMilestoneNotFound() throws Exception {
+        String body = String.format("""
+                {
+                  "title": "Task",
+                  "milestoneId": "%s"
+                }
+                """, UUID.randomUUID());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
     // --- GET /api/projects/{projectId}/jobs ---
 
     @Test
