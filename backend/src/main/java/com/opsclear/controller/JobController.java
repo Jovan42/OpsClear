@@ -47,9 +47,10 @@ public class JobController {
             @PathVariable UUID projectId,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) JobPriority priority,
+            @RequestParam(required = false) UUID milestoneId,
             JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
-        List<JobResponse> jobs = jobService.list(projectId, userId, q, priority)
+        List<JobResponse> jobs = jobService.list(projectId, userId, q, priority, milestoneId)
                 .stream()
                 .map(JobResponse::from)
                 .toList();

@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
+import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
@@ -42,6 +43,11 @@ public class Public extends SchemaImpl {
      * Jobs - central unit of work within a project
      */
     public final Jobs JOBS = Jobs.JOBS;
+
+    /**
+     * The table <code>public.milestones</code>.
+     */
+    public final Milestones MILESTONES = Milestones.MILESTONES;
 
     /**
      * Immutable audit notes attached to jobs — no update or delete paths exist
@@ -86,6 +92,7 @@ public class Public extends SchemaImpl {
         return Arrays.asList(
             Approvals.APPROVALS,
             Jobs.JOBS,
+            Milestones.MILESTONES,
             Notes.NOTES,
             ProjectBlockReasons.PROJECT_BLOCK_REASONS,
             ProjectMembers.PROJECT_MEMBERS,

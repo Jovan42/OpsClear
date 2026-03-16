@@ -61,6 +61,13 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class Milestone {
+        public static final String NOT_FOUND = "Milestone not found";
+
+        private Milestone() {
+        }
+    }
+
     public static final class Approval {
         public static final String NOT_FOUND = "Approval not found";
         public static final String ALREADY_DECIDED = "This approval has already been decided";

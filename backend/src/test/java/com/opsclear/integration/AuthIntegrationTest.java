@@ -6,6 +6,7 @@ import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
+import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import org.jooq.DSLContext;
@@ -42,6 +43,7 @@ class AuthIntegrationTest {
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
+    @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private UserRepository userRepository;
 
@@ -52,6 +54,7 @@ class AuthIntegrationTest {
         jobRepository.deleteAll();
         blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
+        milestoneRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();
     }

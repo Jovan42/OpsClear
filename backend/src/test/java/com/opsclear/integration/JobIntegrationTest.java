@@ -3,6 +3,7 @@ package com.opsclear.integration;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.MilestoneModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -11,6 +12,7 @@ import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
+import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +49,7 @@ class JobIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private JobRepository jobRepository;
     @Autowired private BlockReasonRepository blockReasonRepository;
+    @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private UserRepository userRepository;
@@ -60,6 +63,7 @@ class JobIntegrationTest {
         jobRepository.deleteAll();
         blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
+        milestoneRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -157,6 +161,44 @@ class JobIntegrationTest {
                 {
                   "title": "Job",
                   "assignedTo": "%s"
+                }
+                """, UUID.randomUUID());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should create a job with a valid milestoneId and return 201")
+    void createJob_shouldReturn201_whenValidMilestoneId() throws Exception {
+        MilestoneModel milestone = milestoneRepository.save(
+                MilestoneModel.builder().projectId(projectId).name("Sprint 1").build());
+
+        String body = String.format("""
+                {
+                  "title": "Milestone task",
+                  "milestoneId": "%s"
+                }
+                """, milestone.getId());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.milestoneId").value(milestone.getId().toString()));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when milestoneId does not exist on create")
+    void createJob_shouldReturn404_whenMilestoneNotFound() throws Exception {
+        String body = String.format("""
+                {
+                  "title": "Task",
+                  "milestoneId": "%s"
                 }
                 """, UUID.randomUUID());
 
@@ -898,7 +940,7 @@ class JobIntegrationTest {
         createTestJobWithPriority("Critical deploy task", null, JobPriority.CRITICAL);
         createTestJobWithPriority("High login task",      null, JobPriority.HIGH);
 
-        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -911,7 +953,7 @@ class JobIntegrationTest {
     void list_shouldReturnEmpty_whenQueryMatchesButPriorityDoesNot() throws Exception {
         createTestJobWithPriority("High login task", null, JobPriority.HIGH);
 
-        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -922,7 +964,7 @@ class JobIntegrationTest {
     void list_shouldReturnEmpty_whenPriorityMatchesButQueryDoesNot() throws Exception {
         createTestJobWithPriority("Critical deploy task", null, JobPriority.CRITICAL);
 
-        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -934,7 +976,7 @@ class JobIntegrationTest {
         createTestJobWithPriority("Member critical login", memberId, JobPriority.CRITICAL);
         createTestJobWithPriority("Owner critical login",  ownerId,  JobPriority.CRITICAL);
 
-        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -972,6 +1014,26 @@ class JobIntegrationTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
+    @DisplayName("listJobs_shouldReturnOnlyJobsInMilestone_whenMilestoneIdFilter")
+    void listJobs_shouldReturnOnlyJobsInMilestone_whenMilestoneIdFilter() throws Exception {
+        MilestoneModel milestone = milestoneRepository.save(
+                MilestoneModel.builder().projectId(projectId).name("Sprint 1").build());
+
+        JobModel jobInMilestone = jobRepository.save(JobModel.builder()
+                .projectId(projectId).title("Scoped task").assignedTo(ownerId)
+                .status(JobStatus.NEW).createdBy(ownerId).milestoneId(milestone.getId()).build());
+        jobRepository.save(JobModel.builder()
+                .projectId(projectId).title("Other task").assignedTo(ownerId)
+                .status(JobStatus.NEW).createdBy(ownerId).build());
+
+        mockMvc.perform(get(ApiPaths.jobsByMilestone(projectId, milestone.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(jobInMilestone.getId().toString()));
     }
 
     // --- helpers ---

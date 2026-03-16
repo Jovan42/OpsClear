@@ -14,9 +14,11 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.BlockReasonModel;
+import com.opsclear.model.MilestoneModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +45,7 @@ class JobServiceTest {
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private UserRepository userRepository;
+    @Mock private MilestoneRepository milestoneRepository;
     @Mock private BlockReasonService blockReasonService;
 
     private JobService jobService;
@@ -56,7 +59,7 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, projectRepository, projectMemberRepository, userRepository, blockReasonService);
+        jobService = new JobService(jobRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -213,9 +216,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByFilters(projectId, null, null, null)).thenReturn(allJobs);
+        when(jobRepository.findByFilters(projectId, null, null, null, null)).thenReturn(allJobs);
 
-        List<JobModel> result = jobService.list(projectId, ownerId, null, null);
+        List<JobModel> result = jobService.list(projectId, ownerId, null, null, null);
 
         assertThat(result).hasSize(2);
     }
@@ -230,9 +233,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByFilters(projectId, memberId, null, null)).thenReturn(assignedJobs);
+        when(jobRepository.findByFilters(projectId, memberId, null, null, null)).thenReturn(assignedJobs);
 
-        List<JobModel> result = jobService.list(projectId, memberId, null, null);
+        List<JobModel> result = jobService.list(projectId, memberId, null, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
@@ -248,9 +251,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByFilters(projectId, null, "login", null)).thenReturn(results);
+        when(jobRepository.findByFilters(projectId, null, "login", null, null)).thenReturn(results);
 
-        List<JobModel> result = jobService.list(projectId, ownerId, "login", null);
+        List<JobModel> result = jobService.list(projectId, ownerId, "login", null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getTitle()).isEqualTo("Fix login bug");
@@ -266,9 +269,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByFilters(projectId, memberId, "invoice", null)).thenReturn(results);
+        when(jobRepository.findByFilters(projectId, memberId, "invoice", null, null)).thenReturn(results);
 
-        List<JobModel> result = jobService.list(projectId, memberId, "invoice", null);
+        List<JobModel> result = jobService.list(projectId, memberId, "invoice", null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
@@ -284,9 +287,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByFilters(projectId, null, null, null)).thenReturn(allJobs);
+        when(jobRepository.findByFilters(projectId, null, null, null, null)).thenReturn(allJobs);
 
-        List<JobModel> result = jobService.list(projectId, ownerId, "   ", null);
+        List<JobModel> result = jobService.list(projectId, ownerId, "   ", null, null);
 
         assertThat(result).hasSize(1);
     }
@@ -1017,9 +1020,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByFilters(projectId, null, null, JobPriority.HIGH)).thenReturn(highJobs);
+        when(jobRepository.findByFilters(projectId, null, null, JobPriority.HIGH, null)).thenReturn(highJobs);
 
-        List<JobModel> result = jobService.list(projectId, ownerId, null, JobPriority.HIGH);
+        List<JobModel> result = jobService.list(projectId, ownerId, null, JobPriority.HIGH, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getPriority()).isEqualTo(JobPriority.HIGH);
@@ -1035,9 +1038,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByFilters(projectId, memberId, null, JobPriority.HIGH)).thenReturn(memberHighJobs);
+        when(jobRepository.findByFilters(projectId, memberId, null, JobPriority.HIGH, null)).thenReturn(memberHighJobs);
 
-        List<JobModel> result = jobService.list(projectId, memberId, null, JobPriority.HIGH);
+        List<JobModel> result = jobService.list(projectId, memberId, null, JobPriority.HIGH, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
@@ -1053,9 +1056,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByFilters(projectId, null, "login", JobPriority.CRITICAL)).thenReturn(results);
+        when(jobRepository.findByFilters(projectId, null, "login", JobPriority.CRITICAL, null)).thenReturn(results);
 
-        List<JobModel> result = jobService.list(projectId, ownerId, "login", JobPriority.CRITICAL);
+        List<JobModel> result = jobService.list(projectId, ownerId, "login", JobPriority.CRITICAL, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getPriority()).isEqualTo(JobPriority.CRITICAL);
@@ -1072,9 +1075,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByFilters(projectId, memberId, "invoice", JobPriority.HIGH)).thenReturn(results);
+        when(jobRepository.findByFilters(projectId, memberId, "invoice", JobPriority.HIGH, null)).thenReturn(results);
 
-        List<JobModel> result = jobService.list(projectId, memberId, "invoice", JobPriority.HIGH);
+        List<JobModel> result = jobService.list(projectId, memberId, "invoice", JobPriority.HIGH, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getAssignedTo()).isEqualTo(memberId);
@@ -1131,5 +1134,147 @@ class JobServiceTest {
         ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
         verify(jobRepository).save(captor.capture());
         assertThat(captor.getValue().getPriority()).isEqualTo(JobPriority.CRITICAL);
+    }
+
+    // --- milestone validation ---
+
+    @Test
+    @DisplayName("create should set milestoneId when a valid milestone is provided")
+    void create_shouldSetMilestoneId_whenValidMilestoneProvided() {
+        UUID milestoneId = UUID.randomUUID();
+        MilestoneModel milestone = MilestoneModel.builder().id(milestoneId).projectId(projectId).name("Sprint 1").build();
+        CreateJobRequest request = CreateJobRequest.builder().title("Task").milestoneId(milestoneId).build();
+
+        JobModel saved = JobModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).title("Task")
+                .milestoneId(milestoneId).status(JobStatus.NEW).createdBy(ownerId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)).thenReturn(Optional.of(milestone));
+        when(jobRepository.save(any())).thenReturn(saved);
+
+        JobModel result = jobService.create(projectId, request, ownerId);
+
+        assertThat(result.getMilestoneId()).isEqualTo(milestoneId);
+        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
+        verify(jobRepository).save(captor.capture());
+        assertThat(captor.getValue().getMilestoneId()).isEqualTo(milestoneId);
+    }
+
+    @Test
+    @DisplayName("create should throw NotFoundException when milestone does not exist")
+    void create_shouldThrow_whenMilestoneNotFound() {
+        UUID milestoneId = UUID.randomUUID();
+        CreateJobRequest request = CreateJobRequest.builder().title("Task").milestoneId(milestoneId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.create(projectId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Milestone not found");
+    }
+
+    @Test
+    @DisplayName("create should throw NotFoundException when milestone belongs to a different project")
+    void create_shouldThrow_whenMilestoneBelongsToDifferentProject() {
+        UUID milestoneId = UUID.randomUUID();
+        MilestoneModel otherMilestone = MilestoneModel.builder()
+                .id(milestoneId).projectId(UUID.randomUUID()).name("Other").build();
+        CreateJobRequest request = CreateJobRequest.builder().title("Task").milestoneId(milestoneId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)).thenReturn(Optional.of(otherMilestone));
+
+        assertThatThrownBy(() -> jobService.create(projectId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Milestone not found");
+    }
+
+    @Test
+    @DisplayName("update should set milestoneId when a valid milestone is provided")
+    void update_shouldSetMilestoneId_whenValidMilestoneProvided() {
+        UUID jobId = UUID.randomUUID();
+        UUID milestoneId = UUID.randomUUID();
+        MilestoneModel milestone = MilestoneModel.builder().id(milestoneId).projectId(projectId).name("Sprint 1").build();
+        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Job").status(JobStatus.NEW).build();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("Job").milestoneId(milestoneId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)).thenReturn(Optional.of(milestone));
+        when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        JobModel result = jobService.update(projectId, jobId, request, ownerId);
+
+        assertThat(result.getMilestoneId()).isEqualTo(milestoneId);
+    }
+
+    @Test
+    @DisplayName("update should throw NotFoundException when milestone does not exist")
+    void update_shouldThrow_whenMilestoneNotFound() {
+        UUID jobId = UUID.randomUUID();
+        UUID milestoneId = UUID.randomUUID();
+        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Job").status(JobStatus.NEW).build();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("Job").milestoneId(milestoneId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Milestone not found");
+    }
+
+    @Test
+    @DisplayName("list should pass milestoneId filter to repository")
+    void list_shouldPassMilestoneIdToRepository() {
+        UUID milestoneId = UUID.randomUUID();
+        List<JobModel> jobs = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Task").status(JobStatus.NEW)
+                        .milestoneId(milestoneId).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByFilters(projectId, null, null, null, milestoneId)).thenReturn(jobs);
+
+        List<JobModel> result = jobService.list(projectId, ownerId, null, null, milestoneId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getMilestoneId()).isEqualTo(milestoneId);
+    }
+
+    @Test
+    @DisplayName("update should throw NotFoundException when milestone belongs to a different project")
+    void update_shouldThrow_whenMilestoneBelongsToDifferentProject() {
+        UUID jobId = UUID.randomUUID();
+        UUID milestoneId = UUID.randomUUID();
+        MilestoneModel otherMilestone = MilestoneModel.builder()
+                .id(milestoneId).projectId(UUID.randomUUID()).name("Other").build();
+        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Job").status(JobStatus.NEW).build();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("Job").milestoneId(milestoneId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)).thenReturn(Optional.of(otherMilestone));
+
+        assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Milestone not found");
     }
 }

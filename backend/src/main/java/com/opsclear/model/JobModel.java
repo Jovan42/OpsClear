@@ -32,6 +32,9 @@ public class JobModel {
     private Instant updatedAt;
     private Instant deletedAt;
 
+    private UUID milestoneId;
+    private String milestoneName; // resolved via JOIN, not a DB column
+
     // Blocking metadata — all null when not blocked
     private UUID blockedBy;
     private UUID blockedReasonId;

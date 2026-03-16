@@ -15,6 +15,7 @@ import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -36,6 +37,7 @@ public class JobService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
+    private final MilestoneRepository milestoneRepository;
     private final BlockReasonService blockReasonService;
 
     @Transactional
@@ -44,6 +46,7 @@ public class JobService {
         requireProjectNotCompleted(project);
         requireMember(projectId, requesterId);
         requireAssignedUserExists(request.getAssignedTo());
+        requireMilestoneInProject(request.getMilestoneId(), projectId);
 
         JobModel job = JobModel.builder()
                 .projectId(projectId)
@@ -54,6 +57,7 @@ public class JobService {
                 .deadline(request.getDeadline())
                 .status(JobStatus.NEW)
                 .priority(request.getPriority() != null ? request.getPriority() : JobPriority.MEDIUM)
+                .milestoneId(request.getMilestoneId())
                 .createdBy(requesterId)
                 .build();
 
@@ -63,13 +67,14 @@ public class JobService {
     }
 
     @Transactional(readOnly = true)
-    public List<JobModel> list(UUID projectId, UUID requesterId, String q, JobPriority priority) {
+    public List<JobModel> list(UUID projectId, UUID requesterId, String q,
+                               JobPriority priority, UUID milestoneId) {
         requireProjectExistsById(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         boolean isMember = requester.getRole() == ProjectMemberRole.MEMBER;
         UUID assignedTo = isMember ? requesterId : null;
         String trimmedQ = (q != null && !q.isBlank()) ? q.trim() : null;
-        return jobRepository.findByFilters(projectId, assignedTo, trimmedQ, priority);
+        return jobRepository.findByFilters(projectId, assignedTo, trimmedQ, priority, milestoneId);
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +99,7 @@ public class JobService {
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
         requireAssignedUserExists(request.getAssignedTo());
+        requireMilestoneInProject(request.getMilestoneId(), projectId);
 
         job.setTitle(request.getTitle());
         job.setDescription(request.getDescription());
@@ -103,6 +109,7 @@ public class JobService {
         if (request.getPriority() != null) {
             job.setPriority(request.getPriority());
         }
+        job.setMilestoneId(request.getMilestoneId());
 
         JobModel updated = jobRepository.save(job);
         log.info("Updated job '{}' in project {}", jobId, projectId);
@@ -185,6 +192,15 @@ public class JobService {
     private JobModel requireJob(UUID jobId) {
         return jobRepository.findByIdAndDeletedAtIsNull(jobId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Job.NOT_FOUND));
+    }
+
+    private void requireMilestoneInProject(UUID milestoneId, UUID projectId) {
+        if (milestoneId == null) {
+            return;
+        }
+        milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)
+                .filter(m -> m.getProjectId().equals(projectId))
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Milestone.NOT_FOUND));
     }
 
     private void requireAssignedUserExists(UUID userId) {
