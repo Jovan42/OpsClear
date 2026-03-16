@@ -3,6 +3,7 @@ package com.opsclear.integration;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.MilestoneModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -975,6 +976,26 @@ class JobIntegrationTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
+    @DisplayName("listJobs_shouldReturnOnlyJobsInMilestone_whenMilestoneIdFilter")
+    void listJobs_shouldReturnOnlyJobsInMilestone_whenMilestoneIdFilter() throws Exception {
+        MilestoneModel milestone = milestoneRepository.save(
+                MilestoneModel.builder().projectId(projectId).name("Sprint 1").build());
+
+        JobModel jobInMilestone = jobRepository.save(JobModel.builder()
+                .projectId(projectId).title("Scoped task").assignedTo(ownerId)
+                .status(JobStatus.NEW).createdBy(ownerId).milestoneId(milestone.getId()).build());
+        jobRepository.save(JobModel.builder()
+                .projectId(projectId).title("Other task").assignedTo(ownerId)
+                .status(JobStatus.NEW).createdBy(ownerId).build());
+
+        mockMvc.perform(get(ApiPaths.jobsByMilestone(projectId, milestone.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(jobInMilestone.getId().toString()));
     }
 
     // --- helpers ---

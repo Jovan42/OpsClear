@@ -303,4 +303,44 @@ class MilestoneServiceTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Milestone not found");
     }
+
+    @Test
+    @DisplayName("Should throw NotFoundException when milestone belongs to a different project on softDelete")
+    void softDelete_shouldThrow_whenMilestoneBelongsToDifferentProject() {
+        UUID milestoneId = UUID.randomUUID();
+        MilestoneModel otherMilestone = MilestoneModel.builder()
+                .id(milestoneId).projectId(UUID.randomUUID()).name("Other").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)).thenReturn(Optional.of(otherMilestone));
+
+        assertThatThrownBy(() -> milestoneService.softDelete(projectId, milestoneId, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Milestone not found");
+    }
+
+    // --- MilestoneModel ---
+
+    @Test
+    @DisplayName("isDeleted should return true when deletedAt is set")
+    void milestoneModel_isDeleted_returnsTrueWhenDeletedAtIsSet() {
+        MilestoneModel milestone = MilestoneModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).name("M").deletedAt(java.time.Instant.now()).build();
+
+        assertThat(milestone.isDeleted()).isTrue();
+    }
+
+    @Test
+    @DisplayName("softDelete should set deletedAt")
+    void milestoneModel_softDelete_setsDeletedAt() {
+        MilestoneModel milestone = MilestoneModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).name("M").build();
+
+        assertThat(milestone.isDeleted()).isFalse();
+        milestone.softDelete();
+        assertThat(milestone.isDeleted()).isTrue();
+        assertThat(milestone.getDeletedAt()).isNotNull();
+    }
 }

@@ -71,6 +71,10 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs?q=login&priority=CRITICAL";
     }
 
+    static String jobsByMilestone(UUID projectId, UUID milestoneId) {
+        return "/api/projects/" + projectId + "/jobs?milestoneId=" + milestoneId;
+    }
+
     static String job(UUID projectId, UUID jobId) {
         return "/api/projects/" + projectId + "/jobs/" + jobId;
     }

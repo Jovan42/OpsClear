@@ -1219,6 +1219,45 @@ class JobServiceTest {
     }
 
     @Test
+    @DisplayName("update should throw NotFoundException when milestone does not exist")
+    void update_shouldThrow_whenMilestoneNotFound() {
+        UUID jobId = UUID.randomUUID();
+        UUID milestoneId = UUID.randomUUID();
+        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Job").status(JobStatus.NEW).build();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("Job").milestoneId(milestoneId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Milestone not found");
+    }
+
+    @Test
+    @DisplayName("list should pass milestoneId filter to repository")
+    void list_shouldPassMilestoneIdToRepository() {
+        UUID milestoneId = UUID.randomUUID();
+        List<JobModel> jobs = List.of(
+                JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Task").status(JobStatus.NEW)
+                        .milestoneId(milestoneId).build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByFilters(projectId, null, null, null, milestoneId)).thenReturn(jobs);
+
+        List<JobModel> result = jobService.list(projectId, ownerId, null, null, milestoneId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getMilestoneId()).isEqualTo(milestoneId);
+    }
+
+    @Test
     @DisplayName("update should throw NotFoundException when milestone belongs to a different project")
     void update_shouldThrow_whenMilestoneBelongsToDifferentProject() {
         UUID jobId = UUID.randomUUID();
