@@ -12,6 +12,7 @@ import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
+import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,7 @@ class DashboardIntegrationTest {
     @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
+    @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private UserRepository userRepository;
 
@@ -56,6 +58,7 @@ class DashboardIntegrationTest {
         jobRepository.deleteAll();
         blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
+        milestoneRepository.deleteAll();
         projectRepository.deleteAll();
         userRepository.deleteAll();
 

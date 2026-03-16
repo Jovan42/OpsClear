@@ -168,6 +168,19 @@ class MilestoneServiceTest {
                 .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
     }
 
+    @Test
+    @DisplayName("Should throw ForbiddenException when requester is not a project member on create")
+    void create_shouldThrow_whenNotMember() {
+        CreateMilestoneRequest request = CreateMilestoneRequest.builder().name("M1").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> milestoneService.create(projectId, request, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this project");
+    }
+
     // --- update ---
 
     @Test
@@ -226,6 +239,21 @@ class MilestoneServiceTest {
         assertThatThrownBy(() -> milestoneService.update(projectId, milestoneId, request, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Milestone not found");
+    }
+
+    @Test
+    @DisplayName("MEMBER should be forbidden from updating a milestone")
+    void update_shouldThrow_whenMemberRole() {
+        UUID milestoneId = UUID.randomUUID();
+        UpdateMilestoneRequest request = UpdateMilestoneRequest.builder().name("X").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+
+        assertThatThrownBy(() -> milestoneService.update(projectId, milestoneId, request, memberId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
     }
 
     // --- softDelete ---
