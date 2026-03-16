@@ -24,6 +24,12 @@ import {
   useBlockReasons,
   useDeleteBlockReason,
 } from '../jobs/useBlockReasons';
+import {
+  useMilestones,
+  useCreateMilestone,
+  useUpdateMilestone,
+  useDeleteMilestone,
+} from '../jobs/useMilestones';
 import { usePageTitle } from '../../hooks/usePageTitle';
 
 const detailsSchema = z.object({
@@ -53,6 +59,17 @@ export default function ProjectSettingsPage() {
   const { data: blockReasons = [] } = useBlockReasons(projectId, !!projectId);
   const { mutate: deleteBlockReason } = useDeleteBlockReason(projectId);
 
+  const { data: milestones = [] } = useMilestones(projectId);
+  const { mutate: createMilestone, isPending: creatingMilestone } = useCreateMilestone(projectId);
+  const { mutate: updateMilestone } = useUpdateMilestone(projectId);
+  const { mutate: deleteMilestone } = useDeleteMilestone(projectId);
+
+  const [newMilestoneName, setNewMilestoneName] = useState('');
+  const [newMilestoneDeadline, setNewMilestoneDeadline] = useState('');
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [editMilestoneName, setEditMilestoneName] = useState('');
+  const [editMilestoneDeadline, setEditMilestoneDeadline] = useState('');
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
 
@@ -77,6 +94,42 @@ export default function ProjectSettingsPage() {
     updateProject(
       { projectId, body: { name: values.name, description: values.description || undefined } },
       { onSuccess: () => reset(values) },
+    );
+  }
+
+  function handleAddMilestone() {
+    if (!newMilestoneName.trim()) return;
+    createMilestone(
+      {
+        name: newMilestoneName.trim(),
+        deadline: newMilestoneDeadline ? new Date(newMilestoneDeadline).toISOString() : undefined,
+      },
+      {
+        onSuccess: () => {
+          setNewMilestoneName('');
+          setNewMilestoneDeadline('');
+        },
+      },
+    );
+  }
+
+  function handleStartEditMilestone(id: string, name: string, deadline: string | null) {
+    setEditingMilestoneId(id);
+    setEditMilestoneName(name);
+    setEditMilestoneDeadline(deadline ? new Date(deadline).toISOString().split('T')[0] : '');
+  }
+
+  function handleSaveMilestone(milestoneId: string) {
+    if (!editMilestoneName.trim()) return;
+    updateMilestone(
+      {
+        milestoneId,
+        body: {
+          name: editMilestoneName.trim(),
+          deadline: editMilestoneDeadline ? new Date(editMilestoneDeadline).toISOString() : undefined,
+        },
+      },
+      { onSuccess: () => setEditingMilestoneId(null) },
     );
   }
 
@@ -279,6 +332,108 @@ export default function ProjectSettingsPage() {
                 ))}
               </ul>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Milestones ── */}
+      {canEdit && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
+            Milestones
+          </h2>
+          <div className="space-y-3">
+            {milestones.length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-gray-500 italic">No milestones yet.</p>
+            ) : (
+              <ul className="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+                {milestones.map((ms) => (
+                  <li key={ms.id} className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-800 first:rounded-t-xl last:rounded-b-xl gap-3">
+                    {editingMilestoneId === ms.id ? (
+                      <>
+                        <div className="flex flex-1 gap-2 min-w-0">
+                          <input
+                            value={editMilestoneName}
+                            onChange={(e) => setEditMilestoneName(e.target.value)}
+                            className="flex-1 min-w-0 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+                          />
+                          <input
+                            type="date"
+                            value={editMilestoneDeadline}
+                            onChange={(e) => setEditMilestoneDeadline(e.target.value)}
+                            className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+                          />
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => handleSaveMilestone(ms.id)}
+                            disabled={!editMilestoneName.trim()}
+                            className="text-xs text-brand hover:opacity-80 transition-opacity cursor-pointer disabled:opacity-40"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingMilestoneId(null)}
+                            className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-gray-800 dark:text-gray-200">{ms.name}</span>
+                          {ms.deadline && (
+                            <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(ms.deadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-3 shrink-0">
+                          <button
+                            onClick={() => handleStartEditMilestone(ms.id, ms.name, ms.deadline)}
+                            className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteMilestone(ms.id)}
+                            className="text-xs text-red-500 hover:text-red-700 transition-colors cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-2">
+              <input
+                value={newMilestoneName}
+                onChange={(e) => setNewMilestoneName(e.target.value)}
+                placeholder="Milestone name"
+                maxLength={100}
+                className="flex-1 min-w-0 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddMilestone(); } }}
+              />
+              <input
+                type="date"
+                value={newMilestoneDeadline}
+                onChange={(e) => setNewMilestoneDeadline(e.target.value)}
+                className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+              />
+              <Button
+                size="sm"
+                onClick={handleAddMilestone}
+                disabled={!newMilestoneName.trim()}
+                loading={creatingMilestone}
+              >
+                Add milestone
+              </Button>
+            </div>
           </div>
         </section>
       )}

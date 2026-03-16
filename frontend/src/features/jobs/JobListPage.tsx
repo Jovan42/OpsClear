@@ -7,10 +7,11 @@ import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
 import NewJobModal from './NewJobModal';
 import { useJobList } from './useJobs';
+import { useMilestones } from './useMilestones';
 import { useProject } from '../projects/useProjects';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import type { JobPriority, JobStatus } from '../../types';
+import type { JobPriority, JobResponse, JobStatus, MilestoneResponse } from '../../types';
 
 function JobListSkeleton() {
   return (
@@ -34,6 +35,7 @@ function JobListSkeleton() {
 type Filter = 'ALL' | JobStatus;
 type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status' | 'priority';
 type SortDir = 'asc' | 'desc';
+type ViewMode = 'flat' | 'grouped';
 
 const PRIORITY_ORDER: Record<JobPriority, number> = {
   CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3,
@@ -80,9 +82,216 @@ function isOverdue(deadline: string | null, status: JobStatus): boolean {
   return new Date(deadline) < new Date();
 }
 
+function sortJobs(jobs: JobResponse[], sortKey: SortKey, sortDir: SortDir): JobResponse[] {
+  return jobs.slice().sort((a, b) => {
+    let cmp: number;
+    if (sortKey === 'deadline') {
+      const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+      const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+      cmp = da - db;
+    } else if (sortKey === 'status') {
+      cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+    } else if (sortKey === 'priority') {
+      cmp = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+    } else {
+      const va = (a[sortKey] ?? '').toLowerCase();
+      const vb = (b[sortKey] ?? '').toLowerCase();
+      cmp = va < vb ? -1 : va > vb ? 1 : 0;
+    }
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+}
+
+interface JobCardProps {
+  job: JobResponse;
+  projectId: string;
+  showMilestoneChip?: boolean;
+}
+
+function JobCard({ job, projectId, showMilestoneChip = false }: JobCardProps) {
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
+      className={`w-full text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
+        job.status === 'BLOCKED' ? 'border-l-4 border-l-red-400' : ''
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{job.title}</p>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <PriorityBadge priority={job.priority} />
+          <StatusBadge status={job.status} />
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+        {job.client && (
+          <span className="text-xs text-gray-500 dark:text-gray-400">{job.client}</span>
+        )}
+        {job.assignedToName && (
+          <span className="text-xs text-gray-500 dark:text-gray-400">{job.assignedToName}</span>
+        )}
+        {job.deadline && (
+          <span className={`text-xs ${isOverdue(job.deadline, job.status) ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+            {formatDeadline(job.deadline)}
+          </span>
+        )}
+        {showMilestoneChip && job.milestoneName && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            {job.milestoneName}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+interface JobRowProps {
+  job: JobResponse;
+  projectId: string;
+  showMilestoneChip?: boolean;
+}
+
+function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
+  const navigate = useNavigate();
+  return (
+    <tr
+      onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
+      className={`bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
+        job.status === 'BLOCKED' ? 'border-l-2 border-l-red-400' : ''
+      }`}
+    >
+      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+        <div className="flex items-center gap-2 flex-wrap">
+          {job.title}
+          {showMilestoneChip && job.milestoneName && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+              {job.milestoneName}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.client ?? '—'}</td>
+      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.assignedToName ?? '—'}</td>
+      <td
+        className={`px-4 py-3 ${
+          isOverdue(job.deadline, job.status)
+            ? 'text-red-600 font-medium'
+            : 'text-gray-500 dark:text-gray-400'
+        }`}
+      >
+        {formatDeadline(job.deadline)}
+      </td>
+      <td className="px-4 py-3">
+        <PriorityBadge priority={job.priority} />
+      </td>
+      <td className="px-4 py-3">
+        <StatusBadge status={job.status} />
+      </td>
+    </tr>
+  );
+}
+
+const TABLE_HEADERS: { key: SortKey; label: string }[] = [
+  { key: 'title',          label: 'Title' },
+  { key: 'client',         label: 'Client' },
+  { key: 'assignedToName', label: 'Assigned to' },
+  { key: 'deadline',       label: 'Deadline' },
+  { key: 'priority',       label: 'Priority' },
+  { key: 'status',         label: 'Status' },
+];
+
+interface GroupSectionProps {
+  groupKey: string;
+  title: string;
+  deadline: string | null;
+  jobs: JobResponse[];
+  projectId: string;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  toggleSort: (key: SortKey) => void;
+  collapsedGroups: Set<string>;
+  toggleGroup: (key: string) => void;
+  isFirst: boolean;
+}
+
+function GroupSection({
+  groupKey, title, deadline, jobs, projectId,
+  sortKey, sortDir, toggleSort,
+  collapsedGroups, toggleGroup,
+}: GroupSectionProps) {
+  const isCollapsed = collapsedGroups.has(groupKey);
+  const deadlineOverdue = deadline && new Date(deadline) < new Date();
+
+  return (
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+      <div
+        onClick={() => toggleGroup(groupKey)}
+        className="flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 cursor-pointer select-none"
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{title}</span>
+          {deadline && (
+            <span className={`text-xs ${deadlineOverdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+              {formatDeadline(deadline)}
+            </span>
+          )}
+          <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            {jobs.length}
+          </span>
+        </div>
+        <span className="text-gray-400 dark:text-gray-500 text-sm">{isCollapsed ? '▸' : '▾'}</span>
+      </div>
+
+      {!isCollapsed && jobs.length > 0 && (
+        <>
+          {/* Mobile cards */}
+          <div className="flex flex-col gap-2 p-3 md:hidden bg-white dark:bg-gray-800">
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} projectId={projectId} showMilestoneChip={false} />
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  {TABLE_HEADERS.map(({ key, label }) => (
+                    <th
+                      key={key}
+                      onClick={(e) => { e.stopPropagation(); toggleSort(key); }}
+                      className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 select-none cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 whitespace-nowrap"
+                    >
+                      {label}
+                      <span className="ml-1 inline-block w-3 text-center">
+                        {sortKey === key ? (sortDir === 'asc' ? '↑' : '↓') : <span className="text-gray-300 dark:text-gray-600">↕</span>}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {jobs.map((job) => (
+                  <JobRow key={job.id} job={job} projectId={projectId} showMilestoneChip={false} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {!isCollapsed && jobs.length === 0 && (
+        <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500 italic bg-white dark:bg-gray-800">
+          No jobs in this group.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function JobListPage() {
   const { projectId = '' } = useParams();
-  const navigate = useNavigate();
   const { data: project } = useProject(projectId);
   usePageTitle('Jobs', project?.name);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -100,16 +309,37 @@ export default function JobListPage() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [priorityFilter, setPriorityFilter] = useState<JobPriority | 'ALL'>('ALL');
+  const [milestoneFilter, setMilestoneFilter] = useState<string | 'ALL'>('ALL');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const { data: milestones = [] } = useMilestones(projectId);
+
+  const hasMilestones = milestones.length > 0;
+  const milestoneFilterActive = milestoneFilter !== 'ALL';
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() => hasMilestones ? 'grouped' : 'flat');
+
+  const effectiveViewMode: ViewMode = milestoneFilterActive ? 'flat' : viewMode;
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortKey(key); setSortDir('asc'); }
   }
 
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   const { data: jobs = [], isLoading, isError, refetch } = useJobList(
     projectId,
     debouncedSearch || undefined,
     priorityFilter !== 'ALL' ? priorityFilter : undefined,
+    milestoneFilterActive ? milestoneFilter : undefined,
   );
 
   const counts: Record<JobStatus, number> = {
@@ -119,25 +349,8 @@ export default function JobListPage() {
     COMPLETED: jobs.filter((j) => j.status === 'COMPLETED').length,
   };
 
-  const filtered = (filter === 'ALL' ? jobs : jobs.filter((j) => j.status === filter))
-    .slice()
-    .sort((a, b) => {
-      let cmp: number;
-      if (sortKey === 'deadline') {
-        const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-        const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
-        cmp = da - db;
-      } else if (sortKey === 'status') {
-        cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
-      } else if (sortKey === 'priority') {
-        cmp = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-      } else {
-        const va = (a[sortKey] ?? '').toLowerCase();
-        const vb = (b[sortKey] ?? '').toLowerCase();
-        cmp = va < vb ? -1 : va > vb ? 1 : 0;
-      }
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
+  const filtered = filter === 'ALL' ? jobs : jobs.filter((j) => j.status === filter);
+  const sorted = sortJobs(filtered, sortKey, sortDir);
 
   if (isLoading) {
     return (
@@ -162,7 +375,7 @@ export default function JobListPage() {
         <Button onClick={() => setModalOpen(true)} disabled={project?.status === 'COMPLETED'}>+ New Job</Button>
       </div>
 
-      {/* Search + Priority filter */}
+      {/* Search + Priority filter + Milestone filter + View toggle */}
       <div className="flex flex-wrap gap-2 mb-4">
         <input
           type="search"
@@ -180,6 +393,30 @@ export default function JobListPage() {
             <option key={key} value={key}>{label}</option>
           ))}
         </select>
+        {hasMilestones && effectiveViewMode === 'flat' && (
+          <select
+            value={milestoneFilter}
+            onChange={(e) => setMilestoneFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+          >
+            <option value="ALL">All milestones</option>
+            {milestones.map((ms: MilestoneResponse) => (
+              <option key={ms.id} value={ms.id}>{ms.name}</option>
+            ))}
+          </select>
+        )}
+        {hasMilestones && !milestoneFilterActive && (
+          <button
+            onClick={() => setViewMode((v) => v === 'grouped' ? 'flat' : 'grouped')}
+            className={`rounded-lg border px-3 py-2 text-sm transition-colors cursor-pointer ${
+              effectiveViewMode === 'grouped'
+                ? 'bg-brand text-white border-brand'
+                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            {effectiveViewMode === 'grouped' ? 'Grouped' : 'Flat'}
+          </button>
+        )}
       </div>
 
       {/* Status filter tabs */}
@@ -220,7 +457,7 @@ export default function JobListPage() {
       </div>
 
       {/* Jobs table / card list */}
-      {filtered.length === 0 ? (
+      {sorted.length === 0 && effectiveViewMode === 'flat' ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
             {debouncedSearch
@@ -233,39 +470,76 @@ export default function JobListPage() {
             <Button onClick={() => setModalOpen(true)}>Create first job</Button>
           )}
         </div>
+      ) : effectiveViewMode === 'grouped' ? (
+        <div className="space-y-3">
+          {milestones.map((ms: MilestoneResponse) => {
+            const groupJobs = sortJobs(
+              filtered.filter((j) => j.milestoneId === ms.id),
+              sortKey,
+              sortDir,
+            );
+            return (
+              <GroupSection
+                key={ms.id}
+                groupKey={ms.id}
+                title={ms.name}
+                deadline={ms.deadline}
+                jobs={groupJobs}
+                projectId={projectId}
+                sortKey={sortKey}
+                sortDir={sortDir}
+                toggleSort={toggleSort}
+                collapsedGroups={collapsedGroups}
+                toggleGroup={toggleGroup}
+                isFirst={false}
+              />
+            );
+          })}
+          {(() => {
+            const ungrouped = sortJobs(
+              filtered.filter((j) => j.milestoneId === null),
+              sortKey,
+              sortDir,
+            );
+            if (ungrouped.length === 0) return null;
+            return (
+              <GroupSection
+                key="__ungrouped__"
+                groupKey="__ungrouped__"
+                title="Ungrouped"
+                deadline={null}
+                jobs={ungrouped}
+                projectId={projectId}
+                sortKey={sortKey}
+                sortDir={sortDir}
+                toggleSort={toggleSort}
+                collapsedGroups={collapsedGroups}
+                toggleGroup={toggleGroup}
+                isFirst={false}
+              />
+            );
+          })()}
+          {filtered.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                {debouncedSearch
+                  ? `No results for "${debouncedSearch}".`
+                  : jobs.length === 0
+                    ? 'No jobs yet.'
+                    : 'No jobs match this filter.'}
+              </p>
+              {!debouncedSearch && jobs.length === 0 && (
+                <Button onClick={() => setModalOpen(true)}>Create first job</Button>
+              )}
+            </div>
+          )}
+        </div>
       ) : (
         <>
           {/* Mobile card view */}
           <div className="flex flex-col gap-2 md:hidden">
-            {filtered.map((job) => (
-              <button
-                key={job.id}
-                onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
-                className={`w-full text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
-                  job.status === 'BLOCKED' ? 'border-l-4 border-l-red-400' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{job.title}</p>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <PriorityBadge priority={job.priority} />
-                    <StatusBadge status={job.status} />
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
-                  {job.client && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{job.client}</span>
-                  )}
-                  {job.assignedToName && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{job.assignedToName}</span>
-                  )}
-                  {job.deadline && (
-                    <span className={`text-xs ${isOverdue(job.deadline, job.status) ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-                      {formatDeadline(job.deadline)}
-                    </span>
-                  )}
-                </div>
-              </button>
+            {sorted.map((job) => (
+              <JobCard key={job.id} job={job} projectId={projectId} showMilestoneChip={hasMilestones} />
             ))}
           </div>
 
@@ -274,16 +548,7 @@ export default function JobListPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  {(
-                    [
-                      { key: 'title',          label: 'Title' },
-                      { key: 'client',         label: 'Client' },
-                      { key: 'assignedToName', label: 'Assigned to' },
-                      { key: 'deadline',       label: 'Deadline' },
-                      { key: 'priority',       label: 'Priority' },
-                      { key: 'status',         label: 'Status' },
-                    ] as { key: SortKey; label: string }[]
-                  ).map(({ key, label }) => (
+                  {TABLE_HEADERS.map(({ key, label }) => (
                     <th
                       key={key}
                       onClick={() => toggleSort(key)}
@@ -298,33 +563,8 @@ export default function JobListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {filtered.map((job) => (
-                  <tr
-                    key={job.id}
-                    onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
-                    className={`bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
-                      job.status === 'BLOCKED' ? 'border-l-2 border-l-red-400' : ''
-                    }`}
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{job.title}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.client ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.assignedToName ?? '—'}</td>
-                    <td
-                      className={`px-4 py-3 ${
-                        isOverdue(job.deadline, job.status)
-                          ? 'text-red-600 font-medium'
-                          : 'text-gray-500 dark:text-gray-400'
-                      }`}
-                    >
-                      {formatDeadline(job.deadline)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <PriorityBadge priority={job.priority} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={job.status} />
-                    </td>
-                  </tr>
+                {sorted.map((job) => (
+                  <JobRow key={job.id} job={job} projectId={projectId} showMilestoneChip={hasMilestones} />
                 ))}
               </tbody>
             </table>
@@ -336,6 +576,7 @@ export default function JobListPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         projectId={projectId}
+        milestones={milestones}
       />
     </div>
   );

@@ -2,10 +2,10 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { jobsApi } from '../../api/jobs';
 import type { JobPriority, JobStatus } from '../../types';
 
-export function useJobList(projectId: string, q?: string, priority?: JobPriority) {
+export function useJobList(projectId: string, q?: string, priority?: JobPriority, milestoneId?: string) {
   return useQuery({
-    queryKey: ['jobs', projectId, q ?? '', priority ?? ''],
-    queryFn: () => jobsApi.list(projectId, q, priority),
+    queryKey: ['jobs', projectId, q ?? '', priority ?? '', milestoneId ?? ''],
+    queryFn: () => jobsApi.list(projectId, q, priority, milestoneId),
     placeholderData: keepPreviousData,
   });
 }
@@ -27,6 +27,7 @@ export function useCreateJob(projectId: string) {
       assignedTo?: string;
       deadline?: string;
       priority?: JobPriority;
+      milestoneId?: string;
     }) => jobsApi.create(projectId, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
@@ -50,6 +51,7 @@ export function useUpdateJob(projectId: string) {
         assignedTo?: string;
         deadline?: string;
         priority?: JobPriority;
+        milestoneId?: string;
       };
     }) => jobsApi.update(projectId, jobId, body),
     onSuccess: (data) => {
