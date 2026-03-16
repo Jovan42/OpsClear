@@ -58,6 +58,7 @@ export default function JobDetailPage() {
   const [kebabOpen, setKebabOpen] = useState(false);
 
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+  const isProjectCompleted = project?.status === 'COMPLETED';
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
 
   function handleStatusChange(status: JobStatus) {
@@ -126,7 +127,7 @@ export default function JobDetailPage() {
 
           <div className="flex items-center gap-2 shrink-0">
             {isOwnerOrAdmin && (
-              <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+              <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)} disabled={isProjectCompleted}>
                 Edit
               </Button>
             )}
@@ -208,6 +209,7 @@ export default function JobDetailPage() {
           onBlock={() => setBlockOpen(true)}
           onRequestApproval={() => setApprovalOpen(true)}
           isPending={isStatusPending}
+          projectCompleted={isProjectCompleted}
         />
       </div>
 
@@ -222,7 +224,7 @@ export default function JobDetailPage() {
         </button>
         {notesExpanded && (
           <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
-            <NoteThread projectId={projectId} jobId={jobId} members={members} />
+            <NoteThread projectId={projectId} jobId={jobId} members={members} projectCompleted={isProjectCompleted} />
           </div>
         )}
       </div>

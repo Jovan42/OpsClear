@@ -27,9 +27,10 @@ interface Props {
   projectId: string;
   jobId: string;
   members: ProjectMemberResponse[];
+  projectCompleted?: boolean;
 }
 
-export default function NoteThread({ projectId, jobId, members }: Props) {
+export default function NoteThread({ projectId, jobId, members, projectCompleted }: Props) {
   const { data: notes = [] } = useNotes(projectId, jobId);
   const { mutate: addNote, isPending } = useAddNote(projectId, jobId);
   const [content, setContent] = useState('');
@@ -74,28 +75,32 @@ export default function NoteThread({ projectId, jobId, members }: Props) {
         </div>
       ))}
 
-      <div className="mt-3">
-        <MarkdownEditor
-          value={content}
-          onChange={setContent}
-          placeholder="Add a note… (markdown supported)"
-          rows={4}
-        />
-      </div>
+      {!projectCompleted && (
+        <>
+          <div className="mt-3">
+            <MarkdownEditor
+              value={content}
+              onChange={setContent}
+              placeholder="Add a note… (markdown supported)"
+              rows={4}
+            />
+          </div>
 
-      <div className="flex items-center justify-between mt-1">
-        <span className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>
-          {content.length}/{NOTE_MAX}
-        </span>
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={isEmpty || isOverLimit}
-          loading={isPending}
-        >
-          Add Note
-        </Button>
-      </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className={`text-xs ${isOverLimit ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>
+              {content.length}/{NOTE_MAX}
+            </span>
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={isEmpty || isOverLimit}
+              loading={isPending}
+            >
+              Add Note
+            </Button>
+          </div>
+        </>
+      )}
 
       <ConfirmModal
         open={confirmOpen}

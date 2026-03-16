@@ -1,9 +1,11 @@
 import apiClient from './client';
-import type { ProjectResponse, ProjectMemberResponse } from '../types';
+import type { ProjectResponse, ProjectMemberResponse, ProjectStatus } from '../types';
 
 export const projectsApi = {
-  list: () =>
-    apiClient.get<ProjectResponse[]>('/api/projects').then((r) => r.data),
+  list: (status?: ProjectStatus | 'ALL') =>
+    apiClient
+      .get<ProjectResponse[]>('/api/projects', { params: status ? { status } : undefined })
+      .then((r) => r.data),
 
   get: (projectId: string) =>
     apiClient.get<ProjectResponse>(`/api/projects/${projectId}`).then((r) => r.data),
@@ -13,6 +15,11 @@ export const projectsApi = {
 
   update: (projectId: string, body: { name: string; description?: string }) =>
     apiClient.put<ProjectResponse>(`/api/projects/${projectId}`, body).then((r) => r.data),
+
+  updateStatus: (projectId: string, status: ProjectStatus) =>
+    apiClient
+      .patch<ProjectResponse>(`/api/projects/${projectId}/status`, { status })
+      .then((r) => r.data),
 
   delete: (projectId: string) =>
     apiClient.delete(`/api/projects/${projectId}`),

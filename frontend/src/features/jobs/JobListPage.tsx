@@ -159,7 +159,7 @@ export default function JobListPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Jobs</h1>
-        <Button onClick={() => setModalOpen(true)}>+ New Job</Button>
+        <Button onClick={() => setModalOpen(true)} disabled={project?.status === 'COMPLETED'}>+ New Job</Button>
       </div>
 
       {/* Search + Priority filter */}
