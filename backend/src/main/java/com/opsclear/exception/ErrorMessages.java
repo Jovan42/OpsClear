@@ -8,6 +8,9 @@ public final class ErrorMessages {
     public static final class Project {
         public static final String NOT_FOUND = "Project not found";
         public static final String NAME_ALREADY_EXISTS = "A project with this name already exists";
+        public static final String COMPLETED_NO_MUTATIONS = "This project is completed and no longer accepts changes";
+        public static final String HAS_OPEN_JOBS =
+                "Cannot complete project: %d job(s) are still IN_PROGRESS or BLOCKED";
 
         private Project() {
         }

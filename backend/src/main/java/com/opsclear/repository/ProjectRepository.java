@@ -1,6 +1,7 @@
 package com.opsclear.repository;
 
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.PROJECTS;
 import static com.opsclear.generated.jooq.Tables.PROJECT_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.USERS;
@@ -51,13 +53,14 @@ public class ProjectRepository {
                 .map(this::toModel);
     }
 
-    public List<ProjectModel> findByMemberIdAndDeletedAtIsNull(UUID userId) {
-        return dsl.select(of(
+    public List<ProjectModel> findByMemberIdAndStatusAndDeletedAtIsNull(UUID userId, ProjectStatus status) {
+        var query = dsl.select(of(
                         PROJECTS.ID,
                         PROJECTS.NAME,
                         PROJECTS.DESCRIPTION,
                         PROJECTS.OWNER_ID,
                         OWNER_NAME,
+                        PROJECTS.STATUS,
                         PROJECTS.CREATED_AT,
                         PROJECTS.UPDATED_AT,
                         PROJECTS.DELETED_AT))
@@ -65,9 +68,13 @@ public class ProjectRepository {
                 .join(USERS).on(PROJECTS.OWNER_ID.eq(USERS.ID))
                 .join(PROJECT_MEMBERS).on(PROJECT_MEMBERS.PROJECT_ID.eq(PROJECTS.ID))
                 .where(PROJECT_MEMBERS.USER_ID.eq(userId))
-                .and(PROJECTS.DELETED_AT.isNull())
-                .fetch()
-                .map(this::toModel);
+                .and(PROJECTS.DELETED_AT.isNull());
+
+        if (status != null) {
+            query = query.and(PROJECTS.STATUS.eq(status.name()));
+        }
+
+        return query.fetch().map(this::toModel);
     }
 
     public boolean existsByNameAndOwnerIdAndDeletedAtIsNull(String name, UUID ownerId) {
@@ -89,6 +96,15 @@ public class ProjectRepository {
                         .and(PROJECTS.DELETED_AT.isNull()));
     }
 
+    public int countOpenJobsByProjectId(UUID projectId) {
+        return dsl.fetchCount(
+                dsl.selectOne()
+                        .from(JOBS)
+                        .where(JOBS.PROJECT_ID.eq(projectId))
+                        .and(JOBS.STATUS.in("IN_PROGRESS", "BLOCKED"))
+                        .and(JOBS.DELETED_AT.isNull()));
+    }
+
     public Optional<ProjectModel> findById(UUID id) {
         return selectWithOwner()
                 .where(PROJECTS.ID.eq(id))
@@ -102,6 +118,7 @@ public class ProjectRepository {
                     .set(PROJECTS.NAME, project.getName())
                     .set(PROJECTS.DESCRIPTION, project.getDescription())
                     .set(PROJECTS.OWNER_ID, project.getOwnerId())
+                    .set(PROJECTS.STATUS, project.getStatus().name())
                     .set(PROJECTS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(PROJECTS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .returning(PROJECTS.ID)
@@ -112,6 +129,7 @@ public class ProjectRepository {
         dsl.update(PROJECTS)
                 .set(PROJECTS.NAME, project.getName())
                 .set(PROJECTS.DESCRIPTION, project.getDescription())
+                .set(PROJECTS.STATUS, project.getStatus().name())
                 .set(PROJECTS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .set(PROJECTS.DELETED_AT, toLocalDateTime(project.getDeletedAt()))
                 .where(PROJECTS.ID.eq(project.getId()))
@@ -130,6 +148,7 @@ public class ProjectRepository {
                         PROJECTS.DESCRIPTION,
                         PROJECTS.OWNER_ID,
                         OWNER_NAME,
+                        PROJECTS.STATUS,
                         PROJECTS.CREATED_AT,
                         PROJECTS.UPDATED_AT,
                         PROJECTS.DELETED_AT))
@@ -144,6 +163,7 @@ public class ProjectRepository {
                 .description(r.get(PROJECTS.DESCRIPTION))
                 .ownerId(r.get(PROJECTS.OWNER_ID))
                 .ownerName(r.get(OWNER_NAME))
+                .status(ProjectStatus.valueOf(r.get(PROJECTS.STATUS)))
                 .createdAt(toInstant(r.get(PROJECTS.CREATED_AT)))
                 .updatedAt(toInstant(r.get(PROJECTS.UPDATED_AT)))
                 .deletedAt(toInstant(r.get(PROJECTS.DELETED_AT)))

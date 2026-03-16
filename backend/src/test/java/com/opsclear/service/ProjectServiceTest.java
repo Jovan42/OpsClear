@@ -8,6 +8,7 @@ import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -174,19 +175,20 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("Should return all projects where user is a member")
+    @DisplayName("Should return active projects where user is a member")
     void getProjectsForMember_shouldReturnProjects() {
         ProjectModel project = ProjectModel.builder()
                 .id(UUID.randomUUID())
                 .name("Acme Corp")
                 .ownerId(ownerId)
                 .ownerName(testOwner.getName())
+                .status(ProjectStatus.ACTIVE)
                 .build();
 
-        when(projectRepository.findByMemberIdAndDeletedAtIsNull(ownerId))
+        when(projectRepository.findByMemberIdAndStatusAndDeletedAtIsNull(ownerId, ProjectStatus.ACTIVE))
                 .thenReturn(List.of(project));
 
-        List<ProjectModel> result = projectService.getProjectsForMember(ownerId);
+        List<ProjectModel> result = projectService.getProjectsForMember(ownerId, ProjectStatus.ACTIVE);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getName()).isEqualTo("Acme Corp");
@@ -422,6 +424,110 @@ class ProjectServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> projectService.softDelete(projectId, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Project not found");
+    }
+
+    // --- updateStatus ---
+
+    @Test
+    @DisplayName("updateStatus_shouldCompleteProject_whenNoOpenJobs")
+    void updateStatus_shouldCompleteProject_whenNoOpenJobs() {
+        UUID projectId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder()
+                .id(projectId).name("Acme").ownerId(ownerId).status(ProjectStatus.ACTIVE).build();
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(membership));
+        when(projectRepository.countOpenJobsByProjectId(projectId)).thenReturn(0);
+        when(projectRepository.save(any(ProjectModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectModel result = projectService.updateStatus(projectId, ProjectStatus.COMPLETED, ownerId);
+
+        assertThat(result.getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+        ArgumentCaptor<ProjectModel> captor = ArgumentCaptor.forClass(ProjectModel.class);
+        verify(projectRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(ProjectStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("updateStatus_shouldThrowConflictException_whenProjectHasOpenJobs")
+    void updateStatus_shouldThrowConflict_whenProjectHasOpenJobs() {
+        UUID projectId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder()
+                .id(projectId).name("Acme").ownerId(ownerId).status(ProjectStatus.ACTIVE).build();
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(membership));
+        when(projectRepository.countOpenJobsByProjectId(projectId)).thenReturn(3);
+
+        assertThatThrownBy(() -> projectService.updateStatus(projectId, ProjectStatus.COMPLETED, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("3 job(s)");
+    }
+
+    @Test
+    @DisplayName("updateStatus_shouldReactivateProject_whenSettingActive")
+    void updateStatus_shouldReactivateProject_whenSettingActive() {
+        UUID projectId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder()
+                .id(projectId).name("Acme").ownerId(ownerId).status(ProjectStatus.COMPLETED).build();
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(membership));
+        when(projectRepository.save(any(ProjectModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectModel result = projectService.updateStatus(projectId, ProjectStatus.ACTIVE, ownerId);
+
+        assertThat(result.getStatus()).isEqualTo(ProjectStatus.ACTIVE);
+        verify(projectRepository, never()).countOpenJobsByProjectId(any());
+    }
+
+    @Test
+    @DisplayName("updateStatus_shouldThrowForbiddenException_whenRequesterIsAdmin")
+    void updateStatus_shouldThrowForbidden_whenAdmin() {
+        UUID projectId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder().id(projectId).name("Acme").ownerId(ownerId).build();
+        ProjectMemberModel membership = ProjectMemberModel.builder()
+                .projectId(projectId).userId(adminId).role(ProjectMemberRole.ADMIN).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, adminId)).thenReturn(Optional.of(membership));
+
+        assertThatThrownBy(() -> projectService.updateStatus(projectId, ProjectStatus.COMPLETED, adminId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Insufficient permissions: OWNER role required");
+    }
+
+    @Test
+    @DisplayName("updateStatus_shouldThrowForbiddenException_whenRequesterIsNotMember")
+    void updateStatus_shouldThrowForbidden_whenNotMember() {
+        UUID projectId = UUID.randomUUID();
+        UUID outsiderId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder().id(projectId).name("Acme").ownerId(ownerId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, outsiderId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.updateStatus(projectId, ProjectStatus.COMPLETED, outsiderId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this project");
+    }
+
+    @Test
+    @DisplayName("updateStatus_shouldThrowNotFoundException_whenProjectNotFound")
+    void updateStatus_shouldThrowNotFound_whenProjectNotFound() {
+        UUID projectId = UUID.randomUUID();
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.updateStatus(projectId, ProjectStatus.COMPLETED, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found");
     }

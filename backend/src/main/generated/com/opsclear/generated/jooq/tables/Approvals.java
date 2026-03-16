@@ -7,8 +7,6 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
-import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
-import com.opsclear.generated.jooq.tables.Users.UsersPath;
 import com.opsclear.generated.jooq.tables.records.ApprovalsRecord;
 
 import java.time.LocalDateTime;
@@ -20,14 +18,10 @@ import java.util.UUID;
 import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -137,39 +131,6 @@ public class Approvals extends TableImpl<ApprovalsRecord> {
         this(DSL.name("approvals"), null);
     }
 
-    public <O extends Record> Approvals(Table<O> path, ForeignKey<O, ApprovalsRecord> childPath, InverseForeignKey<O, ApprovalsRecord> parentPath) {
-        super(path, childPath, parentPath, APPROVALS);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class ApprovalsPath extends Approvals implements Path<ApprovalsRecord> {
-
-        private static final long serialVersionUID = 1L;
-        public <O extends Record> ApprovalsPath(Table<O> path, ForeignKey<O, ApprovalsRecord> childPath, InverseForeignKey<O, ApprovalsRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private ApprovalsPath(Name alias, Table<ApprovalsRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public ApprovalsPath as(String alias) {
-            return new ApprovalsPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public ApprovalsPath as(Name alias) {
-            return new ApprovalsPath(alias, this);
-        }
-
-        @Override
-        public ApprovalsPath as(Table<?> alias) {
-            return new ApprovalsPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -183,49 +144,6 @@ public class Approvals extends TableImpl<ApprovalsRecord> {
     @Override
     public UniqueKey<ApprovalsRecord> getPrimaryKey() {
         return Keys.APPROVALS_PKEY;
-    }
-
-    @Override
-    public List<ForeignKey<ApprovalsRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.APPROVALS__APPROVALS_APPROVER_ID_FKEY, Keys.APPROVALS__APPROVALS_JOB_ID_FKEY, Keys.APPROVALS__APPROVALS_REQUESTER_ID_FKEY);
-    }
-
-    private transient UsersPath _approvalsApproverIdFkey;
-
-    /**
-     * Get the implicit join path to the <code>public.users</code> table, via
-     * the <code>approvals_approver_id_fkey</code> key.
-     */
-    public UsersPath approvalsApproverIdFkey() {
-        if (_approvalsApproverIdFkey == null)
-            _approvalsApproverIdFkey = new UsersPath(this, Keys.APPROVALS__APPROVALS_APPROVER_ID_FKEY, null);
-
-        return _approvalsApproverIdFkey;
-    }
-
-    private transient JobsPath _jobs;
-
-    /**
-     * Get the implicit join path to the <code>public.jobs</code> table.
-     */
-    public JobsPath jobs() {
-        if (_jobs == null)
-            _jobs = new JobsPath(this, Keys.APPROVALS__APPROVALS_JOB_ID_FKEY, null);
-
-        return _jobs;
-    }
-
-    private transient UsersPath _approvalsRequesterIdFkey;
-
-    /**
-     * Get the implicit join path to the <code>public.users</code> table, via
-     * the <code>approvals_requester_id_fkey</code> key.
-     */
-    public UsersPath approvalsRequesterIdFkey() {
-        if (_approvalsRequesterIdFkey == null)
-            _approvalsRequesterIdFkey = new UsersPath(this, Keys.APPROVALS__APPROVALS_REQUESTER_ID_FKEY, null);
-
-        return _approvalsRequesterIdFkey;
     }
 
     @Override

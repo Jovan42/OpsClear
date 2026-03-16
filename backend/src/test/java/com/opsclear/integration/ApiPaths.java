@@ -25,6 +25,14 @@ final class ApiPaths {
         return "/api/projects/" + projectId;
     }
 
+    static String projectStatus(UUID projectId) {
+        return "/api/projects/" + projectId + "/status";
+    }
+
+    static String projectsByStatus(String status) {
+        return "/api/projects?status=" + status;
+    }
+
     // --- Project members ---
 
     static String members(UUID projectId) {

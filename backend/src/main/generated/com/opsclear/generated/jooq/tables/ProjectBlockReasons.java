@@ -7,8 +7,6 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
-import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
-import com.opsclear.generated.jooq.tables.Projects.ProjectsPath;
 import com.opsclear.generated.jooq.tables.records.ProjectBlockReasonsRecord;
 
 import java.time.LocalDateTime;
@@ -19,14 +17,10 @@ import java.util.UUID;
 
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -118,39 +112,6 @@ public class ProjectBlockReasons extends TableImpl<ProjectBlockReasonsRecord> {
         this(DSL.name("project_block_reasons"), null);
     }
 
-    public <O extends Record> ProjectBlockReasons(Table<O> path, ForeignKey<O, ProjectBlockReasonsRecord> childPath, InverseForeignKey<O, ProjectBlockReasonsRecord> parentPath) {
-        super(path, childPath, parentPath, PROJECT_BLOCK_REASONS);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class ProjectBlockReasonsPath extends ProjectBlockReasons implements Path<ProjectBlockReasonsRecord> {
-
-        private static final long serialVersionUID = 1L;
-        public <O extends Record> ProjectBlockReasonsPath(Table<O> path, ForeignKey<O, ProjectBlockReasonsRecord> childPath, InverseForeignKey<O, ProjectBlockReasonsRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private ProjectBlockReasonsPath(Name alias, Table<ProjectBlockReasonsRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public ProjectBlockReasonsPath as(String alias) {
-            return new ProjectBlockReasonsPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public ProjectBlockReasonsPath as(Name alias) {
-            return new ProjectBlockReasonsPath(alias, this);
-        }
-
-        @Override
-        public ProjectBlockReasonsPath as(Table<?> alias) {
-            return new ProjectBlockReasonsPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -169,35 +130,6 @@ public class ProjectBlockReasons extends TableImpl<ProjectBlockReasonsRecord> {
     @Override
     public List<UniqueKey<ProjectBlockReasonsRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.UQ_BLOCK_REASON_PER_PROJECT);
-    }
-
-    @Override
-    public List<ForeignKey<ProjectBlockReasonsRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.PROJECT_BLOCK_REASONS__PROJECT_BLOCK_REASONS_PROJECT_ID_FKEY);
-    }
-
-    private transient ProjectsPath _projects;
-
-    /**
-     * Get the implicit join path to the <code>public.projects</code> table.
-     */
-    public ProjectsPath projects() {
-        if (_projects == null)
-            _projects = new ProjectsPath(this, Keys.PROJECT_BLOCK_REASONS__PROJECT_BLOCK_REASONS_PROJECT_ID_FKEY, null);
-
-        return _projects;
-    }
-
-    private transient JobsPath _jobs;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.jobs</code> table
-     */
-    public JobsPath jobs() {
-        if (_jobs == null)
-            _jobs = new JobsPath(this, null, Keys.JOBS__JOBS_BLOCKED_REASON_ID_FKEY.getInverseKey());
-
-        return _jobs;
     }
 
     @Override

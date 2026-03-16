@@ -1,8 +1,11 @@
 package com.opsclear.integration;
 
+import com.opsclear.model.JobModel;
+import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
@@ -25,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -225,6 +229,8 @@ class ProjectIntegrationTest {
     void deleteProject_shouldReturn204() throws Exception {
         ProjectModel project = createTestProject("To Delete", null);
 
+        assertThat(project.isDeleted()).isFalse();
+
         mockMvc.perform(delete(ApiPaths.project(project.getId()))
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
@@ -245,6 +251,23 @@ class ProjectIntegrationTest {
                                 .claim("email", "testuser@example.com")
                                 .claim("name", "Test User"))))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when non-member tries to get project by ID")
+    void getProject_shouldReturn403_whenNotMember() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(get(ApiPaths.project(project.getId()))
+                        .with(jwt().jwt(j -> j
+                                .subject(outsiderId.toString())
+                                .claim("email", "outsider@example.com")
+                                .claim("name", "Outsider"))))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -375,6 +398,184 @@ class ProjectIntegrationTest {
                 .andExpect(jsonPath("$.description").value("Updated desc"));
     }
 
+    // --- PATCH /{id}/status ---
+
+    @Test
+    @DisplayName("Should complete project when it has no open jobs")
+    void patchStatus_shouldCompleteProject_whenNoOpenJobs() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+
+        mockMvc.perform(patch(ApiPaths.projectStatus(project.getId()))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "COMPLETED" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()))
+                .hasValueSatisfying(p -> assertThat(p.getStatus()).isEqualTo(ProjectStatus.COMPLETED));
+    }
+
+    @Test
+    @DisplayName("Should return 409 when completing project with open jobs")
+    void patchStatus_shouldReturn409_whenProjectHasOpenJobs() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+        createTestJob(project.getId());
+
+        mockMvc.perform(patch(ApiPaths.projectStatus(project.getId()))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "COMPLETED" }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
+    @DisplayName("Should reactivate a completed project")
+    void patchStatus_shouldReactivateProject() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+        project.setStatus(ProjectStatus.COMPLETED);
+        projectRepository.save(project);
+
+        mockMvc.perform(patch(ApiPaths.projectStatus(project.getId()))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "ACTIVE" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    @DisplayName("Should return 403 when ADMIN tries to change project status")
+    void patchStatus_shouldReturn403_whenAdmin() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+
+        UUID adminId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(adminId).email("admin@example.com").name("Admin User").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project.getId()).userId(adminId).role(ProjectMemberRole.ADMIN).build());
+
+        mockMvc.perform(patch(ApiPaths.projectStatus(project.getId()))
+                        .with(jwt().jwt(j -> j
+                                .subject(adminId.toString())
+                                .claim("email", "admin@example.com")
+                                .claim("name", "Admin User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "COMPLETED" }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when MEMBER tries to change project status")
+    void patchStatus_shouldReturn403_whenMember() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+
+        UUID memberId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(memberId).email("member@example.com").name("Member User").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project.getId()).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        mockMvc.perform(patch(ApiPaths.projectStatus(project.getId()))
+                        .with(jwt().jwt(j -> j
+                                .subject(memberId.toString())
+                                .claim("email", "member@example.com")
+                                .claim("name", "Member User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "COMPLETED" }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when patching status of non-existent project")
+    void patchStatus_shouldReturn404_whenNotFound() throws Exception {
+        mockMvc.perform(patch(ApiPaths.projectStatus(UUID.randomUUID()))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "COMPLETED" }
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when status field is missing")
+    void patchStatus_shouldReturn400_whenStatusIsNull() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+
+        mockMvc.perform(patch(ApiPaths.projectStatus(project.getId()))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Validation Error"));
+    }
+
+    // --- List filtering by status ---
+
+    @Test
+    @DisplayName("Should return only completed projects when filtered by COMPLETED")
+    void listProjects_shouldReturnOnlyCompleted_whenFilteredByCompleted() throws Exception {
+        createTestProject("Active Project", null);
+        ProjectModel completed = createTestProject("Completed Project", null);
+        completed.setStatus(ProjectStatus.COMPLETED);
+        projectRepository.save(completed);
+
+        mockMvc.perform(get(ApiPaths.projectsByStatus("COMPLETED"))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Completed Project"));
+    }
+
+    @Test
+    @DisplayName("Should return all projects when filtered by ALL")
+    void listProjects_shouldReturnAll_whenFilteredByAll() throws Exception {
+        createTestProject("Active Project", null);
+        ProjectModel completed = createTestProject("Completed Project", null);
+        completed.setStatus(ProjectStatus.COMPLETED);
+        projectRepository.save(completed);
+
+        mockMvc.perform(get(ApiPaths.projectsByStatus("ALL"))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
     private ProjectModel createTestProject(String name, String description) {
         ProjectModel project = ProjectModel.builder()
                 .name(name)
@@ -388,5 +589,14 @@ class ProjectIntegrationTest {
                 .role(ProjectMemberRole.OWNER)
                 .build());
         return project;
+    }
+
+    private void createTestJob(UUID projectId) {
+        jobRepository.save(JobModel.builder()
+                .projectId(projectId)
+                .title("Test Job")
+                .status(JobStatus.IN_PROGRESS)
+                .createdBy(userId)
+                .build());
     }
 }

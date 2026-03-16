@@ -258,6 +258,21 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         return (LocalDateTime) get(14);
     }
 
+    /**
+     * Setter for <code>public.jobs.priority</code>.
+     */
+    public JobsRecord setPriority(String value) {
+        set(15, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.jobs.priority</code>.
+     */
+    public String getPriority() {
+        return (String) get(15);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -281,7 +296,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
     /**
      * Create a detached, initialised JobsRecord
      */
-    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt) {
+    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt, String priority) {
         super(Jobs.JOBS);
 
         setId(id);
@@ -299,6 +314,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         setBlockedBy(blockedBy);
         setBlockedReasonId(blockedReasonId);
         setBlockedAt(blockedAt);
+        setPriority(priority);
         resetChangedOnNotNull();
     }
 }

@@ -88,6 +88,10 @@ jooq {
                         name = 'org.jooq.meta.postgres.PostgresDatabase'
                         inputSchema = 'public'
                         excludes = 'flyway_schema_history'
+                        // Workaround: jOOQ 3.19.x has a bug introspecting FKs for tables
+                        // with multiple nullable FKs to the same target table (approvals).
+                        // We use explicit JOINs everywhere, so FK metadata is not needed.
+                        includeForeignKeys = false
                     }
                     generate {
                         daos = false
@@ -95,6 +99,10 @@ jooq {
                         pojos = false
                         fluentSetters = true
                         javaTimeTypes = true
+                        // Disable implicit join paths — we use explicit JOINs and jOOQ 3.19.x
+                        // has a codegen bug with tables that have multiple FKs to the same table.
+                        implicitJoinPathsToOne = false
+                        implicitJoinPathsToMany = false
                     }
                     target {
                         packageName = 'com.opsclear.generated.jooq'

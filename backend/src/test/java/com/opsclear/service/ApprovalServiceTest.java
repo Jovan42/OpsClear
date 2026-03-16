@@ -11,6 +11,7 @@ import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -215,6 +216,19 @@ class ApprovalServiceTest {
                 .hasMessage("You are not a member of this project");
     }
 
+    @Test
+    @DisplayName("request_shouldThrowConflictException_whenProjectIsCompleted")
+    void request_shouldThrowConflict_whenProjectIsCompleted() {
+        ProjectModel completed = ProjectModel.builder()
+                .id(projectId).name("Test Project").ownerId(callerId).status(ProjectStatus.COMPLETED).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(completed));
+
+        assertThatThrownBy(() -> approvalService.request(projectId, jobId, "desc", callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This project is completed and no longer accepts changes");
+    }
+
     // --- decide ---
 
     @Test
@@ -321,6 +335,21 @@ class ApprovalServiceTest {
                 projectId, jobId, approvalId, ApprovalStatus.APPROVED, null, callerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Approval not found");
+    }
+
+    @Test
+    @DisplayName("decide_shouldThrowConflictException_whenProjectIsCompleted")
+    void decide_shouldThrowConflict_whenProjectIsCompleted() {
+        ProjectModel completed = ProjectModel.builder()
+                .id(projectId).name("Test Project").ownerId(callerId).status(ProjectStatus.COMPLETED).build();
+        UUID approvalId = UUID.randomUUID();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(completed));
+
+        assertThatThrownBy(() -> approvalService.decide(
+                projectId, jobId, approvalId, ApprovalStatus.APPROVED, null, callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This project is completed and no longer accepts changes");
     }
 
     // --- listByJob ---

@@ -93,7 +93,7 @@ class BlockReasonIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Project With Reasons"));
 
-        UUID newProjectId = projectRepository.findByMemberIdAndDeletedAtIsNull(ownerId)
+        UUID newProjectId = projectRepository.findByMemberIdAndStatusAndDeletedAtIsNull(ownerId, null)
                 .stream()
                 .filter(p -> p.getName().equals("Project With Reasons"))
                 .findFirst()
@@ -114,7 +114,7 @@ class BlockReasonIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
 
-        UUID newProjectId = projectRepository.findByMemberIdAndDeletedAtIsNull(ownerId)
+        UUID newProjectId = projectRepository.findByMemberIdAndStatusAndDeletedAtIsNull(ownerId, null)
                 .stream()
                 .filter(p -> p.getName().equals("Project Without Reasons"))
                 .findFirst()

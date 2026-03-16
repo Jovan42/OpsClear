@@ -7,11 +7,6 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
-import com.opsclear.generated.jooq.tables.Approvals.ApprovalsPath;
-import com.opsclear.generated.jooq.tables.Notes.NotesPath;
-import com.opsclear.generated.jooq.tables.ProjectBlockReasons.ProjectBlockReasonsPath;
-import com.opsclear.generated.jooq.tables.Projects.ProjectsPath;
-import com.opsclear.generated.jooq.tables.Users.UsersPath;
 import com.opsclear.generated.jooq.tables.records.JobsRecord;
 
 import java.time.LocalDateTime;
@@ -23,14 +18,10 @@ import java.util.UUID;
 import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -181,39 +172,6 @@ public class Jobs extends TableImpl<JobsRecord> {
         this(DSL.name("jobs"), null);
     }
 
-    public <O extends Record> Jobs(Table<O> path, ForeignKey<O, JobsRecord> childPath, InverseForeignKey<O, JobsRecord> parentPath) {
-        super(path, childPath, parentPath, JOBS);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class JobsPath extends Jobs implements Path<JobsRecord> {
-
-        private static final long serialVersionUID = 1L;
-        public <O extends Record> JobsPath(Table<O> path, ForeignKey<O, JobsRecord> childPath, InverseForeignKey<O, JobsRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private JobsPath(Name alias, Table<JobsRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public JobsPath as(String alias) {
-            return new JobsPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public JobsPath as(Name alias) {
-            return new JobsPath(alias, this);
-        }
-
-        @Override
-        public JobsPath as(Table<?> alias) {
-            return new JobsPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -230,104 +188,10 @@ public class Jobs extends TableImpl<JobsRecord> {
     }
 
     @Override
-    public List<ForeignKey<JobsRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.JOBS__JOBS_ASSIGNED_TO_FKEY, Keys.JOBS__JOBS_BLOCKED_BY_FKEY, Keys.JOBS__JOBS_BLOCKED_REASON_ID_FKEY, Keys.JOBS__JOBS_CREATED_BY_FKEY, Keys.JOBS__JOBS_PROJECT_ID_FKEY);
-    }
-
-    private transient UsersPath _jobsAssignedToFkey;
-
-    /**
-     * Get the implicit join path to the <code>public.users</code> table, via
-     * the <code>jobs_assigned_to_fkey</code> key.
-     */
-    public UsersPath jobsAssignedToFkey() {
-        if (_jobsAssignedToFkey == null)
-            _jobsAssignedToFkey = new UsersPath(this, Keys.JOBS__JOBS_ASSIGNED_TO_FKEY, null);
-
-        return _jobsAssignedToFkey;
-    }
-
-    private transient UsersPath _jobsBlockedByFkey;
-
-    /**
-     * Get the implicit join path to the <code>public.users</code> table, via
-     * the <code>jobs_blocked_by_fkey</code> key.
-     */
-    public UsersPath jobsBlockedByFkey() {
-        if (_jobsBlockedByFkey == null)
-            _jobsBlockedByFkey = new UsersPath(this, Keys.JOBS__JOBS_BLOCKED_BY_FKEY, null);
-
-        return _jobsBlockedByFkey;
-    }
-
-    private transient ProjectBlockReasonsPath _projectBlockReasons;
-
-    /**
-     * Get the implicit join path to the
-     * <code>public.project_block_reasons</code> table.
-     */
-    public ProjectBlockReasonsPath projectBlockReasons() {
-        if (_projectBlockReasons == null)
-            _projectBlockReasons = new ProjectBlockReasonsPath(this, Keys.JOBS__JOBS_BLOCKED_REASON_ID_FKEY, null);
-
-        return _projectBlockReasons;
-    }
-
-    private transient UsersPath _jobsCreatedByFkey;
-
-    /**
-     * Get the implicit join path to the <code>public.users</code> table, via
-     * the <code>jobs_created_by_fkey</code> key.
-     */
-    public UsersPath jobsCreatedByFkey() {
-        if (_jobsCreatedByFkey == null)
-            _jobsCreatedByFkey = new UsersPath(this, Keys.JOBS__JOBS_CREATED_BY_FKEY, null);
-
-        return _jobsCreatedByFkey;
-    }
-
-    private transient ProjectsPath _projects;
-
-    /**
-     * Get the implicit join path to the <code>public.projects</code> table.
-     */
-    public ProjectsPath projects() {
-        if (_projects == null)
-            _projects = new ProjectsPath(this, Keys.JOBS__JOBS_PROJECT_ID_FKEY, null);
-
-        return _projects;
-    }
-
-    private transient ApprovalsPath _approvals;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.approvals</code>
-     * table
-     */
-    public ApprovalsPath approvals() {
-        if (_approvals == null)
-            _approvals = new ApprovalsPath(this, null, Keys.APPROVALS__APPROVALS_JOB_ID_FKEY.getInverseKey());
-
-        return _approvals;
-    }
-
-    private transient NotesPath _notes;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.notes</code> table
-     */
-    public NotesPath notes() {
-        if (_notes == null)
-            _notes = new NotesPath(this, null, Keys.NOTES__NOTES_JOB_ID_FKEY.getInverseKey());
-
-        return _notes;
-    }
-
-    @Override
     public List<Check<JobsRecord>> getChecks() {
         return Arrays.asList(
-            Internal.createCheck(this, DSL.name("chk_job_priority"), "(((priority)::text = ANY ((ARRAY['LOW'::character varying, 'MEDIUM'::character varying, 'HIGH'::character varying, 'CRITICAL'::character varying])::text[])))", true),
-            Internal.createCheck(this, DSL.name("chk_job_status"), "(((status)::text = ANY ((ARRAY['NEW'::character varying, 'IN_PROGRESS'::character varying, 'BLOCKED'::character varying, 'COMPLETED'::character varying])::text[])))", true)
+            Internal.createCheck(this, DSL.name("chk_job_status"), "(((status)::text = ANY ((ARRAY['NEW'::character varying, 'IN_PROGRESS'::character varying, 'BLOCKED'::character varying, 'COMPLETED'::character varying])::text[])))", true),
+            Internal.createCheck(this, DSL.name("jobs_priority_check"), "(((priority)::text = ANY ((ARRAY['LOW'::character varying, 'MEDIUM'::character varying, 'HIGH'::character varying, 'CRITICAL'::character varying])::text[])))", true)
         );
     }
 

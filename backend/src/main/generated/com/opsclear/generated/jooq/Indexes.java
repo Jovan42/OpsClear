@@ -40,5 +40,7 @@ public class Indexes {
     public static final Index IDX_PROJECT_MEMBERS_USER = Internal.createIndex(DSL.name("idx_project_members_user"), ProjectMembers.PROJECT_MEMBERS, new OrderField[] { ProjectMembers.PROJECT_MEMBERS.USER_ID }, false);
     public static final Index IDX_PROJECTS_DELETED = Internal.createIndex(DSL.name("idx_projects_deleted"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.DELETED_AT }, false);
     public static final Index IDX_PROJECTS_OWNER = Internal.createIndex(DSL.name("idx_projects_owner"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.OWNER_ID }, false);
+    public static final Index IDX_PROJECTS_STATUS = Internal.createIndex(DSL.name("idx_projects_status"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.STATUS }, false);
     public static final Index IDX_USERS_EMAIL = Internal.createIndex(DSL.name("idx_users_email"), Users.USERS, new OrderField[] { Users.USERS.EMAIL }, false);
+    public static final Index UK_PROJECTS_NAME_OWNER_ACTIVE = Internal.createIndex(DSL.name("uk_projects_name_owner_active"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.NAME, Projects.PROJECTS.OWNER_ID }, true);
 }

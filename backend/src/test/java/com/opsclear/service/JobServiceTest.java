@@ -3,6 +3,7 @@ package com.opsclear.service;
 import com.opsclear.dto.CreateJobRequest;
 import com.opsclear.dto.UpdateJobRequest;
 import com.opsclear.exception.BadRequestException;
+import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobModel;
@@ -11,6 +12,7 @@ import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.BlockReasonModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -182,6 +184,20 @@ class JobServiceTest {
         JobModel result = jobService.create(projectId, request, ownerId);
 
         assertThat(result.getAssignedTo()).isEqualTo(assignedUserId);
+    }
+
+    @Test
+    @DisplayName("create_shouldThrowConflictException_whenProjectIsCompleted")
+    void create_shouldThrowConflict_whenProjectIsCompleted() {
+        ProjectModel completed = ProjectModel.builder()
+                .id(projectId).name("Test Project").ownerId(ownerId).status(ProjectStatus.COMPLETED).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(completed));
+
+        CreateJobRequest request = CreateJobRequest.builder().title("New Job").build();
+        assertThatThrownBy(() -> jobService.create(projectId, request, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This project is completed and no longer accepts changes");
     }
 
     // --- list ---
@@ -556,6 +572,20 @@ class JobServiceTest {
     }
 
     // --- updateStatus ---
+
+    @Test
+    @DisplayName("updateStatus_shouldThrowConflictException_whenProjectIsCompleted")
+    void updateStatus_shouldThrowConflict_whenProjectIsCompleted() {
+        ProjectModel completed = ProjectModel.builder()
+                .id(projectId).name("Test Project").ownerId(ownerId).status(ProjectStatus.COMPLETED).build();
+        UUID jobId = UUID.randomUUID();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(completed));
+
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This project is completed and no longer accepts changes");
+    }
 
     @Test
     @DisplayName("Should transition NEW → IN_PROGRESS for assigned MEMBER")

@@ -7,11 +7,6 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
-import com.opsclear.generated.jooq.tables.Approvals.ApprovalsPath;
-import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
-import com.opsclear.generated.jooq.tables.Notes.NotesPath;
-import com.opsclear.generated.jooq.tables.ProjectMembers.ProjectMembersPath;
-import com.opsclear.generated.jooq.tables.Projects.ProjectsPath;
 import com.opsclear.generated.jooq.tables.records.UsersRecord;
 
 import java.time.LocalDateTime;
@@ -22,15 +17,11 @@ import java.util.UUID;
 
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.JSONB;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -136,39 +127,6 @@ public class Users extends TableImpl<UsersRecord> {
         this(DSL.name("users"), null);
     }
 
-    public <O extends Record> Users(Table<O> path, ForeignKey<O, UsersRecord> childPath, InverseForeignKey<O, UsersRecord> parentPath) {
-        super(path, childPath, parentPath, USERS);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class UsersPath extends Users implements Path<UsersRecord> {
-
-        private static final long serialVersionUID = 1L;
-        public <O extends Record> UsersPath(Table<O> path, ForeignKey<O, UsersRecord> childPath, InverseForeignKey<O, UsersRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private UsersPath(Name alias, Table<UsersRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public UsersPath as(String alias) {
-            return new UsersPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public UsersPath as(Name alias) {
-            return new UsersPath(alias, this);
-        }
-
-        @Override
-        public UsersPath as(Table<?> alias) {
-            return new UsersPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -187,109 +145,6 @@ public class Users extends TableImpl<UsersRecord> {
     @Override
     public List<UniqueKey<UsersRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.UK_USERS_EMAIL);
-    }
-
-    private transient ApprovalsPath _approvalsApproverIdFkey;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.approvals</code>
-     * table, via the <code>approvals_approver_id_fkey</code> key
-     */
-    public ApprovalsPath approvalsApproverIdFkey() {
-        if (_approvalsApproverIdFkey == null)
-            _approvalsApproverIdFkey = new ApprovalsPath(this, null, Keys.APPROVALS__APPROVALS_APPROVER_ID_FKEY.getInverseKey());
-
-        return _approvalsApproverIdFkey;
-    }
-
-    private transient ApprovalsPath _approvalsRequesterIdFkey;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.approvals</code>
-     * table, via the <code>approvals_requester_id_fkey</code> key
-     */
-    public ApprovalsPath approvalsRequesterIdFkey() {
-        if (_approvalsRequesterIdFkey == null)
-            _approvalsRequesterIdFkey = new ApprovalsPath(this, null, Keys.APPROVALS__APPROVALS_REQUESTER_ID_FKEY.getInverseKey());
-
-        return _approvalsRequesterIdFkey;
-    }
-
-    private transient JobsPath _jobsAssignedToFkey;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.jobs</code> table,
-     * via the <code>jobs_assigned_to_fkey</code> key
-     */
-    public JobsPath jobsAssignedToFkey() {
-        if (_jobsAssignedToFkey == null)
-            _jobsAssignedToFkey = new JobsPath(this, null, Keys.JOBS__JOBS_ASSIGNED_TO_FKEY.getInverseKey());
-
-        return _jobsAssignedToFkey;
-    }
-
-    private transient JobsPath _jobsBlockedByFkey;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.jobs</code> table,
-     * via the <code>jobs_blocked_by_fkey</code> key
-     */
-    public JobsPath jobsBlockedByFkey() {
-        if (_jobsBlockedByFkey == null)
-            _jobsBlockedByFkey = new JobsPath(this, null, Keys.JOBS__JOBS_BLOCKED_BY_FKEY.getInverseKey());
-
-        return _jobsBlockedByFkey;
-    }
-
-    private transient JobsPath _jobsCreatedByFkey;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.jobs</code> table,
-     * via the <code>jobs_created_by_fkey</code> key
-     */
-    public JobsPath jobsCreatedByFkey() {
-        if (_jobsCreatedByFkey == null)
-            _jobsCreatedByFkey = new JobsPath(this, null, Keys.JOBS__JOBS_CREATED_BY_FKEY.getInverseKey());
-
-        return _jobsCreatedByFkey;
-    }
-
-    private transient NotesPath _notes;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.notes</code> table
-     */
-    public NotesPath notes() {
-        if (_notes == null)
-            _notes = new NotesPath(this, null, Keys.NOTES__NOTES_AUTHOR_ID_FKEY.getInverseKey());
-
-        return _notes;
-    }
-
-    private transient ProjectMembersPath _projectMembers;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>public.project_members</code> table
-     */
-    public ProjectMembersPath projectMembers() {
-        if (_projectMembers == null)
-            _projectMembers = new ProjectMembersPath(this, null, Keys.PROJECT_MEMBERS__PROJECT_MEMBERS_USER_ID_FKEY.getInverseKey());
-
-        return _projectMembers;
-    }
-
-    private transient ProjectsPath _projects;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.projects</code>
-     * table
-     */
-    public ProjectsPath projects() {
-        if (_projects == null)
-            _projects = new ProjectsPath(this, null, Keys.PROJECTS__PROJECTS_OWNER_ID_FKEY.getInverseKey());
-
-        return _projects;
     }
 
     @Override

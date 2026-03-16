@@ -6,6 +6,7 @@ import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
@@ -268,5 +269,22 @@ class NoteIntegrationTest {
         mockMvc.perform(get(ApiPaths.projectNotes(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isNotFound());
+    }
+
+    // --- completed project guard ---
+
+    @Test
+    @DisplayName("createNote_shouldReturn409_whenProjectIsCompleted")
+    void createNote_shouldReturn409_whenProjectIsCompleted() throws Exception {
+        ProjectModel project = projectRepository.findByIdAndDeletedAtIsNull(projectId).orElseThrow();
+        project.setStatus(ProjectStatus.COMPLETED);
+        projectRepository.save(project);
+
+        mockMvc.perform(post(ApiPaths.notes(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("content", "Some note."))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
     }
 }
