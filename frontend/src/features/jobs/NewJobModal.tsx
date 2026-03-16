@@ -7,7 +7,7 @@ import Button from '../../components/Button';
 import MarkdownEditor from '../../components/MarkdownEditor';
 import { useCreateJob, useUpdateJob } from './useJobs';
 import { useProjectMembers } from '../projects/useProjects';
-import type { JobPriority, JobResponse, ProjectMemberResponse } from '../../types';
+import type { JobPriority, JobResponse, MilestoneResponse, ProjectMemberResponse } from '../../types';
 
 const PRIORITIES: { value: JobPriority; label: string }[] = [
   { value: 'LOW',      label: 'Low' },
@@ -22,6 +22,7 @@ const schema = z.object({
   client: z.string().max(255, 'Max 255 characters').optional(),
   deadline: z.string().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+  milestoneId: z.string().optional(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -29,10 +30,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   projectId: string;
-  job?: JobResponse; // if provided, modal is in edit mode
+  job?: JobResponse;
+  milestones?: MilestoneResponse[];
 }
 
-export default function NewJobModal({ open, onClose, projectId, job }: Props) {
+export default function NewJobModal({ open, onClose, projectId, job, milestones = [] }: Props) {
   const isEdit = Boolean(job);
   const { mutate: createJob, isPending: isCreating } = useCreateJob(projectId);
   const { mutate: updateJob, isPending: isUpdating } = useUpdateJob(projectId);
@@ -90,9 +92,10 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
         client: job.client ?? '',
         deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
         priority: job.priority,
+        milestoneId: job.milestoneId ?? '',
       });
     } else {
-      reset({ title: '', description: '', client: '', deadline: '', priority: 'MEDIUM' });
+      reset({ title: '', description: '', client: '', deadline: '', priority: 'MEDIUM', milestoneId: '' });
     }
   }, [open, job, reset]);
 
@@ -111,6 +114,7 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
       assignedTo: assignedTo?.userId || undefined,
       deadline: values.deadline ? new Date(values.deadline).toISOString() : undefined,
       priority: values.priority,
+      milestoneId: values.milestoneId || undefined,
     };
 
     if (isEdit && job) {
@@ -189,6 +193,18 @@ export default function NewJobModal({ open, onClose, projectId, job }: Props) {
             ))}
           </select>
         </div>
+
+        {milestones.length > 0 && (
+          <div>
+            <label className={labelClass}>Milestone</label>
+            <select {...register('milestoneId')} className={inputClass}>
+              <option value="">No milestone</option>
+              {milestones.map((ms) => (
+                <option key={ms.id} value={ms.id}>{ms.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className={labelClass}>Assign to</label>

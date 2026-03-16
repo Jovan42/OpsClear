@@ -14,6 +14,7 @@ import NoteThread from './components/NoteThread';
 import ApprovalList from './components/ApprovalList';
 import RequestApprovalModal from './components/RequestApprovalModal';
 import { useJob, useUpdateJobStatus, useDeleteJob } from './useJobs';
+import { useMilestones } from './useMilestones';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
 import { useAuth } from '../../auth/AuthContext';
 import { useApprovals } from './useApprovals';
@@ -44,6 +45,7 @@ export default function JobDetailPage() {
   const { data: project } = useProject(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
   const { data: approvals = [] } = useApprovals(projectId, jobId);
+  const { data: milestones = [] } = useMilestones(projectId);
   const role = useProjectRole(projectId);
   usePageTitle(job?.title, project?.name);
   const { mutate: updateStatus, isPending: isStatusPending } = useUpdateJobStatus(projectId);
@@ -258,6 +260,7 @@ export default function JobDetailPage() {
         onClose={() => setEditOpen(false)}
         projectId={projectId}
         job={job}
+        milestones={milestones}
       />
 
       <BlockModal

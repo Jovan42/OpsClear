@@ -51,6 +51,19 @@ export interface JobResponse {
   blockedBy: string | null;
   blockedReason: string | null;
   blockedAt: string | null;
+  milestoneId: string | null;
+  milestoneName: string | null;
+}
+
+// ---- Milestones ----
+
+export interface MilestoneResponse {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  deadline: string | null;
+  createdAt: string;
 }
 
 // ---- Notes ----
