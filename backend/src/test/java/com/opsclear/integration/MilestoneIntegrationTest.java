@@ -207,6 +207,10 @@ class MilestoneIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNoContent());
 
+        // Exercise MilestoneModel.softDelete() and isDeleted() true branch
+        milestone.softDelete();
+        assertThat(milestone.isDeleted()).isTrue();
+
         // Verify soft delete — milestone is no longer accessible
         mockMvc.perform(get(ApiPaths.milestones(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
