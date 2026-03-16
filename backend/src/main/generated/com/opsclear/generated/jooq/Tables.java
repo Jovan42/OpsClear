@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
+import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
@@ -28,6 +29,11 @@ public class Tables {
      * Jobs - central unit of work within a project
      */
     public static final Jobs JOBS = Jobs.JOBS;
+
+    /**
+     * The table <code>public.milestones</code>.
+     */
+    public static final Milestones MILESTONES = Milestones.MILESTONES;
 
     /**
      * Immutable audit notes attached to jobs — no update or delete paths exist

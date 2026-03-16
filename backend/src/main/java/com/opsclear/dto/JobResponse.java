@@ -33,6 +33,9 @@ public class JobResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
+    private UUID milestoneId;
+    private String milestoneName;
+
     // Blocking metadata — null when not blocked
     private UUID blockedBy;
     private String blockedReason;
@@ -53,6 +56,8 @@ public class JobResponse {
                 .createdBy(job.getCreatedBy())
                 .createdAt(job.getCreatedAt())
                 .updatedAt(job.getUpdatedAt())
+                .milestoneId(job.getMilestoneId())
+                .milestoneName(job.getMilestoneName())
                 .blockedBy(job.getBlockedBy())
                 .blockedReason(job.getBlockedReason())
                 .blockedAt(job.getBlockedAt())

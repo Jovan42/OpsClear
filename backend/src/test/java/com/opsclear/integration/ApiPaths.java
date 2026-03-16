@@ -67,8 +67,8 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs?priority=" + priority;
     }
 
-    static String jobsBySearchAndPriority(UUID projectId, String q, String priority) {
-        return "/api/projects/" + projectId + "/jobs?q=" + q + "&priority=" + priority;
+    static String jobsBySearchAndPriority(UUID projectId) {
+        return "/api/projects/" + projectId + "/jobs?q=login&priority=CRITICAL";
     }
 
     static String job(UUID projectId, UUID jobId) {
@@ -101,6 +101,16 @@ final class ApiPaths {
 
     static String pendingApprovals(UUID projectId) {
         return "/api/projects/" + projectId + "/approvals/pending";
+    }
+
+    // --- Milestones ---
+
+    static String milestones(UUID projectId) {
+        return "/api/projects/" + projectId + "/milestones";
+    }
+
+    static String milestone(UUID projectId, UUID milestoneId) {
+        return "/api/projects/" + projectId + "/milestones/" + milestoneId;
     }
 
     // --- Dashboard ---

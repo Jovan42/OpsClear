@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
+import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
@@ -13,6 +14,7 @@ import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
 import com.opsclear.generated.jooq.tables.records.ApprovalsRecord;
 import com.opsclear.generated.jooq.tables.records.JobsRecord;
+import com.opsclear.generated.jooq.tables.records.MilestonesRecord;
 import com.opsclear.generated.jooq.tables.records.NotesRecord;
 import com.opsclear.generated.jooq.tables.records.ProjectBlockReasonsRecord;
 import com.opsclear.generated.jooq.tables.records.ProjectMembersRecord;
@@ -38,6 +40,7 @@ public class Keys {
 
     public static final UniqueKey<ApprovalsRecord> APPROVALS_PKEY = Internal.createUniqueKey(Approvals.APPROVALS, DSL.name("approvals_pkey"), new TableField[] { Approvals.APPROVALS.ID }, true);
     public static final UniqueKey<JobsRecord> JOBS_PKEY = Internal.createUniqueKey(Jobs.JOBS, DSL.name("jobs_pkey"), new TableField[] { Jobs.JOBS.ID }, true);
+    public static final UniqueKey<MilestonesRecord> MILESTONES_PKEY = Internal.createUniqueKey(Milestones.MILESTONES, DSL.name("milestones_pkey"), new TableField[] { Milestones.MILESTONES.ID }, true);
     public static final UniqueKey<NotesRecord> NOTES_PKEY = Internal.createUniqueKey(Notes.NOTES, DSL.name("notes_pkey"), new TableField[] { Notes.NOTES.ID }, true);
     public static final UniqueKey<ProjectBlockReasonsRecord> PROJECT_BLOCK_REASONS_PKEY = Internal.createUniqueKey(ProjectBlockReasons.PROJECT_BLOCK_REASONS, DSL.name("project_block_reasons_pkey"), new TableField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.ID }, true);
     public static final UniqueKey<ProjectBlockReasonsRecord> UQ_BLOCK_REASON_PER_PROJECT = Internal.createUniqueKey(ProjectBlockReasons.PROJECT_BLOCK_REASONS, DSL.name("uq_block_reason_per_project"), new TableField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.PROJECT_ID, ProjectBlockReasons.PROJECT_BLOCK_REASONS.REASON }, true);

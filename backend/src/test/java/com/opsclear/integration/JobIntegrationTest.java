@@ -898,7 +898,7 @@ class JobIntegrationTest {
         createTestJobWithPriority("Critical deploy task", null, JobPriority.CRITICAL);
         createTestJobWithPriority("High login task",      null, JobPriority.HIGH);
 
-        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -911,7 +911,7 @@ class JobIntegrationTest {
     void list_shouldReturnEmpty_whenQueryMatchesButPriorityDoesNot() throws Exception {
         createTestJobWithPriority("High login task", null, JobPriority.HIGH);
 
-        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -922,7 +922,7 @@ class JobIntegrationTest {
     void list_shouldReturnEmpty_whenPriorityMatchesButQueryDoesNot() throws Exception {
         createTestJobWithPriority("Critical deploy task", null, JobPriority.CRITICAL);
 
-        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -934,7 +934,7 @@ class JobIntegrationTest {
         createTestJobWithPriority("Member critical login", memberId, JobPriority.CRITICAL);
         createTestJobWithPriority("Owner critical login",  ownerId,  JobPriority.CRITICAL);
 
-        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId, "login", "CRITICAL"))
+        mockMvc.perform(get(ApiPaths.jobsBySearchAndPriority(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))

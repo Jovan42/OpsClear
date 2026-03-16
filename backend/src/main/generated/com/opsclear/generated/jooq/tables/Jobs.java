@@ -143,6 +143,11 @@ public class Jobs extends TableImpl<JobsRecord> {
      */
     public final TableField<JobsRecord, String> PRIORITY = createField(DSL.name("priority"), SQLDataType.VARCHAR(10).nullable(false).defaultValue(DSL.field(DSL.raw("'MEDIUM'::character varying"), SQLDataType.VARCHAR)), this, "");
 
+    /**
+     * The column <code>public.jobs.milestone_id</code>.
+     */
+    public final TableField<JobsRecord, UUID> MILESTONE_ID = createField(DSL.name("milestone_id"), SQLDataType.UUID, this, "");
+
     private Jobs(Name alias, Table<JobsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

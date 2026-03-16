@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.JOBS;
+import static com.opsclear.generated.jooq.Tables.MILESTONES;
 import static com.opsclear.generated.jooq.Tables.PROJECT_BLOCK_REASONS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static java.util.List.of;
@@ -30,6 +31,7 @@ public class JobRepository {
     private static final Field<String> ASSIGNED_TO_NAME = USERS.NAME.as("assigned_to_name");
     private static final Field<String> BLOCKED_REASON_TEXT =
             PROJECT_BLOCK_REASONS.REASON.as("blocked_reason_text");
+    private static final Field<String> MILESTONE_NAME_TEXT = MILESTONES.NAME.as("milestone_name_text");
 
     private final DSLContext dsl;
 
@@ -50,16 +52,18 @@ public class JobRepository {
     }
 
     public List<JobModel> findByProjectIdAndDeletedAtIsNull(UUID projectId) {
-        return findByFilters(projectId, null, null, null);
+        return findByFilters(projectId, null, null, null, null);
     }
 
-    public List<JobModel> findByFilters(UUID projectId, UUID assignedTo, String q, JobPriority priority) {
+    public List<JobModel> findByFilters(UUID projectId, UUID assignedTo, String q,
+                                        JobPriority priority, UUID milestoneId) {
         String pattern = q != null ? "%" + q.toLowerCase() + "%" : null;
         return selectWithAssignee()
                 .where(JOBS.PROJECT_ID.eq(projectId))
                 .and(JOBS.DELETED_AT.isNull())
                 .and(assignedTo != null ? JOBS.ASSIGNED_TO.eq(assignedTo) : DSL.noCondition())
                 .and(priority != null ? JOBS.PRIORITY.eq(priority.name()) : DSL.noCondition())
+                .and(milestoneId != null ? JOBS.MILESTONE_ID.eq(milestoneId) : DSL.noCondition())
                 .and(pattern != null ? DSL.or(
                         JOBS.TITLE.likeIgnoreCase(pattern),
                         JOBS.DESCRIPTION.likeIgnoreCase(pattern),
@@ -82,6 +86,7 @@ public class JobRepository {
                     .set(JOBS.DEADLINE, toLocalDateTime(job.getDeadline()))
                     .set(JOBS.STATUS, job.getStatus().name())
                     .set(JOBS.PRIORITY, job.getPriority().name())
+                    .set(JOBS.MILESTONE_ID, job.getMilestoneId())
                     .set(JOBS.CREATED_BY, job.getCreatedBy())
                     .set(JOBS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(JOBS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
@@ -98,6 +103,7 @@ public class JobRepository {
                 .set(JOBS.DEADLINE, toLocalDateTime(job.getDeadline()))
                 .set(JOBS.STATUS, job.getStatus().name())
                 .set(JOBS.PRIORITY, job.getPriority().name())
+                .set(JOBS.MILESTONE_ID, job.getMilestoneId())
                 .set(JOBS.BLOCKED_BY, job.getBlockedBy())
                 .set(JOBS.BLOCKED_REASON_ID, job.getBlockedReasonId())
                 .set(JOBS.BLOCKED_AT, toLocalDateTime(job.getBlockedAt()))
@@ -137,11 +143,14 @@ public class JobRepository {
                         JOBS.BLOCKED_BY,
                         JOBS.BLOCKED_REASON_ID,
                         JOBS.BLOCKED_AT,
+                        JOBS.MILESTONE_ID,
                         ASSIGNED_TO_NAME,
-                        BLOCKED_REASON_TEXT))
+                        BLOCKED_REASON_TEXT,
+                        MILESTONE_NAME_TEXT))
                 .from(JOBS)
                 .leftJoin(USERS).on(JOBS.ASSIGNED_TO.eq(USERS.ID))
-                .leftJoin(PROJECT_BLOCK_REASONS).on(JOBS.BLOCKED_REASON_ID.eq(PROJECT_BLOCK_REASONS.ID));
+                .leftJoin(PROJECT_BLOCK_REASONS).on(JOBS.BLOCKED_REASON_ID.eq(PROJECT_BLOCK_REASONS.ID))
+                .leftJoin(MILESTONES).on(JOBS.MILESTONE_ID.eq(MILESTONES.ID));
     }
 
     private JobModel toModel(Record r) {
@@ -160,6 +169,8 @@ public class JobRepository {
                 .createdAt(toInstant(r.get(JOBS.CREATED_AT)))
                 .updatedAt(toInstant(r.get(JOBS.UPDATED_AT)))
                 .deletedAt(toInstant(r.get(JOBS.DELETED_AT)))
+                .milestoneId(r.get(JOBS.MILESTONE_ID))
+                .milestoneName(r.get(MILESTONE_NAME_TEXT))
                 .blockedBy(r.get(JOBS.BLOCKED_BY))
                 .blockedReasonId(r.get(JOBS.BLOCKED_REASON_ID))
                 .blockedReason(r.get(BLOCKED_REASON_TEXT))

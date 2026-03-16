@@ -38,7 +38,7 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public DashboardResponse get(UUID projectId, UUID callerId) {
         // jobService.list() validates project membership and applies MEMBER scoping
-        List<JobModel> jobs = jobService.list(projectId, callerId, null, null);
+        List<JobModel> jobs = jobService.list(projectId, callerId, null, null, null);
 
         boolean isOwnerOrAdmin = projectMemberRepository
                 .findByProjectIdAndUserId(projectId, callerId)
