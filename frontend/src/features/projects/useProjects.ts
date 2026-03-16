@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth/AuthContext';
 import { projectsApi } from '../../api/projects';
+import type { ProjectStatus } from '../../types';
 
-export function useProjectList() {
+export function useProjectList(status?: ProjectStatus | 'ALL') {
   return useQuery({
-    queryKey: ['projects'],
-    queryFn: () => projectsApi.list(),
+    queryKey: ['projects', { status: status ?? 'ACTIVE' }],
+    queryFn: () => projectsApi.list(status),
   });
 }
 
@@ -50,6 +51,17 @@ export function useUpdateProject() {
     }) => projectsApi.update(projectId, body),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['projects', data.id] });
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+export function useUpdateProjectStatus(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (status: ProjectStatus) => projectsApi.updateStatus(projectId, status),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['projects', projectId], data);
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });

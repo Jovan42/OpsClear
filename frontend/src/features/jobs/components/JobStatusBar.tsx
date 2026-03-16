@@ -13,6 +13,7 @@ interface Props {
   onBlock: () => void;
   onRequestApproval: () => void;
   isPending: boolean;
+  projectCompleted?: boolean;
 }
 
 export default function JobStatusBar({
@@ -23,6 +24,7 @@ export default function JobStatusBar({
   onBlock,
   onRequestApproval,
   isPending,
+  projectCompleted,
 }: Props) {
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
   const isAssigned = job.assignedTo === userId;
@@ -32,6 +34,7 @@ export default function JobStatusBar({
   const [confirmUnblock, setConfirmUnblock] = useState(false);
 
   if (!canAct && !isOwnerOrAdmin) return null;
+  if (projectCompleted) return null;
 
   return (
     <>

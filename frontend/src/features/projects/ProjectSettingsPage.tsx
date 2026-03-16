@@ -15,6 +15,7 @@ import {
   useProjectMembers,
   useProjectRole,
   useUpdateProject,
+  useUpdateProjectStatus,
   useDeleteProject,
   useUpdateMember,
   useRemoveMember,
@@ -44,6 +45,7 @@ export default function ProjectSettingsPage() {
   usePageTitle('Settings', project?.name);
 
   const { mutate: updateProject, isPending: saving } = useUpdateProject();
+  const { mutate: updateProjectStatus, isPending: updatingStatus } = useUpdateProjectStatus(projectId);
   const { mutate: deleteProject, isPending: deleting } = useDeleteProject();
   const { mutate: updateMember } = useUpdateMember(projectId);
   const { mutate: removeMember } = useRemoveMember(projectId);
@@ -69,6 +71,7 @@ export default function ProjectSettingsPage() {
 
   const canEdit = role === 'OWNER' || role === 'ADMIN';
   const isOwner = role === 'OWNER';
+  const isCompleted = project?.status === 'COMPLETED';
 
   function onSaveDetails(values: DetailsForm) {
     updateProject(
@@ -113,6 +116,17 @@ export default function ProjectSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-10">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Project Settings</h1>
+
+      {/* ── Completed banner ── */}
+      {isCompleted && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          This project is completed and no longer accepts changes.
+        </div>
+      )}
 
       {/* ── Project details ── */}
       <section>
@@ -275,7 +289,27 @@ export default function ProjectSettingsPage() {
           <h2 className="text-sm font-semibold text-red-500 uppercase tracking-widest mb-4">
             Danger zone
           </h2>
-          <div className="border border-red-200 dark:border-red-900/50 rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {isCompleted ? 'Reactivate this project' : 'Complete this project'}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {isCompleted
+                  ? 'Mark the project as active again to allow new changes.'
+                  : 'Mark the project as completed. All jobs must be closed first.'}
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={updatingStatus}
+              onClick={() => updateProjectStatus(isCompleted ? 'ACTIVE' : 'COMPLETED')}
+            >
+              {isCompleted ? 'Reactivate' : 'Complete project'}
+            </Button>
+          </div>
+          <div className="mt-6 border border-red-200 dark:border-red-900/50 rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Delete this project</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
