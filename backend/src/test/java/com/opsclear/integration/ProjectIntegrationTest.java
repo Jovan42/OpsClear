@@ -229,6 +229,8 @@ class ProjectIntegrationTest {
     void deleteProject_shouldReturn204() throws Exception {
         ProjectModel project = createTestProject("To Delete", null);
 
+        assertThat(project.isDeleted()).isFalse();
+
         mockMvc.perform(delete(ApiPaths.project(project.getId()))
                         .with(jwt().jwt(jwt -> jwt
                                 .subject(userId.toString())
@@ -249,6 +251,23 @@ class ProjectIntegrationTest {
                                 .claim("email", "testuser@example.com")
                                 .claim("name", "Test User"))))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when non-member tries to get project by ID")
+    void getProject_shouldReturn403_whenNotMember() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(get(ApiPaths.project(project.getId()))
+                        .with(jwt().jwt(j -> j
+                                .subject(outsiderId.toString())
+                                .claim("email", "outsider@example.com")
+                                .claim("name", "Outsider"))))
+                .andExpect(status().isForbidden());
     }
 
     @Test
