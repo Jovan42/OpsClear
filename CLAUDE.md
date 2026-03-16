@@ -185,7 +185,14 @@ Test method naming convention: `methodName_shouldExpectedBehavior_whenCondition(
 | pgAdmin | http://localhost:5050 | admin@admin.com/admin |
 | Portainer | http://localhost:9000 | set on first run |
 
-## Test User
+## Demo Users
 
-- Email: `testuser@example.com`
-- Password: `password123`
+All users share password `password123`. Run `./scripts/seed.sh` to populate the DB with realistic demo data.
+
+| Email | Role in seed data |
+|-------|-------------------|
+| `testuser@example.com` | owner: Mobile App \| member: Infrastructure Upgrade |
+| `alice@example.com` | owner: Website Redesign \| admin: Mobile App |
+| `bob@example.com` | admin: Website Redesign \| owner: Infrastructure Upgrade |
+| `carol@example.com` | member: Website Redesign, Mobile App |
+| `dave@example.com` | member: Website Redesign, Infrastructure Upgrade |
