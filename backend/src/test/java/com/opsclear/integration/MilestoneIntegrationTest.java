@@ -97,6 +97,18 @@ class MilestoneIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should return 403 when requester is not a member on create")
+    void createMilestone_shouldReturn403_whenNotMember() throws Exception {
+        mockMvc.perform(post(ApiPaths.milestones(projectId))
+                        .with(jwt().jwt(j -> j.subject(UUID.randomUUID().toString()).claim("email", "stranger@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Sprint X"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("MEMBER should be forbidden from creating a milestone")
     void createMilestone_shouldReturn403_forMember() throws Exception {
         mockMvc.perform(post(ApiPaths.milestones(projectId))
