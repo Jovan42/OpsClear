@@ -6,6 +6,7 @@ import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.BlockReasonRepository;
@@ -374,5 +375,40 @@ class ApprovalIntegrationTest {
         mockMvc.perform(get(ApiPaths.pendingApprovals(UUID.randomUUID()))
                         .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
+    }
+
+    // --- completed project guard ---
+
+    @Test
+    @DisplayName("request_shouldReturn409_whenProjectIsCompleted")
+    void request_shouldReturn409_whenProjectIsCompleted() throws Exception {
+        completeProject();
+
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("description", "Need a decision."))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
+    @DisplayName("decide_shouldReturn409_whenProjectIsCompleted")
+    void decide_shouldReturn409_whenProjectIsCompleted() throws Exception {
+        UUID approvalId = approvalRepository.insert(jobId, memberId, "Need a decision.").getId();
+        completeProject();
+
+        mockMvc.perform(patch(ApiPaths.approvalStatus(projectId, jobId, approvalId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("status", "APPROVED"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    private void completeProject() {
+        ProjectModel project = projectRepository.findByIdAndDeletedAtIsNull(projectId).orElseThrow();
+        project.setStatus(ProjectStatus.COMPLETED);
+        projectRepository.save(project);
     }
 }

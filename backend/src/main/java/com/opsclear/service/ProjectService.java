@@ -9,6 +9,7 @@ import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -63,8 +64,8 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProjectModel> getProjectsForMember(UUID userId) {
-        return projectRepository.findByMemberIdAndDeletedAtIsNull(userId);
+    public List<ProjectModel> getProjectsForMember(UUID userId, ProjectStatus status) {
+        return projectRepository.findByMemberIdAndStatusAndDeletedAtIsNull(userId, status);
     }
 
     @Transactional(readOnly = true)
@@ -83,6 +84,25 @@ public class ProjectService {
         project.setDescription(request.getDescription());
         log.info("Updated project '{}'", project.getId());
         return projectRepository.save(project);
+    }
+
+    @Transactional
+    public ProjectModel updateStatus(UUID projectId, ProjectStatus newStatus, UUID requesterId) {
+        ProjectModel project = requireProject(projectId);
+        requireOwner(projectId, requesterId);
+
+        if (newStatus == ProjectStatus.COMPLETED) {
+            int openJobs = projectRepository.countOpenJobsByProjectId(projectId);
+            if (openJobs > 0) {
+                throw new ConflictException(
+                        String.format(ErrorMessages.Project.HAS_OPEN_JOBS, openJobs));
+            }
+        }
+
+        project.setStatus(newStatus);
+        ProjectModel updated = projectRepository.save(project);
+        log.info("Project '{}' status changed to {} by user {}", projectId, newStatus, requesterId);
+        return updated;
     }
 
     @Transactional

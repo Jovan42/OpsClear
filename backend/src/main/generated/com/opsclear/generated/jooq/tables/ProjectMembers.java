@@ -7,8 +7,6 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
-import com.opsclear.generated.jooq.tables.Projects.ProjectsPath;
-import com.opsclear.generated.jooq.tables.Users.UsersPath;
 import com.opsclear.generated.jooq.tables.records.ProjectMembersRecord;
 
 import java.time.LocalDateTime;
@@ -20,14 +18,10 @@ import java.util.UUID;
 import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -119,39 +113,6 @@ public class ProjectMembers extends TableImpl<ProjectMembersRecord> {
         this(DSL.name("project_members"), null);
     }
 
-    public <O extends Record> ProjectMembers(Table<O> path, ForeignKey<O, ProjectMembersRecord> childPath, InverseForeignKey<O, ProjectMembersRecord> parentPath) {
-        super(path, childPath, parentPath, PROJECT_MEMBERS);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class ProjectMembersPath extends ProjectMembers implements Path<ProjectMembersRecord> {
-
-        private static final long serialVersionUID = 1L;
-        public <O extends Record> ProjectMembersPath(Table<O> path, ForeignKey<O, ProjectMembersRecord> childPath, InverseForeignKey<O, ProjectMembersRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private ProjectMembersPath(Name alias, Table<ProjectMembersRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public ProjectMembersPath as(String alias) {
-            return new ProjectMembersPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public ProjectMembersPath as(Name alias) {
-            return new ProjectMembersPath(alias, this);
-        }
-
-        @Override
-        public ProjectMembersPath as(Table<?> alias) {
-            return new ProjectMembersPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -170,35 +131,6 @@ public class ProjectMembers extends TableImpl<ProjectMembersRecord> {
     @Override
     public List<UniqueKey<ProjectMembersRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.UK_PROJECT_MEMBER);
-    }
-
-    @Override
-    public List<ForeignKey<ProjectMembersRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.PROJECT_MEMBERS__PROJECT_MEMBERS_PROJECT_ID_FKEY, Keys.PROJECT_MEMBERS__PROJECT_MEMBERS_USER_ID_FKEY);
-    }
-
-    private transient ProjectsPath _projects;
-
-    /**
-     * Get the implicit join path to the <code>public.projects</code> table.
-     */
-    public ProjectsPath projects() {
-        if (_projects == null)
-            _projects = new ProjectsPath(this, Keys.PROJECT_MEMBERS__PROJECT_MEMBERS_PROJECT_ID_FKEY, null);
-
-        return _projects;
-    }
-
-    private transient UsersPath _users;
-
-    /**
-     * Get the implicit join path to the <code>public.users</code> table.
-     */
-    public UsersPath users() {
-        if (_users == null)
-            _users = new UsersPath(this, Keys.PROJECT_MEMBERS__PROJECT_MEMBERS_USER_ID_FKEY, null);
-
-        return _users;
     }
 
     @Override

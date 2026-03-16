@@ -7,10 +7,6 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
-import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
-import com.opsclear.generated.jooq.tables.ProjectBlockReasons.ProjectBlockReasonsPath;
-import com.opsclear.generated.jooq.tables.ProjectMembers.ProjectMembersPath;
-import com.opsclear.generated.jooq.tables.Users.UsersPath;
 import com.opsclear.generated.jooq.tables.records.ProjectsRecord;
 
 import java.time.LocalDateTime;
@@ -19,16 +15,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -38,6 +31,7 @@ import org.jooq.TableField;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -100,6 +94,11 @@ public class Projects extends TableImpl<ProjectsRecord> {
      */
     public final TableField<ProjectsRecord, LocalDateTime> DELETED_AT = createField(DSL.name("deleted_at"), SQLDataType.LOCALDATETIME(6), this, "Soft delete timestamp (NULL = active)");
 
+    /**
+     * The column <code>public.projects.status</code>.
+     */
+    public final TableField<ProjectsRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'ACTIVE'::character varying"), SQLDataType.VARCHAR)), this, "");
+
     private Projects(Name alias, Table<ProjectsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -129,39 +128,6 @@ public class Projects extends TableImpl<ProjectsRecord> {
         this(DSL.name("projects"), null);
     }
 
-    public <O extends Record> Projects(Table<O> path, ForeignKey<O, ProjectsRecord> childPath, InverseForeignKey<O, ProjectsRecord> parentPath) {
-        super(path, childPath, parentPath, PROJECTS);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class ProjectsPath extends Projects implements Path<ProjectsRecord> {
-
-        private static final long serialVersionUID = 1L;
-        public <O extends Record> ProjectsPath(Table<O> path, ForeignKey<O, ProjectsRecord> childPath, InverseForeignKey<O, ProjectsRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private ProjectsPath(Name alias, Table<ProjectsRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public ProjectsPath as(String alias) {
-            return new ProjectsPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public ProjectsPath as(Name alias) {
-            return new ProjectsPath(alias, this);
-        }
-
-        @Override
-        public ProjectsPath as(Table<?> alias) {
-            return new ProjectsPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -169,7 +135,7 @@ public class Projects extends TableImpl<ProjectsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_PROJECTS_DELETED, Indexes.IDX_PROJECTS_OWNER);
+        return Arrays.asList(Indexes.IDX_PROJECTS_DELETED, Indexes.IDX_PROJECTS_OWNER, Indexes.IDX_PROJECTS_STATUS, Indexes.UK_PROJECTS_NAME_OWNER_ACTIVE);
     }
 
     @Override
@@ -178,63 +144,10 @@ public class Projects extends TableImpl<ProjectsRecord> {
     }
 
     @Override
-    public List<UniqueKey<ProjectsRecord>> getUniqueKeys() {
-        return Arrays.asList(Keys.UK_PROJECTS_NAME_OWNER);
-    }
-
-    @Override
-    public List<ForeignKey<ProjectsRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.PROJECTS__PROJECTS_OWNER_ID_FKEY);
-    }
-
-    private transient UsersPath _users;
-
-    /**
-     * Get the implicit join path to the <code>public.users</code> table.
-     */
-    public UsersPath users() {
-        if (_users == null)
-            _users = new UsersPath(this, Keys.PROJECTS__PROJECTS_OWNER_ID_FKEY, null);
-
-        return _users;
-    }
-
-    private transient JobsPath _jobs;
-
-    /**
-     * Get the implicit to-many join path to the <code>public.jobs</code> table
-     */
-    public JobsPath jobs() {
-        if (_jobs == null)
-            _jobs = new JobsPath(this, null, Keys.JOBS__JOBS_PROJECT_ID_FKEY.getInverseKey());
-
-        return _jobs;
-    }
-
-    private transient ProjectBlockReasonsPath _projectBlockReasons;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>public.project_block_reasons</code> table
-     */
-    public ProjectBlockReasonsPath projectBlockReasons() {
-        if (_projectBlockReasons == null)
-            _projectBlockReasons = new ProjectBlockReasonsPath(this, null, Keys.PROJECT_BLOCK_REASONS__PROJECT_BLOCK_REASONS_PROJECT_ID_FKEY.getInverseKey());
-
-        return _projectBlockReasons;
-    }
-
-    private transient ProjectMembersPath _projectMembers;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>public.project_members</code> table
-     */
-    public ProjectMembersPath projectMembers() {
-        if (_projectMembers == null)
-            _projectMembers = new ProjectMembersPath(this, null, Keys.PROJECT_MEMBERS__PROJECT_MEMBERS_PROJECT_ID_FKEY.getInverseKey());
-
-        return _projectMembers;
+    public List<Check<ProjectsRecord>> getChecks() {
+        return Arrays.asList(
+            Internal.createCheck(this, DSL.name("projects_status_check"), "(((status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'COMPLETED'::character varying])::text[])))", true)
+        );
     }
 
     @Override

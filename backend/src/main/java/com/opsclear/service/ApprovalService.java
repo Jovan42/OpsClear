@@ -10,6 +10,7 @@ import com.opsclear.model.ApprovalStatus;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
+import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -35,7 +36,8 @@ public class ApprovalService {
 
     @Transactional
     public ApprovalModel request(UUID projectId, UUID jobId, String description, UUID callerId) {
-        requireProjectExists(projectId);
+        ProjectModel project = requireProjectExists(projectId);
+        requireProjectNotCompleted(project);
         JobModel job = requireJobInProject(jobId, projectId);
         ProjectMemberModel caller = requireMember(projectId, callerId);
         requireCanRequestApproval(caller, job, callerId);
@@ -49,7 +51,8 @@ public class ApprovalService {
     @Transactional
     public ApprovalModel decide(UUID projectId, UUID jobId, UUID approvalId,
                                 ApprovalStatus status, String comment, UUID callerId) {
-        requireProjectExists(projectId);
+        ProjectModel project = requireProjectExists(projectId);
+        requireProjectNotCompleted(project);
         requireJobInProject(jobId, projectId);
         requireOwnerOrAdmin(projectId, callerId);
         requireApprovalExists(approvalId, jobId);
@@ -64,7 +67,7 @@ public class ApprovalService {
 
     @Transactional(readOnly = true)
     public List<ApprovalModel> listByJob(UUID projectId, UUID jobId, UUID callerId) {
-        requireProjectExists(projectId);
+        requireProjectExistsById(projectId);
         requireJobInProject(jobId, projectId);
         requireMember(projectId, callerId);
         return approvalRepository.findByJobId(jobId);
@@ -72,16 +75,26 @@ public class ApprovalService {
 
     @Transactional(readOnly = true)
     public List<ApprovalModel> listPendingByProject(UUID projectId, UUID callerId) {
-        requireProjectExists(projectId);
+        requireProjectExistsById(projectId);
         requireOwnerOrAdmin(projectId, callerId);
         return approvalRepository.findPendingByProjectId(projectId);
     }
 
     // --- Guards ---
 
-    private void requireProjectExists(UUID projectId) {
-        projectRepository.findByIdAndDeletedAtIsNull(projectId)
+    private ProjectModel requireProjectExists(UUID projectId) {
+        return projectRepository.findByIdAndDeletedAtIsNull(projectId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
+    }
+
+    private void requireProjectExistsById(UUID projectId) {
+        requireProjectExists(projectId);
+    }
+
+    private void requireProjectNotCompleted(ProjectModel project) {
+        if (project.isCompleted()) {
+            throw new ConflictException(ErrorMessages.Project.COMPLETED_NO_MUTATIONS);
+        }
     }
 
     private JobModel requireJobInProject(UUID jobId, UUID projectId) {

@@ -21,9 +21,15 @@ public class ProjectModel {
     private String description;
     private UUID ownerId;
     private String ownerName;
+    @Builder.Default
+    private ProjectStatus status = ProjectStatus.ACTIVE;
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
+
+    public boolean isCompleted() {
+        return status == ProjectStatus.COMPLETED;
+    }
 
     public boolean isDeleted() {
         return deletedAt != null;

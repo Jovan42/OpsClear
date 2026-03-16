@@ -1,6 +1,7 @@
 package com.opsclear.dto;
 
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,6 +23,7 @@ public class ProjectResponse {
     private String description;
     private UUID ownerId;
     private String ownerName;
+    private ProjectStatus status;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -32,6 +34,7 @@ public class ProjectResponse {
                 .description(project.getDescription())
                 .ownerId(project.getOwnerId())
                 .ownerName(project.getOwnerName())
+                .status(project.getStatus())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .build();

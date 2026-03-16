@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobModel;
@@ -8,6 +9,7 @@ import com.opsclear.model.NoteModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -169,6 +171,19 @@ class NoteServiceTest {
         assertThatThrownBy(() -> noteService.create(projectId, jobId, "content", callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("You are not a member of this project");
+    }
+
+    @Test
+    @DisplayName("create_shouldThrowConflictException_whenProjectIsCompleted")
+    void create_shouldThrowConflict_whenProjectIsCompleted() {
+        ProjectModel completed = ProjectModel.builder()
+                .id(projectId).name("Test Project").ownerId(callerId).status(ProjectStatus.COMPLETED).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(completed));
+
+        assertThatThrownBy(() -> noteService.create(projectId, jobId, "content", callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This project is completed and no longer accepts changes");
     }
 
     // --- listByJob ---

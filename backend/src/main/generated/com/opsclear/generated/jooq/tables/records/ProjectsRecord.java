@@ -130,6 +130,21 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
         return (LocalDateTime) get(6);
     }
 
+    /**
+     * Setter for <code>public.projects.status</code>.
+     */
+    public ProjectsRecord setStatus(String value) {
+        set(7, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.projects.status</code>.
+     */
+    public String getStatus() {
+        return (String) get(7);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -153,7 +168,7 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
     /**
      * Create a detached, initialised ProjectsRecord
      */
-    public ProjectsRecord(UUID id, String name, String description, UUID ownerId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+    public ProjectsRecord(UUID id, String name, String description, UUID ownerId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, String status) {
         super(Projects.PROJECTS);
 
         setId(id);
@@ -163,6 +178,7 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setDeletedAt(deletedAt);
+        setStatus(status);
         resetChangedOnNotNull();
     }
 }

@@ -7,8 +7,6 @@ package com.opsclear.generated.jooq.tables;
 import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
-import com.opsclear.generated.jooq.tables.Jobs.JobsPath;
-import com.opsclear.generated.jooq.tables.Users.UsersPath;
 import com.opsclear.generated.jooq.tables.records.NotesRecord;
 
 import java.time.LocalDateTime;
@@ -19,14 +17,10 @@ import java.util.UUID;
 
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -116,39 +110,6 @@ public class Notes extends TableImpl<NotesRecord> {
         this(DSL.name("notes"), null);
     }
 
-    public <O extends Record> Notes(Table<O> path, ForeignKey<O, NotesRecord> childPath, InverseForeignKey<O, NotesRecord> parentPath) {
-        super(path, childPath, parentPath, NOTES);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class NotesPath extends Notes implements Path<NotesRecord> {
-
-        private static final long serialVersionUID = 1L;
-        public <O extends Record> NotesPath(Table<O> path, ForeignKey<O, NotesRecord> childPath, InverseForeignKey<O, NotesRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private NotesPath(Name alias, Table<NotesRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public NotesPath as(String alias) {
-            return new NotesPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public NotesPath as(Name alias) {
-            return new NotesPath(alias, this);
-        }
-
-        @Override
-        public NotesPath as(Table<?> alias) {
-            return new NotesPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -162,35 +123,6 @@ public class Notes extends TableImpl<NotesRecord> {
     @Override
     public UniqueKey<NotesRecord> getPrimaryKey() {
         return Keys.NOTES_PKEY;
-    }
-
-    @Override
-    public List<ForeignKey<NotesRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.NOTES__NOTES_AUTHOR_ID_FKEY, Keys.NOTES__NOTES_JOB_ID_FKEY);
-    }
-
-    private transient UsersPath _users;
-
-    /**
-     * Get the implicit join path to the <code>public.users</code> table.
-     */
-    public UsersPath users() {
-        if (_users == null)
-            _users = new UsersPath(this, Keys.NOTES__NOTES_AUTHOR_ID_FKEY, null);
-
-        return _users;
-    }
-
-    private transient JobsPath _jobs;
-
-    /**
-     * Get the implicit join path to the <code>public.jobs</code> table.
-     */
-    public JobsPath jobs() {
-        if (_jobs == null)
-            _jobs = new JobsPath(this, Keys.NOTES__NOTES_JOB_ID_FKEY, null);
-
-        return _jobs;
     }
 
     @Override

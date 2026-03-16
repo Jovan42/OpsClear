@@ -6,6 +6,7 @@ import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
@@ -940,7 +941,46 @@ class JobIntegrationTest {
                 .andExpect(jsonPath("$[0].title").value("Member critical login"));
     }
 
+    // --- completed project guard ---
+
+    @Test
+    @DisplayName("createJob_shouldReturn409_whenProjectIsCompleted")
+    void createJob_shouldReturn409_whenProjectIsCompleted() throws Exception {
+        completeProject();
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "title": "New Job" }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
+    @DisplayName("updateJobStatus_shouldReturn409_whenProjectIsCompleted")
+    void updateJobStatus_shouldReturn409_whenProjectIsCompleted() throws Exception {
+        JobModel job = createTestJob("Some Job", memberId, JobStatus.NEW);
+        completeProject();
+
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, job.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "IN_PROGRESS" }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
     // --- helpers ---
+
+    private void completeProject() {
+        ProjectModel project = projectRepository.findByIdAndDeletedAtIsNull(projectId).orElseThrow();
+        project.setStatus(ProjectStatus.COMPLETED);
+        projectRepository.save(project);
+    }
 
     private JobModel createTestJob(String title, UUID assignedTo, JobStatus status) {
         return jobRepository.save(JobModel.builder()

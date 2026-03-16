@@ -19,7 +19,6 @@ import com.opsclear.generated.jooq.tables.records.ProjectMembersRecord;
 import com.opsclear.generated.jooq.tables.records.ProjectsRecord;
 import com.opsclear.generated.jooq.tables.records.UsersRecord;
 
-import org.jooq.ForeignKey;
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -45,26 +44,6 @@ public class Keys {
     public static final UniqueKey<ProjectMembersRecord> PROJECT_MEMBERS_PKEY = Internal.createUniqueKey(ProjectMembers.PROJECT_MEMBERS, DSL.name("project_members_pkey"), new TableField[] { ProjectMembers.PROJECT_MEMBERS.ID }, true);
     public static final UniqueKey<ProjectMembersRecord> UK_PROJECT_MEMBER = Internal.createUniqueKey(ProjectMembers.PROJECT_MEMBERS, DSL.name("uk_project_member"), new TableField[] { ProjectMembers.PROJECT_MEMBERS.PROJECT_ID, ProjectMembers.PROJECT_MEMBERS.USER_ID }, true);
     public static final UniqueKey<ProjectsRecord> PROJECTS_PKEY = Internal.createUniqueKey(Projects.PROJECTS, DSL.name("projects_pkey"), new TableField[] { Projects.PROJECTS.ID }, true);
-    public static final UniqueKey<ProjectsRecord> UK_PROJECTS_NAME_OWNER = Internal.createUniqueKey(Projects.PROJECTS, DSL.name("uk_projects_name_owner"), new TableField[] { Projects.PROJECTS.NAME, Projects.PROJECTS.OWNER_ID }, true);
     public static final UniqueKey<UsersRecord> UK_USERS_EMAIL = Internal.createUniqueKey(Users.USERS, DSL.name("uk_users_email"), new TableField[] { Users.USERS.EMAIL }, true);
     public static final UniqueKey<UsersRecord> USERS_PKEY = Internal.createUniqueKey(Users.USERS, DSL.name("users_pkey"), new TableField[] { Users.USERS.ID }, true);
-
-    // -------------------------------------------------------------------------
-    // FOREIGN KEY definitions
-    // -------------------------------------------------------------------------
-
-    public static final ForeignKey<ApprovalsRecord, UsersRecord> APPROVALS__APPROVALS_APPROVER_ID_FKEY = Internal.createForeignKey(Approvals.APPROVALS, DSL.name("approvals_approver_id_fkey"), new TableField[] { Approvals.APPROVALS.APPROVER_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
-    public static final ForeignKey<ApprovalsRecord, JobsRecord> APPROVALS__APPROVALS_JOB_ID_FKEY = Internal.createForeignKey(Approvals.APPROVALS, DSL.name("approvals_job_id_fkey"), new TableField[] { Approvals.APPROVALS.JOB_ID }, Keys.JOBS_PKEY, new TableField[] { Jobs.JOBS.ID }, true);
-    public static final ForeignKey<ApprovalsRecord, UsersRecord> APPROVALS__APPROVALS_REQUESTER_ID_FKEY = Internal.createForeignKey(Approvals.APPROVALS, DSL.name("approvals_requester_id_fkey"), new TableField[] { Approvals.APPROVALS.REQUESTER_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
-    public static final ForeignKey<JobsRecord, UsersRecord> JOBS__JOBS_ASSIGNED_TO_FKEY = Internal.createForeignKey(Jobs.JOBS, DSL.name("jobs_assigned_to_fkey"), new TableField[] { Jobs.JOBS.ASSIGNED_TO }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
-    public static final ForeignKey<JobsRecord, UsersRecord> JOBS__JOBS_BLOCKED_BY_FKEY = Internal.createForeignKey(Jobs.JOBS, DSL.name("jobs_blocked_by_fkey"), new TableField[] { Jobs.JOBS.BLOCKED_BY }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
-    public static final ForeignKey<JobsRecord, ProjectBlockReasonsRecord> JOBS__JOBS_BLOCKED_REASON_ID_FKEY = Internal.createForeignKey(Jobs.JOBS, DSL.name("jobs_blocked_reason_id_fkey"), new TableField[] { Jobs.JOBS.BLOCKED_REASON_ID }, Keys.PROJECT_BLOCK_REASONS_PKEY, new TableField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.ID }, true);
-    public static final ForeignKey<JobsRecord, UsersRecord> JOBS__JOBS_CREATED_BY_FKEY = Internal.createForeignKey(Jobs.JOBS, DSL.name("jobs_created_by_fkey"), new TableField[] { Jobs.JOBS.CREATED_BY }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
-    public static final ForeignKey<JobsRecord, ProjectsRecord> JOBS__JOBS_PROJECT_ID_FKEY = Internal.createForeignKey(Jobs.JOBS, DSL.name("jobs_project_id_fkey"), new TableField[] { Jobs.JOBS.PROJECT_ID }, Keys.PROJECTS_PKEY, new TableField[] { Projects.PROJECTS.ID }, true);
-    public static final ForeignKey<NotesRecord, UsersRecord> NOTES__NOTES_AUTHOR_ID_FKEY = Internal.createForeignKey(Notes.NOTES, DSL.name("notes_author_id_fkey"), new TableField[] { Notes.NOTES.AUTHOR_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
-    public static final ForeignKey<NotesRecord, JobsRecord> NOTES__NOTES_JOB_ID_FKEY = Internal.createForeignKey(Notes.NOTES, DSL.name("notes_job_id_fkey"), new TableField[] { Notes.NOTES.JOB_ID }, Keys.JOBS_PKEY, new TableField[] { Jobs.JOBS.ID }, true);
-    public static final ForeignKey<ProjectBlockReasonsRecord, ProjectsRecord> PROJECT_BLOCK_REASONS__PROJECT_BLOCK_REASONS_PROJECT_ID_FKEY = Internal.createForeignKey(ProjectBlockReasons.PROJECT_BLOCK_REASONS, DSL.name("project_block_reasons_project_id_fkey"), new TableField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.PROJECT_ID }, Keys.PROJECTS_PKEY, new TableField[] { Projects.PROJECTS.ID }, true);
-    public static final ForeignKey<ProjectMembersRecord, ProjectsRecord> PROJECT_MEMBERS__PROJECT_MEMBERS_PROJECT_ID_FKEY = Internal.createForeignKey(ProjectMembers.PROJECT_MEMBERS, DSL.name("project_members_project_id_fkey"), new TableField[] { ProjectMembers.PROJECT_MEMBERS.PROJECT_ID }, Keys.PROJECTS_PKEY, new TableField[] { Projects.PROJECTS.ID }, true);
-    public static final ForeignKey<ProjectMembersRecord, UsersRecord> PROJECT_MEMBERS__PROJECT_MEMBERS_USER_ID_FKEY = Internal.createForeignKey(ProjectMembers.PROJECT_MEMBERS, DSL.name("project_members_user_id_fkey"), new TableField[] { ProjectMembers.PROJECT_MEMBERS.USER_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
-    public static final ForeignKey<ProjectsRecord, UsersRecord> PROJECTS__PROJECTS_OWNER_ID_FKEY = Internal.createForeignKey(Projects.PROJECTS, DSL.name("projects_owner_id_fkey"), new TableField[] { Projects.PROJECTS.OWNER_ID }, Keys.USERS_PKEY, new TableField[] { Users.USERS.ID }, true);
 }

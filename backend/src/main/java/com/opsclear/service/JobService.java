@@ -6,12 +6,14 @@ import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.exception.ConflictException;
 import com.opsclear.model.BlockReasonModel;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
+import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -38,7 +40,8 @@ public class JobService {
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
-        requireProjectExists(projectId);
+        ProjectModel project = requireProjectExists(projectId);
+        requireProjectNotCompleted(project);
         requireMember(projectId, requesterId);
         requireAssignedUserExists(request.getAssignedTo());
 
@@ -61,7 +64,7 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public List<JobModel> list(UUID projectId, UUID requesterId, String q, JobPriority priority) {
-        requireProjectExists(projectId);
+        requireProjectExistsById(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         boolean isMember = requester.getRole() == ProjectMemberRole.MEMBER;
         UUID assignedTo = isMember ? requesterId : null;
@@ -71,7 +74,7 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public JobModel getById(UUID projectId, UUID jobId, UUID requesterId) {
-        requireProjectExists(projectId);
+        requireProjectExistsById(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
@@ -86,7 +89,7 @@ public class JobService {
 
     @Transactional
     public JobModel update(UUID projectId, UUID jobId, UpdateJobRequest request, UUID requesterId) {
-        requireProjectExists(projectId);
+        requireProjectExistsById(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
@@ -108,7 +111,8 @@ public class JobService {
 
     @Transactional
     public JobModel updateStatus(UUID projectId, UUID jobId, JobStatus newStatus, String reason, UUID requesterId) {
-        requireProjectExists(projectId);
+        ProjectModel project = requireProjectExists(projectId);
+        requireProjectNotCompleted(project);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
@@ -141,7 +145,7 @@ public class JobService {
 
     @Transactional
     public void softDelete(UUID projectId, UUID jobId, UUID requesterId) {
-        requireProjectExists(projectId);
+        requireProjectExistsById(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
@@ -197,9 +201,19 @@ public class JobService {
         }
     }
 
-    private void requireProjectExists(UUID projectId) {
-        projectRepository.findByIdAndDeletedAtIsNull(projectId)
+    private ProjectModel requireProjectExists(UUID projectId) {
+        return projectRepository.findByIdAndDeletedAtIsNull(projectId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
+    }
+
+    private void requireProjectExistsById(UUID projectId) {
+        requireProjectExists(projectId);
+    }
+
+    private void requireProjectNotCompleted(ProjectModel project) {
+        if (project.isCompleted()) {
+            throw new ConflictException(ErrorMessages.Project.COMPLETED_NO_MUTATIONS);
+        }
     }
 
     // --- Permission helpers ---

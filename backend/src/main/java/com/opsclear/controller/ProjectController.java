@@ -3,7 +3,9 @@ package com.opsclear.controller;
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.ProjectResponse;
 import com.opsclear.dto.UpdateProjectRequest;
+import com.opsclear.dto.UpdateProjectStatusRequest;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,11 +14,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -40,9 +44,12 @@ public class ProjectController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectResponse>> listMyProjects(JwtAuthenticationToken auth) {
+    public ResponseEntity<List<ProjectResponse>> listMyProjects(
+            @RequestParam(name = "status", required = false, defaultValue = "ACTIVE") String statusParam,
+            JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
-        List<ProjectResponse> projects = projectService.getProjectsForMember(userId)
+        ProjectStatus status = "ALL".equalsIgnoreCase(statusParam) ? null : ProjectStatus.valueOf(statusParam.toUpperCase());
+        List<ProjectResponse> projects = projectService.getProjectsForMember(userId, status)
                 .stream()
                 .map(ProjectResponse::from)
                 .toList();
@@ -65,6 +72,16 @@ public class ProjectController {
             JwtAuthenticationToken auth) {
         UUID userId = UUID.fromString(auth.getToken().getSubject());
         ProjectModel project = projectService.update(id, request, userId);
+        return ResponseEntity.ok(ProjectResponse.from(project));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ProjectResponse> updateStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateProjectStatusRequest request,
+            JwtAuthenticationToken auth) {
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+        ProjectModel project = projectService.updateStatus(id, request.getStatus(), userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 

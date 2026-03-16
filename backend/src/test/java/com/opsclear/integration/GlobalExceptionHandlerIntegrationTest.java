@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class GlobalExceptionHandlerIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
-    @MockBean  private ProjectService projectService;
+    @MockitoBean private ProjectService projectService;
     @Autowired private ApprovalRepository approvalRepository;
     @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private NoteRepository noteRepository;
@@ -57,7 +57,7 @@ class GlobalExceptionHandlerIntegrationTest {
     @Test
     @DisplayName("handleGeneric_shouldReturn500WithGenericMessage_whenUnexpectedExceptionThrown")
     void handleGeneric_shouldReturn500WithGenericMessage_whenUnexpectedExceptionThrown() throws Exception {
-        when(projectService.getProjectsForMember(any())).thenThrow(new RuntimeException("unexpected db failure"));
+        when(projectService.getProjectsForMember(any(), any())).thenThrow(new RuntimeException("unexpected db failure"));
 
         mockMvc.perform(get(ApiPaths.PROJECTS)
                         .with(jwt().jwt(j -> j.subject(UUID.randomUUID().toString()).claim("email", "u@example.com"))))
