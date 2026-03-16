@@ -1,10 +1,14 @@
 // ---- Projects ----
 
+export type ProjectStatus = 'ACTIVE' | 'COMPLETED';
+
 export interface ProjectResponse {
   id: string;
   name: string;
   description: string | null;
   ownerId: string;
+  ownerName: string | null;
+  status: ProjectStatus;
   createdAt: string;
 }
 
