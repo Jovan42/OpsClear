@@ -236,4 +236,19 @@ class MilestoneIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    @DisplayName("Should return 404 when milestone belongs to a different project on delete")
+    void deleteMilestone_shouldReturn404_whenMilestoneBelongsToDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+        MilestoneModel otherMilestone = milestoneRepository.save(
+                MilestoneModel.builder().projectId(otherProject.getId()).name("Other Milestone").build());
+
+        mockMvc.perform(delete(ApiPaths.milestone(projectId, otherMilestone.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNotFound());
+    }
 }
