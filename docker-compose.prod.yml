@@ -85,7 +85,7 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: ""
-        VITE_KEYCLOAK_URL: http://${APP_HOST:-localhost}:${KEYCLOAK_PORT:-8280}
+        VITE_KEYCLOAK_URL: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-opsclear}
         VITE_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-opsclear-frontend}
     ports:
