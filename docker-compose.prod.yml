@@ -1,0 +1,110 @@
+# Production compose — runs the full OpsClear stack including the app.
+#
+# Usage:
+#   cp .env.prod.example .env.prod
+#   # edit .env.prod — at minimum set APP_HOST
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Local (alongside dev compose):
+#   Default ports are shifted to avoid clashes with docker-compose.yml:
+#     Frontend  → http://localhost:8090
+#     Keycloak  → http://localhost:8280
+#     Portainer → http://localhost:9001
+#
+# VPS deployment:
+#   Set APP_HOST=your-ip-or-domain and adjust ports as needed in .env.prod.
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: opsclear
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-opsclear}
+      POSTGRES_DB: opsclear
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opsclear"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: opsclear
+      KC_DB_PASSWORD: ${DB_PASSWORD:-opsclear}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HEALTH_ENABLED: "true"
+      # Controls the JWT iss claim — must match what the browser uses to reach Keycloak
+      KC_HOSTNAME_URL: http://${APP_HOST:-localhost}:${KEYCLOAK_PORT:-8280}
+      KC_HOSTNAME_STRICT: "false"
+    ports:
+      - "${KEYCLOAK_PORT:-8280}:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Application ─────────────────────────────────────────────────────────────
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: opsclear
+      DB_USERNAME: opsclear
+      DB_PASSWORD: ${DB_PASSWORD:-opsclear}
+      # Must equal KC_HOSTNAME_URL + /realms/opsclear so JWT iss validation passes.
+      # extra_hosts lets the container resolve APP_HOST=host.docker.internal locally.
+      KEYCLOAK_ISSUER_URI: http://${APP_HOST:-localhost}:${KEYCLOAK_PORT:-8280}/realms/opsclear
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ""
+        VITE_KEYCLOAK_URL: http://${APP_HOST:-localhost}:${KEYCLOAK_PORT:-8280}
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-opsclear}
+        VITE_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-opsclear-frontend}
+    ports:
+      - "${APP_PORT:-8090}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ── Management ──────────────────────────────────────────────────────────────
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    ports:
+      - "${PORTAINER_PORT:-9001}:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  portainer_data:
