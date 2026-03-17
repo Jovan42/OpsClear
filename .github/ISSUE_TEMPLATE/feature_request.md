@@ -5,6 +5,11 @@ title: 'feat(scope): '
 labels: enhancement
 ---
 
+## ADR
+
+<!-- Link the ADR this issue is based on, e.g. docs/dev/decisions/0021-milestone-grouping.md -->
+<!-- Write N/A if not applicable -->
+
 ## Description
 
 <!-- What feature do you want? -->

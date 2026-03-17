@@ -5,6 +5,11 @@ title: 'chore(scope): '
 labels: tech-debt
 ---
 
+## ADR
+
+<!-- Link the ADR this issue is based on, if applicable -->
+<!-- Write N/A if not applicable -->
+
 ## Description
 
 <!-- What needs to be cleaned up/improved? -->

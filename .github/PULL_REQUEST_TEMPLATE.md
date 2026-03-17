@@ -13,9 +13,18 @@
 - [ ] `test` - Adding or updating tests
 - [ ] `chore` - Maintenance (dependencies, config, etc.)
 
-## Related issues
+## Closes
 
-<!-- Link issues: Closes #123, Fixes #456 -->
+<!-- Link the issue(s) this PR closes. Use "Closes #123" to auto-close on merge. -->
+<!-- If no issue exists, write N/A -->
+
+Closes #
+
+## ADR
+
+<!-- Link the ADR this PR implements, if applicable -->
+<!-- Example: docs/dev/decisions/0021-milestone-grouping.md -->
+<!-- Write N/A if not applicable -->
 
 ## Changes
 
