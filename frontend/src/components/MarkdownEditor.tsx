@@ -19,7 +19,7 @@ export default function MarkdownEditor({
   const [tab, setTab] = useState<'write' | 'preview'>('write');
 
   return (
-    <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+    <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
       <div className="flex border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
         {(['write', 'preview'] as const).map((t) => (
           <button
