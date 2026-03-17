@@ -20,11 +20,11 @@ Pull Request → main → auto-deploy
 
 ---
 
-## 1. Product Project — Backlog
+## 1. Future Considerations — Backlog
 
-The **Product project** is a living backlog of considerations, ideas, and improvements.
+The **Future Considerations project** is a living backlog of ideas and open questions to explore before committing to anything.
 
-Each ticket is a **spike** — it exists to capture research before any code is written:
+Each ticket is a **consideration** — it exists to capture research before any code is written:
 
 - What is the problem / need?
 - What options exist?
@@ -37,7 +37,7 @@ Tickets are added continuously. The backlog is only reviewed at **phase boundari
 
 ## 2. Phase Planning
 
-At the end of each phase, pick the most important tickets from the Product project to form the next phase.
+At the end of each phase, pick the most important tickets from the Future Considerations project to form the next phase.
 
 Rules:
 - Don't start a new phase until the current one is fully done
@@ -139,7 +139,7 @@ This makes it easier to reference past work and understand what a phase containe
 
 | Step | Output |
 |------|--------|
-| Backlog grooming (Product project) | Researched consideration tickets |
+| Backlog grooming (Future Considerations project) | Researched consideration tickets |
 | Phase planning | New project with milestones |
 | ADR | `docs/dev/decisions/XXXX-name.md` |
 | Job creation | Jobs in OpsClear inside milestone (incl. manual testing job) |
