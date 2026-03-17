@@ -71,6 +71,8 @@ services:
       # Must equal KC_HOSTNAME_URL + /realms/opsclear so JWT iss validation passes.
       # extra_hosts lets the container resolve APP_HOST=host.docker.internal locally.
       KEYCLOAK_ISSUER_URI: http://${APP_HOST:-localhost}:${KEYCLOAK_PORT:-8280}/realms/opsclear
+      # Allow requests from the frontend origin (nginx HTTPS endpoint).
+      CORS_ALLOWED_ORIGINS: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
