@@ -185,7 +185,7 @@ function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
       <td className="px-4 py-3">
         <PriorityBadge priority={job.priority} />
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 whitespace-nowrap">
         <StatusBadge status={job.status} />
       </td>
     </tr>
