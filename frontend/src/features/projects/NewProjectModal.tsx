@@ -10,7 +10,7 @@ import { useCreateProject } from './useProjects';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(80, 'Max 80 characters'),
-  description: z.string().max(255, 'Max 255 characters').optional(),
+  description: z.string().max(10000, 'Max 10000 characters').optional(),
 });
 
 type FormValues = z.infer<typeof schema>;

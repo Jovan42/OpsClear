@@ -3,7 +3,7 @@ import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import { useRequestApproval } from '../useApprovals';
 
-const DESC_MAX = 500;
+const DESC_MAX = 2000;
 
 interface Props {
   open: boolean;

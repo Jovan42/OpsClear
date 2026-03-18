@@ -21,7 +21,7 @@ public class CreateProjectRequest {
     @Size(max = 255, message = "Project name must be at most 255 characters")
     private String name;
 
-    @Size(max = 1000, message = "Description must be at most 1000 characters")
+    @Size(max = 10000, message = "Description must be at most 10000 characters")
     private String description;
 
     @Size(max = 20, message = "At most 20 block reasons may be provided")

@@ -16,6 +16,6 @@ import lombok.Setter;
 public class RequestApprovalRequest {
 
     @NotBlank(message = "Description must not be blank")
-    @Size(max = 500, message = "Description must not exceed 500 characters")
+    @Size(max = 2000, message = "Description must not exceed 2000 characters")
     private String description;
 }
