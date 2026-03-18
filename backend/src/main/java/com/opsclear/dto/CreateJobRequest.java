@@ -23,6 +23,7 @@ public class CreateJobRequest {
     @Size(max = 255, message = "Job title must be at most 255 characters")
     private String title;
 
+    @Size(max = 10000, message = "Description must be at most 10000 characters")
     private String description;
 
     @Size(max = 255, message = "Client must be at most 255 characters")

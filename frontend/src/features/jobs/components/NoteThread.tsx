@@ -6,7 +6,7 @@ import MarkdownEditor from '../../../components/MarkdownEditor';
 import { useNotes, useAddNote } from '../useNotes';
 import type { ProjectMemberResponse } from '../../../types';
 
-const NOTE_MAX = 2000;
+const NOTE_MAX = 10000;
 const SESSION_KEY = 'note_immutability_confirmed';
 
 function formatDateTime(dateStr: string) {

@@ -18,7 +18,7 @@ const PRIORITIES: { value: JobPriority; label: string }[] = [
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Max 255 characters'),
-  description: z.string().max(1000, 'Max 1000 characters').optional(),
+  description: z.string().max(10000, 'Max 10000 characters').optional(),
   client: z.string().max(255, 'Max 255 characters').optional(),
   deadline: z.string().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),

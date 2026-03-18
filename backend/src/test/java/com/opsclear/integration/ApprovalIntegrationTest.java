@@ -152,9 +152,9 @@ class ApprovalIntegrationTest {
     }
 
     @Test
-    @DisplayName("request should return 400 when description exceeds 500 characters")
+    @DisplayName("request should return 400 when description exceeds 2000 characters")
     void request_shouldReturn400_whenDescriptionTooLong() throws Exception {
-        String tooLong = "x".repeat(501);
+        String tooLong = "x".repeat(2001);
         mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)

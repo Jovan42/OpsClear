@@ -16,6 +16,6 @@ import lombok.Setter;
 public class CreateNoteRequest {
 
     @NotBlank(message = "Content must not be blank")
-    @Size(max = 2000, message = "Content must not exceed 2000 characters")
+    @Size(max = 10000, message = "Content must not exceed 10000 characters")
     private String content;
 }

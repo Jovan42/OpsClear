@@ -116,9 +116,9 @@ class NoteIntegrationTest {
     }
 
     @Test
-    @DisplayName("create should return 400 when content exceeds 2000 characters")
+    @DisplayName("create should return 400 when content exceeds 10000 characters")
     void createNote_shouldReturn400_whenContentTooLong() throws Exception {
-        String tooLong = "x".repeat(2001);
+        String tooLong = "x".repeat(10001);
         mockMvc.perform(post(ApiPaths.notes(projectId, jobId))
                         .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
