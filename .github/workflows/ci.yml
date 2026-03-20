@@ -99,7 +99,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: backend
-        run: ./gradlew test -PexcludeIntegrationTests jacocoServiceTestReport jacocoServiceCoverageVerification
+        run: ./gradlew test -PexcludeIntegrationTests jacocoServiceTestReport jacocoServiceCoverageVerification jacocoSecurityTestReport jacocoSecurityCoverageVerification
 
       - name: Publish unit test results
         uses: dorny/test-reporter@v1
@@ -116,13 +116,23 @@ jobs:
           name: unit-test-results
           path: backend/build/reports/tests/
 
-      - name: Publish unit test coverage
+      - name: Publish unit test coverage (service)
         uses: madrapps/jacoco-report@v1.7.2
         if: always()
         with:
           paths: backend/build/reports/jacoco/service/jacocoServiceReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           title: Unit Test Coverage (Service Layer)
+          update-comment: true
+          min-coverage-overall: 90
+
+      - name: Publish unit test coverage (security)
+        uses: madrapps/jacoco-report@v1.7.2
+        if: always()
+        with:
+          paths: backend/build/reports/jacoco/security/jacocoSecurityReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Unit Test Coverage (Security Layer)
           update-comment: true
           min-coverage-overall: 90
 

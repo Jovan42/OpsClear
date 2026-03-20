@@ -8,7 +8,8 @@ import com.opsclear.service.ApprovalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import com.opsclear.security.SecurityUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,8 +31,8 @@ public class ApprovalController {
             @PathVariable UUID projectId,
             @PathVariable UUID jobId,
             @Valid @RequestBody RequestApprovalRequest request,
-            JwtAuthenticationToken auth) {
-        UUID callerId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
         ApprovalModel approval = approvalService.request(projectId, jobId, request.getDescription(), callerId);
         return ResponseEntity.status(201).body(ApprovalResponse.from(approval));
     }
@@ -42,8 +43,8 @@ public class ApprovalController {
             @PathVariable UUID jobId,
             @PathVariable UUID approvalId,
             @Valid @RequestBody DecideApprovalRequest request,
-            JwtAuthenticationToken auth) {
-        UUID callerId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
         ApprovalModel approval = approvalService.decide(
                 projectId, jobId, approvalId, request.getStatus(), request.getComment(), callerId);
         return ResponseEntity.ok(ApprovalResponse.from(approval));
@@ -53,8 +54,8 @@ public class ApprovalController {
     public ResponseEntity<List<ApprovalResponse>> listByJob(
             @PathVariable UUID projectId,
             @PathVariable UUID jobId,
-            JwtAuthenticationToken auth) {
-        UUID callerId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
         List<ApprovalResponse> approvals = approvalService.listByJob(projectId, jobId, callerId)
                 .stream()
                 .map(ApprovalResponse::from)
@@ -65,8 +66,8 @@ public class ApprovalController {
     @GetMapping("/api/projects/{projectId}/approvals/pending")
     public ResponseEntity<List<ApprovalResponse>> listPendingByProject(
             @PathVariable UUID projectId,
-            JwtAuthenticationToken auth) {
-        UUID callerId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
         List<ApprovalResponse> approvals = approvalService.listPendingByProject(projectId, callerId)
                 .stream()
                 .map(ApprovalResponse::from)

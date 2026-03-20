@@ -8,7 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import com.opsclear.security.SecurityUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +32,8 @@ public class MilestoneController {
     @GetMapping
     public ResponseEntity<List<MilestoneResponse>> list(
             @PathVariable UUID projectId,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         List<MilestoneResponse> milestones = milestoneService.list(projectId, userId)
                 .stream()
                 .map(MilestoneResponse::from)
@@ -44,8 +45,8 @@ public class MilestoneController {
     public ResponseEntity<MilestoneResponse> create(
             @PathVariable UUID projectId,
             @Valid @RequestBody CreateMilestoneRequest request,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(MilestoneResponse.from(milestoneService.create(projectId, request, userId)));
     }
@@ -55,8 +56,8 @@ public class MilestoneController {
             @PathVariable UUID projectId,
             @PathVariable UUID milestoneId,
             @Valid @RequestBody UpdateMilestoneRequest request,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.ok(
                 MilestoneResponse.from(milestoneService.update(projectId, milestoneId, request, userId)));
     }
@@ -65,8 +66,8 @@ public class MilestoneController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID projectId,
             @PathVariable UUID milestoneId,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         milestoneService.softDelete(projectId, milestoneId, userId);
         return ResponseEntity.noContent().build();
     }

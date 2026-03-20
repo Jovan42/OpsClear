@@ -215,6 +215,44 @@ tasks.register('jacocoServiceCoverageVerification', JacocoCoverageVerification) 
     }
 }
 
+// Security-layer only report — used by the unit-tests CI job
+tasks.register('jacocoSecurityTestReport', JacocoReport) {
+    dependsOn test
+    executionData.setFrom(layout.buildDirectory.file('jacoco/test.exec'))
+    sourceDirectories.setFrom(sourceSets.main.allSource.srcDirs)
+    classDirectories.setFrom(
+        sourceSets.main.output.asFileTree.matching {
+            include '**/security/**'
+        }
+    )
+    reports {
+        xml.required = true
+        html.required = true
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/security/jacocoSecurityReport.xml')
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/security/html')
+    }
+}
+
+tasks.register('jacocoSecurityCoverageVerification', JacocoCoverageVerification) {
+    dependsOn jacocoSecurityTestReport
+    executionData.setFrom(layout.buildDirectory.file('jacoco/test.exec'))
+    sourceDirectories.setFrom(sourceSets.main.allSource.srcDirs)
+    classDirectories.setFrom(
+        sourceSets.main.output.asFileTree.matching {
+            include '**/security/**'
+        }
+    )
+    violationRules {
+        rule {
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
+    }
+}
+
 // Checkstyle configuration
 checkstyle {
     toolVersion = '10.21.4'

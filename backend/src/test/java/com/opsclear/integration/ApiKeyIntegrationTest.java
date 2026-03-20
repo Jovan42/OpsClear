@@ -10,6 +10,7 @@ import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import com.opsclear.service.ApiKeyService;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -36,9 +39,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@SuppressWarnings("NullableProblems")
 class ApiKeyIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
+    @Autowired private DSLContext dsl;
     @Autowired private ApiKeyRepository apiKeyRepository;
     @Autowired private ApprovalRepository approvalRepository;
     @Autowired private NoteRepository noteRepository;
@@ -326,6 +331,131 @@ class ApiKeyIntegrationTest {
         key.revoke();
         assertThat(key.isRevoked()).isTrue();
         assertThat(key.getRevokedAt()).isNotNull();
+    }
+
+    // --- ApiKeyAuthFilter ---
+
+    @Test
+    @DisplayName("Should authenticate and return 200 using valid API key header")
+    void apiKeyFilter_shouldAuthenticate_withValidKey() throws Exception {
+        MvcResult result = mockMvc.perform(post(ApiPaths.API_KEYS)
+                        .with(jwt().jwt(j -> j.subject(userId.toString()).claim("email", "user@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "filter test key"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String rawKey = com.jayway.jsonpath.JsonPath.read(result.getResponse().getContentAsString(), "$.key");
+
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .header("X-Api-Key", rawKey))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Should fall through to JWT auth and return 401 when X-Api-Key header is blank")
+    void apiKeyFilter_shouldPassThrough_whenKeyHeaderIsBlank() throws Exception {
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .header("X-Api-Key", "   "))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when API key is invalid")
+    void apiKeyFilter_shouldReturn401_withInvalidKey() throws Exception {
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .header("X-Api-Key", "opck_invalid"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when API key is revoked")
+    void apiKeyFilter_shouldReturn401_withRevokedKey() throws Exception {
+        MvcResult result = mockMvc.perform(post(ApiPaths.API_KEYS)
+                        .with(jwt().jwt(j -> j.subject(userId.toString()).claim("email", "user@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "revoke filter key"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        String rawKey = com.jayway.jsonpath.JsonPath.read(body, "$.key");
+        String keyId = com.jayway.jsonpath.JsonPath.read(body, "$.id");
+
+        mockMvc.perform(delete(ApiPaths.apiKey(UUID.fromString(keyId)))
+                        .with(jwt().jwt(j -> j.subject(userId.toString()).claim("email", "user@example.com"))))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .header("X-Api-Key", rawKey))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when API key user no longer exists")
+    void apiKeyFilter_shouldReturn401_whenUserNotFound() throws Exception {
+        String rawKey = "opck_orphan_key_no_user_exists";
+        UUID orphanUserId = UUID.randomUUID(); // not in users table
+
+        // Bypass FK constraint to simulate a key whose user was deleted outside cascade
+        dsl.execute("SET session_replication_role = replica");
+        apiKeyRepository.save(ApiKeyModel.builder()
+                .userId(orphanUserId)
+                .name("orphan key")
+                .keyHash(ApiKeyService.sha256(rawKey))
+                .keyPrefix("opck_orpha")
+                .build());
+        dsl.execute("SET session_replication_role = origin");
+
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .header("X-Api-Key", rawKey))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when API key is expired")
+    void apiKeyFilter_shouldReturn401_withExpiredKey() throws Exception {
+        String expiredHash = ApiKeyService.sha256("opck_expired_test_key_for_filter");
+        apiKeyRepository.save(ApiKeyModel.builder()
+                .userId(userId)
+                .name("expired filter key")
+                .keyHash(expiredHash)
+                .keyPrefix("opck_expir")
+                .expiresAt(Instant.now().minus(1, ChronoUnit.HOURS))
+                .build());
+
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .header("X-Api-Key", "opck_expired_test_key_for_filter"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Should update lastUsedAt when API key is used")
+    void apiKeyFilter_shouldUpdateLastUsedAt_onSuccessfulAuth() throws Exception {
+        MvcResult result = mockMvc.perform(post(ApiPaths.API_KEYS)
+                        .with(jwt().jwt(j -> j.subject(userId.toString()).claim("email", "user@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "last used key"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        String rawKey = com.jayway.jsonpath.JsonPath.read(body, "$.key");
+        String keyId = com.jayway.jsonpath.JsonPath.read(body, "$.id");
+
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .header("X-Api-Key", rawKey))
+                .andExpect(status().isOk());
+
+        apiKeyRepository.findById(UUID.fromString(keyId)).ifPresent(key ->
+                assertThat(key.getLastUsedAt()).isNotNull()
+        );
     }
 
     @Test

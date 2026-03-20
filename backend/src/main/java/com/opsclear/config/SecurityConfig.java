@@ -1,5 +1,6 @@
 package com.opsclear.config;
 
+import com.opsclear.security.ApiKeyAuthFilter;
 import com.opsclear.security.UserSyncFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final ApiKeyAuthFilter apiKeyAuthFilter;
     private final UserSyncFilter userSyncFilter;
 
     @Value("${cors.allowed-origins:http://localhost:5173}")
@@ -37,7 +39,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Api-Key"));
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -62,6 +64,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                .addFilterBefore(apiKeyAuthFilter, BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(userSyncFilter, BearerTokenAuthenticationFilter.class);
 
         return http.build();
