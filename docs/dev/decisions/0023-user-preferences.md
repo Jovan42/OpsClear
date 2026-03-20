@@ -30,6 +30,7 @@ A single `usePreferences` hook reads from and writes to localStorage, providing 
 | Milestone accordion state | `EXPANDED`, `COLLAPSED` | `EXPANDED` |
 | Default status tab | `ALL`, `NEW`, `IN_PROGRESS`, `BLOCKED`, `COMPLETED` | `ALL` |
 | Hide completed from ALL tab | `true`, `false` | `false` |
+| Default sort order | `DEADLINE_ASC`, `DEADLINE_DESC`, `PRIORITY_DESC`, `CREATED_DESC` | `DEADLINE_ASC` |
 
 The milestone accordion state is global — the same across all projects.
 
@@ -75,6 +76,7 @@ If no preference is stored, sensible defaults apply:
 | Accordion | `EXPANDED` |
 | Status tab | `ALL` |
 | Hide completed from ALL tab | `false` |
+| Default sort order | `DEADLINE_ASC` |
 | Deadline format | `ABSOLUTE` |
 | Dashboard sections | all visible |
 | Default project page | `DASHBOARD` |
@@ -138,10 +140,11 @@ Encode view mode and tab in the URL query string.
 3. Apply `milestoneAccordionState` in `JobListPage`
 4. Apply `defaultStatusTab` in `JobListPage`
 5. Apply `hideCompletedFromAll` in `JobListPage` — when `true` and the ALL tab is active, filter out COMPLETED jobs
-6. Apply `deadlineFormat` wherever deadlines are displayed
-7. Apply `dashboard*` flags in `DashboardPage` to conditionally fetch and render sections
-8. Apply `defaultProjectPage` in the `/projects/:id` redirect route
-9. Add Preferences section to `SettingsPage`
+6. Apply `defaultSortOrder` in `JobListPage` as the initial sort selection
+7. Apply `deadlineFormat` wherever deadlines are displayed
+8. Apply `dashboard*` flags in `DashboardPage` to conditionally fetch and render sections
+9. Apply `defaultProjectPage` in the `/projects/:id` redirect route
+10. Add Preferences section to `SettingsPage`
 
 ## References
 
