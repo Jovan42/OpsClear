@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
+import ProgressBar from '../../components/ProgressBar';
 import PriorityBadge from '../../components/PriorityBadge';
 import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
@@ -11,7 +12,7 @@ import { useMilestones } from './useMilestones';
 import { useProject } from '../projects/useProjects';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { usePreferences, type SortOrder } from '../../hooks/usePreferences';
+import { usePreferences, type SortOrder, type ProgressFormat } from '../../hooks/usePreferences';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import type { JobPriority, JobResponse, JobStatus, MilestoneResponse } from '../../types';
 
@@ -211,16 +212,21 @@ interface GroupSectionProps {
   collapsedGroups: Set<string>;
   toggleGroup: (key: string) => void;
   isFirst: boolean;
+  completed: number;
+  total: number;
+  progressFormat: ProgressFormat;
 }
 
 function GroupSection({
   groupKey, title, deadline, jobs, projectId,
   sortKey, sortDir, toggleSort,
   collapsedGroups, toggleGroup,
+  completed, total, progressFormat,
 }: GroupSectionProps) {
   const isCollapsed = collapsedGroups.has(groupKey);
   const formatDeadline = useFormatDeadline();
   const formattedDeadline = formatDeadline(deadline);
+  const showProgress = groupKey !== '__ungrouped__';
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -228,18 +234,21 @@ function GroupSection({
         onClick={() => toggleGroup(groupKey)}
         className="flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 cursor-pointer select-none"
       >
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{title}</span>
-          {deadline && (
-            <span className={`text-xs ${formattedDeadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-              {formattedDeadline.text}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{title}</span>
+            {deadline && (
+              <span className={`text-xs ${formattedDeadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                {formattedDeadline.text}
+              </span>
+            )}
+            <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+              {jobs.length}
             </span>
-          )}
-          <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-            {jobs.length}
-          </span>
+          </div>
+          {showProgress && <ProgressBar completed={completed} total={total} format={progressFormat} />}
         </div>
-        <span className="text-gray-400 dark:text-gray-500 text-sm">{isCollapsed ? '▸' : '▾'}</span>
+        <span className="text-gray-400 dark:text-gray-500 text-sm ml-2">{isCollapsed ? '▸' : '▾'}</span>
       </div>
 
       {!isCollapsed && jobs.length > 0 && (
@@ -363,6 +372,7 @@ export default function JobListPage() {
     priorityFilter !== 'ALL' ? priorityFilter : undefined,
     milestoneFilterActive ? milestoneFilter : undefined,
   );
+  const { data: allJobs = [] } = useJobList(projectId);
 
   const counts: Record<JobStatus, number> = {
     NEW: jobs.filter((j) => j.status === 'NEW').length,
@@ -502,6 +512,7 @@ export default function JobListPage() {
               sortKey,
               sortDir,
             );
+            const msAllJobs = allJobs.filter((j) => j.milestoneId === ms.id);
             return (
               <GroupSection
                 key={ms.id}
@@ -516,6 +527,9 @@ export default function JobListPage() {
                 collapsedGroups={collapsedGroups}
                 toggleGroup={toggleGroup}
                 isFirst={false}
+                completed={msAllJobs.filter((j) => j.status === 'COMPLETED').length}
+                total={msAllJobs.length}
+                progressFormat={prefs.milestoneProgressFormat}
               />
             );
           })}
@@ -540,6 +554,9 @@ export default function JobListPage() {
                 collapsedGroups={collapsedGroups}
                 toggleGroup={toggleGroup}
                 isFirst={false}
+                completed={0}
+                total={0}
+                progressFormat={prefs.milestoneProgressFormat}
               />
             );
           })()}
