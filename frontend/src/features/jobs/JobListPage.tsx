@@ -12,6 +12,7 @@ import { useProject } from '../projects/useProjects';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { usePreferences, type SortOrder } from '../../hooks/usePreferences';
+import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import type { JobPriority, JobResponse, JobStatus, MilestoneResponse } from '../../types';
 
 function JobListSkeleton() {
@@ -69,19 +70,6 @@ const STATUS_COLORS: Record<JobStatus, { badge: string; text: string }> = {
   COMPLETED:   { badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', text: 'text-green-700 dark:text-green-400' },
 };
 
-function formatDeadline(deadline: string | null): string {
-  if (!deadline) return '—';
-  return new Date(deadline).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function isOverdue(deadline: string | null, status: JobStatus): boolean {
-  if (!deadline || status === 'COMPLETED') return false;
-  return new Date(deadline) < new Date();
-}
 
 function sortJobs(jobs: JobResponse[], sortKey: SortKey, sortDir: SortDir): JobResponse[] {
   return jobs.slice().sort((a, b) => {
@@ -122,6 +110,8 @@ interface JobCardProps {
 
 function JobCard({ job, projectId, showMilestoneChip = false }: JobCardProps) {
   const navigate = useNavigate();
+  const formatDeadline = useFormatDeadline();
+  const deadline = formatDeadline(job.deadline, job.status);
   return (
     <button
       onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
@@ -144,8 +134,8 @@ function JobCard({ job, projectId, showMilestoneChip = false }: JobCardProps) {
           <span className="text-xs text-gray-500 dark:text-gray-400">{job.assignedToName}</span>
         )}
         {job.deadline && (
-          <span className={`text-xs ${isOverdue(job.deadline, job.status) ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-            {formatDeadline(job.deadline)}
+          <span className={`text-xs ${deadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+            {deadline.text}
           </span>
         )}
         {showMilestoneChip && job.milestoneName && (
@@ -166,6 +156,8 @@ interface JobRowProps {
 
 function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
   const navigate = useNavigate();
+  const formatDeadline = useFormatDeadline();
+  const deadline = formatDeadline(job.deadline, job.status);
   return (
     <tr
       onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
@@ -185,14 +177,8 @@ function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
       </td>
       <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.client ?? '—'}</td>
       <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.assignedToName ?? '—'}</td>
-      <td
-        className={`px-4 py-3 ${
-          isOverdue(job.deadline, job.status)
-            ? 'text-red-600 font-medium'
-            : 'text-gray-500 dark:text-gray-400'
-        }`}
-      >
-        {formatDeadline(job.deadline)}
+      <td className={`px-4 py-3 ${deadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+        {deadline.text}
       </td>
       <td className="px-4 py-3">
         <PriorityBadge priority={job.priority} />
@@ -233,7 +219,8 @@ function GroupSection({
   collapsedGroups, toggleGroup,
 }: GroupSectionProps) {
   const isCollapsed = collapsedGroups.has(groupKey);
-  const deadlineOverdue = deadline && new Date(deadline) < new Date();
+  const formatDeadline = useFormatDeadline();
+  const formattedDeadline = formatDeadline(deadline);
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -244,8 +231,8 @@ function GroupSection({
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{title}</span>
           {deadline && (
-            <span className={`text-xs ${deadlineOverdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-              {formatDeadline(deadline)}
+            <span className={`text-xs ${formattedDeadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+              {formattedDeadline.text}
             </span>
           )}
           <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">

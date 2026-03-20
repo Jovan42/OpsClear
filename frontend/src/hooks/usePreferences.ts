@@ -8,6 +8,7 @@ export type AccordionState = 'EXPANDED' | 'COLLAPSED';
 export type StatusTab = 'ALL' | 'NEW' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED';
 export type SortOrder = 'DEADLINE_ASC' | 'DEADLINE_DESC' | 'PRIORITY_DESC' | 'CREATED_DESC';
 export type ProjectPage = 'DASHBOARD' | 'JOBS' | 'APPROVALS';
+export type DeadlineFormat = 'ABSOLUTE' | 'RELATIVE';
 
 export interface Preferences {
   theme: Theme;
@@ -20,6 +21,7 @@ export interface Preferences {
   showOverdueSection: boolean;
   showPendingApprovalsSection: boolean;
   defaultProjectPage: ProjectPage;
+  deadlineFormat: DeadlineFormat;
 }
 
 export const defaults: Preferences = {
@@ -33,6 +35,7 @@ export const defaults: Preferences = {
   showOverdueSection: true,
   showPendingApprovalsSection: true,
   defaultProjectPage: 'DASHBOARD',
+  deadlineFormat: 'ABSOLUTE',
 };
 
 export const PREFERENCES_STORAGE_KEY = STORAGE_KEY;
