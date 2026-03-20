@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
@@ -11,6 +11,7 @@ import { useMilestones } from './useMilestones';
 import { useProject } from '../projects/useProjects';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { usePreferences, type SortOrder } from '../../hooks/usePreferences';
 import type { JobPriority, JobResponse, JobStatus, MilestoneResponse } from '../../types';
 
 function JobListSkeleton() {
@@ -33,7 +34,7 @@ function JobListSkeleton() {
 }
 
 type Filter = 'ALL' | JobStatus;
-type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status' | 'priority';
+type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status' | 'priority' | 'createdAt';
 type SortDir = 'asc' | 'desc';
 type ViewMode = 'flat' | 'grouped';
 
@@ -89,6 +90,8 @@ function sortJobs(jobs: JobResponse[], sortKey: SortKey, sortDir: SortDir): JobR
       const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
       const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
       cmp = da - db;
+    } else if (sortKey === 'createdAt') {
+      cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     } else if (sortKey === 'status') {
       cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
     } else if (sortKey === 'priority') {
@@ -100,6 +103,15 @@ function sortJobs(jobs: JobResponse[], sortKey: SortKey, sortDir: SortDir): JobR
     }
     return sortDir === 'asc' ? cmp : -cmp;
   });
+}
+
+function sortOrderToKeyDir(order: SortOrder): { key: SortKey; dir: SortDir } {
+  switch (order) {
+    case 'DEADLINE_ASC':  return { key: 'deadline',   dir: 'asc'  };
+    case 'DEADLINE_DESC': return { key: 'deadline',   dir: 'desc' };
+    case 'PRIORITY_DESC': return { key: 'priority',   dir: 'asc'  };
+    case 'CREATED_DESC':  return { key: 'createdAt',  dir: 'desc' };
+  }
 }
 
 interface JobCardProps {
@@ -294,17 +306,19 @@ export default function JobListPage() {
   const { projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   usePageTitle('Jobs', project?.name);
+  const { prefs } = usePreferences();
   const [searchParams, setSearchParams] = useSearchParams();
   const statusParam = searchParams.get('status');
   const filter: Filter = statusParam && FILTERS.some((f) => f.key === statusParam)
     ? (statusParam as Filter)
-    : 'ALL';
+    : prefs.defaultStatusTab;
   const setFilter = (key: Filter) => {
     if (key === 'ALL') setSearchParams({}, { replace: true });
     else setSearchParams({ status: key }, { replace: true });
   };
-  const [sortKey, setSortKey] = useState<SortKey>('status');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const initSort = sortOrderToKeyDir(prefs.defaultSortOrder);
+  const [sortKey, setSortKey] = useState<SortKey>(initSort.key);
+  const [sortDir, setSortDir] = useState<SortDir>(initSort.dir);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
@@ -312,12 +326,28 @@ export default function JobListPage() {
   const [milestoneFilter, setMilestoneFilter] = useState<string | 'ALL'>('ALL');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
-  const { data: milestones = [] } = useMilestones(projectId);
+  const { data: milestones = [], isLoading: milestonesLoading } = useMilestones(projectId);
 
   const hasMilestones = milestones.length > 0;
   const milestoneFilterActive = milestoneFilter !== 'ALL';
 
-  const [viewMode, setViewMode] = useState<ViewMode>(() => hasMilestones ? 'grouped' : 'flat');
+  const [viewMode, setViewMode] = useState<ViewMode>('flat');
+  const viewModeInitRef = useRef(false);
+  const accordionInitRef = useRef(false);
+
+  useEffect(() => {
+    if (viewModeInitRef.current || milestonesLoading) return;
+    viewModeInitRef.current = true;
+    setViewMode(prefs.defaultViewMode === 'GROUPED' && hasMilestones ? 'grouped' : 'flat');
+  }, [milestonesLoading, hasMilestones, prefs.defaultViewMode]);
+
+  useEffect(() => {
+    if (accordionInitRef.current || milestonesLoading) return;
+    accordionInitRef.current = true;
+    if (prefs.milestoneAccordionState === 'COLLAPSED') {
+      setCollapsedGroups(new Set(milestones.map((ms) => ms.id)));
+    }
+  }, [milestonesLoading, milestones, prefs.milestoneAccordionState]);
 
   const effectiveViewMode: ViewMode = milestoneFilterActive ? 'flat' : viewMode;
 
@@ -349,8 +379,11 @@ export default function JobListPage() {
     COMPLETED: jobs.filter((j) => j.status === 'COMPLETED').length,
   };
 
-  const filtered = filter === 'ALL' ? jobs : jobs.filter((j) => j.status === filter);
+  const filtered = filter === 'ALL'
+    ? (prefs.hideCompletedFromAll ? jobs.filter((j) => j.status !== 'COMPLETED') : jobs)
+    : jobs.filter((j) => j.status === filter);
   const sorted = sortJobs(filtered, sortKey, sortDir);
+  const allCount = prefs.hideCompletedFromAll ? jobs.filter((j) => j.status !== 'COMPLETED').length : jobs.length;
 
   if (isLoading) {
     return (
@@ -423,7 +456,7 @@ export default function JobListPage() {
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 min-w-max sm:min-w-0">
         {FILTERS.map(({ key, label }) => {
-          const count = key === 'ALL' ? jobs.length : counts[key as JobStatus];
+          const count = key === 'ALL' ? allCount : counts[key as JobStatus];
           const isActive = filter === key;
           const hasJobs = count > 0;
           const colors = key !== 'ALL' ? STATUS_COLORS[key as JobStatus] : null;
