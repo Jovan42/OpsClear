@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
 import ApiKeySection from './ApiKeySection';
 import { usePreferences } from '../../hooks/usePreferences';
 import type {
   Theme, ViewMode, AccordionState, StatusTab,
-  SortOrder, DeadlineFormat, ProjectPage,
+  SortOrder, DeadlineFormat, ProjectPage, ProgressFormat,
 } from '../../hooks/usePreferences';
 import { usePageTitle } from '../../hooks/usePageTitle';
 
@@ -57,7 +58,7 @@ function SelectControl<T extends string>({ value, options, onChange }: SelectCon
 interface SettingRowProps {
   readonly label: string;
   readonly description: string;
-  readonly children: React.ReactNode;
+  readonly children: ReactNode;
 }
 
 function SettingRow({ label, description, children }: SettingRowProps) {
@@ -124,6 +125,11 @@ const PROJECT_PAGE_OPTIONS: { value: ProjectPage; label: string }[] = [
   { value: 'DASHBOARD', label: 'Dashboard' },
   { value: 'JOBS', label: 'Jobs' },
   { value: 'APPROVALS', label: 'Approvals' },
+];
+
+const PROGRESS_FORMAT_OPTIONS: { value: ProgressFormat; label: string }[] = [
+  { value: 'FRACTION', label: 'Fraction' },
+  { value: 'PERCENTAGE', label: 'Percentage' },
 ];
 
 // ---- page ----
@@ -217,6 +223,18 @@ export default function SettingsPage() {
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
           <SettingRow label="Default project page" description="Which page opens when you navigate to a project.">
             <SegmentedControl value={prefs.defaultProjectPage} options={PROJECT_PAGE_OPTIONS} onChange={(v) => update({ defaultProjectPage: v })} />
+          </SettingRow>
+        </div>
+      </section>
+
+      {/* Milestones */}
+      <section>
+        <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+          Milestones
+        </h2>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+          <SettingRow label="Progress format" description="How milestone progress is displayed (e.g. 4/6 or 67%).">
+            <SegmentedControl value={prefs.milestoneProgressFormat} options={PROGRESS_FORMAT_OPTIONS} onChange={(v) => update({ milestoneProgressFormat: v })} />
           </SettingRow>
         </div>
       </section>

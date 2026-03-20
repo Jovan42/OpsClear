@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMilestones, useDeleteMilestone } from '../jobs/useMilestones';
+import { useJobList } from '../jobs/useJobs';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useProject } from '../projects/useProjects';
+import { usePreferences } from '../../hooks/usePreferences';
 import MilestoneFormModal from './MilestoneFormModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
+import ProgressBar from '../../components/ProgressBar';
 import type { MilestoneResponse } from '../../types';
 
 function formatDeadline(iso: string): string {
@@ -40,12 +43,15 @@ function LoadingSkeleton() {
 interface MilestoneRowProps {
   milestone: MilestoneResponse;
   projectId: string;
+  completed: number;
+  total: number;
   onEdit: (milestone: MilestoneResponse) => void;
   onDelete: (milestone: MilestoneResponse) => void;
 }
 
-function MilestoneRow({ milestone, projectId, onEdit, onDelete }: Readonly<MilestoneRowProps>) {
+function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete }: Readonly<MilestoneRowProps>) {
   const overdue = milestone.deadline ? isOverdue(milestone.deadline) : false;
+  const { prefs } = usePreferences();
 
   return (
     <div className="flex items-start justify-between gap-4 p-5">
@@ -67,6 +73,7 @@ function MilestoneRow({ milestone, projectId, onEdit, onDelete }: Readonly<Miles
             {overdue ? '⚠ Overdue · ' : ''}Due {formatDeadline(milestone.deadline)}
           </p>
         )}
+        <ProgressBar completed={completed} total={total} format={prefs.milestoneProgressFormat} />
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <Link
@@ -95,6 +102,7 @@ export default function MilestonesPage() {
   const { projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   const { data: milestones = [], isLoading, isError, refetch } = useMilestones(projectId);
+  const { data: allJobs = [] } = useJobList(projectId);
   const deleteMilestone = useDeleteMilestone(projectId);
 
   usePageTitle('Milestones', project?.name);
@@ -134,15 +142,21 @@ export default function MilestonesPage() {
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-            {milestones.map((ms) => (
-              <MilestoneRow
-                key={ms.id}
-                milestone={ms}
-                projectId={projectId}
-                onEdit={setEditing}
-                onDelete={setDeleting}
-              />
-            ))}
+            {milestones.map((ms) => {
+              const msJobs = allJobs.filter((j) => j.milestoneId === ms.id);
+              const completedCount = msJobs.filter((j) => j.status === 'COMPLETED').length;
+              return (
+                <MilestoneRow
+                  key={ms.id}
+                  milestone={ms}
+                  projectId={projectId}
+                  completed={completedCount}
+                  total={msJobs.length}
+                  onEdit={setEditing}
+                  onDelete={setDeleting}
+                />
+              );
+            })}
           </div>
         )}
       </div>

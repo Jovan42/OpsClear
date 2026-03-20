@@ -9,6 +9,7 @@ export type StatusTab = 'ALL' | 'NEW' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED';
 export type SortOrder = 'DEADLINE_ASC' | 'DEADLINE_DESC' | 'PRIORITY_DESC' | 'CREATED_DESC';
 export type ProjectPage = 'DASHBOARD' | 'JOBS' | 'APPROVALS';
 export type DeadlineFormat = 'ABSOLUTE' | 'RELATIVE';
+export type ProgressFormat = 'FRACTION' | 'PERCENTAGE';
 
 export interface Preferences {
   theme: Theme;
@@ -22,6 +23,7 @@ export interface Preferences {
   showPendingApprovalsSection: boolean;
   defaultProjectPage: ProjectPage;
   deadlineFormat: DeadlineFormat;
+  milestoneProgressFormat: ProgressFormat;
 }
 
 export const defaults: Preferences = {
@@ -36,6 +38,7 @@ export const defaults: Preferences = {
   showPendingApprovalsSection: true,
   defaultProjectPage: 'DASHBOARD',
   deadlineFormat: 'ABSOLUTE',
+  milestoneProgressFormat: 'FRACTION',
 };
 
 export const PREFERENCES_STORAGE_KEY = STORAGE_KEY;
