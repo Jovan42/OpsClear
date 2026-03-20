@@ -3,12 +3,28 @@ import { createContext, useContext } from 'react';
 const STORAGE_KEY = 'opsclear:preferences';
 
 export type Theme = 'light' | 'dark' | 'system';
+export type ViewMode = 'GROUPED' | 'FLAT';
+export type AccordionState = 'EXPANDED' | 'COLLAPSED';
+export type StatusTab = 'ALL' | 'NEW' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED';
+export type SortOrder = 'DEADLINE_ASC' | 'DEADLINE_DESC' | 'PRIORITY_DESC' | 'CREATED_DESC';
 
 export interface Preferences {
   theme: Theme;
+  defaultViewMode: ViewMode;
+  milestoneAccordionState: AccordionState;
+  defaultStatusTab: StatusTab;
+  hideCompletedFromAll: boolean;
+  defaultSortOrder: SortOrder;
 }
 
-export const defaults: Preferences = { theme: 'system' };
+export const defaults: Preferences = {
+  theme: 'system',
+  defaultViewMode: 'GROUPED',
+  milestoneAccordionState: 'EXPANDED',
+  defaultStatusTab: 'ALL',
+  hideCompletedFromAll: false,
+  defaultSortOrder: 'DEADLINE_ASC',
+};
 
 export const PREFERENCES_STORAGE_KEY = STORAGE_KEY;
 

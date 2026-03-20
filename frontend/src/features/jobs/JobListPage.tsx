@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
@@ -11,6 +11,7 @@ import { useMilestones } from './useMilestones';
 import { useProject } from '../projects/useProjects';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { usePreferences, type SortOrder } from '../../hooks/usePreferences';
 import type { JobPriority, JobResponse, JobStatus, MilestoneResponse } from '../../types';
 
 function JobListSkeleton() {
@@ -33,7 +34,7 @@ function JobListSkeleton() {
 }
 
 type Filter = 'ALL' | JobStatus;
-type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status' | 'priority';
+type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status' | 'priority' | 'createdAt';
 type SortDir = 'asc' | 'desc';
 type ViewMode = 'flat' | 'grouped';
 
@@ -89,6 +90,8 @@ function sortJobs(jobs: JobResponse[], sortKey: SortKey, sortDir: SortDir): JobR
       const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
       const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
       cmp = da - db;
+    } else if (sortKey === 'createdAt') {
+      cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     } else if (sortKey === 'status') {
       cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
     } else if (sortKey === 'priority') {
@@ -100,6 +103,15 @@ function sortJobs(jobs: JobResponse[], sortKey: SortKey, sortDir: SortDir): JobR
     }
     return sortDir === 'asc' ? cmp : -cmp;
   });
+}
+
+function sortOrderToKeyDir(order: SortOrder): { key: SortKey; dir: SortDir } {
+  switch (order) {
+    case 'DEADLINE_ASC':  return { key: 'deadline',   dir: 'asc'  };
+    case 'DEADLINE_DESC': return { key: 'deadline',   dir: 'desc' };
+    case 'PRIORITY_DESC': return { key: 'priority',   dir: 'asc'  };
+    case 'CREATED_DESC':  return { key: 'createdAt',  dir: 'desc' };
+  }
 }
 
 interface JobCardProps {
@@ -294,30 +306,51 @@ export default function JobListPage() {
   const { projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   usePageTitle('Jobs', project?.name);
+  const { prefs } = usePreferences();
   const [searchParams, setSearchParams] = useSearchParams();
   const statusParam = searchParams.get('status');
   const filter: Filter = statusParam && FILTERS.some((f) => f.key === statusParam)
     ? (statusParam as Filter)
     : 'ALL';
   const setFilter = (key: Filter) => {
-    if (key === 'ALL') setSearchParams({}, { replace: true });
-    else setSearchParams({ status: key }, { replace: true });
+    setSearchParams({ status: key }, { replace: true });
   };
-  const [sortKey, setSortKey] = useState<SortKey>('status');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  useEffect(() => {
+    if (!statusParam) {
+      setSearchParams({ status: prefs.defaultStatusTab }, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const initSort = sortOrderToKeyDir(prefs.defaultSortOrder);
+  const [sortKey, setSortKey] = useState<SortKey>(initSort.key);
+  const [sortDir, setSortDir] = useState<SortDir>(initSort.dir);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [priorityFilter, setPriorityFilter] = useState<JobPriority | 'ALL'>('ALL');
   const [milestoneFilter, setMilestoneFilter] = useState<string | 'ALL'>('ALL');
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-
   const { data: milestones = [] } = useMilestones(projectId);
 
   const hasMilestones = milestones.length > 0;
   const milestoneFilterActive = milestoneFilter !== 'ALL';
 
-  const [viewMode, setViewMode] = useState<ViewMode>(() => hasMilestones ? 'grouped' : 'flat');
+  // viewMode: preference drives the default; user toggle sets an explicit override
+  const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
+  const viewMode: ViewMode = viewModeOverride ?? (prefs.defaultViewMode === 'GROUPED' && hasMilestones ? 'grouped' : 'flat');
+
+  // collapsedGroups: derive from preference + user toggles (XOR: toggling flips the preference default)
+  const [userToggles, setUserToggles] = useState<Set<string>>(new Set());
+  const collapsedGroups = useMemo(() => {
+    const defaultCollapsed = prefs.milestoneAccordionState === 'COLLAPSED';
+    const allKeys = [...milestones.map((ms) => ms.id), '__ungrouped__'];
+    const result = new Set<string>();
+    for (const key of allKeys) {
+      const isCollapsed = userToggles.has(key) ? !defaultCollapsed : defaultCollapsed;
+      if (isCollapsed) result.add(key);
+    }
+    return result;
+  }, [milestones, prefs.milestoneAccordionState, userToggles]);
 
   const effectiveViewMode: ViewMode = milestoneFilterActive ? 'flat' : viewMode;
 
@@ -327,7 +360,7 @@ export default function JobListPage() {
   }
 
   function toggleGroup(key: string) {
-    setCollapsedGroups((prev) => {
+    setUserToggles((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -349,8 +382,10 @@ export default function JobListPage() {
     COMPLETED: jobs.filter((j) => j.status === 'COMPLETED').length,
   };
 
-  const filtered = filter === 'ALL' ? jobs : jobs.filter((j) => j.status === filter);
+  const activeJobs = prefs.hideCompletedFromAll ? jobs.filter((j) => j.status !== 'COMPLETED') : jobs;
+  const filtered = filter === 'ALL' ? activeJobs : jobs.filter((j) => j.status === filter);
   const sorted = sortJobs(filtered, sortKey, sortDir);
+  const allCount = activeJobs.length;
 
   if (isLoading) {
     return (
@@ -407,7 +442,7 @@ export default function JobListPage() {
         )}
         {hasMilestones && !milestoneFilterActive && (
           <button
-            onClick={() => setViewMode((v) => v === 'grouped' ? 'flat' : 'grouped')}
+            onClick={() => setViewModeOverride(viewMode === 'grouped' ? 'flat' : 'grouped')}
             className={`rounded-lg border px-3 py-2 text-sm transition-colors cursor-pointer ${
               effectiveViewMode === 'grouped'
                 ? 'bg-brand text-white border-brand'
@@ -423,7 +458,7 @@ export default function JobListPage() {
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 min-w-max sm:min-w-0">
         {FILTERS.map(({ key, label }) => {
-          const count = key === 'ALL' ? jobs.length : counts[key as JobStatus];
+          const count = key === 'ALL' ? allCount : counts[key as JobStatus];
           const isActive = filter === key;
           const hasJobs = count > 0;
           const colors = key !== 'ALL' ? STATUS_COLORS[key as JobStatus] : null;
