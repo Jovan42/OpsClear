@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
@@ -33,6 +34,11 @@ public class Public extends SchemaImpl {
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.api_keys</code>.
+     */
+    public final ApiKeys API_KEYS = ApiKeys.API_KEYS;
 
     /**
      * The table <code>public.approvals</code>.
@@ -90,6 +96,7 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            ApiKeys.API_KEYS,
             Approvals.APPROVALS,
             Jobs.JOBS,
             Milestones.MILESTONES,

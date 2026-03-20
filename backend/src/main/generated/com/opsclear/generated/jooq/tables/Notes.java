@@ -73,7 +73,7 @@ public class Notes extends TableImpl<NotesRecord> {
     /**
      * The column <code>public.notes.content</code>.
      */
-    public final TableField<NotesRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.VARCHAR(2000).nullable(false), this, "");
+    public final TableField<NotesRecord, String> CONTENT = createField(DSL.name("content"), SQLDataType.VARCHAR(10000).nullable(false), this, "");
 
     /**
      * The column <code>public.notes.created_at</code>. Set by the database

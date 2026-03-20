@@ -80,7 +80,7 @@ public class Approvals extends TableImpl<ApprovalsRecord> {
     /**
      * The column <code>public.approvals.description</code>.
      */
-    public final TableField<ApprovalsRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.VARCHAR(500).nullable(false), this, "");
+    public final TableField<ApprovalsRecord, String> DESCRIPTION = createField(DSL.name("description"), SQLDataType.VARCHAR(2000).nullable(false), this, "");
 
     /**
      * The column <code>public.approvals.status</code>.

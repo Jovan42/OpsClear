@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
@@ -19,6 +20,11 @@ import com.opsclear.generated.jooq.tables.Users;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Tables {
+
+    /**
+     * The table <code>public.api_keys</code>.
+     */
+    public static final ApiKeys API_KEYS = ApiKeys.API_KEYS;
 
     /**
      * The table <code>public.approvals</code>.

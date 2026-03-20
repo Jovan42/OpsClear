@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
@@ -29,6 +30,8 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index IDX_API_KEYS_KEY_HASH = Internal.createIndex(DSL.name("idx_api_keys_key_hash"), ApiKeys.API_KEYS, new OrderField[] { ApiKeys.API_KEYS.KEY_HASH }, false);
+    public static final Index IDX_API_KEYS_USER_ID = Internal.createIndex(DSL.name("idx_api_keys_user_id"), ApiKeys.API_KEYS, new OrderField[] { ApiKeys.API_KEYS.USER_ID }, false);
     public static final Index IDX_APPROVALS_JOB_ID = Internal.createIndex(DSL.name("idx_approvals_job_id"), Approvals.APPROVALS, new OrderField[] { Approvals.APPROVALS.JOB_ID }, false);
     public static final Index IDX_APPROVALS_STATUS = Internal.createIndex(DSL.name("idx_approvals_status"), Approvals.APPROVALS, new OrderField[] { Approvals.APPROVALS.STATUS }, false);
     public static final Index IDX_BLOCK_REASONS_PROJECT = Internal.createIndex(DSL.name("idx_block_reasons_project"), ProjectBlockReasons.PROJECT_BLOCK_REASONS, new OrderField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.PROJECT_ID }, false);
