@@ -117,6 +117,14 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/milestones/" + milestoneId;
     }
 
+    // --- API keys ---
+
+    static final String API_KEYS = "/api/user/api-keys";
+
+    static String apiKey(UUID keyId) {
+        return "/api/user/api-keys/" + keyId;
+    }
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {

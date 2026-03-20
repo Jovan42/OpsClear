@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq;
 
 
+import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
@@ -12,6 +13,7 @@ import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
+import com.opsclear.generated.jooq.tables.records.ApiKeysRecord;
 import com.opsclear.generated.jooq.tables.records.ApprovalsRecord;
 import com.opsclear.generated.jooq.tables.records.JobsRecord;
 import com.opsclear.generated.jooq.tables.records.MilestonesRecord;
@@ -38,6 +40,8 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<ApiKeysRecord> API_KEYS_KEY_HASH_KEY = Internal.createUniqueKey(ApiKeys.API_KEYS, DSL.name("api_keys_key_hash_key"), new TableField[] { ApiKeys.API_KEYS.KEY_HASH }, true);
+    public static final UniqueKey<ApiKeysRecord> API_KEYS_PKEY = Internal.createUniqueKey(ApiKeys.API_KEYS, DSL.name("api_keys_pkey"), new TableField[] { ApiKeys.API_KEYS.ID }, true);
     public static final UniqueKey<ApprovalsRecord> APPROVALS_PKEY = Internal.createUniqueKey(Approvals.APPROVALS, DSL.name("approvals_pkey"), new TableField[] { Approvals.APPROVALS.ID }, true);
     public static final UniqueKey<JobsRecord> JOBS_PKEY = Internal.createUniqueKey(Jobs.JOBS, DSL.name("jobs_pkey"), new TableField[] { Jobs.JOBS.ID }, true);
     public static final UniqueKey<MilestonesRecord> MILESTONES_PKEY = Internal.createUniqueKey(Milestones.MILESTONES, DSL.name("milestones_pkey"), new TableField[] { Milestones.MILESTONES.ID }, true);

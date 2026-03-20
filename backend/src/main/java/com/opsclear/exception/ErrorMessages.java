@@ -68,6 +68,13 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class ApiKey {
+        public static final String NOT_FOUND = "API key not found";
+
+        private ApiKey() {
+        }
+    }
+
     public static final class Approval {
         public static final String NOT_FOUND = "Approval not found";
         public static final String ALREADY_DECIDED = "This approval has already been decided";
