@@ -8,7 +8,8 @@ import com.opsclear.service.NoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import com.opsclear.security.SecurityUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,8 +33,8 @@ public class NoteController {
             @PathVariable UUID projectId,
             @PathVariable UUID jobId,
             @Valid @RequestBody CreateNoteRequest request,
-            JwtAuthenticationToken auth) {
-        UUID callerId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
         NoteModel note = noteService.create(projectId, jobId, request.getContent(), callerId);
         return ResponseEntity.status(201).body(NoteResponse.from(note));
     }
@@ -42,8 +43,8 @@ public class NoteController {
     public ResponseEntity<List<NoteResponse>> listByJob(
             @PathVariable UUID projectId,
             @PathVariable UUID jobId,
-            JwtAuthenticationToken auth) {
-        UUID callerId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
         List<NoteResponse> notes = noteService.listByJob(projectId, jobId, callerId)
                 .stream()
                 .map(NoteResponse::from)
@@ -54,8 +55,8 @@ public class NoteController {
     @GetMapping("/api/projects/{projectId}/notes")
     public ResponseEntity<List<NotesByJobResponse>> listByProject(
             @PathVariable UUID projectId,
-            JwtAuthenticationToken auth) {
-        UUID callerId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
         List<NoteModel> flat = noteService.listByProject(projectId, callerId);
         return ResponseEntity.ok(groupByJob(flat));
     }

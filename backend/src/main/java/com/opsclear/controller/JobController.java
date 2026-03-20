@@ -9,7 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import com.opsclear.security.SecurityUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,8 +37,8 @@ public class JobController {
     public ResponseEntity<JobResponse> create(
             @PathVariable UUID projectId,
             @Valid @RequestBody CreateJobRequest request,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(JobResponse.from(jobService.create(projectId, request, userId)));
     }
@@ -48,8 +49,8 @@ public class JobController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) JobPriority priority,
             @RequestParam(required = false) UUID milestoneId,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         List<JobResponse> jobs = jobService.list(projectId, userId, q, priority, milestoneId)
                 .stream()
                 .map(JobResponse::from)
@@ -61,8 +62,8 @@ public class JobController {
     public ResponseEntity<JobResponse> getById(
             @PathVariable UUID projectId,
             @PathVariable UUID jobId,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.ok(JobResponse.from(jobService.getById(projectId, jobId, userId)));
     }
 
@@ -71,8 +72,8 @@ public class JobController {
             @PathVariable UUID projectId,
             @PathVariable UUID jobId,
             @Valid @RequestBody UpdateJobRequest request,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.ok(JobResponse.from(jobService.update(projectId, jobId, request, userId)));
     }
 
@@ -81,8 +82,8 @@ public class JobController {
             @PathVariable UUID projectId,
             @PathVariable UUID jobId,
             @Valid @RequestBody UpdateJobStatusRequest request,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.ok(JobResponse.from(
                 jobService.updateStatus(projectId, jobId, request.getStatus(), request.getReason(), userId)));
     }
@@ -91,8 +92,8 @@ public class JobController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID projectId,
             @PathVariable UUID jobId,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         jobService.softDelete(projectId, jobId, userId);
         return ResponseEntity.noContent().build();
     }

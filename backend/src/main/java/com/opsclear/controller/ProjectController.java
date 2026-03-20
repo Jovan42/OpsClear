@@ -11,7 +11,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import com.opsclear.security.SecurityUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,8 +37,8 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<ProjectResponse> create(
             @Valid @RequestBody CreateProjectRequest request,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         ProjectModel project = projectService.create(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ProjectResponse.from(project));
@@ -46,8 +47,8 @@ public class ProjectController {
     @GetMapping
     public ResponseEntity<List<ProjectResponse>> listMyProjects(
             @RequestParam(name = "status", required = false, defaultValue = "ACTIVE") String statusParam,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         ProjectStatus status = "ALL".equalsIgnoreCase(statusParam)
                 ? null : ProjectStatus.valueOf(statusParam.toUpperCase());
         List<ProjectResponse> projects = projectService.getProjectsForMember(userId, status)
@@ -60,8 +61,8 @@ public class ProjectController {
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponse> getById(
             @PathVariable UUID id,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         ProjectModel project = projectService.getById(id, userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
@@ -70,8 +71,8 @@ public class ProjectController {
     public ResponseEntity<ProjectResponse> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateProjectRequest request,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         ProjectModel project = projectService.update(id, request, userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
@@ -80,8 +81,8 @@ public class ProjectController {
     public ResponseEntity<ProjectResponse> updateStatus(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateProjectStatusRequest request,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         ProjectModel project = projectService.updateStatus(id, request.getStatus(), userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
@@ -89,8 +90,8 @@ public class ProjectController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID id,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         projectService.softDelete(id, userId);
         return ResponseEntity.noContent().build();
     }

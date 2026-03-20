@@ -82,7 +82,7 @@ public class ApiKeyService {
     // SHA-256 is guaranteed by the Java spec so that branch is unreachable,
     // but JaCoCo would count an explicit catch as an uncovered line.
     @lombok.SneakyThrows
-    static String sha256(String input) {
+    public static String sha256(String input) {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         return HexFormat.of().formatHex(hash);

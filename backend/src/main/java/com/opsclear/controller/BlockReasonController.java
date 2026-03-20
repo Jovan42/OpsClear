@@ -4,7 +4,8 @@ import com.opsclear.dto.BlockReasonResponse;
 import com.opsclear.service.BlockReasonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import com.opsclear.security.SecurityUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,8 +25,8 @@ public class BlockReasonController {
     @GetMapping
     public ResponseEntity<List<BlockReasonResponse>> list(
             @PathVariable UUID projectId,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         List<BlockReasonResponse> reasons = blockReasonService.listActive(projectId, userId)
                 .stream()
                 .map(BlockReasonResponse::from)
@@ -37,8 +38,8 @@ public class BlockReasonController {
     public ResponseEntity<Void> delete(
             @PathVariable UUID projectId,
             @PathVariable UUID reasonId,
-            JwtAuthenticationToken auth) {
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID userId = SecurityUtils.resolveUserId(auth);
         blockReasonService.softDelete(projectId, reasonId, userId);
         return ResponseEntity.noContent().build();
     }

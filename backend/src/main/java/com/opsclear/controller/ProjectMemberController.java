@@ -9,7 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import com.opsclear.security.SecurityUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,8 +34,8 @@ public class ProjectMemberController {
     public ResponseEntity<ProjectMemberResponse> addMember(
             @PathVariable UUID projectId,
             @Valid @RequestBody AddMemberRequest request,
-            JwtAuthenticationToken auth) {
-        UUID requesterId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID requesterId = SecurityUtils.resolveUserId(auth);
         ProjectMemberModel member = projectMemberService.addMember(projectId, requesterId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ProjectMemberResponse.from(member));
@@ -43,8 +44,8 @@ public class ProjectMemberController {
     @GetMapping
     public ResponseEntity<List<ProjectMemberResponse>> listMembers(
             @PathVariable UUID projectId,
-            JwtAuthenticationToken auth) {
-        UUID requesterId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID requesterId = SecurityUtils.resolveUserId(auth);
         List<ProjectMemberResponse> members = projectMemberService.listMembers(projectId, requesterId)
                 .stream()
                 .map(ProjectMemberResponse::from)
@@ -57,8 +58,8 @@ public class ProjectMemberController {
             @PathVariable UUID projectId,
             @PathVariable UUID memberId,
             @Valid @RequestBody UpdateMemberRoleRequest request,
-            JwtAuthenticationToken auth) {
-        UUID requesterId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID requesterId = SecurityUtils.resolveUserId(auth);
         ProjectMemberModel member = projectMemberService.updateRole(
                 projectId, requesterId, memberId, request.getRole());
         return ResponseEntity.ok(ProjectMemberResponse.from(member));
@@ -68,8 +69,8 @@ public class ProjectMemberController {
     public ResponseEntity<Void> removeMember(
             @PathVariable UUID projectId,
             @PathVariable UUID memberId,
-            JwtAuthenticationToken auth) {
-        UUID requesterId = UUID.fromString(auth.getToken().getSubject());
+            Authentication auth) {
+        UUID requesterId = SecurityUtils.resolveUserId(auth);
         projectMemberService.removeMember(projectId, requesterId, memberId);
         return ResponseEntity.noContent().build();
     }

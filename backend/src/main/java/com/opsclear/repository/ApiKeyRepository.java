@@ -64,6 +64,20 @@ public class ApiKeyRepository {
                 .map(this::toModel);
     }
 
+    public Optional<ApiKeyModel> findByKeyHash(String keyHash) {
+        return dsl.selectFrom(API_KEYS)
+                .where(API_KEYS.KEY_HASH.eq(keyHash))
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
+    public void updateLastUsedAt(UUID id) {
+        dsl.update(API_KEYS)
+                .set(API_KEYS.LAST_USED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .where(API_KEYS.ID.eq(id))
+                .execute();
+    }
+
     public List<ApiKeyModel> findActiveByUserId(UUID userId) {
         return dsl.selectFrom(API_KEYS)
                 .where(API_KEYS.USER_ID.eq(userId))
