@@ -101,6 +101,27 @@ export interface PendingApprovalResponse {
   requestedAt: string;
 }
 
+// ---- API Keys ----
+
+export interface ApiKeyResponse {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  revokedAt: string | null;
+}
+
+export interface CreateApiKeyResponse {
+  id: string;
+  name: string;
+  key: string;
+  keyPrefix: string;
+  createdAt: string;
+  expiresAt: string | null;
+}
+
 // ---- Dashboard ----
 
 export interface JobSummary {

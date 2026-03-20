@@ -1,3 +1,4 @@
+import ApiKeySection from './ApiKeySection';
 import { usePreferences } from '../../hooks/usePreferences';
 import type {
   Theme, ViewMode, AccordionState, StatusTab,
@@ -219,6 +220,8 @@ export default function SettingsPage() {
           </SettingRow>
         </div>
       </section>
+
+      <ApiKeySection />
     </div>
   );
 }
