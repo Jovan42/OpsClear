@@ -127,7 +127,7 @@ export default function ProjectListPage() {
                 }`}
               >
                 <button
-                  onClick={() => navigate(`/projects/${project.id}/dashboard`)}
+                  onClick={() => navigate(`/projects/${project.id}`)}
                   className="w-full text-left cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">

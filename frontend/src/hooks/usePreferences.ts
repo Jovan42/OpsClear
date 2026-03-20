@@ -7,6 +7,7 @@ export type ViewMode = 'GROUPED' | 'FLAT';
 export type AccordionState = 'EXPANDED' | 'COLLAPSED';
 export type StatusTab = 'ALL' | 'NEW' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED';
 export type SortOrder = 'DEADLINE_ASC' | 'DEADLINE_DESC' | 'PRIORITY_DESC' | 'CREATED_DESC';
+export type ProjectPage = 'DASHBOARD' | 'JOBS' | 'APPROVALS';
 
 export interface Preferences {
   theme: Theme;
@@ -18,6 +19,7 @@ export interface Preferences {
   showBlockedSection: boolean;
   showOverdueSection: boolean;
   showPendingApprovalsSection: boolean;
+  defaultProjectPage: ProjectPage;
 }
 
 export const defaults: Preferences = {
@@ -30,6 +32,7 @@ export const defaults: Preferences = {
   showBlockedSection: true,
   showOverdueSection: true,
   showPendingApprovalsSection: true,
+  defaultProjectPage: 'DASHBOARD',
 };
 
 export const PREFERENCES_STORAGE_KEY = STORAGE_KEY;
