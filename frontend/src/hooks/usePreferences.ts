@@ -15,6 +15,9 @@ export interface Preferences {
   defaultStatusTab: StatusTab;
   hideCompletedFromAll: boolean;
   defaultSortOrder: SortOrder;
+  showBlockedSection: boolean;
+  showOverdueSection: boolean;
+  showPendingApprovalsSection: boolean;
 }
 
 export const defaults: Preferences = {
@@ -24,6 +27,9 @@ export const defaults: Preferences = {
   defaultStatusTab: 'ALL',
   hideCompletedFromAll: false,
   defaultSortOrder: 'DEADLINE_ASC',
+  showBlockedSection: true,
+  showOverdueSection: true,
+  showPendingApprovalsSection: true,
 };
 
 export const PREFERENCES_STORAGE_KEY = STORAGE_KEY;

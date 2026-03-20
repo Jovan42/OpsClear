@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { usePreferences } from '../../hooks/usePreferences';
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import Markdown from '../../components/Markdown';
 import PageError from '../../components/PageError';
@@ -278,6 +279,7 @@ export default function DashboardPage() {
   const role = useProjectRole(projectId);
   const { data, isLoading, isError, refetch } = useDashboard(projectId);
   usePageTitle('Dashboard', project?.name);
+  const { prefs } = usePreferences();
 
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
@@ -337,7 +339,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Blocked jobs */}
-      {blockedJobs.length > 0 && (
+      {prefs.showBlockedSection && blockedJobs.length > 0 && (
         <Section title="Blocked" count={blockedJobs.length}>
           {blockedJobs.map((job) => (
             <BlockedJobRow key={job.id} job={job} projectId={projectId} />
@@ -346,7 +348,7 @@ export default function DashboardPage() {
       )}
 
       {/* Overdue jobs */}
-      {overdueJobs.length > 0 && (
+      {prefs.showOverdueSection && overdueJobs.length > 0 && (
         <Section title="Overdue" count={overdueJobs.length}>
           {overdueJobs.map((job) => (
             <OverdueJobRow key={job.id} job={job} projectId={projectId} />
@@ -355,7 +357,7 @@ export default function DashboardPage() {
       )}
 
       {/* Pending approvals (owner/admin only) */}
-      {isOwnerOrAdmin && pendingApprovals.length > 0 && (
+      {prefs.showPendingApprovalsSection && isOwnerOrAdmin && pendingApprovals.length > 0 && (
         <Section
           title="Pending Approvals"
           count={pendingApprovals.length}
@@ -377,7 +379,10 @@ export default function DashboardPage() {
       )}
 
       {/* Empty state */}
-      {blockedJobs.length === 0 && overdueJobs.length === 0 && (!isOwnerOrAdmin || pendingApprovals.length === 0) && summary.total > 0 && (
+      {(!prefs.showBlockedSection || blockedJobs.length === 0) &&
+        (!prefs.showOverdueSection || overdueJobs.length === 0) &&
+        (!prefs.showPendingApprovalsSection || !isOwnerOrAdmin || pendingApprovals.length === 0) &&
+        summary.total > 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <p className="text-gray-500 dark:text-gray-400 text-sm">All clear — no blocked, overdue, or pending items.</p>
         </div>
