@@ -9,6 +9,14 @@ import ApprovalQueuePage from './features/approvals/ApprovalQueuePage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import SettingsPage from './features/settings/SettingsPage';
 import DesignPage from './dev/DesignPage';
+import { usePreferences } from './hooks/usePreferences';
+
+const PAGE_PATHS = { DASHBOARD: 'dashboard', JOBS: 'jobs', APPROVALS: 'approvals' } as const;
+
+function ProjectRedirect() {
+  const { prefs } = usePreferences();
+  return <Navigate to={PAGE_PATHS[prefs.defaultProjectPage]} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -18,7 +26,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/projects" replace /> },
       { path: 'projects', element: <ProjectListPage /> },
-      { path: 'projects/:projectId', element: <Navigate to="dashboard" replace /> },
+      { path: 'projects/:projectId', element: <ProjectRedirect /> },
       { path: 'projects/:projectId/dashboard', element: <DashboardPage /> },
       { path: 'projects/:projectId/jobs', element: <JobListPage /> },
       { path: 'projects/:projectId/jobs/:jobId', element: <JobDetailPage /> },

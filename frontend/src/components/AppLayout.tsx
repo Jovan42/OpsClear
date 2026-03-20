@@ -51,7 +51,7 @@ function ProjectBreadcrumb({ projectId }: Readonly<{ projectId: string }>) {
     <>
       <span className="text-white/40 text-lg font-light">/</span>
       <Link
-        to={`/projects/${projectId}/dashboard`}
+        to={`/projects/${projectId}`}
         className="text-sm font-medium text-white/80 hover:text-white transition-colors truncate max-w-[160px] sm:max-w-xs"
       >
         {project.name}
