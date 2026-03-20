@@ -9,14 +9,7 @@ import ApprovalQueuePage from './features/approvals/ApprovalQueuePage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import SettingsPage from './features/settings/SettingsPage';
 import DesignPage from './dev/DesignPage';
-import { usePreferences } from './hooks/usePreferences';
-
-const PAGE_PATHS = { DASHBOARD: 'dashboard', JOBS: 'jobs', APPROVALS: 'approvals' } as const;
-
-function ProjectRedirect() {
-  const { prefs } = usePreferences();
-  return <Navigate to={PAGE_PATHS[prefs.defaultProjectPage]} replace />;
-}
+import ProjectRedirect from './components/ProjectRedirect';
 
 export const router = createBrowserRouter([
   {
