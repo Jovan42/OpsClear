@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePreferences } from '../../hooks/usePreferences';
+import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import Markdown from '../../components/Markdown';
 import PageError from '../../components/PageError';
@@ -194,13 +195,14 @@ function BlockedJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId
 
 function OverdueJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId: string }>) {
   const navigate = useNavigate();
+  const formatDeadline = useFormatDeadline();
   return (
     <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{job.title}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {job.assignedToName ?? 'Unassigned'}
-          {job.deadline && <> · due {formatDate(job.deadline)}</>}
+          {job.deadline && <> · due {formatDeadline(job.deadline, job.status).text}</>}
         </p>
       </div>
       <button

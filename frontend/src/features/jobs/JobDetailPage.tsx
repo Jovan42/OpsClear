@@ -19,6 +19,7 @@ import { useProject, useProjectMembers, useProjectRole } from '../projects/usePr
 import { useAuth } from '../../auth/AuthContext';
 import { useApprovals } from './useApprovals';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import Markdown from '../../components/Markdown';
 import type { JobStatus } from '../../types';
 
@@ -29,11 +30,6 @@ function formatDate(dateStr: string | null) {
     month: 'short',
     year: 'numeric',
   });
-}
-
-function isOverdue(deadline: string | null, status: JobStatus) {
-  if (!deadline || status === 'COMPLETED') return false;
-  return new Date(deadline) < new Date();
 }
 
 export default function JobDetailPage() {
@@ -48,6 +44,7 @@ export default function JobDetailPage() {
   const { data: milestones = [] } = useMilestones(projectId);
   const role = useProjectRole(projectId);
   usePageTitle(job?.title, project?.name);
+  const formatDeadline = useFormatDeadline();
   const { mutate: updateStatus, isPending: isStatusPending } = useUpdateJobStatus(projectId);
   const { mutate: deleteJob, isPending: isDeleting } = useDeleteJob(projectId);
 
@@ -179,13 +176,14 @@ export default function JobDetailPage() {
           </div>
           <div>
             <span className="text-gray-500 dark:text-gray-400">Deadline</span>
-            <p
-              className={`font-medium mt-0.5 ${
-                isOverdue(job.deadline, job.status) ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'
-              }`}
-            >
-              {formatDate(job.deadline)}
-            </p>
+            {(() => {
+              const d = formatDeadline(job.deadline, job.status);
+              return (
+                <p className={`font-medium mt-0.5 ${d.overdue ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}`}>
+                  {d.text}
+                </p>
+              );
+            })()}
           </div>
           <div>
             <span className="text-gray-500 dark:text-gray-400">Created</span>
