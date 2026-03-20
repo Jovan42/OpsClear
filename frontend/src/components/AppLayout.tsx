@@ -25,6 +25,9 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
       <NavLink to={`/projects/${projectId}/jobs`} className={linkClass}>
         Jobs
       </NavLink>
+      <NavLink to={`/projects/${projectId}/milestones`} className={linkClass}>
+        Milestones
+      </NavLink>
       {isOwnerOrAdmin && (
         <NavLink to={`/projects/${projectId}/approvals`} className={linkClass}>
           <span className="flex items-center gap-1.5">

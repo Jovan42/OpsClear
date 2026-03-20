@@ -316,7 +316,9 @@ export default function JobListPage() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [priorityFilter, setPriorityFilter] = useState<JobPriority | 'ALL'>('ALL');
-  const [milestoneFilter, setMilestoneFilter] = useState<string | 'ALL'>('ALL');
+  const [milestoneFilter, setMilestoneFilter] = useState<string | 'ALL'>(
+    searchParams.get('milestone') ?? 'ALL',
+  );
   const { data: milestones = [] } = useMilestones(projectId);
 
   const hasMilestones = milestones.length > 0;
