@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import { useCreateMilestone, useUpdateMilestone } from '../jobs/useMilestones';
@@ -13,28 +13,16 @@ interface Props {
 
 export default function MilestoneFormModal({ open, onClose, projectId, milestone }: Readonly<Props>) {
   const isEdit = !!milestone;
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [name, setName] = useState(milestone?.name ?? '');
+  const [description, setDescription] = useState(milestone?.description ?? '');
+  const [deadline, setDeadline] = useState(
+    milestone?.deadline ? milestone.deadline.substring(0, 10) : '',
+  );
 
   const create = useCreateMilestone(projectId);
   const update = useUpdateMilestone(projectId);
   const isPending = create.isPending || update.isPending;
   const isError = create.isError || update.isError;
-
-  useEffect(() => {
-    if (open) {
-      setName(milestone?.name ?? '');
-      setDescription(milestone?.description ?? '');
-      setDeadline(milestone?.deadline ? milestone.deadline.substring(0, 10) : '');
-      create.reset();
-      update.reset();
-    }
-  }, [open, milestone]);
-
-  function handleClose() {
-    onClose();
-  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,9 +33,9 @@ export default function MilestoneFormModal({ open, onClose, projectId, milestone
       deadline: deadline || undefined,
     };
     if (isEdit) {
-      update.mutate({ milestoneId: milestone.id, body }, { onSuccess: handleClose });
+      update.mutate({ milestoneId: milestone.id, body }, { onSuccess: onClose });
     } else {
-      create.mutate(body, { onSuccess: handleClose });
+      create.mutate(body, { onSuccess: onClose });
     }
   }
 
@@ -55,7 +43,7 @@ export default function MilestoneFormModal({ open, onClose, projectId, milestone
     'w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent';
 
   return (
-    <Modal open={open} onClose={handleClose} title={isEdit ? 'Edit Milestone' : 'New Milestone'}>
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit Milestone' : 'New Milestone'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -101,7 +89,7 @@ export default function MilestoneFormModal({ open, onClose, projectId, milestone
           </p>
         )}
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" type="button" onClick={handleClose}>
+          <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>
           <Button variant="primary" type="submit" disabled={!name.trim()} loading={isPending}>

@@ -127,17 +127,10 @@ export default function MilestonesPage() {
 
         {milestones.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              No milestones yet. Create one to organise your jobs into phases.
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              No milestones yet.
             </p>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="mt-4"
-              onClick={() => setShowCreate(true)}
-            >
-              Create first milestone
-            </Button>
+            <Button onClick={() => setShowCreate(true)}>Create first milestone</Button>
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
@@ -155,12 +148,14 @@ export default function MilestonesPage() {
       </div>
 
       <MilestoneFormModal
+        key={showCreate ? 'create-open' : 'create-closed'}
         open={showCreate}
         onClose={() => setShowCreate(false)}
         projectId={projectId}
       />
 
       <MilestoneFormModal
+        key={editing?.id ?? 'edit-closed'}
         open={editing !== null}
         onClose={() => setEditing(null)}
         projectId={projectId}
