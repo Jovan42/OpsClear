@@ -429,6 +429,33 @@ class JobRelationshipIntegrationTest {
     }
 
     @Test
+    @DisplayName("Job detail should return relationship with null title and status when linked job is deleted")
+    void getJob_shouldHandleSoftDeletedLinkedJob() throws Exception {
+        JobModel source = createJob("Source job");
+        JobModel target = createJob("Target job");
+
+        mockMvc.perform(post(ApiPaths.jobRelationships(projectId, source.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetJobId": "%s", "type": "RELATED_TO"}
+                                """.formatted(target.getId())))
+                .andExpect(status().isCreated());
+
+        // Soft-delete the linked job
+        mockMvc.perform(delete(ApiPaths.job(projectId, target.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get(ApiPaths.job(projectId, source.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relationships.length()").value(1))
+                .andExpect(jsonPath("$.relationships[0].job.title").doesNotExist())
+                .andExpect(jsonPath("$.relationships[0].job.status").doesNotExist());
+    }
+
+    @Test
     @DisplayName("Job detail should include both OUTGOING and INCOMING relationships")
     void getJob_shouldIncludeBothSides_whenJobHasMultipleRelationships() throws Exception {
         JobModel center = createJob("Center job");

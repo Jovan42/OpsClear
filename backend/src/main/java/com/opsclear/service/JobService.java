@@ -102,9 +102,6 @@ public class JobService {
 
     private List<JobRelationshipEntry> fetchRelationships(UUID jobId) {
         List<JobRelationshipModel> raw = jobRelationshipRepository.findByJobId(jobId);
-        if (raw.isEmpty()) {
-            return List.of();
-        }
         List<UUID> linkedIds = raw.stream()
                 .map(r -> r.getSourceJobId().equals(jobId) ? r.getTargetJobId() : r.getSourceJobId())
                 .collect(Collectors.toList());

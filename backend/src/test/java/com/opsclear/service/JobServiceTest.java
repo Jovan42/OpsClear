@@ -463,6 +463,33 @@ class JobServiceTest {
     }
 
     @Test
+    @DisplayName("getById should handle missing linked job gracefully with null title and status")
+    void getById_shouldHandleMissingLinkedJob_withNullFields() {
+        UUID jobId = UUID.randomUUID();
+        UUID linkedJobId = UUID.randomUUID();
+        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Job").status(JobStatus.NEW).build();
+        JobRelationshipModel rel = JobRelationshipModel.builder()
+                .id(UUID.randomUUID())
+                .sourceJobId(jobId)
+                .targetJobId(linkedJobId)
+                .type(JobRelationshipType.RELATED_TO)
+                .createdBy(ownerId)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRelationshipRepository.findByJobId(jobId)).thenReturn(List.of(rel));
+        when(jobRepository.findByIds(List.of(linkedJobId))).thenReturn(List.of());
+
+        JobModel result = jobService.getById(projectId, jobId, ownerId);
+
+        assertThat(result.getRelationships()).hasSize(1);
+        assertThat(result.getRelationships().getFirst().getLinkedJobTitle()).isNull();
+        assertThat(result.getRelationships().getFirst().getLinkedJobStatus()).isNull();
+    }
+
+    @Test
     @DisplayName("getById should return empty relationships when job has none")
     void getById_shouldReturnEmptyRelationships_whenNone() {
         UUID jobId = UUID.randomUUID();
@@ -472,6 +499,7 @@ class JobServiceTest {
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
         when(jobRelationshipRepository.findByJobId(jobId)).thenReturn(List.of());
+        when(jobRepository.findByIds(List.of())).thenReturn(List.of());
 
         JobModel result = jobService.getById(projectId, jobId, ownerId);
 
