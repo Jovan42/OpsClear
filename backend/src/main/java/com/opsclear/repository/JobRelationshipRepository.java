@@ -8,7 +8,6 @@ import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,10 +19,6 @@ import static com.opsclear.generated.jooq.Tables.JOB_RELATIONSHIPS;
 public class JobRelationshipRepository {
 
     private final DSLContext dsl;
-
-    private static Instant toInstant(OffsetDateTime odt) {
-        return odt != null ? odt.toInstant() : null;
-    }
 
     public List<JobRelationshipModel> findByJobId(UUID jobId) {
         return dsl.select()
@@ -81,7 +76,7 @@ public class JobRelationshipRepository {
                 .targetJobId(r.get(JOB_RELATIONSHIPS.TARGET_JOB_ID))
                 .type(JobRelationshipType.valueOf(r.get(JOB_RELATIONSHIPS.TYPE)))
                 .createdBy(r.get(JOB_RELATIONSHIPS.CREATED_BY))
-                .createdAt(toInstant(r.get(JOB_RELATIONSHIPS.CREATED_AT)))
+                .createdAt(r.get(JOB_RELATIONSHIPS.CREATED_AT).toInstant())
                 .build();
     }
 }
