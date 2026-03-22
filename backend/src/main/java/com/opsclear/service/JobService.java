@@ -10,10 +10,14 @@ import com.opsclear.exception.ConflictException;
 import com.opsclear.model.BlockReasonModel;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
+import com.opsclear.model.JobRelationshipDirection;
+import com.opsclear.model.JobRelationshipEntry;
+import com.opsclear.model.JobRelationshipModel;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -26,7 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +40,7 @@ import java.util.UUID;
 public class JobService {
 
     private final JobRepository jobRepository;
+    private final JobRelationshipRepository jobRelationshipRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
@@ -89,7 +96,32 @@ public class JobService {
             throw new ForbiddenException(ErrorMessages.Job.ACCESS_DENIED_NOT_ASSIGNED);
         }
 
+        job.setRelationships(fetchRelationships(jobId));
         return job;
+    }
+
+    private List<JobRelationshipEntry> fetchRelationships(UUID jobId) {
+        List<JobRelationshipModel> raw = jobRelationshipRepository.findByJobId(jobId);
+        List<UUID> linkedIds = raw.stream()
+                .map(r -> r.getSourceJobId().equals(jobId) ? r.getTargetJobId() : r.getSourceJobId())
+                .collect(Collectors.toList());
+        Map<UUID, JobModel> linkedJobs = jobRepository.findByIds(linkedIds).stream()
+                .collect(Collectors.toMap(JobModel::getId, j -> j));
+        return raw.stream()
+                .map(r -> {
+                    boolean outgoing = r.getSourceJobId().equals(jobId);
+                    UUID linkedId = outgoing ? r.getTargetJobId() : r.getSourceJobId();
+                    JobModel linked = linkedJobs.get(linkedId);
+                    return JobRelationshipEntry.builder()
+                            .id(r.getId())
+                            .type(r.getType())
+                            .direction(outgoing ? JobRelationshipDirection.OUTGOING : JobRelationshipDirection.INCOMING)
+                            .linkedJobId(linkedId)
+                            .linkedJobTitle(linked != null ? linked.getTitle() : null)
+                            .linkedJobStatus(linked != null ? linked.getStatus() : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     @Transactional

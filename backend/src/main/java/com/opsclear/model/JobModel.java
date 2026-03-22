@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -34,6 +36,10 @@ public class JobModel {
 
     private UUID milestoneId;
     private String milestoneName; // resolved via JOIN, not a DB column
+
+    // Populated by JobService.getById — not stored in DB, empty on list responses
+    @Builder.Default
+    private List<JobRelationshipEntry> relationships = new ArrayList<>();
 
     // Blocking metadata — all null when not blocked
     private UUID blockedBy;
