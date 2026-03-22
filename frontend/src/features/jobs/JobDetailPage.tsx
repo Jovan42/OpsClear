@@ -13,6 +13,8 @@ import BlockModal from './components/BlockModal';
 import NoteThread from './components/NoteThread';
 import ApprovalList from './components/ApprovalList';
 import RequestApprovalModal from './components/RequestApprovalModal';
+import RelationshipsSection from './components/RelationshipsSection';
+import AddRelationshipModal from './components/AddRelationshipModal';
 import { useJob, useUpdateJobStatus, useDeleteJob } from './useJobs';
 import { useMilestones } from './useMilestones';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
@@ -55,6 +57,7 @@ export default function JobDetailPage() {
   const [notesExpanded, setNotesExpanded] = useState(true);
   const [approvalsExpanded, setApprovalsExpanded] = useState(false);
   const [kebabOpen, setKebabOpen] = useState(false);
+  const [addRelOpen, setAddRelOpen] = useState(false);
 
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
   const isProjectCompleted = project?.status === 'COMPLETED';
@@ -213,6 +216,16 @@ export default function JobDetailPage() {
         />
       </div>
 
+      {/* Relationships */}
+      <RelationshipsSection
+        projectId={projectId}
+        jobId={jobId}
+        relationships={job.relationships}
+        canManage={isOwnerOrAdmin}
+        onAdd={() => setAddRelOpen(true)}
+        projectCompleted={isProjectCompleted}
+      />
+
       {/* Notes accordion */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         <button
@@ -285,6 +298,14 @@ export default function JobDetailPage() {
         confirmLabel="Delete"
         variant="danger"
         isPending={isDeleting}
+      />
+
+      <AddRelationshipModal
+        open={addRelOpen}
+        onClose={() => setAddRelOpen(false)}
+        projectId={projectId}
+        jobId={jobId}
+        currentJobStatus={job.status}
       />
     </div>
   );
