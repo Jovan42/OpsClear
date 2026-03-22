@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
-import { useJobList, useCreateRelationship, useUpdateJobStatus } from '../useJobs';
-import type { JobRelationshipType, JobStatus } from '../../../types';
+import { useJobList, useCreateRelationship } from '../useJobs';
+import type { JobRelationshipType } from '../../../types';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   projectId: string;
   jobId: string;
-  currentJobStatus: JobStatus;
 }
 
 const RELATIONSHIP_TYPES: { value: JobRelationshipType; label: string; description: string }[] = [
@@ -18,15 +17,13 @@ const RELATIONSHIP_TYPES: { value: JobRelationshipType; label: string; descripti
   { value: 'DUPLICATES', label: 'Duplicates', description: 'This job duplicates the selected job' },
 ];
 
-export default function AddRelationshipModal({ open, onClose, projectId, jobId, currentJobStatus }: Props) {
+export default function AddRelationshipModal({ open, onClose, projectId, jobId }: Props) {
   const [selectedJobId, setSelectedJobId] = useState('');
   const [type, setType] = useState<JobRelationshipType>('RELATED_TO');
   const [search, setSearch] = useState('');
-  const [offerBlock, setOfferBlock] = useState(false);
 
   const { data: jobs = [] } = useJobList(projectId, undefined, undefined, undefined);
   const { mutate: createRel, isPending } = useCreateRelationship(projectId, jobId);
-  const { mutate: updateStatus, isPending: isStatusPending } = useUpdateJobStatus(projectId);
 
   const filtered = jobs.filter(
     (j) =>
@@ -34,59 +31,16 @@ export default function AddRelationshipModal({ open, onClose, projectId, jobId, 
       (search.length === 0 || j.title.toLowerCase().includes(search.toLowerCase())),
   );
 
-  const selectedJob = jobs.find((j) => j.id === selectedJobId);
-
   function handleSubmit() {
     if (!selectedJobId) return;
-    createRel(
-      { targetJobId: selectedJobId, type },
-      {
-        onSuccess: () => {
-          if (type === 'BLOCKED_BY' && currentJobStatus !== 'BLOCKED') {
-            setOfferBlock(true);
-          } else {
-            handleClose();
-          }
-        },
-      },
-    );
-  }
-
-  function handleMarkBlocked() {
-    updateStatus(
-      { jobId, status: 'BLOCKED' },
-      { onSuccess: () => handleClose() },
-    );
+    createRel({ targetJobId: selectedJobId, type }, { onSuccess: handleClose });
   }
 
   function handleClose() {
     setSelectedJobId('');
     setType('RELATED_TO');
     setSearch('');
-    setOfferBlock(false);
     onClose();
-  }
-
-  if (offerBlock) {
-    return (
-      <Modal open={open} onClose={handleClose} title="Mark as Blocked?">
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            You linked this job as <span className="font-medium">Blocked by</span>{' '}
-            <span className="font-medium">{selectedJob?.title}</span>. Do you want to set
-            this job&apos;s status to <span className="font-medium">Blocked</span>?
-          </p>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={handleClose}>
-              Keep current status
-            </Button>
-            <Button variant="danger" onClick={handleMarkBlocked} loading={isStatusPending}>
-              Mark as Blocked
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    );
   }
 
   return (

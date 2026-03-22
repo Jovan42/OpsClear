@@ -305,7 +305,6 @@ export default function JobDetailPage() {
         onClose={() => setAddRelOpen(false)}
         projectId={projectId}
         jobId={jobId}
-        currentJobStatus={job.status}
       />
     </div>
   );
