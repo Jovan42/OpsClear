@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { JobPriority, JobResponse, JobStatus } from '../types';
+import type { JobPriority, JobRelationshipType, JobRelationshipView, JobResponse, JobStatus } from '../types';
 
 export const jobsApi = {
   list: (projectId: string, q?: string, priority?: JobPriority, milestoneId?: string) =>
@@ -54,4 +54,12 @@ export const jobsApi = {
 
   deleteBlockReason: (projectId: string, reasonId: string) =>
     apiClient.delete(`/api/projects/${projectId}/block-reasons/${reasonId}`),
+
+  createRelationship: (projectId: string, jobId: string, body: { targetJobId: string; type: JobRelationshipType }) =>
+    apiClient
+      .post<JobRelationshipView>(`/api/projects/${projectId}/jobs/${jobId}/relationships`, body)
+      .then((r) => r.data),
+
+  deleteRelationship: (projectId: string, jobId: string, relationshipId: string) =>
+    apiClient.delete(`/api/projects/${projectId}/jobs/${jobId}/relationships/${relationshipId}`),
 };

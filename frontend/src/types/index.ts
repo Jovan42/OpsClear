@@ -34,6 +34,23 @@ export type JobStatus = 'NEW' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED';
 
 export type JobPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
+export type JobRelationshipType = 'BLOCKED_BY' | 'RELATED_TO' | 'DUPLICATES';
+
+export type JobRelationshipDirection = 'OUTGOING' | 'INCOMING';
+
+export interface JobRef {
+  id: string;
+  title: string | null;
+  status: JobStatus | null;
+}
+
+export interface JobRelationshipView {
+  id: string;
+  type: JobRelationshipType;
+  direction: JobRelationshipDirection;
+  job: JobRef;
+}
+
 export interface JobResponse {
   id: string;
   projectId: string;
@@ -53,6 +70,7 @@ export interface JobResponse {
   blockedAt: string | null;
   milestoneId: string | null;
   milestoneName: string | null;
+  relationships: JobRelationshipView[];
 }
 
 // ---- Milestones ----
