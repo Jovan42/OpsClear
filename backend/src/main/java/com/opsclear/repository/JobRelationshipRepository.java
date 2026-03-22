@@ -43,6 +43,16 @@ public class JobRelationshipRepository {
                 .map(this::toModel);
     }
 
+    public boolean existsBySourceJobIdAndTargetJobIdAndType(UUID sourceJobId, UUID targetJobId,
+                                                             JobRelationshipType type) {
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(JOB_RELATIONSHIPS)
+                        .where(JOB_RELATIONSHIPS.SOURCE_JOB_ID.eq(sourceJobId))
+                        .and(JOB_RELATIONSHIPS.TARGET_JOB_ID.eq(targetJobId))
+                        .and(JOB_RELATIONSHIPS.TYPE.eq(type.name())));
+    }
+
     public JobRelationshipModel save(JobRelationshipModel model) {
         UUID id = dsl.insertInto(JOB_RELATIONSHIPS)
                 .set(JOB_RELATIONSHIPS.SOURCE_JOB_ID, model.getSourceJobId())
