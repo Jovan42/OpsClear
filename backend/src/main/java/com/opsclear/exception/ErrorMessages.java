@@ -75,6 +75,16 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class JobRelationship {
+        public static final String NOT_FOUND = "Job relationship not found";
+        public static final String SELF_REFERENCE = "A job cannot have a relationship with itself";
+        public static final String DIFFERENT_PROJECT = "Both jobs must belong to the same project";
+        public static final String ALREADY_EXISTS = "This relationship already exists";
+
+        private JobRelationship() {
+        }
+    }
+
     public static final class Approval {
         public static final String NOT_FOUND = "Approval not found";
         public static final String ALREADY_DECIDED = "This approval has already been decided";

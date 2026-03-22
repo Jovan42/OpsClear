@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
@@ -15,6 +16,7 @@ import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.Users;
 import com.opsclear.generated.jooq.tables.records.ApiKeysRecord;
 import com.opsclear.generated.jooq.tables.records.ApprovalsRecord;
+import com.opsclear.generated.jooq.tables.records.JobRelationshipsRecord;
 import com.opsclear.generated.jooq.tables.records.JobsRecord;
 import com.opsclear.generated.jooq.tables.records.MilestonesRecord;
 import com.opsclear.generated.jooq.tables.records.NotesRecord;
@@ -43,6 +45,8 @@ public class Keys {
     public static final UniqueKey<ApiKeysRecord> API_KEYS_KEY_HASH_KEY = Internal.createUniqueKey(ApiKeys.API_KEYS, DSL.name("api_keys_key_hash_key"), new TableField[] { ApiKeys.API_KEYS.KEY_HASH }, true);
     public static final UniqueKey<ApiKeysRecord> API_KEYS_PKEY = Internal.createUniqueKey(ApiKeys.API_KEYS, DSL.name("api_keys_pkey"), new TableField[] { ApiKeys.API_KEYS.ID }, true);
     public static final UniqueKey<ApprovalsRecord> APPROVALS_PKEY = Internal.createUniqueKey(Approvals.APPROVALS, DSL.name("approvals_pkey"), new TableField[] { Approvals.APPROVALS.ID }, true);
+    public static final UniqueKey<JobRelationshipsRecord> JOB_RELATIONSHIPS_PKEY = Internal.createUniqueKey(JobRelationships.JOB_RELATIONSHIPS, DSL.name("job_relationships_pkey"), new TableField[] { JobRelationships.JOB_RELATIONSHIPS.ID }, true);
+    public static final UniqueKey<JobRelationshipsRecord> UNIQUE_RELATIONSHIP = Internal.createUniqueKey(JobRelationships.JOB_RELATIONSHIPS, DSL.name("unique_relationship"), new TableField[] { JobRelationships.JOB_RELATIONSHIPS.SOURCE_JOB_ID, JobRelationships.JOB_RELATIONSHIPS.TARGET_JOB_ID, JobRelationships.JOB_RELATIONSHIPS.TYPE }, true);
     public static final UniqueKey<JobsRecord> JOBS_PKEY = Internal.createUniqueKey(Jobs.JOBS, DSL.name("jobs_pkey"), new TableField[] { Jobs.JOBS.ID }, true);
     public static final UniqueKey<MilestonesRecord> MILESTONES_PKEY = Internal.createUniqueKey(Milestones.MILESTONES, DSL.name("milestones_pkey"), new TableField[] { Milestones.MILESTONES.ID }, true);
     public static final UniqueKey<NotesRecord> NOTES_PKEY = Internal.createUniqueKey(Notes.NOTES, DSL.name("notes_pkey"), new TableField[] { Notes.NOTES.ID }, true);

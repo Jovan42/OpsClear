@@ -83,6 +83,16 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs/" + jobId + "/status";
     }
 
+    // --- Job relationships ---
+
+    static String jobRelationships(UUID projectId, UUID jobId) {
+        return "/api/projects/" + projectId + "/jobs/" + jobId + "/relationships";
+    }
+
+    static String jobRelationship(UUID projectId, UUID jobId, UUID relationshipId) {
+        return "/api/projects/" + projectId + "/jobs/" + jobId + "/relationships/" + relationshipId;
+    }
+
     // --- Notes ---
 
     static String notes(UUID projectId, UUID jobId) {
