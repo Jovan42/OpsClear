@@ -8,8 +8,6 @@ import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobRelationshipModel;
 import com.opsclear.model.JobRelationshipType;
-import com.opsclear.model.ProjectMemberModel;
-import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
