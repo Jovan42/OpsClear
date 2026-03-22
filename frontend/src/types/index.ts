@@ -48,7 +48,7 @@ export interface JobRelationshipView {
   id: string;
   type: JobRelationshipType;
   direction: JobRelationshipDirection;
-  linkedJob: JobRef;
+  job: JobRef;
 }
 
 export interface JobResponse {

@@ -68,21 +68,25 @@ export default function RelationshipsSection({
                 {directionLabel(rel.type, rel.direction)}
               </span>
 
-              {rel.linkedJob.id ? (
+              {rel.job.id ? (
                 <Link
-                  to={`/projects/${projectId}/jobs/${rel.linkedJob.id}`}
-                  className="flex-1 truncate font-medium text-gray-900 dark:text-gray-100 hover:underline"
+                  to={`/projects/${projectId}/jobs/${rel.job.id}`}
+                  className={`flex-1 truncate font-medium hover:underline ${
+                    rel.job.status === 'COMPLETED'
+                      ? 'line-through text-gray-400 dark:text-gray-500'
+                      : 'text-gray-900 dark:text-gray-100'
+                  }`}
                 >
-                  {rel.linkedJob.title ?? '(deleted)'}
+                  {rel.job.title ?? '(deleted)'}
                 </Link>
               ) : (
                 <span className="flex-1 truncate text-gray-400 dark:text-gray-500 italic">
-                  {rel.linkedJob.title ?? '(deleted)'}
+                  {rel.job.title ?? '(deleted)'}
                 </span>
               )}
 
-              {rel.linkedJob.status && (
-                <StatusBadge status={rel.linkedJob.status} />
+              {rel.job.status && (
+                <StatusBadge status={rel.job.status} />
               )}
 
               {canManage && !projectCompleted && (
