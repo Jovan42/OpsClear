@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
@@ -30,6 +31,11 @@ public class Tables {
      * The table <code>public.approvals</code>.
      */
     public static final Approvals APPROVALS = Approvals.APPROVALS;
+
+    /**
+     * The table <code>public.job_relationships</code>.
+     */
+    public static final JobRelationships JOB_RELATIONSHIPS = JobRelationships.JOB_RELATIONSHIPS;
 
     /**
      * Jobs - central unit of work within a project
