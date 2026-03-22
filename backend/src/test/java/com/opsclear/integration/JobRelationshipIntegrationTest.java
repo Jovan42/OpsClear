@@ -29,6 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -361,6 +362,101 @@ class JobRelationshipIntegrationTest {
         mockMvc.perform(delete(ApiPaths.jobRelationship(projectId, source.getId(), relationshipId))
                         .with(jwt().jwt(j -> j.subject(UUID.randomUUID().toString()).claim("email", "stranger@example.com"))))
                 .andExpect(status().isForbidden());
+    }
+
+    // --- GET /api/projects/{projectId}/jobs/{jobId} — relationships in JobResponse ---
+
+    @Test
+    @DisplayName("Job detail should include OUTGOING relationship")
+    void getJob_shouldIncludeOutgoingRelationship() throws Exception {
+        JobModel source = createJob("Source job");
+        JobModel target = createJob("Target job");
+
+        mockMvc.perform(post(ApiPaths.jobRelationships(projectId, source.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetJobId": "%s", "type": "BLOCKED_BY"}
+                                """.formatted(target.getId())))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get(ApiPaths.job(projectId, source.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relationships").isArray())
+                .andExpect(jsonPath("$.relationships.length()").value(1))
+                .andExpect(jsonPath("$.relationships[0].type").value("BLOCKED_BY"))
+                .andExpect(jsonPath("$.relationships[0].direction").value("OUTGOING"))
+                .andExpect(jsonPath("$.relationships[0].job.id").value(target.getId().toString()))
+                .andExpect(jsonPath("$.relationships[0].job.title").value("Target job"))
+                .andExpect(jsonPath("$.relationships[0].job.status").value("NEW"));
+    }
+
+    @Test
+    @DisplayName("Job detail should include INCOMING relationship on the other side")
+    void getJob_shouldIncludeIncomingRelationship() throws Exception {
+        JobModel source = createJob("Source job");
+        JobModel target = createJob("Target job");
+
+        mockMvc.perform(post(ApiPaths.jobRelationships(projectId, source.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetJobId": "%s", "type": "RELATED_TO"}
+                                """.formatted(target.getId())))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get(ApiPaths.job(projectId, target.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relationships.length()").value(1))
+                .andExpect(jsonPath("$.relationships[0].type").value("RELATED_TO"))
+                .andExpect(jsonPath("$.relationships[0].direction").value("INCOMING"))
+                .andExpect(jsonPath("$.relationships[0].job.id").value(source.getId().toString()))
+                .andExpect(jsonPath("$.relationships[0].job.title").value("Source job"));
+    }
+
+    @Test
+    @DisplayName("Job detail should return empty relationships when job has none")
+    void getJob_shouldReturnEmptyRelationships_whenNone() throws Exception {
+        JobModel job = createJob("Standalone job");
+
+        mockMvc.perform(get(ApiPaths.job(projectId, job.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relationships").isArray())
+                .andExpect(jsonPath("$.relationships.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("Job detail should include both OUTGOING and INCOMING relationships")
+    void getJob_shouldIncludeBothSides_whenJobHasMultipleRelationships() throws Exception {
+        JobModel center = createJob("Center job");
+        JobModel blocker = createJob("Blocker job");
+        JobModel related = createJob("Related job");
+
+        // center is blocked by blocker (center is source → OUTGOING)
+        mockMvc.perform(post(ApiPaths.jobRelationships(projectId, center.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetJobId": "%s", "type": "BLOCKED_BY"}
+                                """.formatted(blocker.getId())))
+                .andExpect(status().isCreated());
+
+        // related points to center (related is source, center is target → INCOMING on center)
+        mockMvc.perform(post(ApiPaths.jobRelationships(projectId, related.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetJobId": "%s", "type": "RELATED_TO"}
+                                """.formatted(center.getId())))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get(ApiPaths.job(projectId, center.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relationships.length()").value(2));
     }
 
     // --- Helpers ---

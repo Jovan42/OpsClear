@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -41,6 +42,9 @@ public class JobResponse {
     private String blockedReason;
     private Instant blockedAt;
 
+    // Populated only on getById — empty list on list responses
+    private List<JobRelationshipView> relationships;
+
     public static JobResponse from(JobModel job) {
         return JobResponse.builder()
                 .id(job.getId())
@@ -61,6 +65,9 @@ public class JobResponse {
                 .blockedBy(job.getBlockedBy())
                 .blockedReason(job.getBlockedReason())
                 .blockedAt(job.getBlockedAt())
+                .relationships(job.getRelationships().stream()
+                        .map(JobRelationshipView::from)
+                        .toList())
                 .build();
     }
 }

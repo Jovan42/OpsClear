@@ -15,6 +15,10 @@ import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.BlockReasonModel;
 import com.opsclear.model.MilestoneModel;
+import com.opsclear.model.JobRelationshipDirection;
+import com.opsclear.model.JobRelationshipModel;
+import com.opsclear.model.JobRelationshipType;
+import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -42,6 +46,7 @@ import static org.mockito.Mockito.when;
 class JobServiceTest {
 
     @Mock private JobRepository jobRepository;
+    @Mock private JobRelationshipRepository jobRelationshipRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private UserRepository userRepository;
@@ -59,7 +64,7 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService);
+        jobService = new JobService(jobRepository, jobRelationshipRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -395,6 +400,82 @@ class JobServiceTest {
         assertThatThrownBy(() -> jobService.getById(projectId, jobId, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Job not found");
+    }
+
+    @Test
+    @DisplayName("getById should populate OUTGOING relationship when job is the source")
+    void getById_shouldPopulateOutgoingRelationship() {
+        UUID jobId = UUID.randomUUID();
+        UUID linkedJobId = UUID.randomUUID();
+        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Source").status(JobStatus.NEW).build();
+        JobModel linkedJob = JobModel.builder().id(linkedJobId).projectId(projectId).title("Target").status(JobStatus.IN_PROGRESS).build();
+        JobRelationshipModel rel = JobRelationshipModel.builder()
+                .id(UUID.randomUUID())
+                .sourceJobId(jobId)
+                .targetJobId(linkedJobId)
+                .type(JobRelationshipType.BLOCKED_BY)
+                .createdBy(ownerId)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRelationshipRepository.findByJobId(jobId)).thenReturn(List.of(rel));
+        when(jobRepository.findByIds(List.of(linkedJobId))).thenReturn(List.of(linkedJob));
+
+        JobModel result = jobService.getById(projectId, jobId, ownerId);
+
+        assertThat(result.getRelationships()).hasSize(1);
+        assertThat(result.getRelationships().getFirst().getDirection()).isEqualTo(JobRelationshipDirection.OUTGOING);
+        assertThat(result.getRelationships().getFirst().getType()).isEqualTo(JobRelationshipType.BLOCKED_BY);
+        assertThat(result.getRelationships().getFirst().getLinkedJobId()).isEqualTo(linkedJobId);
+        assertThat(result.getRelationships().getFirst().getLinkedJobTitle()).isEqualTo("Target");
+        assertThat(result.getRelationships().getFirst().getLinkedJobStatus()).isEqualTo(JobStatus.IN_PROGRESS);
+    }
+
+    @Test
+    @DisplayName("getById should populate INCOMING relationship when job is the target")
+    void getById_shouldPopulateIncomingRelationship() {
+        UUID jobId = UUID.randomUUID();
+        UUID sourceJobId = UUID.randomUUID();
+        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Target").status(JobStatus.NEW).build();
+        JobModel sourceJob = JobModel.builder().id(sourceJobId).projectId(projectId).title("Source").status(JobStatus.NEW).build();
+        JobRelationshipModel rel = JobRelationshipModel.builder()
+                .id(UUID.randomUUID())
+                .sourceJobId(sourceJobId)
+                .targetJobId(jobId)
+                .type(JobRelationshipType.RELATED_TO)
+                .createdBy(ownerId)
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRelationshipRepository.findByJobId(jobId)).thenReturn(List.of(rel));
+        when(jobRepository.findByIds(List.of(sourceJobId))).thenReturn(List.of(sourceJob));
+
+        JobModel result = jobService.getById(projectId, jobId, ownerId);
+
+        assertThat(result.getRelationships()).hasSize(1);
+        assertThat(result.getRelationships().getFirst().getDirection()).isEqualTo(JobRelationshipDirection.INCOMING);
+        assertThat(result.getRelationships().getFirst().getLinkedJobId()).isEqualTo(sourceJobId);
+        assertThat(result.getRelationships().getFirst().getLinkedJobTitle()).isEqualTo("Source");
+    }
+
+    @Test
+    @DisplayName("getById should return empty relationships when job has none")
+    void getById_shouldReturnEmptyRelationships_whenNone() {
+        UUID jobId = UUID.randomUUID();
+        JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Lone job").status(JobStatus.NEW).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRelationshipRepository.findByJobId(jobId)).thenReturn(List.of());
+
+        JobModel result = jobService.getById(projectId, jobId, ownerId);
+
+        assertThat(result.getRelationships()).isEmpty();
     }
 
     // --- update ---

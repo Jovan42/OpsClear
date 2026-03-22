@@ -75,6 +75,17 @@ public class JobRepository {
                 .map(this::toModel);
     }
 
+    public List<JobModel> findByIds(List<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return selectWithAssignee()
+                .where(JOBS.ID.in(ids))
+                .and(JOBS.DELETED_AT.isNull())
+                .fetch()
+                .map(this::toModel);
+    }
+
     public JobModel save(JobModel job) {
         if (job.getId() == null) {
             UUID id = dsl.insertInto(JOBS)
