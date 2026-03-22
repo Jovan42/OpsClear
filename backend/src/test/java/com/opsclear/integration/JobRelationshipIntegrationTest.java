@@ -192,6 +192,28 @@ class JobRelationshipIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should return 404 when project does not exist on create")
+    void create_shouldReturn404_whenProjectNotFound() throws Exception {
+        JobModel target = createJob("Target");
+
+        mockMvc.perform(post(ApiPaths.jobRelationships(UUID.randomUUID(), UUID.randomUUID()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"targetJobId": "%s", "type": "RELATED_TO"}
+                                """.formatted(target.getId())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when project does not exist on delete")
+    void delete_shouldReturn404_whenProjectNotFound() throws Exception {
+        mockMvc.perform(delete(ApiPaths.jobRelationship(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("Should return 403 when requester is not a project member")
     void create_shouldReturn403_whenNotMember() throws Exception {
         JobModel source = createJob("Source");
