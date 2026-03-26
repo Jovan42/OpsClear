@@ -28,4 +28,4 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD wget -qO- --no-check-certificate https://localhost/ || exit 1
+    CMD wget -qO- --no-check-certificate https://127.0.0.1/ || exit 1
