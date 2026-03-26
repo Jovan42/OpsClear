@@ -96,7 +96,7 @@ services:
     volumes:
       - /etc/nginx/certs:/etc/nginx/certs:ro
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://localhost/"]
+      test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://127.0.0.1/"]
       interval: 30s
       timeout: 5s
       retries: 3
