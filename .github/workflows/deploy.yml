@@ -5,12 +5,32 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
-    name: Deploy to VPS
+  changes:
+    name: Detect changed paths
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-      - name: Deploy via SSH
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+  deploy-backend:
+    name: Deploy backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy backend via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -19,5 +39,23 @@ jobs:
           script: |
             cd ~/OpsClear
             git pull origin main
-            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build backend
+            docker image prune -f
+
+  deploy-frontend:
+    name: Deploy frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy frontend via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd ~/OpsClear
+            git pull origin main
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build frontend
             docker image prune -f
