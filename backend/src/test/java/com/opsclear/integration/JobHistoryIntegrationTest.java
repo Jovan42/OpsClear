@@ -11,6 +11,7 @@ import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -48,6 +49,7 @@ class JobHistoryIntegrationTest {
     @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
+    @Autowired private OrganisationRepository organisationRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
@@ -63,6 +65,7 @@ class JobHistoryIntegrationTest {
         milestoneRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
+        organisationRepository.deleteAll();
         userRepository.deleteAll();
 
         ownerId = UUID.randomUUID();
