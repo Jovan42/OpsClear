@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import keycloak from '../auth/keycloak';
+import { useCurrentOrg } from '../features/org/OrgContext';
 
 interface UserMenuProps {
   readonly name: string;
@@ -10,6 +11,7 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { org } = useCurrentOrg();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -43,6 +45,14 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
 
       {open && (
         <div className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1 z-50">
+          {org && (
+            <button
+              onClick={() => { setOpen(false); navigate('/org/settings'); }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+            >
+              Organisation
+            </button>
+          )}
           <button
             onClick={() => { setOpen(false); navigate('/settings'); }}
             className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"

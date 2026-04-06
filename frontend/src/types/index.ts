@@ -132,6 +132,19 @@ export interface PendingApprovalResponse {
   requestedAt: string;
 }
 
+// ---- Organisations ----
+
+export type OrgRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+
+export interface OrganisationResponse {
+  id: string;
+  name: string;
+  slug: string;
+  createdBy: string;
+  createdByName: string | null;
+  createdAt: string;
+}
+
 // ---- API Keys ----
 
 export interface ApiKeyResponse {

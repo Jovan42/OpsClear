@@ -11,8 +11,11 @@ import MilestonesPage from './features/milestones/MilestonesPage';
 import SettingsPage from './features/settings/SettingsPage';
 import DesignPage from './dev/DesignPage';
 import ProjectRedirect from './components/ProjectRedirect';
+import CreateOrgPage from './features/org/CreateOrgPage';
+import OrgSettingsPage from './features/org/OrgSettingsPage';
 
 export const router = createBrowserRouter([
+  { path: '/org/new', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   {
     path: '/',
     element: <AppLayout />,
@@ -28,6 +31,7 @@ export const router = createBrowserRouter([
       { path: 'projects/:projectId/approvals', element: <ApprovalQueuePage /> },
       { path: 'projects/:projectId/settings', element: <ProjectSettingsPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'org/settings', element: <OrgSettingsPage /> },
       { path: 'design', element: <DesignPage /> },
     ],
   },
