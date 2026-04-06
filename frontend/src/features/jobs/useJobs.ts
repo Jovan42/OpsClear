@@ -118,3 +118,10 @@ export function useDeleteRelationship(projectId: string, jobId: string) {
     },
   });
 }
+
+export function useJobHistory(projectId: string, jobId: string) {
+  return useQuery({
+    queryKey: ['jobs', projectId, jobId, 'history'],
+    queryFn: () => jobsApi.history(projectId, jobId),
+  });
+}

@@ -15,6 +15,7 @@ import ApprovalList from './components/ApprovalList';
 import RequestApprovalModal from './components/RequestApprovalModal';
 import RelationshipsSection from './components/RelationshipsSection';
 import AddRelationshipModal from './components/AddRelationshipModal';
+import StatusHistory from './components/StatusHistory';
 import { useJob, useUpdateJobStatus, useDeleteJob } from './useJobs';
 import { useMilestones } from './useMilestones';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
@@ -241,6 +242,9 @@ export default function JobDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Status history */}
+      <StatusHistory projectId={projectId} jobId={jobId} />
 
       {/* Approvals accordion */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
