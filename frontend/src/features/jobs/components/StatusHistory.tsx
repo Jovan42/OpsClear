@@ -3,6 +3,16 @@ import { useJobHistory } from '../useJobs';
 import { formatDuration } from '../utils/statusHistoryUtils';
 import type { JobHistoryEntry } from '../../../types';
 
+function formatDateTime(dateStr: string) {
+  return new Date(dateStr).toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function transitionLabel(entry: JobHistoryEntry): string {
   if (entry.changedFrom === null) return `Created as ${entry.changedTo}`;
   return `${entry.changedFrom} → ${entry.changedTo}`;
