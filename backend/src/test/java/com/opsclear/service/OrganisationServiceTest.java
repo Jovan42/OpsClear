@@ -182,6 +182,17 @@ class OrganisationServiceTest {
                 .isInstanceOf(ConflictException.class);
     }
 
+    @Test
+    @DisplayName("update_shouldThrowForbiddenException_whenCallerIsNotMember")
+    void update_shouldThrowForbiddenException_whenCallerIsNotMember() {
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> organisationService.update(
+                orgId, new UpdateOrganisationRequest("X", "XX"), memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
     // --- softDelete ---
 
     @Test
