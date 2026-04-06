@@ -139,6 +139,14 @@ final class ApiPaths {
         return "/api/user/api-keys/" + keyId;
     }
 
+    // --- Organisations ---
+
+    static final String ORGANISATIONS = "/api/organisations";
+
+    static String organisation(UUID orgId) {
+        return "/api/organisations/" + orgId;
+    }
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {

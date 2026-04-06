@@ -85,6 +85,17 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class Organisation {
+        public static final String NOT_FOUND = "Organisation not found";
+        public static final String SLUG_ALREADY_EXISTS = "An organisation with this slug already exists";
+        public static final String INSUFFICIENT_PERMISSIONS_OWNER =
+                "Insufficient permissions: OWNER role required";
+        public static final String NOT_A_MEMBER = "You are not a member of this organisation";
+
+        private Organisation() {
+        }
+    }
+
     public static final class Approval {
         public static final String NOT_FOUND = "Approval not found";
         public static final String ALREADY_DECIDED = "This approval has already been decided";

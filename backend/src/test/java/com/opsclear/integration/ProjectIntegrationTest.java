@@ -10,6 +10,7 @@ import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -62,6 +63,9 @@ class ProjectIntegrationTest {
     private ProjectMemberRepository projectMemberRepository;
 
     @Autowired
+    private OrganisationRepository organisationRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     private UUID userId;
@@ -74,6 +78,7 @@ class ProjectIntegrationTest {
         projectMemberRepository.deleteAll();
         milestoneRepository.deleteAll();
         projectRepository.deleteAll();
+        organisationRepository.deleteAll();
         userRepository.deleteAll();
 
         userId = UUID.randomUUID();
