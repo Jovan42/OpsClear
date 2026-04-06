@@ -156,6 +156,23 @@ class JobHistoryServiceTest {
     }
 
     @Test
+    @DisplayName("getHistory_shouldReturnHistory_forAdmin")
+    void getHistory_shouldReturnHistory_forAdmin() {
+        UUID adminId = UUID.randomUUID();
+        ProjectMemberModel adminMembership = ProjectMemberModel.builder()
+                .projectId(projectId).userId(adminId).role(ProjectMemberRole.ADMIN).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, adminId)).thenReturn(Optional.of(adminMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobStatusHistoryRepository.findByJobId(jobId)).thenReturn(List.of());
+
+        List<JobStatusHistoryModel> result = jobHistoryService.getHistory(projectId, jobId, adminId);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     @DisplayName("getHistory_shouldThrowForbiddenException_whenMemberIsNotAssigned")
     void getHistory_shouldThrowForbiddenException_whenMemberIsNotAssigned() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));

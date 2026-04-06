@@ -6,7 +6,6 @@ import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
@@ -53,7 +52,6 @@ public class JobStatusHistoryRepository {
     }
 
     private JobStatusHistoryModel toModel(Record r) {
-        LocalDateTime ldt = r.get(JOB_STATUS_HISTORY.CHANGED_AT);
         return JobStatusHistoryModel.builder()
                 .id(r.get(JOB_STATUS_HISTORY.ID))
                 .jobId(r.get(JOB_STATUS_HISTORY.JOB_ID))
@@ -61,7 +59,7 @@ public class JobStatusHistoryRepository {
                 .changedTo(r.get(JOB_STATUS_HISTORY.CHANGED_TO))
                 .changedBy(r.get(JOB_STATUS_HISTORY.CHANGED_BY))
                 .changedByName(r.get("changed_by_name", String.class))
-                .changedAt(ldt != null ? ldt.toInstant(ZoneOffset.UTC) : null)
+                .changedAt(r.get(JOB_STATUS_HISTORY.CHANGED_AT).toInstant(ZoneOffset.UTC))
                 .blockReason(r.get(JOB_STATUS_HISTORY.BLOCK_REASON))
                 .build();
     }
