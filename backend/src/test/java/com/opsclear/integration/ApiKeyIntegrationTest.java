@@ -4,7 +4,9 @@ import com.opsclear.model.ApiKeyModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApiKeyRepository;
 import com.opsclear.repository.ApprovalRepository;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -39,15 +41,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@SuppressWarnings("NullableProblems")
 class ApiKeyIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private DSLContext dsl;
     @Autowired private ApiKeyRepository apiKeyRepository;
     @Autowired private ApprovalRepository approvalRepository;
+    @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRepository jobRepository;
+    @Autowired private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
@@ -61,7 +64,9 @@ class ApiKeyIntegrationTest {
         apiKeyRepository.deleteAll();
         approvalRepository.deleteAll();
         noteRepository.deleteAll();
+        jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
         milestoneRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();

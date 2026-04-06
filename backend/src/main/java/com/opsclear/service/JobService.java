@@ -19,6 +19,7 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -41,6 +42,7 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final JobRelationshipRepository jobRelationshipRepository;
+    private final JobStatusHistoryRepository jobStatusHistoryRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
@@ -69,6 +71,7 @@ public class JobService {
                 .build();
 
         JobModel saved = jobRepository.save(job);
+        jobStatusHistoryRepository.insert(saved.getId(), null, JobStatus.NEW.name(), requesterId, null);
         log.info("Created job '{}' in project {} by user {}", saved.getTitle(), projectId, requesterId);
         return saved;
     }
@@ -178,6 +181,8 @@ public class JobService {
         }
 
         JobModel updated = jobRepository.save(job);
+        jobStatusHistoryRepository.insert(jobId, oldStatus.name(), newStatus.name(), requesterId,
+                newStatus == JobStatus.BLOCKED ? reason : null);
         log.info("Job {} status changed from {} to {} by user {}", jobId, oldStatus, newStatus, requesterId);
         return updated;
     }

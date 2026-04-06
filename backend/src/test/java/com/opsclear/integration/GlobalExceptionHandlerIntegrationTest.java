@@ -3,6 +3,7 @@ package com.opsclear.integration;
 import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.MilestoneRepository;
@@ -40,6 +41,7 @@ class GlobalExceptionHandlerIntegrationTest {
     @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRepository jobRepository;
+    @Autowired private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectRepository projectRepository;
@@ -49,6 +51,7 @@ class GlobalExceptionHandlerIntegrationTest {
     void setUp() {
         approvalRepository.deleteAll();
         noteRepository.deleteAll();
+        jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
         blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();

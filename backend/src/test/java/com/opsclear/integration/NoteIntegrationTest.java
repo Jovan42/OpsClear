@@ -10,6 +10,7 @@ import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.MilestoneRepository;
@@ -44,6 +45,7 @@ class NoteIntegrationTest {
     @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRepository jobRepository;
+    @Autowired private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
@@ -57,6 +59,7 @@ class NoteIntegrationTest {
     @BeforeEach
     void setUp() {
         noteRepository.deleteAll();
+        jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
         blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();

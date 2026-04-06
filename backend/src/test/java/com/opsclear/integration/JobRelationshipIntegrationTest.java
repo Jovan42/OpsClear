@@ -9,6 +9,7 @@ import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -44,6 +45,7 @@ class JobRelationshipIntegrationTest {
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRelationshipRepository jobRelationshipRepository;
     @Autowired private JobRepository jobRepository;
+    @Autowired private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
@@ -58,6 +60,7 @@ class JobRelationshipIntegrationTest {
         approvalRepository.deleteAll();
         noteRepository.deleteAll();
         jobRelationshipRepository.deleteAll();
+        jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
         milestoneRepository.deleteAll();
         projectMemberRepository.deleteAll();
