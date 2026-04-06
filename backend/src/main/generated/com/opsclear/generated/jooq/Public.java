@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq;
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.JobRelationships;
+import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
@@ -50,6 +51,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.job_relationships</code>.
      */
     public final JobRelationships JOB_RELATIONSHIPS = JobRelationships.JOB_RELATIONSHIPS;
+
+    /**
+     * The table <code>public.job_status_history</code>.
+     */
+    public final JobStatusHistory JOB_STATUS_HISTORY = JobStatusHistory.JOB_STATUS_HISTORY;
 
     /**
      * Jobs - central unit of work within a project
@@ -105,6 +111,7 @@ public class Public extends SchemaImpl {
             ApiKeys.API_KEYS,
             Approvals.APPROVALS,
             JobRelationships.JOB_RELATIONSHIPS,
+            JobStatusHistory.JOB_STATUS_HISTORY,
             Jobs.JOBS,
             Milestones.MILESTONES,
             Notes.NOTES,
