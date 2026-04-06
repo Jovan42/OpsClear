@@ -180,6 +180,14 @@ class JobHistoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("getHistory_shouldReturn404_whenProjectDoesNotExist")
+    void getHistory_shouldReturn404_whenProjectDoesNotExist() throws Exception {
+        mockMvc.perform(get(ApiPaths.jobHistory(UUID.randomUUID(), jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com").claim("name", "Owner"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("getHistory_shouldReturn404_whenJobDoesNotExist")
     void getHistory_shouldReturn404_whenJobDoesNotExist() throws Exception {
         mockMvc.perform(get(ApiPaths.jobHistory(projectId, UUID.randomUUID()))
