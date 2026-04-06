@@ -85,6 +85,10 @@ final class ApiPaths {
 
     // --- Job relationships ---
 
+    static String jobHistory(UUID projectId, UUID jobId) {
+        return "/api/projects/" + projectId + "/jobs/" + jobId + "/history";
+    }
+
     static String jobRelationships(UUID projectId, UUID jobId) {
         return "/api/projects/" + projectId + "/jobs/" + jobId + "/relationships";
     }
