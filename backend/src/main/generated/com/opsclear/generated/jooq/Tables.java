@@ -11,6 +11,9 @@ import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.OrganisationInvites;
+import com.opsclear.generated.jooq.tables.OrganisationMembers;
+import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
@@ -57,6 +60,21 @@ public class Tables {
      * Immutable audit notes attached to jobs — no update or delete paths exist
      */
     public static final Notes NOTES = Notes.NOTES;
+
+    /**
+     * The table <code>public.organisation_invites</code>.
+     */
+    public static final OrganisationInvites ORGANISATION_INVITES = OrganisationInvites.ORGANISATION_INVITES;
+
+    /**
+     * The table <code>public.organisation_members</code>.
+     */
+    public static final OrganisationMembers ORGANISATION_MEMBERS = OrganisationMembers.ORGANISATION_MEMBERS;
+
+    /**
+     * The table <code>public.organisations</code>.
+     */
+    public static final Organisations ORGANISATIONS = Organisations.ORGANISATIONS;
 
     /**
      * Per-project vocabulary of block reasons used in the UI dropdown

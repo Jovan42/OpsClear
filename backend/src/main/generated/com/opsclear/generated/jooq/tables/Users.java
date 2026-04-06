@@ -98,6 +98,11 @@ public class Users extends TableImpl<UsersRecord> {
      */
     public final TableField<UsersRecord, LocalDateTime> LAST_LOGIN_AT = createField(DSL.name("last_login_at"), SQLDataType.LOCALDATETIME(6), this, "");
 
+    /**
+     * The column <code>public.users.organisation_id</code>.
+     */
+    public final TableField<UsersRecord, UUID> ORGANISATION_ID = createField(DSL.name("organisation_id"), SQLDataType.UUID, this, "");
+
     private Users(Name alias, Table<UsersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

@@ -11,6 +11,9 @@ import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.OrganisationInvites;
+import com.opsclear.generated.jooq.tables.OrganisationMembers;
+import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
@@ -73,6 +76,21 @@ public class Public extends SchemaImpl {
     public final Notes NOTES = Notes.NOTES;
 
     /**
+     * The table <code>public.organisation_invites</code>.
+     */
+    public final OrganisationInvites ORGANISATION_INVITES = OrganisationInvites.ORGANISATION_INVITES;
+
+    /**
+     * The table <code>public.organisation_members</code>.
+     */
+    public final OrganisationMembers ORGANISATION_MEMBERS = OrganisationMembers.ORGANISATION_MEMBERS;
+
+    /**
+     * The table <code>public.organisations</code>.
+     */
+    public final Organisations ORGANISATIONS = Organisations.ORGANISATIONS;
+
+    /**
      * Per-project vocabulary of block reasons used in the UI dropdown
      */
     public final ProjectBlockReasons PROJECT_BLOCK_REASONS = ProjectBlockReasons.PROJECT_BLOCK_REASONS;
@@ -115,6 +133,9 @@ public class Public extends SchemaImpl {
             Jobs.JOBS,
             Milestones.MILESTONES,
             Notes.NOTES,
+            OrganisationInvites.ORGANISATION_INVITES,
+            OrganisationMembers.ORGANISATION_MEMBERS,
+            Organisations.ORGANISATIONS,
             ProjectBlockReasons.PROJECT_BLOCK_REASONS,
             ProjectMembers.PROJECT_MEMBERS,
             Projects.PROJECTS,

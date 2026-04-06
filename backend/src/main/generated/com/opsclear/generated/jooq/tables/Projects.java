@@ -99,6 +99,11 @@ public class Projects extends TableImpl<ProjectsRecord> {
      */
     public final TableField<ProjectsRecord, String> STATUS = createField(DSL.name("status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'ACTIVE'::character varying"), SQLDataType.VARCHAR)), this, "");
 
+    /**
+     * The column <code>public.projects.organisation_id</code>.
+     */
+    public final TableField<ProjectsRecord, UUID> ORGANISATION_ID = createField(DSL.name("organisation_id"), SQLDataType.UUID, this, "");
+
     private Projects(Name alias, Table<ProjectsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
