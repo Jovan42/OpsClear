@@ -62,4 +62,9 @@ export const jobsApi = {
 
   deleteRelationship: (projectId: string, jobId: string, relationshipId: string) =>
     apiClient.delete(`/api/projects/${projectId}/jobs/${jobId}/relationships/${relationshipId}`),
+
+  history: (projectId: string, jobId: string) =>
+    apiClient
+      .get<import('../types').JobHistoryEntry[]>(`/api/projects/${projectId}/jobs/${jobId}/history`)
+      .then((r) => r.data),
 };

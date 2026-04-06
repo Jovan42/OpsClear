@@ -73,6 +73,19 @@ export interface JobResponse {
   relationships: JobRelationshipView[];
 }
 
+// ---- Job History ----
+
+export interface JobHistoryEntry {
+  id: string;
+  jobId: string;
+  changedFrom: string | null;
+  changedTo: string;
+  changedBy: string | null;
+  changedByName: string | null;
+  changedAt: string;
+  blockReason: string | null;
+}
+
 // ---- Milestones ----
 
 export interface MilestoneResponse {
