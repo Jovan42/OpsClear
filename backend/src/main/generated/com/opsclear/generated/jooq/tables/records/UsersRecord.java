@@ -146,6 +146,21 @@ public class UsersRecord extends UpdatableRecordImpl<UsersRecord> {
         return (LocalDateTime) get(7);
     }
 
+    /**
+     * Setter for <code>public.users.organisation_id</code>.
+     */
+    public UsersRecord setOrganisationId(UUID value) {
+        set(8, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.users.organisation_id</code>.
+     */
+    public UUID getOrganisationId() {
+        return (UUID) get(8);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -169,7 +184,7 @@ public class UsersRecord extends UpdatableRecordImpl<UsersRecord> {
     /**
      * Create a detached, initialised UsersRecord
      */
-    public UsersRecord(UUID id, String email, String name, String avatarUrl, String timezone, JSONB preferences, LocalDateTime createdAt, LocalDateTime lastLoginAt) {
+    public UsersRecord(UUID id, String email, String name, String avatarUrl, String timezone, JSONB preferences, LocalDateTime createdAt, LocalDateTime lastLoginAt, UUID organisationId) {
         super(Users.USERS);
 
         setId(id);
@@ -180,6 +195,7 @@ public class UsersRecord extends UpdatableRecordImpl<UsersRecord> {
         setPreferences(preferences);
         setCreatedAt(createdAt);
         setLastLoginAt(lastLoginAt);
+        setOrganisationId(organisationId);
         resetChangedOnNotNull();
     }
 }

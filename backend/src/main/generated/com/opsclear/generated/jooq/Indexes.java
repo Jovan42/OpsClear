@@ -10,6 +10,7 @@ import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
@@ -43,6 +44,8 @@ public class Indexes {
     public static final Index IDX_JOBS_STATUS = Internal.createIndex(DSL.name("idx_jobs_status"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.PROJECT_ID, Jobs.JOBS.STATUS }, false);
     public static final Index IDX_MILESTONES_PROJECT = Internal.createIndex(DSL.name("idx_milestones_project"), Milestones.MILESTONES, new OrderField[] { Milestones.MILESTONES.PROJECT_ID }, false);
     public static final Index IDX_NOTES_JOB_ID = Internal.createIndex(DSL.name("idx_notes_job_id"), Notes.NOTES, new OrderField[] { Notes.NOTES.JOB_ID }, false);
+    public static final Index IDX_ORGANISATION_INVITES_EMAIL = Internal.createIndex(DSL.name("idx_organisation_invites_email"), OrganisationInvites.ORGANISATION_INVITES, new OrderField[] { OrganisationInvites.ORGANISATION_INVITES.EMAIL }, false);
+    public static final Index IDX_ORGANISATION_INVITES_TOKEN = Internal.createIndex(DSL.name("idx_organisation_invites_token"), OrganisationInvites.ORGANISATION_INVITES, new OrderField[] { OrganisationInvites.ORGANISATION_INVITES.TOKEN }, false);
     public static final Index IDX_PROJECT_MEMBERS_PROJECT = Internal.createIndex(DSL.name("idx_project_members_project"), ProjectMembers.PROJECT_MEMBERS, new OrderField[] { ProjectMembers.PROJECT_MEMBERS.PROJECT_ID }, false);
     public static final Index IDX_PROJECT_MEMBERS_USER = Internal.createIndex(DSL.name("idx_project_members_user"), ProjectMembers.PROJECT_MEMBERS, new OrderField[] { ProjectMembers.PROJECT_MEMBERS.USER_ID }, false);
     public static final Index IDX_PROJECTS_DELETED = Internal.createIndex(DSL.name("idx_projects_deleted"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.DELETED_AT }, false);
