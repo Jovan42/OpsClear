@@ -388,4 +388,46 @@ class OrganisationMemberServiceTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Member not found in this organisation");
     }
+
+    // ─── post-write reload edge cases ─────────────────────────────────────────
+
+    @Test
+    @DisplayName("addMember_shouldThrow_whenReloadAfterSaveFails")
+    void addMember_shouldThrow_whenReloadAfterSaveFails() {
+        UUID newUserId = UUID.randomUUID();
+        AddOrgMemberRequest request = AddOrgMemberRequest.builder()
+                .userId(newUserId).role(OrganisationRole.MEMBER).build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId))
+                .thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(userRepository.findById(newUserId))
+                .thenReturn(Optional.of(UserModel.builder().id(newUserId).build()));
+        when(organisationRepository.existsMember(orgId, newUserId)).thenReturn(false);
+        when(organisationRepository.findMember(orgId, newUserId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.addMember(orgId, ownerId, request))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Member not found in this organisation");
+    }
+
+    @Test
+    @DisplayName("updateRole_shouldThrow_whenReloadAfterUpdateFails")
+    void updateRole_shouldThrow_whenReloadAfterUpdateFails() {
+        UUID targetId = UUID.randomUUID();
+        OrgMemberModel target = OrgMemberModel.builder()
+                .organisationId(orgId).userId(targetId).role(OrganisationRole.MEMBER).build();
+        UpdateOrgMemberRoleRequest request = new UpdateOrgMemberRoleRequest(OrganisationRole.ADMIN);
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId))
+                .thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(organisationRepository.findMember(orgId, targetId))
+                .thenReturn(Optional.of(target))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateRole(orgId, ownerId, targetId, request))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Member not found in this organisation");
+    }
 }
