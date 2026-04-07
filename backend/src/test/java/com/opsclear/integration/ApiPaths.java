@@ -147,6 +147,14 @@ final class ApiPaths {
         return "/api/organisations/" + orgId;
     }
 
+    static String orgMembers(UUID orgId) {
+        return "/api/organisations/" + orgId + "/members";
+    }
+
+    static String orgMember(UUID orgId, UUID userId) {
+        return "/api/organisations/" + orgId + "/members/" + userId;
+    }
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {

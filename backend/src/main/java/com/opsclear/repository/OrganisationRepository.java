@@ -1,5 +1,6 @@
 package com.opsclear.repository;
 
+import com.opsclear.model.OrgMemberModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -103,6 +105,73 @@ public class OrganisationRepository {
                 .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(organisationId))
                 .and(ORGANISATION_MEMBERS.USER_ID.eq(userId))
                 .fetchOptional(r -> OrganisationRole.valueOf(r.get(ORGANISATION_MEMBERS.ORG_ROLE)));
+    }
+
+    public List<OrgMemberModel> findMembers(UUID organisationId) {
+        return dsl.select(
+                        ORGANISATION_MEMBERS.ORGANISATION_ID,
+                        ORGANISATION_MEMBERS.USER_ID,
+                        USERS.NAME.as("member_name"),
+                        USERS.EMAIL.as("member_email"),
+                        ORGANISATION_MEMBERS.ORG_ROLE,
+                        ORGANISATION_MEMBERS.JOINED_AT)
+                .from(ORGANISATION_MEMBERS)
+                .join(USERS).on(ORGANISATION_MEMBERS.USER_ID.eq(USERS.ID))
+                .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(organisationId))
+                .orderBy(ORGANISATION_MEMBERS.JOINED_AT.asc())
+                .fetch(r -> OrgMemberModel.builder()
+                        .organisationId(r.get(ORGANISATION_MEMBERS.ORGANISATION_ID))
+                        .userId(r.get(ORGANISATION_MEMBERS.USER_ID))
+                        .userName(r.get("member_name", String.class))
+                        .userEmail(r.get("member_email", String.class))
+                        .role(OrganisationRole.valueOf(r.get(ORGANISATION_MEMBERS.ORG_ROLE)))
+                        .joinedAt(toInstant(r.get(ORGANISATION_MEMBERS.JOINED_AT)))
+                        .build());
+    }
+
+    public Optional<OrgMemberModel> findMember(UUID organisationId, UUID userId) {
+        return dsl.select(
+                        ORGANISATION_MEMBERS.ORGANISATION_ID,
+                        ORGANISATION_MEMBERS.USER_ID,
+                        USERS.NAME.as("member_name"),
+                        USERS.EMAIL.as("member_email"),
+                        ORGANISATION_MEMBERS.ORG_ROLE,
+                        ORGANISATION_MEMBERS.JOINED_AT)
+                .from(ORGANISATION_MEMBERS)
+                .join(USERS).on(ORGANISATION_MEMBERS.USER_ID.eq(USERS.ID))
+                .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(organisationId))
+                .and(ORGANISATION_MEMBERS.USER_ID.eq(userId))
+                .fetchOptional(r -> OrgMemberModel.builder()
+                        .organisationId(r.get(ORGANISATION_MEMBERS.ORGANISATION_ID))
+                        .userId(r.get(ORGANISATION_MEMBERS.USER_ID))
+                        .userName(r.get("member_name", String.class))
+                        .userEmail(r.get("member_email", String.class))
+                        .role(OrganisationRole.valueOf(r.get(ORGANISATION_MEMBERS.ORG_ROLE)))
+                        .joinedAt(toInstant(r.get(ORGANISATION_MEMBERS.JOINED_AT)))
+                        .build());
+    }
+
+    public boolean existsMember(UUID organisationId, UUID userId) {
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(ORGANISATION_MEMBERS)
+                        .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(organisationId))
+                        .and(ORGANISATION_MEMBERS.USER_ID.eq(userId)));
+    }
+
+    public void updateMemberRole(UUID organisationId, UUID userId, OrganisationRole role) {
+        dsl.update(ORGANISATION_MEMBERS)
+                .set(ORGANISATION_MEMBERS.ORG_ROLE, role.name())
+                .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(organisationId))
+                .and(ORGANISATION_MEMBERS.USER_ID.eq(userId))
+                .execute();
+    }
+
+    public void deleteMember(UUID organisationId, UUID userId) {
+        dsl.deleteFrom(ORGANISATION_MEMBERS)
+                .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(organisationId))
+                .and(ORGANISATION_MEMBERS.USER_ID.eq(userId))
+                .execute();
     }
 
     public void deleteAll() {
