@@ -26,7 +26,7 @@ public class OrgInviteRepository {
     }
 
     private static LocalDateTime toLocalDateTime(Instant instant) {
-        return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
+        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 
     public OrgInviteModel save(OrgInviteModel invite) {

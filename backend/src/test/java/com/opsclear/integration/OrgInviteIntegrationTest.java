@@ -144,6 +144,28 @@ class OrgInviteIntegrationTest {
     }
 
     @Test
+    @DisplayName("sendInvite_shouldReturn404_whenOrgDoesNotExist")
+    void sendInvite_shouldReturn404_whenOrgDoesNotExist() throws Exception {
+        mockMvc.perform(post(ApiPaths.orgInvites(UUID.randomUUID()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("email", "newuser@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldReturn403_whenCallerIsNotMember")
+    void sendInvite_shouldReturn403_whenCallerIsNotMember() throws Exception {
+        mockMvc.perform(post(ApiPaths.orgInvites(orgId))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString())
+                                .claim("email", "outsider@example.com").claim("name", "Outsider")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("email", "newuser@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("sendInvite_shouldReturn409_whenPendingInviteAlreadyExists")
     void sendInvite_shouldReturn409_whenPendingInviteAlreadyExists() throws Exception {
         mockMvc.perform(post(ApiPaths.orgInvites(orgId))
