@@ -115,6 +115,21 @@ export default function OrgSettingsPage() {
         Organisation Settings
       </h1>
 
+      {/* ── Members ── */}
+      <section>
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
+          Members
+        </h2>
+        <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center justify-between">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Manage who has access to this organisation.
+          </p>
+          <Button variant="secondary" size="sm" onClick={() => navigate('/org/members')}>
+            Manage members
+          </Button>
+        </div>
+      </section>
+
       {/* ── Details ── */}
       <section>
         <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
