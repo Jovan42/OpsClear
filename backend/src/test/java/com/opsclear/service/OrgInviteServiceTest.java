@@ -294,6 +294,22 @@ class OrgInviteServiceTest {
     }
 
     @Test
+    @DisplayName("acceptInvite_shouldThrowNotFound_whenCallerUserDoesNotExist")
+    void acceptInvite_shouldThrowNotFound_whenCallerUserDoesNotExist() {
+        String token = "abc123";
+        OrgInviteModel invite = OrgInviteModel.builder()
+                .id(UUID.randomUUID()).organisationId(orgId).email("invited@example.com")
+                .token(token).expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
+                .build();
+
+        when(orgInviteRepository.findByToken(token)).thenReturn(Optional.of(invite));
+        when(userRepository.findById(memberId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.acceptInvite(token, memberId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
     @DisplayName("acceptInvite_shouldThrowBadRequest_whenInviteExpired")
     void acceptInvite_shouldThrowBadRequest_whenInviteExpired() {
         String token = "expired-token";
