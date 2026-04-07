@@ -12,6 +12,7 @@ import SettingsPage from './features/settings/SettingsPage';
 import DesignPage from './dev/DesignPage';
 import ProjectRedirect from './components/ProjectRedirect';
 import CreateOrgPage from './features/org/CreateOrgPage';
+import OrgMembersPage from './features/org/OrgMembersPage';
 import OrgSettingsPage from './features/org/OrgSettingsPage';
 
 export const router = createBrowserRouter([
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: 'projects/:projectId/settings', element: <ProjectSettingsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'org/settings', element: <OrgSettingsPage /> },
+      { path: 'org/members', element: <OrgMembersPage /> },
       { path: 'design', element: <DesignPage /> },
     ],
   },

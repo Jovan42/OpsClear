@@ -145,6 +145,15 @@ export interface OrganisationResponse {
   createdAt: string;
 }
 
+export interface OrgMemberResponse {
+  organisationId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  role: OrgRole;
+  joinedAt: string;
+}
+
 // ---- API Keys ----
 
 export interface ApiKeyResponse {

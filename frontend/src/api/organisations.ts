@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { OrganisationResponse } from '../types';
+import type { OrgMemberResponse, OrgRole, OrganisationResponse } from '../types';
 
 export const organisationsApi = {
   get: (id: string) =>
@@ -13,4 +13,18 @@ export const organisationsApi = {
 
   delete: (id: string) =>
     apiClient.delete(`/api/organisations/${id}`),
+
+  listMembers: (orgId: string) =>
+    apiClient.get<OrgMemberResponse[]>(`/api/organisations/${orgId}/members`).then((r) => r.data),
+
+  addMember: (orgId: string, body: { userId: string; role: OrgRole }) =>
+    apiClient.post<OrgMemberResponse>(`/api/organisations/${orgId}/members`, body).then((r) => r.data),
+
+  updateMemberRole: (orgId: string, userId: string, role: OrgRole) =>
+    apiClient
+      .patch<OrgMemberResponse>(`/api/organisations/${orgId}/members/${userId}`, { role })
+      .then((r) => r.data),
+
+  removeMember: (orgId: string, userId: string) =>
+    apiClient.delete(`/api/organisations/${orgId}/members/${userId}`),
 };
