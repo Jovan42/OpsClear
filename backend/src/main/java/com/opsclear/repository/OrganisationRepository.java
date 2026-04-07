@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.ORGANISATION_INVITES;
 import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
 import static com.opsclear.generated.jooq.Tables.ORGANISATION_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.USERS;
@@ -175,6 +176,7 @@ public class OrganisationRepository {
     }
 
     public void deleteAll() {
+        dsl.deleteFrom(ORGANISATION_INVITES).execute();
         dsl.deleteFrom(ORGANISATION_MEMBERS).execute();
         dsl.deleteFrom(ORGANISATIONS).execute();
     }

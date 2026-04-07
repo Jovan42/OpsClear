@@ -47,6 +47,14 @@ public class UserRepository {
                 .map(this::toModel);
     }
 
+    public Optional<UserModel> findByEmail(String email) {
+        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
+                .from(USERS)
+                .where(USERS.EMAIL.equalIgnoreCase(email))
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
     public List<UserModel> searchByEmail(String emailPrefix, int limit) {
         return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
                 .from(USERS)

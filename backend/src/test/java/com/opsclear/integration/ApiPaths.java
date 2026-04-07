@@ -155,6 +155,20 @@ final class ApiPaths {
         return "/api/organisations/" + orgId + "/members/" + userId;
     }
 
+    // --- Organisation invites ---
+
+    static String orgInvites(UUID orgId) {
+        return "/api/organisations/" + orgId + "/invites";
+    }
+
+    static String orgInvite(UUID orgId, UUID inviteId) {
+        return "/api/organisations/" + orgId + "/invites/" + inviteId;
+    }
+
+    static String acceptInvite(String token) {
+        return "/api/invites/" + token + "/accept";
+    }
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {
