@@ -78,7 +78,6 @@ public final class ErrorMessages {
     public static final class JobRelationship {
         public static final String NOT_FOUND = "Job relationship not found";
         public static final String SELF_REFERENCE = "A job cannot have a relationship with itself";
-        public static final String DIFFERENT_PROJECT = "Both jobs must belong to the same project";
         public static final String ALREADY_EXISTS = "This relationship already exists";
 
         private JobRelationship() {
@@ -90,7 +89,14 @@ public final class ErrorMessages {
         public static final String SLUG_ALREADY_EXISTS = "An organisation with this slug already exists";
         public static final String INSUFFICIENT_PERMISSIONS_OWNER =
                 "Insufficient permissions: OWNER role required";
+        public static final String INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN =
+                "Insufficient permissions: OWNER or ADMIN role required";
         public static final String NOT_A_MEMBER = "You are not a member of this organisation";
+        public static final String MEMBER_NOT_FOUND = "Member not found in this organisation";
+        public static final String ALREADY_A_MEMBER = "User is already a member of this organisation";
+        public static final String CANNOT_ASSIGN_OWNER_ROLE = "Cannot assign OWNER role";
+        public static final String CANNOT_CHANGE_OWNER_ROLE = "Cannot change the organisation owner's role";
+        public static final String CANNOT_REMOVE_OWNER = "Cannot remove the organisation owner";
 
         private Organisation() {
         }
