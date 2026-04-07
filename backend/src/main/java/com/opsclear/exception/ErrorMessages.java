@@ -102,6 +102,19 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class OrgInvite {
+        public static final String NOT_FOUND = "Invite not found";
+        public static final String ALREADY_PENDING = "A pending invite already exists for this email";
+        public static final String EMAIL_ALREADY_MEMBER =
+                "This email address is already a member of the organisation";
+        public static final String INVALID = "This invite is no longer valid";
+        public static final String EMAIL_MISMATCH =
+                "This invite was sent to a different email address";
+
+        private OrgInvite() {
+        }
+    }
+
     public static final class Approval {
         public static final String NOT_FOUND = "Approval not found";
         public static final String ALREADY_DECIDED = "This approval has already been decided";
