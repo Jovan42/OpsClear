@@ -598,6 +598,34 @@ class ProjectIntegrationTest {
                 .andExpect(jsonPath("$.length()").value(2));
     }
 
+    // --- Org enforcement ---
+
+    @Test
+    @DisplayName("create_shouldReturn403_whenCallerHasNoOrg")
+    void create_shouldReturn403_whenCallerHasNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(post(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "New Project"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("list_shouldReturn403_whenCallerHasNoOrg")
+    void list_shouldReturn403_whenCallerHasNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
     private ProjectModel createTestProject(String name, String description) {
         ProjectModel project = ProjectModel.builder()
                 .name(name)

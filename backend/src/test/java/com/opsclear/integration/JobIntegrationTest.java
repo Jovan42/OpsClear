@@ -1081,4 +1081,32 @@ class JobIntegrationTest {
                 .build());
     }
 
+    // --- Org enforcement ---
+
+    @Test
+    @DisplayName("create_shouldReturn403_whenCallerHasNoOrg")
+    void create_shouldReturn403_whenCallerHasNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title": "New Job"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("list_shouldReturn403_whenCallerHasNoOrg")
+    void list_shouldReturn403_whenCallerHasNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(get(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
 }
