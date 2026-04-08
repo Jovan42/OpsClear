@@ -10,7 +10,9 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.repository.BlockReasonRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -51,6 +53,9 @@ class ProjectServiceTest {
     @Mock
     private BlockReasonRepository blockReasonRepository;
 
+    @Mock
+    private OrganisationRepository organisationRepository;
+
     private ProjectService projectService;
 
     private UserModel testOwner;
@@ -58,7 +63,7 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository, blockReasonRepository);
+        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository, blockReasonRepository, organisationRepository);
         ownerId = UUID.randomUUID();
         testOwner = UserModel.builder()
                 .id(ownerId)
@@ -82,7 +87,10 @@ class ProjectServiceTest {
                 .ownerId(ownerId)
                 .build();
 
+        OrganisationModel org = OrganisationModel.builder()
+                .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
         when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
         when(projectMemberRepository.save(any(ProjectMemberModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -112,7 +120,10 @@ class ProjectServiceTest {
                 .ownerId(ownerId)
                 .build();
 
+        OrganisationModel org = OrganisationModel.builder()
+                .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
         when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
         when(projectMemberRepository.save(any(ProjectMemberModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -135,7 +146,10 @@ class ProjectServiceTest {
                 .ownerId(ownerId)
                 .build();
 
+        OrganisationModel org = OrganisationModel.builder()
+                .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
         when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
         when(projectMemberRepository.save(any(ProjectMemberModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));

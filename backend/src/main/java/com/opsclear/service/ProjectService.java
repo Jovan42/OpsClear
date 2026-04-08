@@ -11,6 +11,7 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import com.opsclear.repository.BlockReasonRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -31,16 +32,22 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final BlockReasonRepository blockReasonRepository;
+    private final OrganisationRepository organisationRepository;
 
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
         requireUserExists(ownerId);
         requireNameAvailable(request.getName(), ownerId);
 
+        UUID organisationId = organisationRepository.findByMember(ownerId)
+                .map(org -> org.getId())
+                .orElse(null);
+
         ProjectModel project = ProjectModel.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .ownerId(ownerId)
+                .organisationId(organisationId)
                 .build();
 
         project = projectRepository.save(project);
