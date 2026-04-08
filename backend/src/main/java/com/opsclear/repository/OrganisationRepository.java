@@ -52,6 +52,7 @@ public class OrganisationRepository {
                 .join(ORGANISATION_MEMBERS).on(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(ORGANISATIONS.ID))
                 .where(ORGANISATION_MEMBERS.USER_ID.eq(userId))
                 .and(ORGANISATIONS.DELETED_AT.isNull())
+                .limit(1)
                 .fetchOptional()
                 .map(this::toModel);
     }
