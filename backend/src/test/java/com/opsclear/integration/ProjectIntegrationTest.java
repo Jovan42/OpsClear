@@ -7,6 +7,8 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
@@ -69,6 +71,7 @@ class ProjectIntegrationTest {
     private UserRepository userRepository;
 
     private UUID userId;
+    private UUID orgId;
 
     @BeforeEach
     void setUp() {
@@ -88,6 +91,11 @@ class ProjectIntegrationTest {
                 .name("Test User")
                 .build();
         userRepository.save(testUser);
+
+        OrganisationModel org = organisationRepository.save(
+                OrganisationModel.builder().name("Test Org").slug("TST").createdBy(userId).build());
+        orgId = org.getId();
+        organisationRepository.saveMember(orgId, userId, OrganisationRole.OWNER);
     }
 
     @Test
@@ -595,6 +603,7 @@ class ProjectIntegrationTest {
                 .name(name)
                 .description(description)
                 .ownerId(userId)
+                .organisationId(orgId)
                 .build();
         project = projectRepository.save(project);
         projectMemberRepository.save(ProjectMemberModel.builder()

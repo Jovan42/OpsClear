@@ -3,6 +3,8 @@ package com.opsclear.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -57,6 +59,7 @@ class NoteIntegrationTest {
     private UUID memberId;
     private UUID projectId;
     private UUID jobId;
+    private UUID orgId;
 
     @BeforeEach
     void setUp() {
@@ -76,8 +79,14 @@ class NoteIntegrationTest {
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
 
+        OrganisationModel org = organisationRepository.save(
+                OrganisationModel.builder().name("Test Org").slug("TST").createdBy(ownerId).build());
+        orgId = org.getId();
+        organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+
         ProjectModel project = projectRepository.save(
-                ProjectModel.builder().name("Test Project").ownerId(ownerId).build());
+                ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
         projectId = project.getId();
 
         projectMemberRepository.save(ProjectMemberModel.builder()
@@ -158,8 +167,9 @@ class NoteIntegrationTest {
     void createNote_shouldReturn404_whenJobInDifferentProject() throws Exception {
         UUID otherOwnerId = UUID.randomUUID();
         userRepository.save(UserModel.builder().id(otherOwnerId).email("other@example.com").name("Other").build());
+        organisationRepository.saveMember(orgId, otherOwnerId, OrganisationRole.OWNER);
         ProjectModel otherProject = projectRepository.save(
-                ProjectModel.builder().name("Other Project").ownerId(otherOwnerId).build());
+                ProjectModel.builder().name("Other Project").ownerId(otherOwnerId).organisationId(orgId).build());
         JobModel jobInOtherProject = jobRepository.save(JobModel.builder()
                 .projectId(otherProject.getId())
                 .title("Other job")

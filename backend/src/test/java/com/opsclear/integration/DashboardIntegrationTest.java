@@ -4,6 +4,8 @@ import com.opsclear.model.ApprovalModel;
 import com.opsclear.model.ApprovalStatus;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -55,6 +57,7 @@ class DashboardIntegrationTest {
     private UUID memberId;
     private UUID nonMemberId;
     private UUID projectId;
+    private UUID orgId;
 
     @BeforeEach
     void setUp() {
@@ -76,8 +79,14 @@ class DashboardIntegrationTest {
         userRepository.save(UserModel.builder().id(memberId).email("member@test.com").name("Member").build());
         userRepository.save(UserModel.builder().id(nonMemberId).email("other@test.com").name("Other").build());
 
+        OrganisationModel org = organisationRepository.save(
+                OrganisationModel.builder().name("Test Org").slug("TST").createdBy(ownerId).build());
+        orgId = org.getId();
+        organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+
         ProjectModel project = projectRepository.save(
-                ProjectModel.builder().name("Test Project").ownerId(ownerId).build());
+                ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
         projectId = project.getId();
 
         projectMemberRepository.save(ProjectMemberModel.builder()

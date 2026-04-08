@@ -60,6 +60,7 @@ public class ProjectRepository {
                         PROJECTS.DESCRIPTION,
                         PROJECTS.OWNER_ID,
                         OWNER_NAME,
+                        PROJECTS.ORGANISATION_ID,
                         PROJECTS.STATUS,
                         PROJECTS.CREATED_AT,
                         PROJECTS.UPDATED_AT,
@@ -118,6 +119,7 @@ public class ProjectRepository {
                     .set(PROJECTS.NAME, project.getName())
                     .set(PROJECTS.DESCRIPTION, project.getDescription())
                     .set(PROJECTS.OWNER_ID, project.getOwnerId())
+                    .set(PROJECTS.ORGANISATION_ID, project.getOrganisationId())
                     .set(PROJECTS.STATUS, project.getStatus().name())
                     .set(PROJECTS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(PROJECTS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
@@ -148,6 +150,7 @@ public class ProjectRepository {
                         PROJECTS.DESCRIPTION,
                         PROJECTS.OWNER_ID,
                         OWNER_NAME,
+                        PROJECTS.ORGANISATION_ID,
                         PROJECTS.STATUS,
                         PROJECTS.CREATED_AT,
                         PROJECTS.UPDATED_AT,
@@ -163,6 +166,7 @@ public class ProjectRepository {
                 .description(r.get(PROJECTS.DESCRIPTION))
                 .ownerId(r.get(PROJECTS.OWNER_ID))
                 .ownerName(r.get(OWNER_NAME))
+                .organisationId(r.get(PROJECTS.ORGANISATION_ID))
                 .status(ProjectStatus.valueOf(r.get(PROJECTS.STATUS)))
                 .createdAt(toInstant(r.get(PROJECTS.CREATED_AT)))
                 .updatedAt(toInstant(r.get(PROJECTS.UPDATED_AT)))

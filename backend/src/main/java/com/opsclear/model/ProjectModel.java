@@ -21,6 +21,7 @@ public class ProjectModel {
     private String description;
     private UUID ownerId;
     private String ownerName;
+    private UUID organisationId;
     @Builder.Default
     private ProjectStatus status = ProjectStatus.ACTIVE;
     private Instant createdAt;

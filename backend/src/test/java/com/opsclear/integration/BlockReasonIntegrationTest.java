@@ -1,6 +1,8 @@
 package com.opsclear.integration;
 
 import com.opsclear.model.BlockReasonModel;
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -55,6 +57,7 @@ class BlockReasonIntegrationTest {
     private UUID ownerId;
     private UUID memberId;
     private UUID projectId;
+    private UUID orgId;
 
     @BeforeEach
     void setUp() {
@@ -75,8 +78,14 @@ class BlockReasonIntegrationTest {
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
 
+        OrganisationModel org = organisationRepository.save(
+                OrganisationModel.builder().name("Test Org").slug("TST").createdBy(ownerId).build());
+        orgId = org.getId();
+        organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+
         ProjectModel project = projectRepository.save(
-                ProjectModel.builder().name("Test Project").ownerId(ownerId).build());
+                ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
         projectId = project.getId();
 
         projectMemberRepository.save(ProjectMemberModel.builder()

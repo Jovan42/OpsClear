@@ -1,6 +1,8 @@
 package com.opsclear.integration;
 
 import com.opsclear.model.MilestoneModel;
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -54,6 +56,7 @@ class MilestoneIntegrationTest {
     private UUID ownerId;
     private UUID memberId;
     private UUID projectId;
+    private UUID orgId;
 
     @BeforeEach
     void setUp() {
@@ -73,8 +76,14 @@ class MilestoneIntegrationTest {
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
 
+        OrganisationModel org = organisationRepository.save(
+                OrganisationModel.builder().name("Test Org").slug("TST").createdBy(ownerId).build());
+        orgId = org.getId();
+        organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+
         ProjectModel project = projectRepository.save(
-                ProjectModel.builder().name("Test Project").ownerId(ownerId).build());
+                ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
         projectId = project.getId();
 
         projectMemberRepository.save(ProjectMemberModel.builder()
@@ -196,7 +205,7 @@ class MilestoneIntegrationTest {
     @DisplayName("Should return 404 when milestone belongs to a different project on update")
     void updateMilestone_shouldReturn404_whenMilestoneInDifferentProject() throws Exception {
         ProjectModel otherProject = projectRepository.save(
-                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).organisationId(orgId).build());
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
         MilestoneModel otherMilestone = milestoneRepository.save(
@@ -259,7 +268,7 @@ class MilestoneIntegrationTest {
     @DisplayName("Should return 404 when milestone belongs to a different project on delete")
     void deleteMilestone_shouldReturn404_whenMilestoneBelongsToDifferentProject() throws Exception {
         ProjectModel otherProject = projectRepository.save(
-                ProjectModel.builder().name("Other Project").ownerId(ownerId).build());
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).organisationId(orgId).build());
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
         MilestoneModel otherMilestone = milestoneRepository.save(
