@@ -144,6 +144,9 @@ class JobIntegrationTest {
     @DisplayName("Should return 403 when requester is not a project member")
     void createJob_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsider).email("outsider@example.com").name("Outsider").build());
+        organisationRepository.saveMember(orgId, outsider, OrganisationRole.MEMBER);
+
         String body = """
                 { "title": "Job" }
                 """;
@@ -255,6 +258,8 @@ class JobIntegrationTest {
     @DisplayName("Should return 403 when requester is not a project member")
     void listJobs_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsider).email("outsider@example.com").name("Outsider").build());
+        organisationRepository.saveMember(orgId, outsider, OrganisationRole.MEMBER);
 
         mockMvc.perform(get(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
@@ -653,6 +658,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn200_forAdmin() throws Exception {
         UUID adminId = UUID.randomUUID();
         userRepository.save(UserModel.builder().id(adminId).email("admin@example.com").name("Admin").build());
+        organisationRepository.saveMember(orgId, adminId, OrganisationRole.MEMBER);
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(adminId).role(ProjectMemberRole.ADMIN).build());
 
@@ -1078,6 +1084,34 @@ class JobIntegrationTest {
                 .priority(priority)
                 .createdBy(ownerId)
                 .build());
+    }
+
+    // --- Org enforcement ---
+
+    @Test
+    @DisplayName("create_shouldReturn403_whenCallerHasNoOrg")
+    void create_shouldReturn403_whenCallerHasNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title": "New Job"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("list_shouldReturn403_whenCallerHasNoOrg")
+    void list_shouldReturn403_whenCallerHasNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(get(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden());
     }
 
 }

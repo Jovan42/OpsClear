@@ -283,6 +283,7 @@ class ProjectIntegrationTest {
         UUID outsiderId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(outsiderId).email("outsider@example.com").name("Outsider").build());
+        organisationRepository.saveMember(orgId, outsiderId, OrganisationRole.MEMBER);
 
         mockMvc.perform(get(ApiPaths.project(project.getId()))
                         .with(jwt().jwt(j -> j
@@ -300,6 +301,7 @@ class ProjectIntegrationTest {
         UUID memberId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(memberId).email("member@example.com").name("Member User").build());
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.MEMBER);
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project.getId()).userId(memberId).role(ProjectMemberRole.MEMBER).build());
 
@@ -325,6 +327,7 @@ class ProjectIntegrationTest {
         UUID adminId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(adminId).email("admin@example.com").name("Admin User").build());
+        organisationRepository.saveMember(orgId, adminId, OrganisationRole.MEMBER);
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project.getId()).userId(adminId).role(ProjectMemberRole.ADMIN).build());
 
@@ -490,6 +493,7 @@ class ProjectIntegrationTest {
         UUID adminId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(adminId).email("admin@example.com").name("Admin User").build());
+        organisationRepository.saveMember(orgId, adminId, OrganisationRole.MEMBER);
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project.getId()).userId(adminId).role(ProjectMemberRole.ADMIN).build());
 
@@ -513,6 +517,7 @@ class ProjectIntegrationTest {
         UUID memberId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(memberId).email("member@example.com").name("Member User").build());
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.MEMBER);
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project.getId()).userId(memberId).role(ProjectMemberRole.MEMBER).build());
 
@@ -596,6 +601,68 @@ class ProjectIntegrationTest {
                                 .claim("name", "Test User"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("updateProject_shouldReturn403_whenCallerIsOrgMemberButNotProjectMember")
+    void updateProject_shouldReturn403_whenOrgMemberNotInProject() throws Exception {
+        ProjectModel project = createTestProject("Test Project", null);
+
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(outsiderId).email("outsider@example.com").name("Outsider").build());
+        organisationRepository.saveMember(orgId, outsiderId, OrganisationRole.MEMBER);
+
+        mockMvc.perform(put(ApiPaths.project(project.getId()))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "name": "New Name" }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("deleteProject_shouldReturn403_whenCallerIsOrgMemberButNotProjectMember")
+    void deleteProject_shouldReturn403_whenOrgMemberNotInProject() throws Exception {
+        ProjectModel project = createTestProject("Test Project", null);
+
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(outsiderId).email("outsider@example.com").name("Outsider").build());
+        organisationRepository.saveMember(orgId, outsiderId, OrganisationRole.MEMBER);
+
+        mockMvc.perform(delete(ApiPaths.project(project.getId()))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    // --- Org enforcement ---
+
+    @Test
+    @DisplayName("create_shouldReturn403_whenCallerHasNoOrg")
+    void create_shouldReturn403_whenCallerHasNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(post(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "New Project"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("list_shouldReturn403_whenCallerHasNoOrg")
+    void list_shouldReturn403_whenCallerHasNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(get(ApiPaths.PROJECTS)
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden());
     }
 
     private ProjectModel createTestProject(String name, String description) {

@@ -10,6 +10,7 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.UserModel;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -70,6 +71,10 @@ class ProjectServiceTest {
                 .email("owner@example.com")
                 .name("Test Owner")
                 .build();
+        OrganisationModel org = OrganisationModel.builder()
+                .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
+        // Default: all callers belong to an org. Individual tests override for "no org" scenarios.
+        when(organisationRepository.findByMember(any())).thenReturn(Optional.of(org));
     }
 
     @Test
@@ -87,10 +92,7 @@ class ProjectServiceTest {
                 .ownerId(ownerId)
                 .build();
 
-        OrganisationModel org = OrganisationModel.builder()
-                .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
-        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
         when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
         when(projectMemberRepository.save(any(ProjectMemberModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -120,10 +122,7 @@ class ProjectServiceTest {
                 .ownerId(ownerId)
                 .build();
 
-        OrganisationModel org = OrganisationModel.builder()
-                .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
-        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
         when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
         when(projectMemberRepository.save(any(ProjectMemberModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -146,10 +145,7 @@ class ProjectServiceTest {
                 .ownerId(ownerId)
                 .build();
 
-        OrganisationModel org = OrganisationModel.builder()
-                .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(testOwner));
-        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
         when(projectRepository.save(any(ProjectModel.class))).thenReturn(saved);
         when(projectMemberRepository.save(any(ProjectMemberModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -544,5 +540,73 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> projectService.updateStatus(projectId, ProjectStatus.COMPLETED, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found");
+    }
+
+    // --- Org membership enforcement ---
+
+    @Test
+    @DisplayName("create_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void create_shouldThrow_whenCallerHasNoOrg() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        CreateProjectRequest request = CreateProjectRequest.builder().name("Test").build();
+        assertThatThrownBy(() -> projectService.create(request, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("getProjectsForMember_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void getProjectsForMember_shouldThrow_whenCallerHasNoOrg() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.getProjectsForMember(ownerId, null))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("getById_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void getById_shouldThrow_whenCallerHasNoOrg() {
+        UUID projectId = UUID.randomUUID();
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.getById(projectId, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("update_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void update_shouldThrow_whenCallerHasNoOrg() {
+        UUID projectId = UUID.randomUUID();
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        UpdateProjectRequest request = UpdateProjectRequest.builder().name("x").build();
+        assertThatThrownBy(() -> projectService.update(projectId, request, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("softDelete_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void softDelete_shouldThrow_whenCallerHasNoOrg() {
+        UUID projectId = UUID.randomUUID();
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.softDelete(projectId, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("updateStatus_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void updateStatus_shouldThrow_whenCallerHasNoOrg() {
+        UUID projectId = UUID.randomUUID();
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.updateStatus(projectId, ProjectStatus.COMPLETED, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
     }
 }

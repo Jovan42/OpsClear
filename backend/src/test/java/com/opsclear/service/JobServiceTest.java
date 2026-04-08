@@ -17,10 +17,13 @@ import com.opsclear.model.BlockReasonModel;
 import com.opsclear.model.MilestoneModel;
 import com.opsclear.model.JobRelationshipDirection;
 import com.opsclear.model.JobRelationshipModel;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.model.JobRelationshipType;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.MilestoneRepository;
@@ -54,6 +57,7 @@ class JobServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private MilestoneRepository milestoneRepository;
     @Mock private BlockReasonService blockReasonService;
+    @Mock private OrganisationRepository organisationRepository;
 
     private JobService jobService;
 
@@ -66,7 +70,7 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, jobRelationshipRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService);
+        jobService = new JobService(jobRepository, jobRelationshipRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService, organisationRepository);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -89,6 +93,11 @@ class JobServiceTest {
                 .userId(memberId)
                 .role(ProjectMemberRole.MEMBER)
                 .build();
+
+        OrganisationModel org = OrganisationModel.builder()
+                .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
+        // Default: all callers belong to an org. Individual tests override for "no org" scenarios.
+        when(organisationRepository.findByMember(any())).thenReturn(Optional.of(org));
     }
 
     private ProjectMemberModel adminMembership(UUID adminId) {
@@ -1387,5 +1396,59 @@ class JobServiceTest {
         assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Milestone not found");
+    }
+
+    // --- Org membership enforcement ---
+
+    @Test
+    @DisplayName("create_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void create_shouldThrow_whenCallerHasNoOrg() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        CreateJobRequest request = CreateJobRequest.builder().title("x").build();
+        assertThatThrownBy(() -> jobService.create(projectId, request, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("list_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void list_shouldThrow_whenCallerHasNoOrg() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.list(projectId, ownerId, null, null, null))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("getById_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void getById_shouldThrow_whenCallerHasNoOrg() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.getById(projectId, UUID.randomUUID(), ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("update_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void update_shouldThrow_whenCallerHasNoOrg() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        UpdateJobRequest request = UpdateJobRequest.builder().title("x").build();
+        assertThatThrownBy(() -> jobService.update(projectId, UUID.randomUUID(), request, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("softDelete_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void softDelete_shouldThrow_whenCallerHasNoOrg() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobService.softDelete(projectId, UUID.randomUUID(), ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
     }
 }

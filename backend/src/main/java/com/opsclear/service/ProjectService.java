@@ -6,6 +6,7 @@ import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -36,11 +37,12 @@ public class ProjectService {
 
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
+        requireOrgMembership(ownerId);
         requireUserExists(ownerId);
         requireNameAvailable(request.getName(), ownerId);
 
         UUID organisationId = organisationRepository.findByMember(ownerId)
-                .map(org -> org.getId())
+                .map(OrganisationModel::getId)
                 .orElse(null);
 
         ProjectModel project = ProjectModel.builder()
@@ -72,11 +74,13 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<ProjectModel> getProjectsForMember(UUID userId, ProjectStatus status) {
+        requireOrgMembership(userId);
         return projectRepository.findByMemberIdAndStatusAndDeletedAtIsNull(userId, status);
     }
 
     @Transactional(readOnly = true)
     public ProjectModel getById(UUID projectId, UUID requesterId) {
+        requireOrgMembership(requesterId);
         ProjectModel project = requireProject(projectId);
         requireMember(projectId, requesterId);
         return project;
@@ -84,6 +88,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectModel update(UUID projectId, UpdateProjectRequest request, UUID requesterId) {
+        requireOrgMembership(requesterId);
         ProjectModel project = requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         requireNameAvailableForUpdate(request.getName(), project.getOwnerId(), projectId);
@@ -95,6 +100,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectModel updateStatus(UUID projectId, ProjectStatus newStatus, UUID requesterId) {
+        requireOrgMembership(requesterId);
         ProjectModel project = requireProject(projectId);
         requireOwner(projectId, requesterId);
 
@@ -114,11 +120,20 @@ public class ProjectService {
 
     @Transactional
     public void softDelete(UUID projectId, UUID requesterId) {
+        requireOrgMembership(requesterId);
         ProjectModel project = requireProject(projectId);
         requireOwner(projectId, requesterId);
         project.softDelete();
         projectRepository.save(project);
         log.info("Soft-deleted project '{}'", projectId);
+    }
+
+    // --- Org guard ---
+
+    private void requireOrgMembership(UUID userId) {
+        if (organisationRepository.findByMember(userId).isEmpty()) {
+            throw new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG);
+        }
     }
 
     // --- Name uniqueness ---
