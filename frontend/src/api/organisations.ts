@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { OrgMemberResponse, OrgRole, OrganisationResponse } from '../types';
+import type { OrgInviteResponse, OrgMemberResponse, OrgRole, OrganisationResponse } from '../types';
 
 export const organisationsApi = {
   get: (id: string) =>
@@ -27,4 +27,18 @@ export const organisationsApi = {
 
   removeMember: (orgId: string, userId: string) =>
     apiClient.delete(`/api/organisations/${orgId}/members/${userId}`),
+
+  listInvites: (orgId: string) =>
+    apiClient.get<OrgInviteResponse[]>(`/api/organisations/${orgId}/invites`).then((r) => r.data),
+
+  sendInvite: (orgId: string, email: string) =>
+    apiClient
+      .post<OrgInviteResponse>(`/api/organisations/${orgId}/invites`, { email })
+      .then((r) => r.data),
+
+  revokeInvite: (orgId: string, inviteId: string) =>
+    apiClient.delete(`/api/organisations/${orgId}/invites/${inviteId}`),
+
+  acceptInvite: (token: string) =>
+    apiClient.post<OrgInviteResponse>(`/api/invites/${token}/accept`).then((r) => r.data),
 };

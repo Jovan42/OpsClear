@@ -154,6 +154,16 @@ export interface OrgMemberResponse {
   joinedAt: string;
 }
 
+export interface OrgInviteResponse {
+  id: string;
+  organisationId: string;
+  email: string;
+  invitedBy: string;
+  invitedByName: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
 // ---- API Keys ----
 
 export interface ApiKeyResponse {

@@ -76,3 +76,35 @@ export function useRemoveOrgMember(orgId: string) {
       void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'members'] }),
   });
 }
+
+export function useOrgInvites(orgId: string | null) {
+  return useQuery({
+    queryKey: ['organisations', orgId, 'invites'],
+    queryFn: () => organisationsApi.listInvites(orgId!),
+    enabled: !!orgId,
+  });
+}
+
+export function useSendOrgInvite(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string) => organisationsApi.sendInvite(orgId, email),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'invites'] }),
+  });
+}
+
+export function useRevokeOrgInvite(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (inviteId: string) => organisationsApi.revokeInvite(orgId, inviteId),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'invites'] }),
+  });
+}
+
+export function useAcceptOrgInvite() {
+  return useMutation({
+    mutationFn: (token: string) => organisationsApi.acceptInvite(token),
+  });
+}

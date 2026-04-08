@@ -9,7 +9,7 @@ import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Skeleton from '../../components/Skeleton';
 import { useCurrentOrg } from './OrgContext';
-import { useOrganisation, useUpdateOrganisation, useDeleteOrganisation } from './useOrganisation';
+import { useOrganisation, useUpdateOrganisation, useDeleteOrganisation, useOrgMembers } from './useOrganisation';
 import { usePageTitle } from '../../hooks/usePageTitle';
 
 const schema = z.object({
@@ -28,9 +28,12 @@ export default function OrgSettingsPage() {
   const { org: ctxOrg, setOrg, clearOrg } = useCurrentOrg();
 
   const { data: org, isLoading } = useOrganisation(ctxOrg?.id ?? null);
+  const { data: members = [] } = useOrgMembers(ctxOrg?.id ?? null);
   usePageTitle('Organisation settings');
 
-  const isOwner = org?.createdBy === userId;
+  const callerRole = members.find((m) => m.userId === userId)?.role ?? null;
+  const isOwner = callerRole === 'OWNER';
+  const isOwnerOrAdmin = callerRole === 'OWNER' || callerRole === 'ADMIN';
 
   const { mutate: updateOrg, isPending: saving } = useUpdateOrganisation(org?.id ?? '');
   const { mutate: deleteOrg, isPending: deleting } = useDeleteOrganisation();
@@ -120,13 +123,25 @@ export default function OrgSettingsPage() {
         <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
           Members
         </h2>
-        <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center justify-between">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Manage who has access to this organisation.
-          </p>
-          <Button variant="secondary" size="sm" onClick={() => navigate('/org/members')}>
-            Manage members
-          </Button>
+        <div className="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+          <div className="p-4 flex items-center justify-between">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Manage who has access to this organisation.
+            </p>
+            <Button variant="secondary" size="sm" onClick={() => navigate('/org/members')}>
+              Manage members
+            </Button>
+          </div>
+          {isOwnerOrAdmin && (
+            <div className="p-4 flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Invite people by email and manage pending invites.
+              </p>
+              <Button variant="secondary" size="sm" onClick={() => navigate('/org/invites')}>
+                Invites
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
