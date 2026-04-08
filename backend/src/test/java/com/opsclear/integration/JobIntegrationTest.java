@@ -653,6 +653,7 @@ class JobIntegrationTest {
     void updateStatus_shouldReturn200_forAdmin() throws Exception {
         UUID adminId = UUID.randomUUID();
         userRepository.save(UserModel.builder().id(adminId).email("admin@example.com").name("Admin").build());
+        organisationRepository.saveMember(orgId, adminId, OrganisationRole.MEMBER);
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(adminId).role(ProjectMemberRole.ADMIN).build());
 

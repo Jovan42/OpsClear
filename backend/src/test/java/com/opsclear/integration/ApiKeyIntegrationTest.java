@@ -1,6 +1,8 @@
 package com.opsclear.integration;
 
 import com.opsclear.model.ApiKeyModel;
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApiKeyRepository;
 import com.opsclear.repository.ApprovalRepository;
@@ -80,6 +82,10 @@ class ApiKeyIntegrationTest {
 
         userRepository.save(UserModel.builder().id(userId).email("user@example.com").name("User").build());
         userRepository.save(UserModel.builder().id(otherUserId).email("other@example.com").name("Other").build());
+
+        OrganisationModel org = organisationRepository.save(
+                OrganisationModel.builder().name("Test Org").slug("TST").createdBy(userId).build());
+        organisationRepository.saveMember(org.getId(), userId, OrganisationRole.OWNER);
     }
 
     // --- POST /api/user/api-keys ---

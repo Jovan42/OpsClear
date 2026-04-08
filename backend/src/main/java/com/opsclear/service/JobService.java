@@ -21,6 +21,7 @@ import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -48,9 +49,11 @@ public class JobService {
     private final UserRepository userRepository;
     private final MilestoneRepository milestoneRepository;
     private final BlockReasonService blockReasonService;
+    private final OrganisationRepository organisationRepository;
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
+        requireOrgMembership(requesterId);
         ProjectModel project = requireProjectExists(projectId);
         requireProjectNotCompleted(project);
         requireMember(projectId, requesterId);
@@ -79,6 +82,7 @@ public class JobService {
     @Transactional(readOnly = true)
     public List<JobModel> list(UUID projectId, UUID requesterId, String q,
                                JobPriority priority, UUID milestoneId) {
+        requireOrgMembership(requesterId);
         requireProjectExistsById(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         boolean isMember = requester.getRole() == ProjectMemberRole.MEMBER;
@@ -89,6 +93,7 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public JobModel getById(UUID projectId, UUID jobId, UUID requesterId) {
+        requireOrgMembership(requesterId);
         requireProjectExistsById(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         JobModel job = requireJob(jobId);
@@ -129,6 +134,7 @@ public class JobService {
 
     @Transactional
     public JobModel update(UUID projectId, UUID jobId, UpdateJobRequest request, UUID requesterId) {
+        requireOrgMembership(requesterId);
         requireProjectExistsById(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         JobModel job = requireJob(jobId);
@@ -153,6 +159,7 @@ public class JobService {
 
     @Transactional
     public JobModel updateStatus(UUID projectId, UUID jobId, JobStatus newStatus, String reason, UUID requesterId) {
+        requireOrgMembership(requesterId);
         ProjectModel project = requireProjectExists(projectId);
         requireProjectNotCompleted(project);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
@@ -189,6 +196,7 @@ public class JobService {
 
     @Transactional
     public void softDelete(UUID projectId, UUID jobId, UUID requesterId) {
+        requireOrgMembership(requesterId);
         requireProjectExistsById(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         JobModel job = requireJob(jobId);
@@ -221,6 +229,14 @@ public class JobService {
         }
         if (!isOwnerOrAdmin && !requesterId.equals(assignedTo)) {
             throw new ForbiddenException(ErrorMessages.Job.ONLY_OWNER_ADMIN_OR_ASSIGNEE_CAN_CHANGE_STATUS);
+        }
+    }
+
+    // --- Org guard ---
+
+    private void requireOrgMembership(UUID userId) {
+        if (organisationRepository.findByMember(userId).isEmpty()) {
+            throw new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG);
         }
     }
 

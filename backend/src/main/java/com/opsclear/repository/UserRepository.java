@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.ORGANISATION_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 
 @Repository
@@ -55,10 +56,12 @@ public class UserRepository {
                 .map(this::toModel);
     }
 
-    public List<UserModel> searchByEmail(String emailPrefix, int limit) {
+    public List<UserModel> searchByEmailWithinOrg(String emailPrefix, UUID orgId, int limit) {
         return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
                 .from(USERS)
-                .where(USERS.EMAIL.likeIgnoreCase(emailPrefix + "%"))
+                .join(ORGANISATION_MEMBERS).on(ORGANISATION_MEMBERS.USER_ID.eq(USERS.ID))
+                .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(orgId))
+                .and(USERS.EMAIL.likeIgnoreCase(emailPrefix + "%"))
                 .orderBy(USERS.EMAIL.asc())
                 .limit(limit)
                 .fetch()

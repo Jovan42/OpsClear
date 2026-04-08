@@ -1,16 +1,19 @@
 package com.opsclear.integration;
 
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
+import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
+import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
-import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
-import com.opsclear.model.UserModel;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +49,7 @@ class UserControllerIntegrationTest {
     @Autowired private UserRepository userRepository;
 
     private UUID callerId;
+    private OrganisationModel org;
 
     @BeforeEach
     void setUp() {
@@ -63,17 +67,24 @@ class UserControllerIntegrationTest {
         callerId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(callerId).email("caller@example.com").name("Caller").build());
+
+        org = organisationRepository.save(OrganisationModel.builder()
+                .name("Test Org").slug("TST").createdBy(callerId).build());
+        organisationRepository.saveMember(org.getId(), callerId, OrganisationRole.OWNER);
     }
 
     @Test
-    @DisplayName("search_shouldReturnMatchingUsers_whenEmailPrefixMatches")
-    void search_shouldReturnMatchingUsers_whenEmailPrefixMatches() throws Exception {
-        userRepository.save(UserModel.builder()
-                .id(UUID.randomUUID()).email("alice@example.com").name("Alice").build());
-        userRepository.save(UserModel.builder()
-                .id(UUID.randomUUID()).email("alicia@example.com").name("Alicia").build());
-        userRepository.save(UserModel.builder()
-                .id(UUID.randomUUID()).email("bob@example.com").name("Bob").build());
+    @DisplayName("search_shouldReturnOrgMembersMatchingPrefix_whenEmailPrefixMatches")
+    void search_shouldReturnOrgMembersMatchingPrefix_whenEmailPrefixMatches() throws Exception {
+        UUID aliceId = UUID.randomUUID();
+        UUID aliciaId = UUID.randomUUID();
+        UUID bobId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(aliceId).email("alice@example.com").name("Alice").build());
+        userRepository.save(UserModel.builder().id(aliciaId).email("alicia@example.com").name("Alicia").build());
+        userRepository.save(UserModel.builder().id(bobId).email("bob@example.com").name("Bob").build());
+        organisationRepository.saveMember(org.getId(), aliceId, OrganisationRole.MEMBER);
+        organisationRepository.saveMember(org.getId(), aliciaId, OrganisationRole.MEMBER);
+        // bob is NOT in the org — should not appear
 
         mockMvc.perform(get(ApiPaths.usersSearch("ali"))
                         .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "caller@example.com"))))
@@ -84,10 +95,26 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("search_shouldExcludeUsersOutsideCallerOrg")
+    void search_shouldExcludeUsersOutsideCallerOrg() throws Exception {
+        UUID outsideUserId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(outsideUserId).email("alice@other.com").name("Alice Other").build());
+        // outsideUser not added to org
+
+        mockMvc.perform(get(ApiPaths.usersSearch("ali"))
+                        .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "caller@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
     @DisplayName("search_shouldBeCaseInsensitive")
     void search_shouldBeCaseInsensitive() throws Exception {
+        UUID aliceId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
-                .id(UUID.randomUUID()).email("Alice@Example.COM").name("Alice").build());
+                .id(aliceId).email("Alice@Example.COM").name("Alice").build());
+        organisationRepository.saveMember(org.getId(), aliceId, OrganisationRole.MEMBER);
 
         mockMvc.perform(get(ApiPaths.usersSearch("alice"))
                         .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "caller@example.com"))))
@@ -97,8 +124,8 @@ class UserControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("search_shouldReturnEmpty_whenNoMatch")
-    void search_shouldReturnEmpty_whenNoMatch() throws Exception {
+    @DisplayName("search_shouldReturnEmpty_whenNoOrgMemberMatches")
+    void search_shouldReturnEmpty_whenNoOrgMemberMatches() throws Exception {
         mockMvc.perform(get(ApiPaths.usersSearch("zzz"))
                         .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "caller@example.com"))))
                 .andExpect(status().isOk())
@@ -121,14 +148,28 @@ class UserControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("search_shouldReturn403_whenCallerBelongsToNoOrg")
+    void search_shouldReturn403_whenCallerBelongsToNoOrg() throws Exception {
+        UUID outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(outsiderId).email("outsider@example.com").name("Outsider").build());
+
+        mockMvc.perform(get(ApiPaths.usersSearch("ali"))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("search_shouldLimitResultsToTen")
     void search_shouldLimitResultsToTen() throws Exception {
         for (int i = 0; i < 15; i++) {
+            UUID userId = UUID.randomUUID();
             userRepository.save(UserModel.builder()
-                    .id(UUID.randomUUID())
+                    .id(userId)
                     .email("user" + i + "@example.com")
                     .name("User " + i)
                     .build());
+            organisationRepository.saveMember(org.getId(), userId, OrganisationRole.MEMBER);
         }
 
         mockMvc.perform(get(ApiPaths.usersSearch("user"))
@@ -143,6 +184,7 @@ class UserControllerIntegrationTest {
         UUID targetId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(targetId).email("jane@example.com").name("Jane Doe").build());
+        organisationRepository.saveMember(org.getId(), targetId, OrganisationRole.MEMBER);
 
         mockMvc.perform(get(ApiPaths.usersSearch("jane"))
                         .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "caller@example.com"))))
@@ -155,11 +197,9 @@ class UserControllerIntegrationTest {
     @Test
     @DisplayName("search_shouldReturn400WithMultipleMessages_whenEmailIsBlankAndTooShort")
     void search_shouldReturn400WithMultipleMessages_whenEmailIsBlankAndTooShort() throws Exception {
-        // Single space: violates both @NotBlank and @Size(min=2) simultaneously,
-        // exercising the reduce((a, b) -> a + "; " + b) branch in handleConstraintViolation.
         mockMvc.perform(get(ApiPaths.USERS).param("email", " ")
                         .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "caller@example.com"))))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString(";")));
+                .andExpect(jsonPath("$.message").value(Matchers.containsString(";")));
     }
 }

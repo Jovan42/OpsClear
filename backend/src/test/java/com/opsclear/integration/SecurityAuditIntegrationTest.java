@@ -1,5 +1,8 @@
 package com.opsclear.integration;
 
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
+import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
@@ -45,6 +48,8 @@ class SecurityAuditIntegrationTest {
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private UserRepository userRepository;
 
+    private UUID callerId;
+
     @BeforeEach
     void setUp() {
         approvalRepository.deleteAll();
@@ -57,6 +62,12 @@ class SecurityAuditIntegrationTest {
         projectRepository.deleteAll();
         organisationRepository.deleteAll();
         userRepository.deleteAll();
+
+        callerId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(callerId).email("auditor@example.com").name("Auditor").build());
+        OrganisationModel org = organisationRepository.save(
+                OrganisationModel.builder().name("Audit Org").slug("AUD").createdBy(callerId).build());
+        organisationRepository.saveMember(org.getId(), callerId, OrganisationRole.OWNER);
     }
 
     // --- Security headers ---
@@ -111,12 +122,10 @@ class SecurityAuditIntegrationTest {
     @Test
     @DisplayName("Error response should contain error, message, and timestamp fields")
     void errorResponse_shouldContainStandardFields() throws Exception {
-        // Trigger a 404 NotFoundException via a well-formed request for a non-existent resource
-        UUID callerId = UUID.randomUUID();
         UUID unknownProject = UUID.randomUUID();
 
         mockMvc.perform(get(ApiPaths.project(unknownProject))
-                        .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "u@example.com"))))
+                        .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "auditor@example.com"))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").exists())
                 .andExpect(jsonPath("$.message").exists())
@@ -126,11 +135,10 @@ class SecurityAuditIntegrationTest {
     @Test
     @DisplayName("Error response should not expose stack trace")
     void errorResponse_shouldNotExposeStackTrace() throws Exception {
-        UUID callerId = UUID.randomUUID();
         UUID unknownProject = UUID.randomUUID();
 
         mockMvc.perform(get(ApiPaths.project(unknownProject))
-                        .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "u@example.com"))))
+                        .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "auditor@example.com"))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.trace").doesNotExist())
                 .andExpect(jsonPath("$.stackTrace").doesNotExist())
