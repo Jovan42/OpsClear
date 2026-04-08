@@ -12,11 +12,14 @@ import SettingsPage from './features/settings/SettingsPage';
 import DesignPage from './dev/DesignPage';
 import ProjectRedirect from './components/ProjectRedirect';
 import CreateOrgPage from './features/org/CreateOrgPage';
+import OrgInvitesPage from './features/org/OrgInvitesPage';
 import OrgMembersPage from './features/org/OrgMembersPage';
 import OrgSettingsPage from './features/org/OrgSettingsPage';
+import AcceptInvitePage from './features/org/AcceptInvitePage';
 
 export const router = createBrowserRouter([
   { path: '/org/new', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
+  { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: <RouteErrorPage /> },
   {
     path: '/',
     element: <AppLayout />,
@@ -34,6 +37,7 @@ export const router = createBrowserRouter([
       { path: 'settings', element: <SettingsPage /> },
       { path: 'org/settings', element: <OrgSettingsPage /> },
       { path: 'org/members', element: <OrgMembersPage /> },
+      { path: 'org/invites', element: <OrgInvitesPage /> },
       { path: 'design', element: <DesignPage /> },
     ],
   },

@@ -3,6 +3,8 @@ import { useAuth } from '../../auth/AuthContext';
 import { projectsApi } from '../../api/projects';
 import type { ProjectStatus } from '../../types';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function useProjectList(status?: ProjectStatus | 'ALL') {
   return useQuery({
     queryKey: ['projects', { status: status ?? 'ACTIVE' }],
@@ -14,6 +16,7 @@ export function useProject(projectId: string) {
   return useQuery({
     queryKey: ['projects', projectId],
     queryFn: () => projectsApi.get(projectId),
+    enabled: UUID_RE.test(projectId),
   });
 }
 
@@ -21,6 +24,7 @@ export function useProjectMembers(projectId: string) {
   return useQuery({
     queryKey: ['projects', projectId, 'members'],
     queryFn: () => projectsApi.listMembers(projectId),
+    enabled: UUID_RE.test(projectId),
   });
 }
 

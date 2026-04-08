@@ -142,6 +142,7 @@ final class ApiPaths {
     // --- Organisations ---
 
     static final String ORGANISATIONS = "/api/organisations";
+    static final String MY_ORG        = "/api/organisations/mine";
 
     static String organisation(UUID orgId) {
         return "/api/organisations/" + orgId;

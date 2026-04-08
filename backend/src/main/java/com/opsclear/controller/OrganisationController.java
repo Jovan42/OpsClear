@@ -37,6 +37,14 @@ public class OrganisationController {
                 .body(OrganisationResponse.from(organisationService.create(request, callerId)));
     }
 
+    @GetMapping("/mine")
+    public ResponseEntity<OrganisationResponse> getMyOrganisation(Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        return organisationService.getMyOrganisation(callerId)
+                .map(org -> ResponseEntity.ok(OrganisationResponse.from(org)))
+                .orElse(ResponseEntity.noContent().build());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<OrganisationResponse> getById(
             @PathVariable UUID id,
