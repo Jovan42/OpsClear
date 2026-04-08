@@ -144,6 +144,9 @@ class JobIntegrationTest {
     @DisplayName("Should return 403 when requester is not a project member")
     void createJob_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsider).email("outsider@example.com").name("Outsider").build());
+        organisationRepository.saveMember(orgId, outsider, OrganisationRole.MEMBER);
+
         String body = """
                 { "title": "Job" }
                 """;
@@ -255,6 +258,8 @@ class JobIntegrationTest {
     @DisplayName("Should return 403 when requester is not a project member")
     void listJobs_shouldReturn403_whenNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsider).email("outsider@example.com").name("Outsider").build());
+        organisationRepository.saveMember(orgId, outsider, OrganisationRole.MEMBER);
 
         mockMvc.perform(get(ApiPaths.jobs(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
