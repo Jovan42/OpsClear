@@ -2,6 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { organisationsApi } from '../../api/organisations';
 import type { OrgRole } from '../../types';
 
+export function useMyOrg() {
+  return useQuery({
+    queryKey: ['organisations', 'mine'],
+    queryFn: () => organisationsApi.mine(),
+  });
+}
+
 export function useOrganisation(id: string | null) {
   return useQuery({
     queryKey: ['organisations', id],
@@ -16,6 +23,7 @@ export function useCreateOrganisation() {
     mutationFn: (body: { name: string; slug: string }) => organisationsApi.create(body),
     onSuccess: (data) => {
       queryClient.setQueryData(['organisations', data.id], data);
+      queryClient.setQueryData(['organisations', 'mine'], data);
     },
   });
 }
@@ -36,6 +44,7 @@ export function useDeleteOrganisation() {
     mutationFn: (id: string) => organisationsApi.delete(id),
     onSuccess: (_, id) => {
       queryClient.removeQueries({ queryKey: ['organisations', id] });
+      queryClient.setQueryData(['organisations', 'mine'], null);
     },
   });
 }

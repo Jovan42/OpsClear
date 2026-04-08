@@ -193,6 +193,29 @@ class OrganisationServiceTest {
                 .isInstanceOf(ForbiddenException.class);
     }
 
+    // --- getMyOrganisation ---
+
+    @Test
+    @DisplayName("getMyOrganisation_shouldReturnOrg_whenCallerIsMember")
+    void getMyOrganisation_shouldReturnOrg_whenCallerIsMember() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
+
+        var result = organisationService.getMyOrganisation(ownerId);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo(orgId);
+    }
+
+    @Test
+    @DisplayName("getMyOrganisation_shouldReturnEmpty_whenCallerHasNoOrg")
+    void getMyOrganisation_shouldReturnEmpty_whenCallerHasNoOrg() {
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        var result = organisationService.getMyOrganisation(ownerId);
+
+        assertThat(result).isEmpty();
+    }
+
     // --- softDelete ---
 
     @Test

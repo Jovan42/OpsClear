@@ -50,6 +50,11 @@ public class OrganisationService {
         return org;
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Optional<OrganisationModel> getMyOrganisation(UUID callerId) {
+        return organisationRepository.findByMember(callerId);
+    }
+
     @Transactional
     public OrganisationModel update(UUID orgId, UpdateOrganisationRequest request, UUID callerId) {
         OrganisationModel org = requireOrg(orgId);

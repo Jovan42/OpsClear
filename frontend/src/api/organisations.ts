@@ -2,6 +2,11 @@ import apiClient from './client';
 import type { OrgInviteResponse, OrgMemberResponse, OrgRole, OrganisationResponse } from '../types';
 
 export const organisationsApi = {
+  mine: () =>
+    apiClient
+      .get<OrganisationResponse>('/api/organisations/mine', { validateStatus: (s) => s === 200 || s === 204 })
+      .then((r) => (r.status === 204 ? null : r.data)),
+
   get: (id: string) =>
     apiClient.get<OrganisationResponse>(`/api/organisations/${id}`).then((r) => r.data),
 

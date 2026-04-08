@@ -1,7 +1,10 @@
+import { useEffect } from 'react';
 import { Outlet, useLocation, NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useProject, useProjectRole } from '../features/projects/useProjects';
 import { useApprovalQueue } from '../features/approvals/useApprovalQueue';
+import { useMyOrg } from '../features/org/useOrganisation';
+import { useCurrentOrg } from '../features/org/OrgContext';
 import UserMenu from './UserMenu';
 import { useTheme } from '../hooks/useTheme';
 
@@ -63,6 +66,21 @@ function ProjectBreadcrumb({ projectId }: Readonly<{ projectId: string }>) {
   );
 }
 
+function OrgLoader() {
+  const { setOrg, clearOrg } = useCurrentOrg();
+  const { data: myOrg } = useMyOrg();
+
+  useEffect(() => {
+    if (myOrg) {
+      setOrg(myOrg);
+    } else if (myOrg === null) {
+      clearOrg();
+    }
+  }, [myOrg, setOrg, clearOrg]);
+
+  return null;
+}
+
 export default function AppLayout() {
   useTheme();
   const { name } = useAuth();
@@ -110,6 +128,7 @@ export default function AppLayout() {
         )}
       </nav>
       <main className="flex-1">
+        <OrgLoader />
         <Outlet />
       </main>
     </div>

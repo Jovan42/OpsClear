@@ -285,6 +285,34 @@ class OrganisationIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // --- getMyOrganisation ---
+
+    @Test
+    @DisplayName("getMyOrg_shouldReturn200_whenCallerIsMember")
+    void getMyOrg_shouldReturn200_whenCallerIsMember() throws Exception {
+        mockMvc.perform(post(ApiPaths.ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Acme Corp", "slug", "ACM"))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get(ApiPaths.MY_ORG)
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("ACM"));
+    }
+
+    @Test
+    @DisplayName("getMyOrg_shouldReturn204_whenCallerHasNoOrg")
+    void getMyOrg_shouldReturn204_whenCallerHasNoOrg() throws Exception {
+        mockMvc.perform(get(ApiPaths.MY_ORG)
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner"))))
+                .andExpect(status().isNoContent());
+    }
+
     @Test
     @DisplayName("delete_shouldReturn403_whenCallerIsAdminNotOwner")
     void delete_shouldReturn403_whenCallerIsAdminNotOwner() throws Exception {

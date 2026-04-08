@@ -38,6 +38,24 @@ public class OrganisationRepository {
         return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
     }
 
+    public Optional<OrganisationModel> findByMember(UUID userId) {
+        return dsl.select(of(
+                        ORGANISATIONS.ID,
+                        ORGANISATIONS.NAME,
+                        ORGANISATIONS.SLUG,
+                        ORGANISATIONS.CREATED_BY,
+                        CREATOR_NAME,
+                        ORGANISATIONS.CREATED_AT,
+                        ORGANISATIONS.DELETED_AT))
+                .from(ORGANISATIONS)
+                .leftJoin(USERS).on(ORGANISATIONS.CREATED_BY.eq(USERS.ID))
+                .join(ORGANISATION_MEMBERS).on(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(ORGANISATIONS.ID))
+                .where(ORGANISATION_MEMBERS.USER_ID.eq(userId))
+                .and(ORGANISATIONS.DELETED_AT.isNull())
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
     public Optional<OrganisationModel> findByIdAndDeletedAtIsNull(UUID id) {
         return selectWithCreator()
                 .where(ORGANISATIONS.ID.eq(id))
