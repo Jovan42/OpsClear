@@ -2,6 +2,7 @@ package com.opsclear.controller;
 
 import com.opsclear.dto.BlockReasonResponse;
 import com.opsclear.service.BlockReasonService;
+import com.opsclear.service.FriendlyIdResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import com.opsclear.security.SecurityUtils;
@@ -21,13 +22,15 @@ import java.util.UUID;
 public class BlockReasonController {
 
     private final BlockReasonService blockReasonService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @GetMapping
     public ResponseEntity<List<BlockReasonResponse>> list(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        List<BlockReasonResponse> reasons = blockReasonService.listActive(projectId, userId)
+        UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
+        List<BlockReasonResponse> reasons = blockReasonService.listActive(pid, userId)
                 .stream()
                 .map(BlockReasonResponse::from)
                 .toList();
@@ -36,11 +39,12 @@ public class BlockReasonController {
 
     @DeleteMapping("/{reasonId}")
     public ResponseEntity<Void> delete(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             @PathVariable UUID reasonId,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        blockReasonService.softDelete(projectId, reasonId, userId);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
+        blockReasonService.softDelete(pid, reasonId, userId);
         return ResponseEntity.noContent().build();
     }
 }

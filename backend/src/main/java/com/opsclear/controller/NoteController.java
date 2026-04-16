@@ -4,6 +4,7 @@ import com.opsclear.dto.CreateNoteRequest;
 import com.opsclear.dto.NoteResponse;
 import com.opsclear.dto.NotesByJobResponse;
 import com.opsclear.model.NoteModel;
+import com.opsclear.service.FriendlyIdResolver;
 import com.opsclear.service.NoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,25 +28,30 @@ import java.util.UUID;
 public class NoteController {
 
     private final NoteService noteService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @PostMapping("/api/projects/{projectId}/jobs/{jobId}/notes")
     public ResponseEntity<NoteResponse> create(
-            @PathVariable UUID projectId,
-            @PathVariable UUID jobId,
+            @PathVariable String projectId,
+            @PathVariable String jobId,
             @Valid @RequestBody CreateNoteRequest request,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        NoteModel note = noteService.create(projectId, jobId, request.getContent(), callerId);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, callerId);
+        NoteModel note = noteService.create(pid, jid, request.getContent(), callerId);
         return ResponseEntity.status(201).body(NoteResponse.from(note));
     }
 
     @GetMapping("/api/projects/{projectId}/jobs/{jobId}/notes")
     public ResponseEntity<List<NoteResponse>> listByJob(
-            @PathVariable UUID projectId,
-            @PathVariable UUID jobId,
+            @PathVariable String projectId,
+            @PathVariable String jobId,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        List<NoteResponse> notes = noteService.listByJob(projectId, jobId, callerId)
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, callerId);
+        List<NoteResponse> notes = noteService.listByJob(pid, jid, callerId)
                 .stream()
                 .map(NoteResponse::from)
                 .toList();
@@ -54,10 +60,11 @@ public class NoteController {
 
     @GetMapping("/api/projects/{projectId}/notes")
     public ResponseEntity<List<NotesByJobResponse>> listByProject(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        List<NoteModel> flat = noteService.listByProject(projectId, callerId);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        List<NoteModel> flat = noteService.listByProject(pid, callerId);
         return ResponseEntity.ok(groupByJob(flat));
     }
 

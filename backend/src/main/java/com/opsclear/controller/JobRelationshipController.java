@@ -3,6 +3,7 @@ package com.opsclear.controller;
 import com.opsclear.dto.CreateJobRelationshipRequest;
 import com.opsclear.dto.JobRelationshipResponse;
 import com.opsclear.security.SecurityUtils;
+import com.opsclear.service.FriendlyIdResolver;
 import com.opsclear.service.JobRelationshipService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,28 +25,33 @@ import java.util.UUID;
 public class JobRelationshipController {
 
     private final JobRelationshipService jobRelationshipService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @PostMapping
     public ResponseEntity<JobRelationshipResponse> create(
-            @PathVariable UUID projectId,
-            @PathVariable UUID jobId,
+            @PathVariable String projectId,
+            @PathVariable String jobId,
             @Valid @RequestBody CreateJobRelationshipRequest request,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, userId);
         JobRelationshipResponse response = JobRelationshipResponse.from(
-                jobRelationshipService.create(projectId, jobId, request.getTargetJobId(),
+                jobRelationshipService.create(pid, jid, request.getTargetJobId(),
                         request.getType(), userId));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @DeleteMapping("/{relationshipId}")
     public ResponseEntity<Void> delete(
-            @PathVariable UUID projectId,
-            @PathVariable UUID jobId,
+            @PathVariable String projectId,
+            @PathVariable String jobId,
             @PathVariable UUID relationshipId,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        jobRelationshipService.delete(projectId, jobId, relationshipId, userId);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, userId);
+        jobRelationshipService.delete(pid, jid, relationshipId, userId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -4,6 +4,7 @@ import com.opsclear.dto.AddMemberRequest;
 import com.opsclear.dto.ProjectMemberResponse;
 import com.opsclear.dto.UpdateMemberRoleRequest;
 import com.opsclear.model.ProjectMemberModel;
+import com.opsclear.service.FriendlyIdResolver;
 import com.opsclear.service.ProjectMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,24 +30,27 @@ import java.util.UUID;
 public class ProjectMemberController {
 
     private final ProjectMemberService projectMemberService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @PostMapping
     public ResponseEntity<ProjectMemberResponse> addMember(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             @Valid @RequestBody AddMemberRequest request,
             Authentication auth) {
         UUID requesterId = SecurityUtils.resolveUserId(auth);
-        ProjectMemberModel member = projectMemberService.addMember(projectId, requesterId, request);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, requesterId);
+        ProjectMemberModel member = projectMemberService.addMember(pid, requesterId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ProjectMemberResponse.from(member));
     }
 
     @GetMapping
     public ResponseEntity<List<ProjectMemberResponse>> listMembers(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             Authentication auth) {
         UUID requesterId = SecurityUtils.resolveUserId(auth);
-        List<ProjectMemberResponse> members = projectMemberService.listMembers(projectId, requesterId)
+        UUID pid = friendlyIdResolver.resolveProject(projectId, requesterId);
+        List<ProjectMemberResponse> members = projectMemberService.listMembers(pid, requesterId)
                 .stream()
                 .map(ProjectMemberResponse::from)
                 .toList();
@@ -55,23 +59,25 @@ public class ProjectMemberController {
 
     @PutMapping("/{memberId}")
     public ResponseEntity<ProjectMemberResponse> updateRole(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             @PathVariable UUID memberId,
             @Valid @RequestBody UpdateMemberRoleRequest request,
             Authentication auth) {
         UUID requesterId = SecurityUtils.resolveUserId(auth);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, requesterId);
         ProjectMemberModel member = projectMemberService.updateRole(
-                projectId, requesterId, memberId, request.getRole());
+                pid, requesterId, memberId, request.getRole());
         return ResponseEntity.ok(ProjectMemberResponse.from(member));
     }
 
     @DeleteMapping("/{memberId}")
     public ResponseEntity<Void> removeMember(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             @PathVariable UUID memberId,
             Authentication auth) {
         UUID requesterId = SecurityUtils.resolveUserId(auth);
-        projectMemberService.removeMember(projectId, requesterId, memberId);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, requesterId);
+        projectMemberService.removeMember(pid, requesterId, memberId);
         return ResponseEntity.noContent().build();
     }
 }
