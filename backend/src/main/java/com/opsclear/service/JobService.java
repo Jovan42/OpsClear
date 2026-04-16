@@ -56,20 +56,14 @@ public class JobService {
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
-        requireOrgMembership(requesterId);
+        UUID orgId = requireOrgMembership(requesterId);
         ProjectModel project = requireProjectExists(projectId);
         requireProjectNotCompleted(project);
         requireMember(projectId, requesterId);
         requireAssignedUserExists(request.getAssignedTo());
         requireMilestoneInProject(request.getMilestoneId(), projectId);
 
-        UUID orgId = organisationRepository.findByMember(requesterId)
-                .map(OrganisationModel::getId)
-                .orElse(null);
-
-        String friendlyId = orgId != null
-                ? friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.JOB)
-                : null;
+        String friendlyId = friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.JOB);
 
         JobModel job = JobModel.builder()
                 .friendlyId(friendlyId)
@@ -246,10 +240,10 @@ public class JobService {
 
     // --- Org guard ---
 
-    private void requireOrgMembership(UUID userId) {
-        if (organisationRepository.findByMember(userId).isEmpty()) {
-            throw new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG);
-        }
+    private UUID requireOrgMembership(UUID userId) {
+        return organisationRepository.findByMember(userId)
+                .map(OrganisationModel::getId)
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG));
     }
 
     // --- Guards ---

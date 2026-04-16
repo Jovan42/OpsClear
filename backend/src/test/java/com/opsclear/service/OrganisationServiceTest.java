@@ -85,6 +85,7 @@ class OrganisationServiceTest {
         assertThat(captor.getValue().getCreatedBy()).isEqualTo(ownerId);
 
         verify(organisationRepository).saveMember(orgId, ownerId, OrganisationRole.OWNER);
+        verify(friendlyIdService).seedForOrg(orgId);
     }
 
     @Test

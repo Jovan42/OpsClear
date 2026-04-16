@@ -268,6 +268,26 @@ class MilestoneIntegrationTest {
     }
 
     @Test
+    @DisplayName("OWNER without org membership should create a milestone with null friendlyId")
+    void createMilestone_shouldReturn201_withNullFriendlyId_whenOwnerHasNoOrg() throws Exception {
+        UUID noOrgUserId = UUID.randomUUID();
+        userRepository.save(com.opsclear.model.UserModel.builder()
+                .id(noOrgUserId).email("noorg@example.com").name("NoOrg").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(noOrgUserId).role(ProjectMemberRole.OWNER).build());
+
+        mockMvc.perform(post(ApiPaths.milestones(projectId))
+                        .with(jwt().jwt(j -> j.subject(noOrgUserId.toString()).claim("email", "noorg@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "No-Org Sprint"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("No-Org Sprint"))
+                .andExpect(jsonPath("$.friendlyId").isEmpty());
+    }
+
+    @Test
     @DisplayName("Should return 404 when milestone belongs to a different project on delete")
     void deleteMilestone_shouldReturn404_whenMilestoneBelongsToDifferentProject() throws Exception {
         ProjectModel otherProject = projectRepository.save(

@@ -39,17 +39,11 @@ public class ProjectService {
 
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
-        requireOrgMembership(ownerId);
+        UUID organisationId = requireOrgMembership(ownerId);
         requireUserExists(ownerId);
         requireNameAvailable(request.getName(), ownerId);
 
-        UUID organisationId = organisationRepository.findByMember(ownerId)
-                .map(OrganisationModel::getId)
-                .orElse(null);
-
-        String friendlyId = organisationId != null
-                ? friendlyIdService.nextFriendlyId(organisationId, FriendlyIdEntityType.PROJECT)
-                : null;
+        String friendlyId = friendlyIdService.nextFriendlyId(organisationId, FriendlyIdEntityType.PROJECT);
 
         ProjectModel project = ProjectModel.builder()
                 .friendlyId(friendlyId)
@@ -137,10 +131,10 @@ public class ProjectService {
 
     // --- Org guard ---
 
-    private void requireOrgMembership(UUID userId) {
-        if (organisationRepository.findByMember(userId).isEmpty()) {
-            throw new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG);
-        }
+    private UUID requireOrgMembership(UUID userId) {
+        return organisationRepository.findByMember(userId)
+                .map(OrganisationModel::getId)
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG));
     }
 
     // --- Name uniqueness ---
