@@ -30,7 +30,7 @@ public class FriendlyIdResolver {
 
     @Transactional(readOnly = true)
     public UUID resolveProject(String param, UUID callerId) {
-        if (isUuid(param)) {
+        if (!isFriendlyId(param)) {
             return UUID.fromString(param);
         }
         UUID orgId = requireOrgId(callerId);
@@ -40,7 +40,7 @@ public class FriendlyIdResolver {
 
     @Transactional(readOnly = true)
     public UUID resolveJob(String param, UUID callerId) {
-        if (isUuid(param)) {
+        if (!isFriendlyId(param)) {
             return UUID.fromString(param);
         }
         UUID orgId = requireOrgId(callerId);
@@ -50,7 +50,7 @@ public class FriendlyIdResolver {
 
     @Transactional(readOnly = true)
     public UUID resolveMilestone(String param, UUID callerId) {
-        if (isUuid(param)) {
+        if (!isFriendlyId(param)) {
             return UUID.fromString(param);
         }
         UUID orgId = requireOrgId(callerId);
@@ -60,15 +60,6 @@ public class FriendlyIdResolver {
 
     static boolean isFriendlyId(String param) {
         return FRIENDLY_ID_PATTERN.matcher(param).matches();
-    }
-
-    private static boolean isUuid(String s) {
-        try {
-            UUID.fromString(s);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
     }
 
     private UUID requireOrgId(UUID callerId) {
