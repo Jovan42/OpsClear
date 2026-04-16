@@ -202,6 +202,38 @@ class FriendlyIdRoutingIntegrationTest {
     }
 
     @Test
+    @DisplayName("GET job by friendly ID — user with no org membership returns 403")
+    void getJob_byFriendlyId_noOrg_shouldReturn403() throws Exception {
+        UUID noOrgUser = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(noOrgUser).email("noorgjob@example.com").name("No Org Job").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(noOrgUser).role(ProjectMemberRole.OWNER).build());
+
+        // UUID projectId bypasses org check, friendly jobId triggers requireOrgId → 403
+        mockMvc.perform(get(ApiPaths.job(projectId.toString(), jobFriendlyId))
+                        .with(jwt().jwt(j -> j.subject(noOrgUser.toString()).claim("email", "noorgjob@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET milestone by friendly ID — user with no org membership returns 403")
+    void getMilestone_byFriendlyId_noOrg_shouldReturn403() throws Exception {
+        UUID noOrgUser = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(noOrgUser).email("noorgmil@example.com").name("No Org Mil").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(noOrgUser).role(ProjectMemberRole.OWNER).build());
+
+        // UUID projectId bypasses org check, friendly milestoneId triggers requireOrgId → 403
+        mockMvc.perform(put(ApiPaths.milestone(projectId.toString(), milestoneFriendlyId))
+                        .with(jwt().jwt(j -> j.subject(noOrgUser.toString()).claim("email", "noorgmil@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Updated"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("Friendly ID from a different org returns 404")
     void getProject_friendlyIdFromAnotherOrg_shouldReturn404() throws Exception {
         UUID stranger = UUID.randomUUID();

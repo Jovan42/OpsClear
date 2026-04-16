@@ -30,7 +30,9 @@ public class FriendlyIdResolver {
 
     @Transactional(readOnly = true)
     public UUID resolveProject(String param, UUID callerId) {
-        if (isUuid(param)) return UUID.fromString(param);
+        if (isUuid(param)) {
+            return UUID.fromString(param);
+        }
         UUID orgId = requireOrgId(callerId);
         return friendlyIdRepository.findProjectId(param, orgId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
@@ -38,7 +40,9 @@ public class FriendlyIdResolver {
 
     @Transactional(readOnly = true)
     public UUID resolveJob(String param, UUID callerId) {
-        if (isUuid(param)) return UUID.fromString(param);
+        if (isUuid(param)) {
+            return UUID.fromString(param);
+        }
         UUID orgId = requireOrgId(callerId);
         return friendlyIdRepository.findJobId(param, orgId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Job.NOT_FOUND));
@@ -46,7 +50,9 @@ public class FriendlyIdResolver {
 
     @Transactional(readOnly = true)
     public UUID resolveMilestone(String param, UUID callerId) {
-        if (isUuid(param)) return UUID.fromString(param);
+        if (isUuid(param)) {
+            return UUID.fromString(param);
+        }
         UUID orgId = requireOrgId(callerId);
         return friendlyIdRepository.findMilestoneId(param, orgId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Milestone.NOT_FOUND));
