@@ -24,6 +24,7 @@ public class OrganisationService {
 
     private final OrganisationRepository organisationRepository;
     private final UserRepository userRepository;
+    private final FriendlyIdService friendlyIdService;
 
     @Transactional
     public OrganisationModel create(CreateOrganisationRequest request, UUID callerId) {
@@ -38,6 +39,7 @@ public class OrganisationService {
 
         org = organisationRepository.save(org);
         organisationRepository.saveMember(org.getId(), callerId, OrganisationRole.OWNER);
+        friendlyIdService.seedForOrg(org.getId());
 
         log.info("Created organisation '{}' (slug={}) by user {}", org.getName(), org.getSlug(), callerId);
         return org;

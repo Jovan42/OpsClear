@@ -17,6 +17,7 @@ import java.util.UUID;
 public class ProjectModel {
 
     private UUID id;
+    private String friendlyId;
     private String name;
     private String description;
     private UUID ownerId;

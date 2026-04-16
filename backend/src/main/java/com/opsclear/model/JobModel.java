@@ -19,6 +19,7 @@ import java.util.UUID;
 public class JobModel {
 
     private UUID id;
+    private String friendlyId;
     private UUID projectId;
     private String title;
     private String description;

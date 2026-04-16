@@ -34,6 +34,7 @@ class OrganisationServiceTest {
 
     @Mock private OrganisationRepository organisationRepository;
     @Mock private UserRepository userRepository;
+    @Mock private FriendlyIdService friendlyIdService;
 
     private OrganisationService organisationService;
 
@@ -45,7 +46,7 @@ class OrganisationServiceTest {
 
     @BeforeEach
     void setUp() {
-        organisationService = new OrganisationService(organisationRepository, userRepository);
+        organisationService = new OrganisationService(organisationRepository, userRepository, friendlyIdService);
 
         ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();
@@ -84,6 +85,7 @@ class OrganisationServiceTest {
         assertThat(captor.getValue().getCreatedBy()).isEqualTo(ownerId);
 
         verify(organisationRepository).saveMember(orgId, ownerId, OrganisationRole.OWNER);
+        verify(friendlyIdService).seedForOrg(orgId);
     }
 
     @Test

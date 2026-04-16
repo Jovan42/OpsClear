@@ -91,6 +91,11 @@ public class Milestones extends TableImpl<MilestonesRecord> {
      */
     public final TableField<MilestonesRecord, LocalDateTime> DELETED_AT = createField(DSL.name("deleted_at"), SQLDataType.LOCALDATETIME(6), this, "");
 
+    /**
+     * The column <code>public.milestones.friendly_id</code>.
+     */
+    public final TableField<MilestonesRecord, String> FRIENDLY_ID = createField(DSL.name("friendly_id"), SQLDataType.VARCHAR(20), this, "");
+
     private Milestones(Name alias, Table<MilestonesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

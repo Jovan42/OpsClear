@@ -6,6 +6,7 @@ import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -34,18 +35,18 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final BlockReasonRepository blockReasonRepository;
     private final OrganisationRepository organisationRepository;
+    private final FriendlyIdService friendlyIdService;
 
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
-        requireOrgMembership(ownerId);
+        UUID organisationId = requireOrgMembership(ownerId);
         requireUserExists(ownerId);
         requireNameAvailable(request.getName(), ownerId);
 
-        UUID organisationId = organisationRepository.findByMember(ownerId)
-                .map(OrganisationModel::getId)
-                .orElse(null);
+        String friendlyId = friendlyIdService.nextFriendlyId(organisationId, FriendlyIdEntityType.PROJECT);
 
         ProjectModel project = ProjectModel.builder()
+                .friendlyId(friendlyId)
                 .name(request.getName())
                 .description(request.getDescription())
                 .ownerId(ownerId)
@@ -130,10 +131,10 @@ public class ProjectService {
 
     // --- Org guard ---
 
-    private void requireOrgMembership(UUID userId) {
-        if (organisationRepository.findByMember(userId).isEmpty()) {
-            throw new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG);
-        }
+    private UUID requireOrgMembership(UUID userId) {
+        return organisationRepository.findByMember(userId)
+                .map(OrganisationModel::getId)
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG));
     }
 
     // --- Name uniqueness ---

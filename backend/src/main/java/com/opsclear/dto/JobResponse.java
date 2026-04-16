@@ -21,6 +21,7 @@ import java.util.UUID;
 public class JobResponse {
 
     private UUID id;
+    private String friendlyId;
     private UUID projectId;
     private String title;
     private String description;
@@ -48,6 +49,7 @@ public class JobResponse {
     public static JobResponse from(JobModel job) {
         return JobResponse.builder()
                 .id(job.getId())
+                .friendlyId(job.getFriendlyId())
                 .projectId(job.getProjectId())
                 .title(job.getTitle())
                 .description(job.getDescription())

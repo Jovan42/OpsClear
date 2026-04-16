@@ -89,6 +89,7 @@ public class JobRepository {
     public JobModel save(JobModel job) {
         if (job.getId() == null) {
             UUID id = dsl.insertInto(JOBS)
+                    .set(JOBS.FRIENDLY_ID, job.getFriendlyId())
                     .set(JOBS.PROJECT_ID, job.getProjectId())
                     .set(JOBS.TITLE, job.getTitle())
                     .set(JOBS.DESCRIPTION, job.getDescription())
@@ -139,6 +140,7 @@ public class JobRepository {
     private SelectOnConditionStep<Record> selectWithAssignee() {
         return dsl.select(of(
                         JOBS.ID,
+                        JOBS.FRIENDLY_ID,
                         JOBS.PROJECT_ID,
                         JOBS.TITLE,
                         JOBS.DESCRIPTION,
@@ -167,6 +169,7 @@ public class JobRepository {
     private JobModel toModel(Record r) {
         return JobModel.builder()
                 .id(r.get(JOBS.ID))
+                .friendlyId(r.get(JOBS.FRIENDLY_ID))
                 .projectId(r.get(JOBS.PROJECT_ID))
                 .title(r.get(JOBS.TITLE))
                 .description(r.get(JOBS.DESCRIPTION))

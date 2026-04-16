@@ -127,6 +127,21 @@ public class MilestonesRecord extends UpdatableRecordImpl<MilestonesRecord> {
         return (LocalDateTime) get(6);
     }
 
+    /**
+     * Setter for <code>public.milestones.friendly_id</code>.
+     */
+    public MilestonesRecord setFriendlyId(String value) {
+        set(7, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.milestones.friendly_id</code>.
+     */
+    public String getFriendlyId() {
+        return (String) get(7);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -150,7 +165,7 @@ public class MilestonesRecord extends UpdatableRecordImpl<MilestonesRecord> {
     /**
      * Create a detached, initialised MilestonesRecord
      */
-    public MilestonesRecord(UUID id, UUID projectId, String name, String description, LocalDate deadline, LocalDateTime createdAt, LocalDateTime deletedAt) {
+    public MilestonesRecord(UUID id, UUID projectId, String name, String description, LocalDate deadline, LocalDateTime createdAt, LocalDateTime deletedAt, String friendlyId) {
         super(Milestones.MILESTONES);
 
         setId(id);
@@ -160,6 +175,7 @@ public class MilestonesRecord extends UpdatableRecordImpl<MilestonesRecord> {
         setDeadline(deadline);
         setCreatedAt(createdAt);
         setDeletedAt(deletedAt);
+        setFriendlyId(friendlyId);
         resetChangedOnNotNull();
     }
 }

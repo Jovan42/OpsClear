@@ -57,6 +57,9 @@ class ProjectServiceTest {
     @Mock
     private OrganisationRepository organisationRepository;
 
+    @Mock
+    private FriendlyIdService friendlyIdService;
+
     private ProjectService projectService;
 
     private UserModel testOwner;
@@ -64,7 +67,7 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository, blockReasonRepository, organisationRepository);
+        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository, blockReasonRepository, organisationRepository, friendlyIdService);
         ownerId = UUID.randomUUID();
         testOwner = UserModel.builder()
                 .id(ownerId)
@@ -609,4 +612,5 @@ class ProjectServiceTest {
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
     }
+
 }

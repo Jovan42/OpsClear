@@ -1,6 +1,8 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.CreateMilestoneRequest;
+import com.opsclear.model.FriendlyIdEntityType;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.dto.UpdateMilestoneRequest;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
@@ -9,6 +11,7 @@ import com.opsclear.model.MilestoneModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.repository.MilestoneRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,8 @@ public class MilestoneService {
     private final MilestoneRepository milestoneRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final OrganisationRepository organisationRepository;
+    private final FriendlyIdService friendlyIdService;
 
     @Transactional(readOnly = true)
     public List<MilestoneModel> list(UUID projectId, UUID requesterId) {
@@ -39,7 +44,17 @@ public class MilestoneService {
     public MilestoneModel create(UUID projectId, CreateMilestoneRequest request, UUID requesterId) {
         requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
+
+        UUID orgId = organisationRepository.findByMember(requesterId)
+                .map(OrganisationModel::getId)
+                .orElse(null);
+
+        String friendlyId = orgId != null
+                ? friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.MILESTONE)
+                : null;
+
         MilestoneModel milestone = MilestoneModel.builder()
+                .friendlyId(friendlyId)
                 .projectId(projectId)
                 .name(request.getName().strip())
                 .description(request.getDescription())

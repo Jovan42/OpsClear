@@ -11,6 +11,8 @@ import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.OrgSequences;
+import com.opsclear.generated.jooq.tables.OrgSettings;
 import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.OrganisationMembers;
 import com.opsclear.generated.jooq.tables.Organisations;
@@ -60,6 +62,16 @@ public class Tables {
      * Immutable audit notes attached to jobs — no update or delete paths exist
      */
     public static final Notes NOTES = Notes.NOTES;
+
+    /**
+     * The table <code>public.org_sequences</code>.
+     */
+    public static final OrgSequences ORG_SEQUENCES = OrgSequences.ORG_SEQUENCES;
+
+    /**
+     * The table <code>public.org_settings</code>.
+     */
+    public static final OrgSettings ORG_SETTINGS = OrgSettings.ORG_SETTINGS;
 
     /**
      * The table <code>public.organisation_invites</code>.

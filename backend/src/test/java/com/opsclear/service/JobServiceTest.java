@@ -58,6 +58,7 @@ class JobServiceTest {
     @Mock private MilestoneRepository milestoneRepository;
     @Mock private BlockReasonService blockReasonService;
     @Mock private OrganisationRepository organisationRepository;
+    @Mock private FriendlyIdService friendlyIdService;
 
     private JobService jobService;
 
@@ -70,7 +71,7 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, jobRelationshipRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService, organisationRepository);
+        jobService = new JobService(jobRepository, jobRelationshipRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService, organisationRepository, friendlyIdService);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();

@@ -51,6 +51,7 @@ class MilestoneIntegrationTest {
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private com.opsclear.repository.FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
@@ -81,6 +82,7 @@ class MilestoneIntegrationTest {
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+        friendlyIdRepository.seedForOrg(orgId);
 
         ProjectModel project = projectRepository.save(
                 ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
@@ -108,7 +110,8 @@ class MilestoneIntegrationTest {
                 .andExpect(jsonPath("$.description").value("First sprint"))
                 .andExpect(jsonPath("$.deadline").value("2026-04-01"))
                 .andExpect(jsonPath("$.projectId").value(projectId.toString()))
-                .andExpect(jsonPath("$.id").isString());
+                .andExpect(jsonPath("$.id").isString())
+                .andExpect(jsonPath("$.friendlyId").value("MIL-001"));
     }
 
     @Test
@@ -262,6 +265,26 @@ class MilestoneIntegrationTest {
         mockMvc.perform(delete(ApiPaths.milestone(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("OWNER without org membership should create a milestone with null friendlyId")
+    void createMilestone_shouldReturn201_withNullFriendlyId_whenOwnerHasNoOrg() throws Exception {
+        UUID noOrgUserId = UUID.randomUUID();
+        userRepository.save(com.opsclear.model.UserModel.builder()
+                .id(noOrgUserId).email("noorg@example.com").name("NoOrg").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(noOrgUserId).role(ProjectMemberRole.OWNER).build());
+
+        mockMvc.perform(post(ApiPaths.milestones(projectId))
+                        .with(jwt().jwt(j -> j.subject(noOrgUserId.toString()).claim("email", "noorg@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "No-Org Sprint"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("No-Org Sprint"))
+                .andExpect(jsonPath("$.friendlyId").isEmpty());
     }
 
     @Test
