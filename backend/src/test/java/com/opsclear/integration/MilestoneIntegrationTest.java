@@ -51,6 +51,7 @@ class MilestoneIntegrationTest {
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private com.opsclear.repository.FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
@@ -81,6 +82,7 @@ class MilestoneIntegrationTest {
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+        friendlyIdRepository.seedForOrg(orgId);
 
         ProjectModel project = projectRepository.save(
                 ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
@@ -108,7 +110,8 @@ class MilestoneIntegrationTest {
                 .andExpect(jsonPath("$.description").value("First sprint"))
                 .andExpect(jsonPath("$.deadline").value("2026-04-01"))
                 .andExpect(jsonPath("$.projectId").value(projectId.toString()))
-                .andExpect(jsonPath("$.id").isString());
+                .andExpect(jsonPath("$.id").isString())
+                .andExpect(jsonPath("$.friendlyId").value("MIL-001"));
     }
 
     @Test

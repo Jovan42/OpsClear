@@ -160,6 +160,21 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
         return (UUID) get(8);
     }
 
+    /**
+     * Setter for <code>public.projects.friendly_id</code>.
+     */
+    public ProjectsRecord setFriendlyId(String value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.projects.friendly_id</code>.
+     */
+    public String getFriendlyId() {
+        return (String) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -183,7 +198,7 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
     /**
      * Create a detached, initialised ProjectsRecord
      */
-    public ProjectsRecord(UUID id, String name, String description, UUID ownerId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, String status, UUID organisationId) {
+    public ProjectsRecord(UUID id, String name, String description, UUID ownerId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, String status, UUID organisationId, String friendlyId) {
         super(Projects.PROJECTS);
 
         setId(id);
@@ -195,6 +210,7 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
         setDeletedAt(deletedAt);
         setStatus(status);
         setOrganisationId(organisationId);
+        setFriendlyId(friendlyId);
         resetChangedOnNotNull();
     }
 }

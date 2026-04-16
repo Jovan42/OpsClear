@@ -68,6 +68,9 @@ class ProjectIntegrationTest {
     private OrganisationRepository organisationRepository;
 
     @Autowired
+    private com.opsclear.repository.FriendlyIdRepository friendlyIdRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     private UUID userId;
@@ -96,6 +99,7 @@ class ProjectIntegrationTest {
                 OrganisationModel.builder().name("Test Org").slug("TST").createdBy(userId).build());
         orgId = org.getId();
         organisationRepository.saveMember(orgId, userId, OrganisationRole.OWNER);
+        friendlyIdRepository.seedForOrg(orgId);
     }
 
     @Test
@@ -119,7 +123,8 @@ class ProjectIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Acme Corp"))
                 .andExpect(jsonPath("$.description").value("Main operations"))
                 .andExpect(jsonPath("$.ownerId").value(userId.toString()))
-                .andExpect(jsonPath("$.id").exists());
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.friendlyId").value("PRJ-001"));
 
         assertThat(projectRepository.findByOwnerIdAndDeletedAtIsNull(userId)).hasSize(1);
     }

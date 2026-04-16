@@ -4,11 +4,14 @@ import com.opsclear.dto.CreateMilestoneRequest;
 import com.opsclear.dto.UpdateMilestoneRequest;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.MilestoneModel;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.MilestoneRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +39,8 @@ class MilestoneServiceTest {
     @Mock private MilestoneRepository milestoneRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
+    @Mock private OrganisationRepository organisationRepository;
+    @Mock private FriendlyIdService friendlyIdService;
 
     private MilestoneService milestoneService;
 
@@ -43,6 +48,7 @@ class MilestoneServiceTest {
     private UUID ownerId;
     private UUID adminId;
     private UUID memberId;
+    private UUID orgId;
     private ProjectModel project;
     private ProjectMemberModel ownerMembership;
     private ProjectMemberModel adminMembership;
@@ -50,12 +56,13 @@ class MilestoneServiceTest {
 
     @BeforeEach
     void setUp() {
-        milestoneService = new MilestoneService(milestoneRepository, projectRepository, projectMemberRepository);
+        milestoneService = new MilestoneService(milestoneRepository, projectRepository, projectMemberRepository, organisationRepository, friendlyIdService);
 
         projectId = UUID.randomUUID();
         ownerId   = UUID.randomUUID();
         adminId   = UUID.randomUUID();
         memberId  = UUID.randomUUID();
+        orgId     = UUID.randomUUID();
 
         project = ProjectModel.builder().id(projectId).name("Test Project").ownerId(ownerId).build();
 
@@ -116,8 +123,10 @@ class MilestoneServiceTest {
                 .deadline(LocalDate.of(2026, 4, 1))
                 .build();
 
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
         MilestoneModel saved = MilestoneModel.builder()
                 .id(UUID.randomUUID())
+                .friendlyId("MIL-001")
                 .projectId(projectId)
                 .name("Sprint 1")
                 .description("First sprint")
@@ -127,6 +136,8 @@ class MilestoneServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
+        when(friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.MILESTONE)).thenReturn("MIL-001");
         when(milestoneRepository.save(any())).thenReturn(saved);
 
         MilestoneModel result = milestoneService.create(projectId, request, ownerId);
@@ -136,22 +147,46 @@ class MilestoneServiceTest {
         verify(milestoneRepository).save(captor.capture());
         assertThat(captor.getValue().getName()).isEqualTo("Sprint 1");
         assertThat(captor.getValue().getProjectId()).isEqualTo(projectId);
+        assertThat(captor.getValue().getFriendlyId()).isEqualTo("MIL-001");
     }
 
     @Test
     @DisplayName("ADMIN should be able to create a milestone")
     void create_shouldCreateMilestone_forAdmin() {
         CreateMilestoneRequest request = CreateMilestoneRequest.builder().name("Beta").build();
-        MilestoneModel saved = MilestoneModel.builder().id(UUID.randomUUID()).projectId(projectId).name("Beta").build();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(adminId).build();
+        MilestoneModel saved = MilestoneModel.builder().id(UUID.randomUUID()).friendlyId("MIL-001").projectId(projectId).name("Beta").build();
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, adminId))
                 .thenReturn(Optional.of(adminMembership));
+        when(organisationRepository.findByMember(adminId)).thenReturn(Optional.of(org));
+        when(friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.MILESTONE)).thenReturn("MIL-001");
         when(milestoneRepository.save(any())).thenReturn(saved);
 
         MilestoneModel result = milestoneService.create(projectId, request, adminId);
 
         assertThat(result.getName()).isEqualTo("Beta");
+        assertThat(result.getFriendlyId()).isEqualTo("MIL-001");
+    }
+
+    @Test
+    @DisplayName("create — friendlyId is null when user has no org")
+    void create_shouldSetNullFriendlyId_whenUserHasNoOrg() {
+        CreateMilestoneRequest request = CreateMilestoneRequest.builder().name("Sprint").build();
+        MilestoneModel saved = MilestoneModel.builder().id(UUID.randomUUID()).projectId(projectId).name("Sprint").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+        when(milestoneRepository.save(any())).thenReturn(saved);
+
+        milestoneService.create(projectId, request, ownerId);
+
+        ArgumentCaptor<MilestoneModel> captor = ArgumentCaptor.forClass(MilestoneModel.class);
+        verify(milestoneRepository).save(captor.capture());
+        assertThat(captor.getValue().getFriendlyId()).isNull();
     }
 
     @Test

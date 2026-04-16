@@ -6,6 +6,7 @@ import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -34,6 +35,7 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final BlockReasonRepository blockReasonRepository;
     private final OrganisationRepository organisationRepository;
+    private final FriendlyIdService friendlyIdService;
 
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
@@ -45,7 +47,12 @@ public class ProjectService {
                 .map(OrganisationModel::getId)
                 .orElse(null);
 
+        String friendlyId = organisationId != null
+                ? friendlyIdService.nextFriendlyId(organisationId, FriendlyIdEntityType.PROJECT)
+                : null;
+
         ProjectModel project = ProjectModel.builder()
+                .friendlyId(friendlyId)
                 .name(request.getName())
                 .description(request.getDescription())
                 .ownerId(ownerId)

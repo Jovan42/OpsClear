@@ -58,6 +58,7 @@ class JobIntegrationTest {
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private com.opsclear.repository.FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
@@ -87,6 +88,7 @@ class JobIntegrationTest {
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+        friendlyIdRepository.seedForOrg(orgId);
 
         ProjectModel project = projectRepository.save(
                 ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
@@ -120,7 +122,8 @@ class JobIntegrationTest {
                 .andExpect(jsonPath("$.client").value("Acme Corp"))
                 .andExpect(jsonPath("$.status").value("NEW"))
                 .andExpect(jsonPath("$.projectId").value(projectId.toString()))
-                .andExpect(jsonPath("$.id").exists());
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.friendlyId").value("JOB-001"));
 
         assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).hasSize(1);
     }

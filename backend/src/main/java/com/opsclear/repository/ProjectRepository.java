@@ -56,6 +56,7 @@ public class ProjectRepository {
     public List<ProjectModel> findByMemberIdAndStatusAndDeletedAtIsNull(UUID userId, ProjectStatus status) {
         var query = dsl.select(of(
                         PROJECTS.ID,
+                        PROJECTS.FRIENDLY_ID,
                         PROJECTS.NAME,
                         PROJECTS.DESCRIPTION,
                         PROJECTS.OWNER_ID,
@@ -116,6 +117,7 @@ public class ProjectRepository {
     public ProjectModel save(ProjectModel project) {
         if (project.getId() == null) {
             UUID id = dsl.insertInto(PROJECTS)
+                    .set(PROJECTS.FRIENDLY_ID, project.getFriendlyId())
                     .set(PROJECTS.NAME, project.getName())
                     .set(PROJECTS.DESCRIPTION, project.getDescription())
                     .set(PROJECTS.OWNER_ID, project.getOwnerId())
@@ -146,6 +148,7 @@ public class ProjectRepository {
     private org.jooq.SelectOnConditionStep<Record> selectWithOwner() {
         return dsl.select(of(
                         PROJECTS.ID,
+                        PROJECTS.FRIENDLY_ID,
                         PROJECTS.NAME,
                         PROJECTS.DESCRIPTION,
                         PROJECTS.OWNER_ID,
@@ -162,6 +165,7 @@ public class ProjectRepository {
     private ProjectModel toModel(Record r) {
         return ProjectModel.builder()
                 .id(r.get(PROJECTS.ID))
+                .friendlyId(r.get(PROJECTS.FRIENDLY_ID))
                 .name(r.get(PROJECTS.NAME))
                 .description(r.get(PROJECTS.DESCRIPTION))
                 .ownerId(r.get(PROJECTS.OWNER_ID))

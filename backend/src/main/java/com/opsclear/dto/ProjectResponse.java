@@ -19,6 +19,7 @@ import java.util.UUID;
 public class ProjectResponse {
 
     private UUID id;
+    private String friendlyId;
     private String name;
     private String description;
     private UUID ownerId;
@@ -30,6 +31,7 @@ public class ProjectResponse {
     public static ProjectResponse from(ProjectModel project) {
         return ProjectResponse.builder()
                 .id(project.getId())
+                .friendlyId(project.getFriendlyId())
                 .name(project.getName())
                 .description(project.getDescription())
                 .ownerId(project.getOwnerId())

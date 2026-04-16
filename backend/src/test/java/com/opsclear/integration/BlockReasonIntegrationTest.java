@@ -52,6 +52,7 @@ class BlockReasonIntegrationTest {
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private com.opsclear.repository.FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
@@ -83,6 +84,7 @@ class BlockReasonIntegrationTest {
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+        friendlyIdRepository.seedForOrg(orgId);
 
         ProjectModel project = projectRepository.save(
                 ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());

@@ -18,6 +18,7 @@ import java.util.UUID;
 public class MilestoneModel {
 
     private UUID id;
+    private String friendlyId;
     private UUID projectId;
     private String name;
     private String description;

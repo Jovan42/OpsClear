@@ -288,6 +288,21 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         return (UUID) get(16);
     }
 
+    /**
+     * Setter for <code>public.jobs.friendly_id</code>.
+     */
+    public JobsRecord setFriendlyId(String value) {
+        set(17, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.jobs.friendly_id</code>.
+     */
+    public String getFriendlyId() {
+        return (String) get(17);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -311,7 +326,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
     /**
      * Create a detached, initialised JobsRecord
      */
-    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt, String priority, UUID milestoneId) {
+    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt, String priority, UUID milestoneId, String friendlyId) {
         super(Jobs.JOBS);
 
         setId(id);
@@ -331,6 +346,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         setBlockedAt(blockedAt);
         setPriority(priority);
         setMilestoneId(milestoneId);
+        setFriendlyId(friendlyId);
         resetChangedOnNotNull();
     }
 }

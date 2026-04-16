@@ -8,6 +8,8 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.model.BlockReasonModel;
+import com.opsclear.model.FriendlyIdEntityType;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobRelationshipDirection;
@@ -50,6 +52,7 @@ public class JobService {
     private final MilestoneRepository milestoneRepository;
     private final BlockReasonService blockReasonService;
     private final OrganisationRepository organisationRepository;
+    private final FriendlyIdService friendlyIdService;
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
@@ -60,7 +63,16 @@ public class JobService {
         requireAssignedUserExists(request.getAssignedTo());
         requireMilestoneInProject(request.getMilestoneId(), projectId);
 
+        UUID orgId = organisationRepository.findByMember(requesterId)
+                .map(OrganisationModel::getId)
+                .orElse(null);
+
+        String friendlyId = orgId != null
+                ? friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.JOB)
+                : null;
+
         JobModel job = JobModel.builder()
+                .friendlyId(friendlyId)
                 .projectId(projectId)
                 .title(request.getTitle())
                 .description(request.getDescription())

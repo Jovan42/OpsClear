@@ -45,6 +45,7 @@ public class MilestoneRepository {
     public MilestoneModel save(MilestoneModel milestone) {
         if (milestone.getId() == null) {
             UUID id = dsl.insertInto(MILESTONES)
+                    .set(MILESTONES.FRIENDLY_ID, milestone.getFriendlyId())
                     .set(MILESTONES.PROJECT_ID, milestone.getProjectId())
                     .set(MILESTONES.NAME, milestone.getName())
                     .set(MILESTONES.DESCRIPTION, milestone.getDescription())
@@ -82,6 +83,7 @@ public class MilestoneRepository {
     private MilestoneModel toModel(MilestonesRecord r) {
         return MilestoneModel.builder()
                 .id(r.getId())
+                .friendlyId(r.getFriendlyId())
                 .projectId(r.getProjectId())
                 .name(r.getName())
                 .description(r.getDescription())

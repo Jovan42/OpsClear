@@ -11,6 +11,8 @@ import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.OrgSequences;
+import com.opsclear.generated.jooq.tables.OrgSettings;
 import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.OrganisationMembers;
 import com.opsclear.generated.jooq.tables.Organisations;
@@ -76,6 +78,16 @@ public class Public extends SchemaImpl {
     public final Notes NOTES = Notes.NOTES;
 
     /**
+     * The table <code>public.org_sequences</code>.
+     */
+    public final OrgSequences ORG_SEQUENCES = OrgSequences.ORG_SEQUENCES;
+
+    /**
+     * The table <code>public.org_settings</code>.
+     */
+    public final OrgSettings ORG_SETTINGS = OrgSettings.ORG_SETTINGS;
+
+    /**
      * The table <code>public.organisation_invites</code>.
      */
     public final OrganisationInvites ORGANISATION_INVITES = OrganisationInvites.ORGANISATION_INVITES;
@@ -133,6 +145,8 @@ public class Public extends SchemaImpl {
             Jobs.JOBS,
             Milestones.MILESTONES,
             Notes.NOTES,
+            OrgSequences.ORG_SEQUENCES,
+            OrgSettings.ORG_SETTINGS,
             OrganisationInvites.ORGANISATION_INVITES,
             OrganisationMembers.ORGANISATION_MEMBERS,
             Organisations.ORGANISATIONS,
