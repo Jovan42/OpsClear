@@ -3,6 +3,7 @@ package com.opsclear.controller;
 import com.opsclear.dto.CreateMilestoneRequest;
 import com.opsclear.dto.MilestoneResponse;
 import com.opsclear.dto.UpdateMilestoneRequest;
+import com.opsclear.service.FriendlyIdResolver;
 import com.opsclear.service.MilestoneService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +29,15 @@ import java.util.UUID;
 public class MilestoneController {
 
     private final MilestoneService milestoneService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @GetMapping
     public ResponseEntity<List<MilestoneResponse>> list(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        List<MilestoneResponse> milestones = milestoneService.list(projectId, userId)
+        UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
+        List<MilestoneResponse> milestones = milestoneService.list(pid, userId)
                 .stream()
                 .map(MilestoneResponse::from)
                 .toList();
@@ -43,32 +46,37 @@ public class MilestoneController {
 
     @PostMapping
     public ResponseEntity<MilestoneResponse> create(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             @Valid @RequestBody CreateMilestoneRequest request,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(MilestoneResponse.from(milestoneService.create(projectId, request, userId)));
+                .body(MilestoneResponse.from(milestoneService.create(pid, request, userId)));
     }
 
     @PutMapping("/{milestoneId}")
     public ResponseEntity<MilestoneResponse> update(
-            @PathVariable UUID projectId,
-            @PathVariable UUID milestoneId,
+            @PathVariable String projectId,
+            @PathVariable String milestoneId,
             @Valid @RequestBody UpdateMilestoneRequest request,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
+        UUID mid = friendlyIdResolver.resolveMilestone(milestoneId, userId);
         return ResponseEntity.ok(
-                MilestoneResponse.from(milestoneService.update(projectId, milestoneId, request, userId)));
+                MilestoneResponse.from(milestoneService.update(pid, mid, request, userId)));
     }
 
     @DeleteMapping("/{milestoneId}")
     public ResponseEntity<Void> delete(
-            @PathVariable UUID projectId,
-            @PathVariable UUID milestoneId,
+            @PathVariable String projectId,
+            @PathVariable String milestoneId,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        milestoneService.softDelete(projectId, milestoneId, userId);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
+        UUID mid = friendlyIdResolver.resolveMilestone(milestoneId, userId);
+        milestoneService.softDelete(pid, mid, userId);
         return ResponseEntity.noContent().build();
     }
 }

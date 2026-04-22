@@ -2,6 +2,7 @@ package com.opsclear.controller;
 
 import com.opsclear.dto.JobHistoryEntryResponse;
 import com.opsclear.security.SecurityUtils;
+import com.opsclear.service.FriendlyIdResolver;
 import com.opsclear.service.JobHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,14 +19,17 @@ import java.util.UUID;
 public class JobHistoryController {
 
     private final JobHistoryService jobHistoryService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @GetMapping("/api/projects/{projectId}/jobs/{jobId}/history")
     public ResponseEntity<List<JobHistoryEntryResponse>> getHistory(
-            @PathVariable UUID projectId,
-            @PathVariable UUID jobId,
+            @PathVariable String projectId,
+            @PathVariable String jobId,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        List<JobHistoryEntryResponse> history = jobHistoryService.getHistory(projectId, jobId, callerId)
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, callerId);
+        List<JobHistoryEntryResponse> history = jobHistoryService.getHistory(pid, jid, callerId)
                 .stream()
                 .map(JobHistoryEntryResponse::from)
                 .toList();

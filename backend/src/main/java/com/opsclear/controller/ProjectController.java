@@ -6,6 +6,7 @@ import com.opsclear.dto.UpdateProjectRequest;
 import com.opsclear.dto.UpdateProjectStatusRequest;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
+import com.opsclear.service.FriendlyIdResolver;
 import com.opsclear.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ import java.util.UUID;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @PostMapping
     public ResponseEntity<ProjectResponse> create(
@@ -60,39 +62,43 @@ public class ProjectController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponse> getById(
-            @PathVariable UUID id,
+            @PathVariable String id,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        ProjectModel project = projectService.getById(id, userId);
+        UUID projectId = friendlyIdResolver.resolveProject(id, userId);
+        ProjectModel project = projectService.getById(projectId, userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ProjectResponse> update(
-            @PathVariable UUID id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateProjectRequest request,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        ProjectModel project = projectService.update(id, request, userId);
+        UUID projectId = friendlyIdResolver.resolveProject(id, userId);
+        ProjectModel project = projectService.update(projectId, request, userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<ProjectResponse> updateStatus(
-            @PathVariable UUID id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateProjectStatusRequest request,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        ProjectModel project = projectService.updateStatus(id, request.getStatus(), userId);
+        UUID projectId = friendlyIdResolver.resolveProject(id, userId);
+        ProjectModel project = projectService.updateStatus(projectId, request.getStatus(), userId);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @PathVariable UUID id,
+            @PathVariable String id,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
-        projectService.softDelete(id, userId);
+        UUID projectId = friendlyIdResolver.resolveProject(id, userId);
+        projectService.softDelete(projectId, userId);
         return ResponseEntity.noContent().build();
     }
 }

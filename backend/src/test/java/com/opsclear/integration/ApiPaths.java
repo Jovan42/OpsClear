@@ -25,6 +25,10 @@ final class ApiPaths {
         return "/api/projects/" + projectId;
     }
 
+    static String project(String projectId) {
+        return "/api/projects/" + projectId;
+    }
+
     static String projectStatus(UUID projectId) {
         return "/api/projects/" + projectId + "/status";
     }
@@ -79,6 +83,10 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs/" + jobId;
     }
 
+    static String job(String projectId, String jobId) {
+        return "/api/projects/" + projectId + "/jobs/" + jobId;
+    }
+
     static String jobStatus(UUID projectId, UUID jobId) {
         return "/api/projects/" + projectId + "/jobs/" + jobId + "/status";
     }
@@ -127,7 +135,15 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/milestones";
     }
 
+    static String milestones(String projectId) {
+        return "/api/projects/" + projectId + "/milestones";
+    }
+
     static String milestone(UUID projectId, UUID milestoneId) {
+        return "/api/projects/" + projectId + "/milestones/" + milestoneId;
+    }
+
+    static String milestone(String projectId, String milestoneId) {
         return "/api/projects/" + projectId + "/milestones/" + milestoneId;
     }
 

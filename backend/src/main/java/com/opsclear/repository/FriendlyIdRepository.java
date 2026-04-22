@@ -6,10 +6,15 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.JOBS;
+import static com.opsclear.generated.jooq.Tables.MILESTONES;
 import static com.opsclear.generated.jooq.Tables.ORG_SEQUENCES;
 import static com.opsclear.generated.jooq.Tables.ORG_SETTINGS;
+import static com.opsclear.generated.jooq.Tables.PROJECTS;
+import static org.jooq.impl.DSL.upper;
 
 @Repository
 @RequiredArgsConstructor
@@ -59,6 +64,47 @@ public class FriendlyIdRepository {
                     .onDuplicateKeyIgnore()
                     .execute();
         }
+    }
+
+    /**
+     * Resolves a friendly ID to the project UUID, scoped to the given org.
+     * Case-insensitive. Returns empty if not found or belongs to a different org.
+     */
+    public Optional<UUID> findProjectId(String friendlyId, UUID orgId) {
+        return dsl.select(PROJECTS.ID)
+                .from(PROJECTS)
+                .where(upper(PROJECTS.FRIENDLY_ID).eq(friendlyId.toUpperCase()))
+                .and(PROJECTS.ORGANISATION_ID.eq(orgId))
+                .and(PROJECTS.DELETED_AT.isNull())
+                .fetchOptional(PROJECTS.ID);
+    }
+
+    /**
+     * Resolves a friendly ID to the job UUID, scoped to the given org via project join.
+     * Case-insensitive. Returns empty if not found or belongs to a different org.
+     */
+    public Optional<UUID> findJobId(String friendlyId, UUID orgId) {
+        return dsl.select(JOBS.ID)
+                .from(JOBS)
+                .join(PROJECTS).on(PROJECTS.ID.eq(JOBS.PROJECT_ID))
+                .where(upper(JOBS.FRIENDLY_ID).eq(friendlyId.toUpperCase()))
+                .and(PROJECTS.ORGANISATION_ID.eq(orgId))
+                .and(JOBS.DELETED_AT.isNull())
+                .fetchOptional(JOBS.ID);
+    }
+
+    /**
+     * Resolves a friendly ID to the milestone UUID, scoped to the given org via project join.
+     * Case-insensitive. Returns empty if not found or belongs to a different org.
+     */
+    public Optional<UUID> findMilestoneId(String friendlyId, UUID orgId) {
+        return dsl.select(MILESTONES.ID)
+                .from(MILESTONES)
+                .join(PROJECTS).on(PROJECTS.ID.eq(MILESTONES.PROJECT_ID))
+                .where(upper(MILESTONES.FRIENDLY_ID).eq(friendlyId.toUpperCase()))
+                .and(PROJECTS.ORGANISATION_ID.eq(orgId))
+                .and(MILESTONES.DELETED_AT.isNull())
+                .fetchOptional(MILESTONES.ID);
     }
 
     private Field<String> prefixField(FriendlyIdEntityType type) {

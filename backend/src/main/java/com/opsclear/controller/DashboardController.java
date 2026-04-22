@@ -2,6 +2,7 @@ package com.opsclear.controller;
 
 import com.opsclear.dto.DashboardResponse;
 import com.opsclear.service.DashboardService;
+import com.opsclear.service.FriendlyIdResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import com.opsclear.security.SecurityUtils;
@@ -17,12 +18,14 @@ import java.util.UUID;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @GetMapping("/api/projects/{projectId}/dashboard")
     public ResponseEntity<DashboardResponse> get(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        return ResponseEntity.ok(dashboardService.get(projectId, callerId));
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        return ResponseEntity.ok(dashboardService.get(pid, callerId));
     }
 }

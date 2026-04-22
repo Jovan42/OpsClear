@@ -5,6 +5,7 @@ import com.opsclear.dto.DecideApprovalRequest;
 import com.opsclear.dto.RequestApprovalRequest;
 import com.opsclear.model.ApprovalModel;
 import com.opsclear.service.ApprovalService;
+import com.opsclear.service.FriendlyIdResolver;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,38 +26,45 @@ import java.util.UUID;
 public class ApprovalController {
 
     private final ApprovalService approvalService;
+    private final FriendlyIdResolver friendlyIdResolver;
 
     @PostMapping("/api/projects/{projectId}/jobs/{jobId}/approvals")
     public ResponseEntity<ApprovalResponse> request(
-            @PathVariable UUID projectId,
-            @PathVariable UUID jobId,
+            @PathVariable String projectId,
+            @PathVariable String jobId,
             @Valid @RequestBody RequestApprovalRequest request,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        ApprovalModel approval = approvalService.request(projectId, jobId, request.getDescription(), callerId);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, callerId);
+        ApprovalModel approval = approvalService.request(pid, jid, request.getDescription(), callerId);
         return ResponseEntity.status(201).body(ApprovalResponse.from(approval));
     }
 
     @PatchMapping("/api/projects/{projectId}/jobs/{jobId}/approvals/{approvalId}/status")
     public ResponseEntity<ApprovalResponse> decide(
-            @PathVariable UUID projectId,
-            @PathVariable UUID jobId,
+            @PathVariable String projectId,
+            @PathVariable String jobId,
             @PathVariable UUID approvalId,
             @Valid @RequestBody DecideApprovalRequest request,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, callerId);
         ApprovalModel approval = approvalService.decide(
-                projectId, jobId, approvalId, request.getStatus(), request.getComment(), callerId);
+                pid, jid, approvalId, request.getStatus(), request.getComment(), callerId);
         return ResponseEntity.ok(ApprovalResponse.from(approval));
     }
 
     @GetMapping("/api/projects/{projectId}/jobs/{jobId}/approvals")
     public ResponseEntity<List<ApprovalResponse>> listByJob(
-            @PathVariable UUID projectId,
-            @PathVariable UUID jobId,
+            @PathVariable String projectId,
+            @PathVariable String jobId,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        List<ApprovalResponse> approvals = approvalService.listByJob(projectId, jobId, callerId)
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, callerId);
+        List<ApprovalResponse> approvals = approvalService.listByJob(pid, jid, callerId)
                 .stream()
                 .map(ApprovalResponse::from)
                 .toList();
@@ -65,10 +73,11 @@ public class ApprovalController {
 
     @GetMapping("/api/projects/{projectId}/approvals/pending")
     public ResponseEntity<List<ApprovalResponse>> listPendingByProject(
-            @PathVariable UUID projectId,
+            @PathVariable String projectId,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        List<ApprovalResponse> approvals = approvalService.listPendingByProject(projectId, callerId)
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        List<ApprovalResponse> approvals = approvalService.listPendingByProject(pid, callerId)
                 .stream()
                 .map(ApprovalResponse::from)
                 .toList();
