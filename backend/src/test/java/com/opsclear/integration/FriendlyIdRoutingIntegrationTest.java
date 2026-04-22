@@ -234,6 +234,31 @@ class FriendlyIdRoutingIntegrationTest {
     }
 
     @Test
+    @DisplayName("GET project by friendly ID — user with no org membership returns 403")
+    void getProject_byFriendlyId_noOrg_shouldReturn403() throws Exception {
+        UUID noOrgUser = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(noOrgUser).email("noorgprj@example.com").name("No Org Prj").build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(noOrgUser).role(ProjectMemberRole.OWNER).build());
+
+        mockMvc.perform(get(ApiPaths.project(projectFriendlyId))
+                        .with(jwt().jwt(j -> j.subject(noOrgUser.toString()).claim("email", "noorgprj@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("PUT milestone with unknown friendly ID returns 404")
+    void updateMilestone_byUnknownFriendlyId_shouldReturn404() throws Exception {
+        mockMvc.perform(put(ApiPaths.milestone(projectFriendlyId, "MIL-999"))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Ghost Sprint"}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("Friendly ID from a different org returns 404")
     void getProject_friendlyIdFromAnotherOrg_shouldReturn404() throws Exception {
         UUID stranger = UUID.randomUUID();
