@@ -42,10 +42,14 @@ public class BlockReasonService {
     public void softDelete(UUID projectId, UUID reasonId, UUID requesterId) {
         requireProjectExists(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
-        blockReasonRepository.findByIdAndDeletedAtIsNull(reasonId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessages.BlockReason.NOT_FOUND));
+        requireBlockReasonExists(reasonId);
         blockReasonRepository.softDelete(reasonId);
         log.info("Soft-deleted block reason {} from project {} by user {}", reasonId, projectId, requesterId);
+    }
+
+    private void requireBlockReasonExists(UUID reasonId) {
+        blockReasonRepository.findByIdAndDeletedAtIsNull(reasonId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.BlockReason.NOT_FOUND));
     }
 
     private void requireProjectExists(UUID projectId) {

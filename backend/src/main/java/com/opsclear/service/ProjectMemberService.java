@@ -38,16 +38,9 @@ public class ProjectMemberService {
     public ProjectMemberModel addMember(UUID projectId, UUID requesterId, AddMemberRequest request) {
         requireProjectExists(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
-
-        if (request.getRole() == ProjectMemberRole.OWNER) {
-            throw new ForbiddenException(ErrorMessages.Member.CANNOT_ASSIGN_OWNER_ROLE);
-        }
-
+        requireNotOwnerRole(request.getRole());
         requireUserExists(request.getUserId());
-
-        if (projectMemberRepository.existsByProjectIdAndUserId(projectId, request.getUserId())) {
-            throw new ConflictException(ErrorMessages.Member.ALREADY_A_MEMBER);
-        }
+        requireNotAlreadyMember(projectId, request.getUserId());
 
         ProjectMemberModel member = ProjectMemberModel.builder()
                 .projectId(projectId)
@@ -64,17 +57,11 @@ public class ProjectMemberService {
     public ProjectMemberModel updateRole(UUID projectId, UUID requesterId, UUID memberId, ProjectMemberRole newRole) {
         requireProjectExists(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
-
-        if (newRole == ProjectMemberRole.OWNER) {
-            throw new ForbiddenException(ErrorMessages.Member.CANNOT_ASSIGN_OWNER_ROLE);
-        }
+        requireNotOwnerRole(newRole);
 
         ProjectMemberModel member = requireMembership(memberId);
         requireMemberInProject(member, projectId);
-
-        if (member.getRole() == ProjectMemberRole.OWNER) {
-            throw new ForbiddenException(ErrorMessages.Member.CANNOT_CHANGE_OWNER_ROLE);
-        }
+        requireNotOwnerForRoleChange(member);
 
         member.setRole(newRole);
         ProjectMemberModel updated = projectMemberRepository.save(member);
@@ -89,16 +76,37 @@ public class ProjectMemberService {
 
         ProjectMemberModel member = requireMembership(memberId);
         requireMemberInProject(member, projectId);
-
-        if (member.getRole() == ProjectMemberRole.OWNER) {
-            throw new ForbiddenException(ErrorMessages.Member.CANNOT_REMOVE_OWNER);
-        }
+        requireNotOwnerForRemoval(member);
 
         projectMemberRepository.delete(memberId);
         log.info("Removed member {} from project {}", memberId, projectId);
     }
 
     // --- Guards ---
+
+    private void requireNotOwnerRole(ProjectMemberRole role) {
+        if (role == ProjectMemberRole.OWNER) {
+            throw new ForbiddenException(ErrorMessages.Member.CANNOT_ASSIGN_OWNER_ROLE);
+        }
+    }
+
+    private void requireNotAlreadyMember(UUID projectId, UUID userId) {
+        if (projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
+            throw new ConflictException(ErrorMessages.Member.ALREADY_A_MEMBER);
+        }
+    }
+
+    private void requireNotOwnerForRoleChange(ProjectMemberModel member) {
+        if (member.getRole() == ProjectMemberRole.OWNER) {
+            throw new ForbiddenException(ErrorMessages.Member.CANNOT_CHANGE_OWNER_ROLE);
+        }
+    }
+
+    private void requireNotOwnerForRemoval(ProjectMemberModel member) {
+        if (member.getRole() == ProjectMemberRole.OWNER) {
+            throw new ForbiddenException(ErrorMessages.Member.CANNOT_REMOVE_OWNER);
+        }
+    }
 
     private ProjectMemberModel requireMembership(UUID memberId) {
         return projectMemberRepository.findById(memberId)
