@@ -275,7 +275,7 @@ function Section({
 // ---- Page ----
 
 export default function DashboardPage() {
-  const { projectId = '' } = useParams();
+  const { projectFriendlyId: projectId = '' } = useParams();
   const navigate = useNavigate();
   const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);

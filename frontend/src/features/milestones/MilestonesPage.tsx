@@ -99,7 +99,7 @@ function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete
 }
 
 export default function MilestonesPage() {
-  const { projectId = '' } = useParams();
+  const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   const { data: milestones = [], isLoading, isError, refetch } = useMilestones(projectId);
   const { data: allJobs = [] } = useJobList(projectId);

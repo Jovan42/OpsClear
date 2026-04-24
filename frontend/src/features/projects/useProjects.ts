@@ -3,7 +3,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { projectsApi } from '../../api/projects';
 import type { ProjectStatus } from '../../types';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PROJECT_ID_RE = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[A-Za-z]{2,6}-\d+)$/i;
 
 export function useProjectList(status?: ProjectStatus | 'ALL') {
   return useQuery({
@@ -16,7 +16,7 @@ export function useProject(projectId: string) {
   return useQuery({
     queryKey: ['projects', projectId],
     queryFn: () => projectsApi.get(projectId),
-    enabled: UUID_RE.test(projectId),
+    enabled: PROJECT_ID_RE.test(projectId),
   });
 }
 
@@ -24,7 +24,7 @@ export function useProjectMembers(projectId: string) {
   return useQuery({
     queryKey: ['projects', projectId, 'members'],
     queryFn: () => projectsApi.listMembers(projectId),
-    enabled: UUID_RE.test(projectId),
+    enabled: PROJECT_ID_RE.test(projectId),
   });
 }
 
@@ -53,8 +53,7 @@ export function useUpdateProject() {
       projectId: string;
       body: { name: string; description?: string };
     }) => projectsApi.update(projectId, body),
-    onSuccess: (data) => {
-      void queryClient.invalidateQueries({ queryKey: ['projects', data.id] });
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });

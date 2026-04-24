@@ -54,8 +54,7 @@ export function useUpdateJob(projectId: string) {
         milestoneId?: string;
       };
     }) => jobsApi.update(projectId, jobId, body),
-    onSuccess: (data) => {
-      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, data.id] });
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
@@ -74,8 +73,8 @@ export function useUpdateJobStatus(projectId: string) {
       status: JobStatus;
       reason?: string;
     }) => jobsApi.updateStatus(projectId, jobId, { status, reason }),
-    onSuccess: (data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, data.id] });
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, variables.jobId] });
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       if (variables.status === 'BLOCKED') {

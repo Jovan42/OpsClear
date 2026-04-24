@@ -36,7 +36,7 @@ function formatDate(dateStr: string | null) {
 }
 
 export default function JobDetailPage() {
-  const { projectId = '', jobId = '' } = useParams();
+  const { projectFriendlyId: projectId = '', jobFriendlyId: jobId = '' } = useParams();
   const navigate = useNavigate();
   const { userId } = useAuth();
 
