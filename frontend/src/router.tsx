@@ -1,7 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import OrgRequiredRoute from './components/OrgRequiredRoute';
+import RequireAuth from './components/RequireAuth';
 import RouteErrorPage from './components/RouteErrorPage';
+import LandingPage from './features/landing/LandingPage';
 import ProjectListPage from './features/projects/ProjectListPage';
 import ProjectSettingsPage from './features/projects/ProjectSettingsPage';
 import JobListPage from './features/jobs/JobListPage';
@@ -19,31 +21,36 @@ import OrgSettingsPage from './features/org/OrgSettingsPage';
 import AcceptInvitePage from './features/org/AcceptInvitePage';
 
 export const router = createBrowserRouter([
+  { path: '/', element: <LandingPage />, errorElement: <RouteErrorPage /> },
   { path: '/onboarding', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   { path: '/org/new', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: <RouteErrorPage /> },
   {
-    path: '/',
-    element: <AppLayout />,
+    element: <RequireAuth />,
     errorElement: <RouteErrorPage />,
     children: [
       {
-        element: <OrgRequiredRoute />,
+        element: <AppLayout />,
         children: [
-          { index: true, element: <Navigate to="/projects" replace /> },
-          { path: 'projects', element: <ProjectListPage /> },
-          { path: 'projects/:projectFriendlyId', element: <ProjectRedirect /> },
-          { path: 'projects/:projectFriendlyId/dashboard', element: <DashboardPage /> },
-          { path: 'projects/:projectFriendlyId/jobs', element: <JobListPage /> },
-          { path: 'projects/:projectFriendlyId/jobs/:jobFriendlyId', element: <JobDetailPage /> },
-          { path: 'projects/:projectFriendlyId/milestones', element: <MilestonesPage /> },
-          { path: 'projects/:projectFriendlyId/approvals', element: <ApprovalQueuePage /> },
-          { path: 'projects/:projectFriendlyId/settings', element: <ProjectSettingsPage /> },
-          { path: 'settings', element: <SettingsPage /> },
-          { path: 'org/settings', element: <OrgSettingsPage /> },
-          { path: 'org/members', element: <OrgMembersPage /> },
-          { path: 'org/invites', element: <OrgInvitesPage /> },
-          { path: 'design', element: <DesignPage /> },
+          {
+            element: <OrgRequiredRoute />,
+            children: [
+              { path: 'projects', element: <ProjectListPage /> },
+              { path: 'projects/:projectFriendlyId', element: <ProjectRedirect /> },
+              { path: 'projects/:projectFriendlyId/dashboard', element: <DashboardPage /> },
+              { path: 'projects/:projectFriendlyId/jobs', element: <JobListPage /> },
+              { path: 'projects/:projectFriendlyId/jobs/:jobFriendlyId', element: <JobDetailPage /> },
+              { path: 'projects/:projectFriendlyId/milestones', element: <MilestonesPage /> },
+              { path: 'projects/:projectFriendlyId/approvals', element: <ApprovalQueuePage /> },
+              { path: 'projects/:projectFriendlyId/settings', element: <ProjectSettingsPage /> },
+              { path: 'settings', element: <SettingsPage /> },
+              { path: 'org/settings', element: <OrgSettingsPage /> },
+              { path: 'org/members', element: <OrgMembersPage /> },
+              { path: 'org/invites', element: <OrgInvitesPage /> },
+              { path: 'design', element: <DesignPage /> },
+              { path: '*', element: <Navigate to="/projects" replace /> },
+            ],
+          },
         ],
       },
     ],
