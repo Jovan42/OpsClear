@@ -66,7 +66,7 @@ function CTAFooter() {
   return (
     <footer className="px-6 py-20 text-center" style={{ backgroundColor: 'var(--brand)' }}>
       <h2 className="text-3xl font-bold text-white mb-3">Ready to get clarity?</h2>
-      <p className="text-white/70 mb-8">Start now — no credit card required.</p>
+      <p className="text-white/70 mb-8">Start now. No credit card required.</p>
       <button
         onClick={() => keycloak.register()}
         className="px-8 py-3 bg-white rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity"
