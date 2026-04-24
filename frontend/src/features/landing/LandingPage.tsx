@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import keycloak from '../../auth/keycloak';
-import PricingCalculator from './PricingCalculator';
+import ProductAndPricing from './ProductAndPricing';
 
 function Navbar() {
   return (
@@ -91,9 +91,7 @@ export default function LandingPage() {
       <main className="flex-1 bg-white dark:bg-gray-900">
         <Hero />
         <ProblemStatement />
-        {/* Job 05: Features grid */}
-        {/* Job 05: Add-ons overview */}
-        <PricingCalculator />
+        <ProductAndPricing />
       </main>
       <CTAFooter />
     </div>
