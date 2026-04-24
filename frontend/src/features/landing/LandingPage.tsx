@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
+import keycloak from '../../auth/keycloak';
 
 export default function LandingPage() {
   const { authenticated } = useAuth();
@@ -9,7 +10,15 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <p className="text-gray-400">Landing page coming soon.</p>
+      <div className="text-center space-y-4">
+        <p className="text-gray-400">Landing page coming soon.</p>
+        <button
+          onClick={() => keycloak.login()}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Log in
+        </button>
+      </div>
     </div>
   );
 }
