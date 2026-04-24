@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import keycloak from '../../auth/keycloak';
+import PricingCalculator from './PricingCalculator';
 
 function Navbar() {
   return (
@@ -92,7 +93,7 @@ export default function LandingPage() {
         <ProblemStatement />
         {/* Job 05: Features grid */}
         {/* Job 05: Add-ons overview */}
-        {/* Job 04: Pricing calculator */}
+        <PricingCalculator />
       </main>
       <CTAFooter />
     </div>
