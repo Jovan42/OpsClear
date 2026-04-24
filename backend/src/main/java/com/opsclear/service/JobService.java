@@ -104,11 +104,7 @@ public class JobService {
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
-
-        if (requester.getRole() == ProjectMemberRole.MEMBER
-                && !requesterId.equals(job.getAssignedTo())) {
-            throw new ForbiddenException(ErrorMessages.Job.ACCESS_DENIED_NOT_ASSIGNED);
-        }
+        requireCanViewJob(requester, job, requesterId);
 
         job.setRelationships(fetchRelationships(jobId));
         return job;
@@ -174,11 +170,9 @@ public class JobService {
 
         JobStatus oldStatus = job.getStatus();
         validateTransition(oldStatus, newStatus, requester, job.getAssignedTo(), requesterId);
+        requireBlockReasonIfBlocking(newStatus, reason);
 
         if (newStatus == JobStatus.BLOCKED) {
-            if (reason == null || reason.isBlank()) {
-                throw new BadRequestException(ErrorMessages.Job.BLOCK_REASON_REQUIRED);
-            }
             BlockReasonModel blockReason = blockReasonService.findOrCreate(projectId, reason);
             job.setStatus(JobStatus.BLOCKED);
             job.setBlockedBy(requesterId);
@@ -247,6 +241,19 @@ public class JobService {
     }
 
     // --- Guards ---
+
+    private void requireCanViewJob(ProjectMemberModel requester, JobModel job, UUID requesterId) {
+        if (requester.getRole() == ProjectMemberRole.MEMBER
+                && !requesterId.equals(job.getAssignedTo())) {
+            throw new ForbiddenException(ErrorMessages.Job.ACCESS_DENIED_NOT_ASSIGNED);
+        }
+    }
+
+    private void requireBlockReasonIfBlocking(JobStatus newStatus, String reason) {
+        if (newStatus == JobStatus.BLOCKED && (reason == null || reason.isBlank())) {
+            throw new BadRequestException(ErrorMessages.Job.BLOCK_REASON_REQUIRED);
+        }
+    }
 
     private JobModel requireJob(UUID jobId) {
         return jobRepository.findByIdAndDeletedAtIsNull(jobId)
