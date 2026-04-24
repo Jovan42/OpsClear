@@ -127,7 +127,7 @@ export default function ProjectListPage() {
                 }`}
               >
                 <button
-                  onClick={() => navigate(`/projects/${project.id}`)}
+                  onClick={() => navigate(`/projects/${project.friendlyId}`)}
                   className="w-full text-left cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -149,7 +149,7 @@ export default function ProjectListPage() {
                   </div>
                 </button>
                 <button
-                  onClick={() => navigate(`/projects/${project.id}/settings`)}
+                  onClick={() => navigate(`/projects/${project.friendlyId}/settings`)}
                   className="absolute bottom-3 right-3 p-1 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors cursor-pointer"
                   title="Project settings"
                 >

@@ -115,7 +115,7 @@ function JobCard({ job, projectId, showMilestoneChip = false }: JobCardProps) {
   const deadline = formatDeadline(job.deadline, job.status);
   return (
     <button
-      onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
+      onClick={() => navigate(`/projects/${projectId}/jobs/${job.friendlyId}`)}
       className={`w-full text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
         job.status === 'BLOCKED' ? 'border-l-4 border-l-red-400' : ''
       }`}
@@ -161,7 +161,7 @@ function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
   const deadline = formatDeadline(job.deadline, job.status);
   return (
     <tr
-      onClick={() => navigate(`/projects/${projectId}/jobs/${job.id}`)}
+      onClick={() => navigate(`/projects/${projectId}/jobs/${job.friendlyId}`)}
       className={`bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
         job.status === 'BLOCKED' ? 'border-l-2 border-l-red-400' : ''
       }`}
@@ -299,7 +299,7 @@ function GroupSection({
 }
 
 export default function JobListPage() {
-  const { projectId = '' } = useParams();
+  const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   usePageTitle('Jobs', project?.name);
   const { prefs } = usePreferences();

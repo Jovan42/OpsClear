@@ -4,6 +4,7 @@ export type ProjectStatus = 'ACTIVE' | 'COMPLETED';
 
 export interface ProjectResponse {
   id: string;
+  friendlyId: string;
   name: string;
   description: string | null;
   ownerId: string;
@@ -53,6 +54,7 @@ export interface JobRelationshipView {
 
 export interface JobResponse {
   id: string;
+  friendlyId: string;
   projectId: string;
   title: string;
   description: string | null;
@@ -90,6 +92,7 @@ export interface JobHistoryEntry {
 
 export interface MilestoneResponse {
   id: string;
+  friendlyId: string;
   projectId: string;
   name: string;
   description: string | null;

@@ -88,7 +88,7 @@ export default function AppLayout() {
 
   const segments = location.pathname.split('/');
   const projectId =
-    segments[1] === 'projects' && segments[2] && segments[2].length > 8
+    segments[1] === 'projects' && segments[2]
       ? segments[2]
       : null;
 

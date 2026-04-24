@@ -35,7 +35,7 @@ type DetailsForm = z.infer<typeof detailsSchema>;
 const ROLES = ['MEMBER', 'ADMIN', 'OWNER'] as const;
 
 export default function ProjectSettingsPage() {
-  const { projectId = '' } = useParams();
+  const { projectFriendlyId: projectId = '' } = useParams();
   const navigate = useNavigate();
   const { userId } = useAuth();
 
