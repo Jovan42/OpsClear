@@ -28,7 +28,7 @@ function Hero() {
         </h1>
         <p className="text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-xl mx-auto">
           One screen tells you where every job stands, who's blocked, and what needs your attention today.
-          No status calls, no chasing updates — just clarity.
+          No status calls, no chasing updates. Just clarity.
         </p>
         <button
           onClick={() => keycloak.register()}
