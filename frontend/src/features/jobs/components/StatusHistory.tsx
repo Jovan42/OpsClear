@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useJobHistory } from '../useJobs';
 import { formatDuration } from '../utils/statusHistoryUtils';
-import type { JobHistoryEntry } from '../../../types';
+import StatusBadge from '../../../components/StatusBadge';
+import type { JobHistoryEntry, JobStatus } from '../../../types';
 
 function formatDateTime(dateStr: string) {
   return new Date(dateStr).toLocaleString(undefined, {
@@ -13,9 +14,22 @@ function formatDateTime(dateStr: string) {
   });
 }
 
-function transitionLabel(entry: JobHistoryEntry): string {
-  if (entry.changedFrom === null) return `Created as ${entry.changedTo}`;
-  return `${entry.changedFrom} → ${entry.changedTo}`;
+function TransitionLabel({ entry }: { entry: JobHistoryEntry }) {
+  if (entry.changedFrom === null) {
+    return (
+      <span className="flex items-center gap-1.5">
+        <span className="text-gray-500 dark:text-gray-400">Created as</span>
+        <StatusBadge status={entry.changedTo as JobStatus} />
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5">
+      <StatusBadge status={entry.changedFrom as JobStatus} />
+      <span className="text-gray-400 dark:text-gray-500">→</span>
+      <StatusBadge status={entry.changedTo as JobStatus} />
+    </span>
+  );
 }
 
 interface Props {
@@ -68,9 +82,9 @@ export default function StatusHistory({ projectId, jobId }: Props) {
                     <div className="flex items-start gap-3 py-3">
                       <div className="mt-0.5 w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0 mt-1.5" />
                       <div className="min-w-0 flex-1 space-y-0.5">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {transitionLabel(entry)}
-                        </p>
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <TransitionLabel entry={entry} />
+                        </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {entry.changedByName ?? 'Unknown'} · {formatDateTime(entry.changedAt)}
                         </p>
