@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useProject, useProjectRole } from '../features/projects/useProjects';
 import { useApprovalQueue } from '../features/approvals/useApprovalQueue';
 import { useMyOrg } from '../features/org/useOrganisation';
+import { useOrgSubscription } from '../features/org/useSubscription';
 import { useCurrentOrg } from '../features/org/OrgContext';
 import UserMenu from './UserMenu';
 import { useTheme } from '../hooks/useTheme';
@@ -67,16 +68,18 @@ function ProjectBreadcrumb({ projectId }: Readonly<{ projectId: string }>) {
 }
 
 function OrgLoader() {
-  const { setOrg, clearOrg } = useCurrentOrg();
+  const { setOrg, setSubscription, clearOrg } = useCurrentOrg();
   const { data: myOrg } = useMyOrg();
+  const { data: sub } = useOrgSubscription(myOrg?.id ?? null);
 
   useEffect(() => {
-    if (myOrg) {
-      setOrg(myOrg);
-    } else if (myOrg === null) {
-      clearOrg();
-    }
+    if (myOrg) setOrg(myOrg);
+    else if (myOrg === null) clearOrg();
   }, [myOrg, setOrg, clearOrg]);
+
+  useEffect(() => {
+    if (sub !== undefined) setSubscription(sub);
+  }, [sub, setSubscription]);
 
   return null;
 }
