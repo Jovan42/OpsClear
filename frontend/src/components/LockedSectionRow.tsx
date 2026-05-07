@@ -25,7 +25,6 @@ export default function LockedSectionRow({ sections }: Props) {
       <span className="flex-1 min-w-0">
         {sections.join(' · ')}
       </span>
-      <span className="text-gray-300 dark:text-gray-600 shrink-0">—</span>
       <button
         onClick={() => navigate('/org/settings')}
         className="shrink-0 text-brand hover:underline cursor-pointer font-medium whitespace-nowrap"
