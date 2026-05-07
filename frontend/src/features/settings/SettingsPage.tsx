@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import ApiKeySection from './ApiKeySection';
+import UpgradeCard from '../../components/UpgradeCard';
 import { usePreferences } from '../../hooks/usePreferences';
+import { useCurrentOrg } from '../org/OrgContext';
 import type {
   Theme, ViewMode, AccordionState, StatusTab,
   SortOrder, DeadlineFormat, ProjectPage, ProgressFormat,
@@ -137,6 +139,7 @@ const PROGRESS_FORMAT_OPTIONS: { value: ProgressFormat; label: string }[] = [
 export default function SettingsPage() {
   usePageTitle('Settings');
   const { prefs, update } = usePreferences();
+  const { hasAddon } = useCurrentOrg();
 
   return (
     <div className="max-w-lg mx-auto px-4 py-10 space-y-8">
@@ -239,7 +242,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <ApiKeySection />
+      {hasAddon('API_KEYS') ? <ApiKeySection /> : <UpgradeCard featureName="API Keys" />}
     </div>
   );
 }

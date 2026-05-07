@@ -6,9 +6,11 @@ import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import Markdown from '../../components/Markdown';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
+import UpgradeCard from '../../components/UpgradeCard';
 import { useDashboard } from './useDashboard';
 import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { useCurrentOrg } from '../org/OrgContext';
 import type { DashboardSummary, JobSummary, PendingApprovalResponse } from '../../types';
 
 // ---- helpers ----
@@ -282,8 +284,11 @@ export default function DashboardPage() {
   const { data, isLoading, isError, refetch } = useDashboard(projectId);
   usePageTitle('Dashboard', project?.name);
   const { prefs } = usePreferences();
+  const { hasAddon } = useCurrentOrg();
 
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+
+  if (!hasAddon('DASHBOARD')) return <UpgradeCard featureName="Dashboard" />;
 
   if (isLoading) {
     return (
