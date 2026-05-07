@@ -190,6 +190,12 @@ final class ApiPaths {
 
     static final String SUBSCRIPTION_CATALOG = "/api/subscriptions/catalog";
 
+    // --- Org subscription ---
+
+    static String orgSubscription(UUID orgId) {
+        return "/api/organisations/" + orgId + "/subscription";
+    }
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {
