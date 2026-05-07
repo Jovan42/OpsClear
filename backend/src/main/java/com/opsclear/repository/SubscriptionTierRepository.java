@@ -7,8 +7,6 @@ import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.SUBSCRIPTION_TIERS;
 
@@ -22,13 +20,6 @@ public class SubscriptionTierRepository {
         return dsl.selectFrom(SUBSCRIPTION_TIERS)
                 .orderBy(SUBSCRIPTION_TIERS.DISPLAY_ORDER.asc())
                 .fetch()
-                .map(this::toModel);
-    }
-
-    public Optional<SubscriptionTierModel> findById(UUID id) {
-        return dsl.selectFrom(SUBSCRIPTION_TIERS)
-                .where(SUBSCRIPTION_TIERS.ID.eq(id))
-                .fetchOptional()
                 .map(this::toModel);
     }
 

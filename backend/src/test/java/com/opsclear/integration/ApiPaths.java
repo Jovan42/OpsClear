@@ -186,6 +186,10 @@ final class ApiPaths {
         return "/api/invites/" + token + "/accept";
     }
 
+    // --- Subscription catalog ---
+
+    static final String SUBSCRIPTION_CATALOG = "/api/subscriptions/catalog";
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {
