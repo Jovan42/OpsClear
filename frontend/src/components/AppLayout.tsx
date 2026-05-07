@@ -15,6 +15,7 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
   const { hasAddon } = useCurrentOrg();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
   const dashboardLocked = !hasAddon('DASHBOARD');
+  const milestonesLocked = !hasAddon('MILESTONES');
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium px-1 py-1 border-b-2 transition-colors ${
@@ -23,29 +24,31 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
         : 'border-transparent text-white/70 hover:text-white'
     }`;
 
-  const dashboardLink = (
-    <NavLink to={`/projects/${projectId}/dashboard`} className={linkClass}>
-      <span className="flex items-center gap-1">
-        Dashboard
-        {dashboardLocked && (
+  function lockedNavLink(to: string, label: string) {
+    return (
+      <NavLink to={to} className={linkClass}>
+        <span className="flex items-center gap-1">
+          {label}
           <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-        )}
-      </span>
-    </NavLink>
-  );
+        </span>
+      </NavLink>
+    );
+  }
 
   return (
     <div className="flex items-center gap-5">
-      {!dashboardLocked && dashboardLink}
+      {!dashboardLocked
+        ? <NavLink to={`/projects/${projectId}/dashboard`} className={linkClass}>Dashboard</NavLink>
+        : null}
       <NavLink to={`/projects/${projectId}/jobs`} className={linkClass}>
         Jobs
       </NavLink>
-      <NavLink to={`/projects/${projectId}/milestones`} className={linkClass}>
-        Milestones
-      </NavLink>
+      {!milestonesLocked
+        ? <NavLink to={`/projects/${projectId}/milestones`} className={linkClass}>Milestones</NavLink>
+        : null}
       {isOwnerOrAdmin && (
         <NavLink to={`/projects/${projectId}/approvals`} className={linkClass}>
           <span className="flex items-center gap-1.5">
@@ -61,7 +64,8 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
       <NavLink to={`/projects/${projectId}/settings`} className={linkClass}>
         Settings
       </NavLink>
-      {dashboardLocked && dashboardLink}
+      {dashboardLocked && lockedNavLink(`/projects/${projectId}/dashboard`, 'Dashboard')}
+      {milestonesLocked && lockedNavLink(`/projects/${projectId}/milestones`, 'Milestones')}
     </div>
   );
 }

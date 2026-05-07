@@ -24,6 +24,8 @@ import { useApprovals } from './useApprovals';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import Markdown from '../../components/Markdown';
+import LockedSectionRow from '../../components/LockedSectionRow';
+import { useCurrentOrg } from '../org/OrgContext';
 import type { JobStatus } from '../../types';
 
 function formatDate(dateStr: string | null) {
@@ -60,9 +62,17 @@ export default function JobDetailPage() {
   const [kebabOpen, setKebabOpen] = useState(false);
   const [addRelOpen, setAddRelOpen] = useState(false);
 
+  const { hasAddon } = useCurrentOrg();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
   const isProjectCompleted = project?.status === 'COMPLETED';
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
+
+  const lockedSections = [
+    !hasAddon('NOTES') && 'Notes',
+    !hasAddon('APPROVALS') && 'Approvals',
+    !hasAddon('JOB_STATUS_HISTORY') && 'Job History',
+    !hasAddon('JOB_RELATIONSHIPS') && 'Relationships',
+  ].filter((s): s is string => Boolean(s));
 
   function handleStatusChange(status: JobStatus) {
     if (!job) return;
@@ -218,56 +228,65 @@ export default function JobDetailPage() {
       </div>
 
       {/* Relationships */}
-      <RelationshipsSection
-        projectId={projectId}
-        jobId={jobId}
-        relationships={job.relationships}
-        canManage={isOwnerOrAdmin}
-        onAdd={() => setAddRelOpen(true)}
-        projectCompleted={isProjectCompleted}
-      />
+      {hasAddon('JOB_RELATIONSHIPS') && (
+        <RelationshipsSection
+          projectId={projectId}
+          jobId={jobId}
+          relationships={job.relationships}
+          canManage={isOwnerOrAdmin}
+          onAdd={() => setAddRelOpen(true)}
+          projectCompleted={isProjectCompleted}
+        />
+      )}
 
       {/* Notes accordion */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-        <button
-          onClick={() => setNotesExpanded((v) => !v)}
-          className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-        >
-          <span>Notes</span>
-          <span className="text-gray-400 dark:text-gray-500">{notesExpanded ? '▲' : '▼'}</span>
-        </button>
-        {notesExpanded && (
-          <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
-            <NoteThread projectId={projectId} jobId={jobId} members={members} projectCompleted={isProjectCompleted} />
-          </div>
-        )}
-      </div>
+      {hasAddon('NOTES') && (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setNotesExpanded((v) => !v)}
+            className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+          >
+            <span>Notes</span>
+            <span className="text-gray-400 dark:text-gray-500">{notesExpanded ? '▲' : '▼'}</span>
+          </button>
+          {notesExpanded && (
+            <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
+              <NoteThread projectId={projectId} jobId={jobId} members={members} projectCompleted={isProjectCompleted} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Status history */}
-      <StatusHistory projectId={projectId} jobId={jobId} />
+      {hasAddon('JOB_STATUS_HISTORY') && <StatusHistory projectId={projectId} jobId={jobId} />}
 
       {/* Approvals accordion */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-        <button
-          onClick={() => setApprovalsExpanded((v) => !v)}
-          className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <span>Approvals</span>
-            {pendingCount > 0 && (
-              <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-medium px-1.5 py-0.5 rounded-full">
-                {pendingCount} pending
-              </span>
-            )}
-          </div>
-          <span className="text-gray-400 dark:text-gray-500">{approvalsExpanded ? '▲' : '▼'}</span>
-        </button>
-        {approvalsExpanded && (
-          <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
-            <ApprovalList projectId={projectId} jobId={jobId} role={role} members={members} />
-          </div>
-        )}
-      </div>
+      {hasAddon('APPROVALS') && (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setApprovalsExpanded((v) => !v)}
+            className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <span>Approvals</span>
+              {pendingCount > 0 && (
+                <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                  {pendingCount} pending
+                </span>
+              )}
+            </div>
+            <span className="text-gray-400 dark:text-gray-500">{approvalsExpanded ? '▲' : '▼'}</span>
+          </button>
+          {approvalsExpanded && (
+            <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
+              <ApprovalList projectId={projectId} jobId={jobId} role={role} members={members} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collapsed locked sections row */}
+      <LockedSectionRow sections={lockedSections} />
 
       {/* Modals */}
       <NewJobModal
