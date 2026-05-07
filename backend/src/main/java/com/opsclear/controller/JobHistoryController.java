@@ -1,5 +1,7 @@
 package com.opsclear.controller;
 
+import com.opsclear.aop.AddonCode;
+import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.JobHistoryEntryResponse;
 import com.opsclear.security.SecurityUtils;
 import com.opsclear.service.FriendlyIdResolver;
@@ -21,6 +23,7 @@ public class JobHistoryController {
     private final JobHistoryService jobHistoryService;
     private final FriendlyIdResolver friendlyIdResolver;
 
+    @RequiresAddon(AddonCode.JOB_STATUS_HISTORY)
     @GetMapping("/api/projects/{projectId}/jobs/{jobId}/history")
     public ResponseEntity<List<JobHistoryEntryResponse>> getHistory(
             @PathVariable String projectId,

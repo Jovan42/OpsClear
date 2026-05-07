@@ -1,5 +1,7 @@
 package com.opsclear.controller;
 
+import com.opsclear.aop.AddonCode;
+import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.ApiKeyResponse;
 import com.opsclear.dto.CreateApiKeyRequest;
 import com.opsclear.dto.CreateApiKeyResponse;
@@ -28,6 +30,7 @@ public class ApiKeyController {
 
     private final ApiKeyService apiKeyService;
 
+    @RequiresAddon(AddonCode.API_KEYS)
     @PostMapping
     public ResponseEntity<CreateApiKeyResponse> create(
             @AuthenticationPrincipal Jwt jwt,
@@ -37,12 +40,14 @@ public class ApiKeyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @RequiresAddon(AddonCode.API_KEYS)
     @GetMapping
     public ResponseEntity<List<ApiKeyResponse>> list(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.ok(apiKeyService.list(userId));
     }
 
+    @RequiresAddon(AddonCode.API_KEYS)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> revoke(
             @AuthenticationPrincipal Jwt jwt,

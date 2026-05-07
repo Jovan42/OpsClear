@@ -9,14 +9,18 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApprovalRepository;
+import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +32,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +50,7 @@ class JobRelationshipIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ApprovalRepository approvalRepository;
+    @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private NoteRepository noteRepository;
     @Autowired private JobRelationshipRepository jobRelationshipRepository;
     @Autowired private JobRepository jobRepository;
@@ -53,6 +59,9 @@ class JobRelationshipIntegrationTest {
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private OrgSubscriptionRepository subscriptionRepository;
+    @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
@@ -67,9 +76,11 @@ class JobRelationshipIntegrationTest {
         jobRelationshipRepository.deleteAll();
         jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
+        blockReasonRepository.deleteAll();
         milestoneRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
+        subscriptionRepository.deleteAll();
         organisationRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -93,6 +104,11 @@ class JobRelationshipIntegrationTest {
                 .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build());
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        UUID relationshipsAddonId = addonRepository.findAll().stream()
+                .filter(a -> a.getKey().equals("JOB_RELATIONSHIPS")).findFirst().orElseThrow().getId();
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(relationshipsAddonId));
     }
 
     // --- POST /api/projects/{projectId}/jobs/{jobId}/relationships ---

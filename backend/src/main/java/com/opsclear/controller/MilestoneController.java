@@ -1,5 +1,7 @@
 package com.opsclear.controller;
 
+import com.opsclear.aop.AddonCode;
+import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.CreateMilestoneRequest;
 import com.opsclear.dto.MilestoneResponse;
 import com.opsclear.dto.UpdateMilestoneRequest;
@@ -31,6 +33,7 @@ public class MilestoneController {
     private final MilestoneService milestoneService;
     private final FriendlyIdResolver friendlyIdResolver;
 
+    @RequiresAddon(AddonCode.MILESTONES)
     @GetMapping
     public ResponseEntity<List<MilestoneResponse>> list(
             @PathVariable String projectId,
@@ -44,6 +47,7 @@ public class MilestoneController {
         return ResponseEntity.ok(milestones);
     }
 
+    @RequiresAddon(AddonCode.MILESTONES)
     @PostMapping
     public ResponseEntity<MilestoneResponse> create(
             @PathVariable String projectId,
@@ -55,6 +59,7 @@ public class MilestoneController {
                 .body(MilestoneResponse.from(milestoneService.create(pid, request, userId)));
     }
 
+    @RequiresAddon(AddonCode.MILESTONES)
     @PutMapping("/{milestoneId}")
     public ResponseEntity<MilestoneResponse> update(
             @PathVariable String projectId,
@@ -68,6 +73,7 @@ public class MilestoneController {
                 MilestoneResponse.from(milestoneService.update(pid, mid, request, userId)));
     }
 
+    @RequiresAddon(AddonCode.MILESTONES)
     @DeleteMapping("/{milestoneId}")
     public ResponseEntity<Void> delete(
             @PathVariable String projectId,

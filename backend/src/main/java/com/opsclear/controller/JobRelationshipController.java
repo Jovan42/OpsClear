@@ -1,5 +1,7 @@
 package com.opsclear.controller;
 
+import com.opsclear.aop.AddonCode;
+import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.CreateJobRelationshipRequest;
 import com.opsclear.dto.JobRelationshipResponse;
 import com.opsclear.security.SecurityUtils;
@@ -27,6 +29,7 @@ public class JobRelationshipController {
     private final JobRelationshipService jobRelationshipService;
     private final FriendlyIdResolver friendlyIdResolver;
 
+    @RequiresAddon(AddonCode.JOB_RELATIONSHIPS)
     @PostMapping
     public ResponseEntity<JobRelationshipResponse> create(
             @PathVariable String projectId,
@@ -42,6 +45,7 @@ public class JobRelationshipController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @RequiresAddon(AddonCode.JOB_RELATIONSHIPS)
     @DeleteMapping("/{relationshipId}")
     public ResponseEntity<Void> delete(
             @PathVariable String projectId,

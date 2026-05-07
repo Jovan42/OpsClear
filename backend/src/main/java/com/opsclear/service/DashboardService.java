@@ -1,7 +1,5 @@
 package com.opsclear.service;
 
-import com.opsclear.aop.AddonCode;
-import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.ApprovalResponse;
 import com.opsclear.dto.DashboardResponse;
 import com.opsclear.dto.DashboardSummary;
@@ -37,7 +35,6 @@ public class DashboardService {
     private final ApprovalService approvalService;
     private final ProjectMemberRepository projectMemberRepository;
 
-    @RequiresAddon(AddonCode.DASHBOARD)
     @Transactional(readOnly = true)
     public DashboardResponse get(UUID projectId, UUID callerId) {
         // jobService.list() validates project membership and applies MEMBER scoping

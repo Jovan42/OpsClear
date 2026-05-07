@@ -3,6 +3,7 @@ package com.opsclear.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -85,9 +86,9 @@ class SubscriptionIntegrationTest {
                         .content(objectMapper.writeValueAsString(Map.of("userId", memberId, "role", "MEMBER"))))
                 .andExpect(status().isCreated());
 
-        tierId = tierRepository.findAll().get(0).getId();
+        tierId = tierRepository.findAll().getFirst().getId();
         addonId = addonRepository.findAll().stream()
-                .filter(a -> a.isAvailable())
+                .filter(SubscriptionAddonModel::isAvailable)
                 .findFirst()
                 .orElseThrow()
                 .getId();
@@ -156,8 +157,8 @@ class SubscriptionIntegrationTest {
     @Test
     @DisplayName("upsertSubscription_shouldReturn200_andPersistAddons_withMonthlyPricing")
     void upsertSubscription_shouldReturn200_andPersistAddons_withMonthlyPricing() throws Exception {
-        var tier0 = tierRepository.findAll().get(0);
-        var addon0 = addonRepository.findAll().stream().filter(a -> a.isAvailable()).findFirst().orElseThrow();
+        var tier0 = tierRepository.findAll().getFirst();
+        var addon0 = addonRepository.findAll().stream().filter(SubscriptionAddonModel::isAvailable).findFirst().orElseThrow();
 
         mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
@@ -175,8 +176,8 @@ class SubscriptionIntegrationTest {
     @Test
     @DisplayName("upsertSubscription_shouldReturn200_andPersistAddons_withAnnualPricing")
     void upsertSubscription_shouldReturn200_andPersistAddons_withAnnualPricing() throws Exception {
-        var tier0 = tierRepository.findAll().get(0);
-        var addon0 = addonRepository.findAll().stream().filter(a -> a.isAvailable()).findFirst().orElseThrow();
+        var tier0 = tierRepository.findAll().getFirst();
+        var addon0 = addonRepository.findAll().stream().filter(SubscriptionAddonModel::isAvailable).findFirst().orElseThrow();
 
         mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))

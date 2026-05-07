@@ -13,8 +13,11 @@ import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +29,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +55,9 @@ class MilestoneIntegrationTest {
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private OrgSubscriptionRepository subscriptionRepository;
+    @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private com.opsclear.repository.FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
 
@@ -68,6 +75,7 @@ class MilestoneIntegrationTest {
         milestoneRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
+        subscriptionRepository.deleteAll();
         organisationRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -92,6 +100,11 @@ class MilestoneIntegrationTest {
                 .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build());
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        UUID milestonesAddonId = addonRepository.findAll().stream()
+                .filter(a -> a.getKey().equals("MILESTONES")).findFirst().orElseThrow().getId();
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(milestonesAddonId));
     }
 
     // --- POST /api/projects/{projectId}/milestones ---
@@ -268,8 +281,8 @@ class MilestoneIntegrationTest {
     }
 
     @Test
-    @DisplayName("OWNER without org membership should create a milestone with null friendlyId")
-    void createMilestone_shouldReturn201_withNullFriendlyId_whenOwnerHasNoOrg() throws Exception {
+    @DisplayName("Should return 403 when requester belongs to no organisation")
+    void createMilestone_shouldReturn403_whenOwnerHasNoOrg() throws Exception {
         UUID noOrgUserId = UUID.randomUUID();
         userRepository.save(com.opsclear.model.UserModel.builder()
                 .id(noOrgUserId).email("noorg@example.com").name("NoOrg").build());
@@ -282,9 +295,7 @@ class MilestoneIntegrationTest {
                         .content("""
                                 {"name": "No-Org Sprint"}
                                 """))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("No-Org Sprint"))
-                .andExpect(jsonPath("$.friendlyId").isEmpty());
+                .andExpect(status().isForbidden());
     }
 
     @Test
