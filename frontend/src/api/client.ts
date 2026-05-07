@@ -6,13 +6,15 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  try {
-    await keycloak.updateToken(30);
-  } catch {
-    keycloak.login();
-  }
-  if (keycloak.token) {
-    config.headers['Authorization'] = `Bearer ${keycloak.token}`;
+  if (keycloak.authenticated) {
+    try {
+      await keycloak.updateToken(30);
+    } catch {
+      keycloak.login();
+    }
+    if (keycloak.token) {
+      config.headers['Authorization'] = `Bearer ${keycloak.token}`;
+    }
   }
   return config;
 });

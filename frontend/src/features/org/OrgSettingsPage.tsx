@@ -11,6 +11,7 @@ import Skeleton from '../../components/Skeleton';
 import { useCurrentOrg } from './OrgContext';
 import { useOrganisation, useUpdateOrganisation, useDeleteOrganisation, useOrgMembers } from './useOrganisation';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import SubscriptionSection from './SubscriptionSection';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Max 100 characters'),
@@ -216,6 +217,16 @@ export default function OrgSettingsPage() {
           )}
         </form>
       </section>
+
+      {/* ── Subscription ── */}
+      {isOwner && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
+            Subscription
+          </h2>
+          <SubscriptionSection orgId={org.id} />
+        </section>
+      )}
 
       {/* ── Danger zone ── */}
       {isOwner && (
