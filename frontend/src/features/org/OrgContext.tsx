@@ -33,6 +33,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }
 
   function hasAddon(key: AddonCode): boolean {
+    if (subscription?.internal) return true;
     return subscription?.addons.some((a) => a.key === key) ?? false;
   }
 
