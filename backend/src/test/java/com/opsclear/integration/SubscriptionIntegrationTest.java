@@ -247,6 +247,18 @@ class SubscriptionIntegrationTest {
     }
 
     @Test
+    @DisplayName("upsertSubscription_shouldReturn404_whenTierNotFound")
+    void upsertSubscription_shouldReturn404_whenTierNotFound() throws Exception {
+        UUID unknownTierId = UUID.randomUUID();
+
+        mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", unknownTierId, "billingCycle", "MONTHLY"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("upsertSubscription_shouldReturn401_whenUnauthenticated")
     void upsertSubscription_shouldReturn401_whenUnauthenticated() throws Exception {
         mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
