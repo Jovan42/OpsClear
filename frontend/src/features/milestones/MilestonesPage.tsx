@@ -107,14 +107,13 @@ export default function MilestonesPage() {
   const { data: allJobs = [] } = useJobList(projectId);
   const deleteMilestone = useDeleteMilestone(projectId);
   const { hasAddon } = useCurrentOrg();
+  const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState<MilestoneResponse | null>(null);
+  const [deleting, setDeleting] = useState<MilestoneResponse | null>(null);
 
   usePageTitle('Milestones', project?.name);
 
   if (!hasAddon('MILESTONES')) return <UpgradeCard featureName="Milestones" />;
-
-  const [showCreate, setShowCreate] = useState(false);
-  const [editing, setEditing] = useState<MilestoneResponse | null>(null);
-  const [deleting, setDeleting] = useState<MilestoneResponse | null>(null);
 
   if (isLoading) {
     return (
