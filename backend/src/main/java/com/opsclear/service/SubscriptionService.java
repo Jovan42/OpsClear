@@ -58,10 +58,12 @@ public class SubscriptionService {
         if (existing == null) {
             result = subscriptionRepository.create(orgId, newTier.getId(), request.getBillingCycle(), addonIds);
         } else {
-            result = subscriptionRepository.update(existing.getId(), orgId, newTier.getId(), request.getBillingCycle(), addonIds);
+            result = subscriptionRepository.update(
+                    existing.getId(), orgId, newTier.getId(), request.getBillingCycle(), addonIds);
         }
 
-        log.info("Subscription updated for org {}: tier={}, cycle={}", orgId, newTier.getId(), request.getBillingCycle());
+        log.info("Subscription updated for org {}: tier={}, cycle={}",
+                orgId, newTier.getId(), request.getBillingCycle());
         return buildResponse(result);
     }
 

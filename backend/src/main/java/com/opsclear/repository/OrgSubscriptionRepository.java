@@ -45,7 +45,8 @@ public class OrgSubscriptionRepository {
         return findByOrgId(orgId).orElseThrow();
     }
 
-    public OrgSubscriptionModel update(UUID subscriptionId, UUID orgId, UUID tierId, String billingCycle, Set<UUID> addonIds) {
+    public OrgSubscriptionModel update(
+            UUID subscriptionId, UUID orgId, UUID tierId, String billingCycle, Set<UUID> addonIds) {
         dsl.update(ORG_SUBSCRIPTIONS)
                 .set(ORG_SUBSCRIPTIONS.TIER_ID, tierId)
                 .set(ORG_SUBSCRIPTIONS.BILLING_CYCLE, billingCycle)

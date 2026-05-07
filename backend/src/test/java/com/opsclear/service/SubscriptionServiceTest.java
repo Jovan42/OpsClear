@@ -124,6 +124,18 @@ class SubscriptionServiceTest {
                 .hasMessageContaining("No subscription found");
     }
 
+    @Test
+    @DisplayName("getSubscription_shouldThrowNotFoundException_whenTierNotFound")
+    void getSubscription_shouldThrowNotFoundException_whenTierNotFound() {
+        when(organisationRepository.findMemberRole(orgId, userId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(subscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getSubscription(orgId, userId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Subscription tier not found");
+    }
+
     // ─── upsertSubscription — access control ──────────────────────────────────
 
     @Test
