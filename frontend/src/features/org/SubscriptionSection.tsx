@@ -76,6 +76,15 @@ export default function SubscriptionSection({ orgId }: Props) {
 
   if (!catalog) return null;
 
+  if (currentSub?.internal) {
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-5">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Internal account</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">All features are unlocked. Billing does not apply to this account.</p>
+      </div>
+    );
+  }
+
   const availableAddons = catalog.addons.filter((a) => a.available);
   const comingSoonAddons = catalog.addons.filter((a) => !a.available);
 
