@@ -13,6 +13,9 @@ import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
+import org.jooq.DSLContext;
+
+import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AddonGatingIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
+    @Autowired private DSLContext dsl;
     @Autowired private OrgSubscriptionRepository subscriptionRepository;
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private ProjectRepository projectRepository;
@@ -106,5 +110,19 @@ class AddonGatingIntegrationTest {
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 200 when org is internal (bypasses add-on check)")
+    void dashboardGet_shouldReturn200_whenOrgIsInternal() throws Exception {
+        subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of());
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.IS_INTERNAL, true)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .execute();
+
+        mockMvc.perform(get(ApiPaths.dashboard(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
+                .andExpect(status().isOk());
     }
 }
