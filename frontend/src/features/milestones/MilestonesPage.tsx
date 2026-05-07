@@ -10,6 +10,8 @@ import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
 import ProgressBar from '../../components/ProgressBar';
+import UpgradeCard from '../../components/UpgradeCard';
+import { useCurrentOrg } from '../org/OrgContext';
 import type { MilestoneResponse } from '../../types';
 
 function formatDeadline(iso: string): string {
@@ -104,8 +106,11 @@ export default function MilestonesPage() {
   const { data: milestones = [], isLoading, isError, refetch } = useMilestones(projectId);
   const { data: allJobs = [] } = useJobList(projectId);
   const deleteMilestone = useDeleteMilestone(projectId);
+  const { hasAddon } = useCurrentOrg();
 
   usePageTitle('Milestones', project?.name);
+
+  if (!hasAddon('MILESTONES')) return <UpgradeCard featureName="Milestones" />;
 
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<MilestoneResponse | null>(null);
