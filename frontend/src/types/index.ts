@@ -169,6 +169,18 @@ export interface OrgInviteResponse {
 
 // ---- Subscriptions ----
 
+export type AddonCode =
+  | 'DASHBOARD'
+  | 'APPROVALS'
+  | 'NOTES'
+  | 'JOB_STATUS_HISTORY'
+  | 'MILESTONES'
+  | 'JOB_RELATIONSHIPS'
+  | 'API_KEYS'
+  | 'JOB_TEMPLATES'
+  | 'RECURRING_SCHEDULING';
+
+
 export interface SubscriptionTierResponse {
   id: string;
   maxMembers: number;
