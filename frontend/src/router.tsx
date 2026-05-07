@@ -4,6 +4,7 @@ import OrgRequiredRoute from './components/OrgRequiredRoute';
 import RequireAuth from './components/RequireAuth';
 import RouteErrorPage from './components/RouteErrorPage';
 import LandingPage from './features/landing/LandingPage';
+import FeaturesPage from './features/landing/FeaturesPage';
 import ProjectListPage from './features/projects/ProjectListPage';
 import ProjectSettingsPage from './features/projects/ProjectSettingsPage';
 import JobListPage from './features/jobs/JobListPage';
@@ -22,6 +23,7 @@ import AcceptInvitePage from './features/org/AcceptInvitePage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage />, errorElement: <RouteErrorPage /> },
+  { path: '/features', element: <FeaturesPage />, errorElement: <RouteErrorPage /> },
   { path: '/onboarding', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   { path: '/org/new', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: <RouteErrorPage /> },
