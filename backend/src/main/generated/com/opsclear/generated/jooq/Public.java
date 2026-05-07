@@ -13,12 +13,16 @@ import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.OrgSequences;
 import com.opsclear.generated.jooq.tables.OrgSettings;
+import com.opsclear.generated.jooq.tables.OrgSubscriptionAddons;
+import com.opsclear.generated.jooq.tables.OrgSubscriptions;
 import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.OrganisationMembers;
 import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
+import com.opsclear.generated.jooq.tables.SubscriptionAddons;
+import com.opsclear.generated.jooq.tables.SubscriptionTiers;
 import com.opsclear.generated.jooq.tables.Users;
 
 import java.util.Arrays;
@@ -88,6 +92,16 @@ public class Public extends SchemaImpl {
     public final OrgSettings ORG_SETTINGS = OrgSettings.ORG_SETTINGS;
 
     /**
+     * The table <code>public.org_subscription_addons</code>.
+     */
+    public final OrgSubscriptionAddons ORG_SUBSCRIPTION_ADDONS = OrgSubscriptionAddons.ORG_SUBSCRIPTION_ADDONS;
+
+    /**
+     * The table <code>public.org_subscriptions</code>.
+     */
+    public final OrgSubscriptions ORG_SUBSCRIPTIONS = OrgSubscriptions.ORG_SUBSCRIPTIONS;
+
+    /**
      * The table <code>public.organisation_invites</code>.
      */
     public final OrganisationInvites ORGANISATION_INVITES = OrganisationInvites.ORGANISATION_INVITES;
@@ -116,6 +130,16 @@ public class Public extends SchemaImpl {
      * Projects - top-level tenant boundary for organizing work
      */
     public final Projects PROJECTS = Projects.PROJECTS;
+
+    /**
+     * The table <code>public.subscription_addons</code>.
+     */
+    public final SubscriptionAddons SUBSCRIPTION_ADDONS = SubscriptionAddons.SUBSCRIPTION_ADDONS;
+
+    /**
+     * The table <code>public.subscription_tiers</code>.
+     */
+    public final SubscriptionTiers SUBSCRIPTION_TIERS = SubscriptionTiers.SUBSCRIPTION_TIERS;
 
     /**
      * Users synced from Keycloak on login
@@ -147,12 +171,16 @@ public class Public extends SchemaImpl {
             Notes.NOTES,
             OrgSequences.ORG_SEQUENCES,
             OrgSettings.ORG_SETTINGS,
+            OrgSubscriptionAddons.ORG_SUBSCRIPTION_ADDONS,
+            OrgSubscriptions.ORG_SUBSCRIPTIONS,
             OrganisationInvites.ORGANISATION_INVITES,
             OrganisationMembers.ORGANISATION_MEMBERS,
             Organisations.ORGANISATIONS,
             ProjectBlockReasons.PROJECT_BLOCK_REASONS,
             ProjectMembers.PROJECT_MEMBERS,
             Projects.PROJECTS,
+            SubscriptionAddons.SUBSCRIPTION_ADDONS,
+            SubscriptionTiers.SUBSCRIPTION_TIERS,
             Users.USERS
         );
     }

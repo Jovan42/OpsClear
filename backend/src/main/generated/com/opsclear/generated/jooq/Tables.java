@@ -13,12 +13,16 @@ import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.OrgSequences;
 import com.opsclear.generated.jooq.tables.OrgSettings;
+import com.opsclear.generated.jooq.tables.OrgSubscriptionAddons;
+import com.opsclear.generated.jooq.tables.OrgSubscriptions;
 import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.OrganisationMembers;
 import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
+import com.opsclear.generated.jooq.tables.SubscriptionAddons;
+import com.opsclear.generated.jooq.tables.SubscriptionTiers;
 import com.opsclear.generated.jooq.tables.Users;
 
 
@@ -74,6 +78,16 @@ public class Tables {
     public static final OrgSettings ORG_SETTINGS = OrgSettings.ORG_SETTINGS;
 
     /**
+     * The table <code>public.org_subscription_addons</code>.
+     */
+    public static final OrgSubscriptionAddons ORG_SUBSCRIPTION_ADDONS = OrgSubscriptionAddons.ORG_SUBSCRIPTION_ADDONS;
+
+    /**
+     * The table <code>public.org_subscriptions</code>.
+     */
+    public static final OrgSubscriptions ORG_SUBSCRIPTIONS = OrgSubscriptions.ORG_SUBSCRIPTIONS;
+
+    /**
      * The table <code>public.organisation_invites</code>.
      */
     public static final OrganisationInvites ORGANISATION_INVITES = OrganisationInvites.ORGANISATION_INVITES;
@@ -102,6 +116,16 @@ public class Tables {
      * Projects - top-level tenant boundary for organizing work
      */
     public static final Projects PROJECTS = Projects.PROJECTS;
+
+    /**
+     * The table <code>public.subscription_addons</code>.
+     */
+    public static final SubscriptionAddons SUBSCRIPTION_ADDONS = SubscriptionAddons.SUBSCRIPTION_ADDONS;
+
+    /**
+     * The table <code>public.subscription_tiers</code>.
+     */
+    public static final SubscriptionTiers SUBSCRIPTION_TIERS = SubscriptionTiers.SUBSCRIPTION_TIERS;
 
     /**
      * Users synced from Keycloak on login
