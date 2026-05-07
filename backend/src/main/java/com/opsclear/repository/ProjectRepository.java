@@ -107,6 +107,14 @@ public class ProjectRepository {
                         .and(JOBS.DELETED_AT.isNull()));
     }
 
+    public int countActiveByOrgId(UUID orgId) {
+        return dsl.fetchCount(
+                dsl.selectFrom(PROJECTS)
+                        .where(PROJECTS.ORGANISATION_ID.eq(orgId))
+                        .and(PROJECTS.STATUS.eq(ProjectStatus.ACTIVE.name()))
+                        .and(PROJECTS.DELETED_AT.isNull()));
+    }
+
     public Optional<ProjectModel> findById(UUID id) {
         return selectWithOwner()
                 .where(PROJECTS.ID.eq(id))

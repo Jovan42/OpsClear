@@ -27,6 +27,8 @@ import static java.util.List.of;
 public class OrganisationRepository {
 
     private static final Field<String> CREATOR_NAME = USERS.NAME.as("creator_name");
+    private static final String MEMBER_NAME = "member_name";
+    private static final String MEMBER_EMAIL = "member_email";
 
     private final DSLContext dsl;
 
@@ -127,12 +129,18 @@ public class OrganisationRepository {
                 .fetchOptional(r -> OrganisationRole.valueOf(r.get(ORGANISATION_MEMBERS.ORG_ROLE)));
     }
 
+    public int countMembers(UUID organisationId) {
+        return dsl.fetchCount(
+                dsl.selectFrom(ORGANISATION_MEMBERS)
+                        .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(organisationId)));
+    }
+
     public List<OrgMemberModel> findMembers(UUID organisationId) {
         return dsl.select(
                         ORGANISATION_MEMBERS.ORGANISATION_ID,
                         ORGANISATION_MEMBERS.USER_ID,
-                        USERS.NAME.as("member_name"),
-                        USERS.EMAIL.as("member_email"),
+                        USERS.NAME.as(MEMBER_NAME),
+                        USERS.EMAIL.as(MEMBER_EMAIL),
                         ORGANISATION_MEMBERS.ORG_ROLE,
                         ORGANISATION_MEMBERS.JOINED_AT)
                 .from(ORGANISATION_MEMBERS)
@@ -142,8 +150,8 @@ public class OrganisationRepository {
                 .fetch(r -> OrgMemberModel.builder()
                         .organisationId(r.get(ORGANISATION_MEMBERS.ORGANISATION_ID))
                         .userId(r.get(ORGANISATION_MEMBERS.USER_ID))
-                        .userName(r.get("member_name", String.class))
-                        .userEmail(r.get("member_email", String.class))
+                        .userName(r.get(MEMBER_NAME, String.class))
+                        .userEmail(r.get(MEMBER_EMAIL, String.class))
                         .role(OrganisationRole.valueOf(r.get(ORGANISATION_MEMBERS.ORG_ROLE)))
                         .joinedAt(toInstant(r.get(ORGANISATION_MEMBERS.JOINED_AT)))
                         .build());
@@ -153,8 +161,8 @@ public class OrganisationRepository {
         return dsl.select(
                         ORGANISATION_MEMBERS.ORGANISATION_ID,
                         ORGANISATION_MEMBERS.USER_ID,
-                        USERS.NAME.as("member_name"),
-                        USERS.EMAIL.as("member_email"),
+                        USERS.NAME.as(MEMBER_NAME),
+                        USERS.EMAIL.as(MEMBER_EMAIL),
                         ORGANISATION_MEMBERS.ORG_ROLE,
                         ORGANISATION_MEMBERS.JOINED_AT)
                 .from(ORGANISATION_MEMBERS)
@@ -164,8 +172,8 @@ public class OrganisationRepository {
                 .fetchOptional(r -> OrgMemberModel.builder()
                         .organisationId(r.get(ORGANISATION_MEMBERS.ORGANISATION_ID))
                         .userId(r.get(ORGANISATION_MEMBERS.USER_ID))
-                        .userName(r.get("member_name", String.class))
-                        .userEmail(r.get("member_email", String.class))
+                        .userName(r.get(MEMBER_NAME, String.class))
+                        .userEmail(r.get(MEMBER_EMAIL, String.class))
                         .role(OrganisationRole.valueOf(r.get(ORGANISATION_MEMBERS.ORG_ROLE)))
                         .joinedAt(toInstant(r.get(ORGANISATION_MEMBERS.JOINED_AT)))
                         .build());

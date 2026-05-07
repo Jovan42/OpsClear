@@ -7,6 +7,8 @@ import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.SUBSCRIPTION_ADDONS;
 
@@ -18,6 +20,14 @@ public class SubscriptionAddonRepository {
 
     public List<SubscriptionAddonModel> findAll() {
         return dsl.selectFrom(SUBSCRIPTION_ADDONS)
+                .orderBy(SUBSCRIPTION_ADDONS.DISPLAY_ORDER.asc())
+                .fetch()
+                .map(this::toModel);
+    }
+
+    public List<SubscriptionAddonModel> findByIds(Set<UUID> ids) {
+        return dsl.selectFrom(SUBSCRIPTION_ADDONS)
+                .where(SUBSCRIPTION_ADDONS.ID.in(ids))
                 .orderBy(SUBSCRIPTION_ADDONS.DISPLAY_ORDER.asc())
                 .fetch()
                 .map(this::toModel);
