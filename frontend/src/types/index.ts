@@ -167,6 +167,43 @@ export interface OrgInviteResponse {
   createdAt: string;
 }
 
+// ---- Subscriptions ----
+
+export interface SubscriptionTierResponse {
+  id: string;
+  maxMembers: number;
+  maxProjects: number | null;
+  priceMonthly: number;
+  priceAnnual: number;
+  currency: string;
+  displayOrder: number;
+}
+
+export interface SubscriptionAddonResponse {
+  id: string;
+  key: string;
+  name: string;
+  priceMonthly: number;
+  priceAnnual: number;
+  available: boolean;
+  displayOrder: number;
+}
+
+export interface CatalogResponse {
+  tiers: SubscriptionTierResponse[];
+  addons: SubscriptionAddonResponse[];
+}
+
+export interface OrgSubscriptionResponse {
+  id: string;
+  billingCycle: 'MONTHLY' | 'ANNUAL';
+  internal: boolean;
+  updatedAt: string;
+  tier: SubscriptionTierResponse;
+  addons: SubscriptionAddonResponse[];
+  totalMonthly: number;
+}
+
 // ---- API Keys ----
 
 export interface ApiKeyResponse {
