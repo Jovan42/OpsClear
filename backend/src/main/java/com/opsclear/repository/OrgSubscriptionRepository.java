@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTION_ADDONS;
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
+import static com.opsclear.generated.jooq.Tables.SUBSCRIPTION_ADDONS;
 
 @Repository
 @RequiredArgsConstructor
@@ -56,6 +57,26 @@ public class OrgSubscriptionRepository {
 
         replaceAddons(subscriptionId, addonIds);
         return findByOrgId(orgId).orElseThrow();
+    }
+
+    public boolean isInternal(UUID orgId) {
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(ORG_SUBSCRIPTIONS)
+                        .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                        .and(ORG_SUBSCRIPTIONS.IS_INTERNAL.isTrue()));
+    }
+
+    public boolean hasAddon(UUID orgId, String addonKey) {
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(ORG_SUBSCRIPTIONS)
+                        .join(ORG_SUBSCRIPTION_ADDONS)
+                        .on(ORG_SUBSCRIPTION_ADDONS.ORG_SUBSCRIPTION_ID.eq(ORG_SUBSCRIPTIONS.ID))
+                        .join(SUBSCRIPTION_ADDONS)
+                        .on(SUBSCRIPTION_ADDONS.ID.eq(ORG_SUBSCRIPTION_ADDONS.ADDON_ID))
+                        .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                        .and(SUBSCRIPTION_ADDONS.KEY.eq(addonKey)));
     }
 
     public void deleteAll() {
