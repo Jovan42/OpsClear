@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCatalog } from '../org/useSubscription';
 import type { SubscriptionTierResponse } from '../../types';
@@ -40,11 +40,6 @@ export default function ProductAndPricing() {
   const selectedTier = catalog?.tiers.find(
     (t) => t.maxMembers === memberBands[memberIdx] && t.maxProjects === projectBands[projectIdx],
   ) ?? null;
-
-  useEffect(() => {
-    setMemberIdx(0);
-    setProjectIdx(0);
-  }, [catalog]);
 
   if (!catalog) return null;
 
