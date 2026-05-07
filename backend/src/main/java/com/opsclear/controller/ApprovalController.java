@@ -1,5 +1,7 @@
 package com.opsclear.controller;
 
+import com.opsclear.aop.AddonCode;
+import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.ApprovalResponse;
 import com.opsclear.dto.DecideApprovalRequest;
 import com.opsclear.dto.RequestApprovalRequest;
@@ -28,6 +30,7 @@ public class ApprovalController {
     private final ApprovalService approvalService;
     private final FriendlyIdResolver friendlyIdResolver;
 
+    @RequiresAddon(AddonCode.APPROVALS)
     @PostMapping("/api/projects/{projectId}/jobs/{jobId}/approvals")
     public ResponseEntity<ApprovalResponse> request(
             @PathVariable String projectId,
@@ -41,6 +44,7 @@ public class ApprovalController {
         return ResponseEntity.status(201).body(ApprovalResponse.from(approval));
     }
 
+    @RequiresAddon(AddonCode.APPROVALS)
     @PatchMapping("/api/projects/{projectId}/jobs/{jobId}/approvals/{approvalId}/status")
     public ResponseEntity<ApprovalResponse> decide(
             @PathVariable String projectId,
@@ -56,6 +60,7 @@ public class ApprovalController {
         return ResponseEntity.ok(ApprovalResponse.from(approval));
     }
 
+    @RequiresAddon(AddonCode.APPROVALS)
     @GetMapping("/api/projects/{projectId}/jobs/{jobId}/approvals")
     public ResponseEntity<List<ApprovalResponse>> listByJob(
             @PathVariable String projectId,
@@ -71,6 +76,7 @@ public class ApprovalController {
         return ResponseEntity.ok(approvals);
     }
 
+    @RequiresAddon(AddonCode.APPROVALS)
     @GetMapping("/api/projects/{projectId}/approvals/pending")
     public ResponseEntity<List<ApprovalResponse>> listPendingByProject(
             @PathVariable String projectId,

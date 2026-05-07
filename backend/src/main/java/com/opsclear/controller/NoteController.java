@@ -1,5 +1,7 @@
 package com.opsclear.controller;
 
+import com.opsclear.aop.AddonCode;
+import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.CreateNoteRequest;
 import com.opsclear.dto.NoteResponse;
 import com.opsclear.dto.NotesByJobResponse;
@@ -30,6 +32,7 @@ public class NoteController {
     private final NoteService noteService;
     private final FriendlyIdResolver friendlyIdResolver;
 
+    @RequiresAddon(AddonCode.NOTES)
     @PostMapping("/api/projects/{projectId}/jobs/{jobId}/notes")
     public ResponseEntity<NoteResponse> create(
             @PathVariable String projectId,
@@ -43,6 +46,7 @@ public class NoteController {
         return ResponseEntity.status(201).body(NoteResponse.from(note));
     }
 
+    @RequiresAddon(AddonCode.NOTES)
     @GetMapping("/api/projects/{projectId}/jobs/{jobId}/notes")
     public ResponseEntity<List<NoteResponse>> listByJob(
             @PathVariable String projectId,
@@ -58,6 +62,7 @@ public class NoteController {
         return ResponseEntity.ok(notes);
     }
 
+    @RequiresAddon(AddonCode.NOTES)
     @GetMapping("/api/projects/{projectId}/notes")
     public ResponseEntity<List<NotesByJobResponse>> listByProject(
             @PathVariable String projectId,

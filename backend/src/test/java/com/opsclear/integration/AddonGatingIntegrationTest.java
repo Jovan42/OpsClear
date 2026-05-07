@@ -77,7 +77,7 @@ class AddonGatingIntegrationTest {
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build());
 
-        tierId = tierRepository.findAll().get(0).getId();
+        tierId = tierRepository.findAll().getFirst().getId();
         dashboardAddonId = addonRepository.findAll().stream()
                 .filter(a -> a.getKey().equals("DASHBOARD")).findFirst().orElseThrow().getId();
         notesAddonId = addonRepository.findAll().stream()

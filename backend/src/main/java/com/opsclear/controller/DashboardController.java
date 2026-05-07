@@ -1,5 +1,7 @@
 package com.opsclear.controller;
 
+import com.opsclear.aop.AddonCode;
+import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.DashboardResponse;
 import com.opsclear.service.DashboardService;
 import com.opsclear.service.FriendlyIdResolver;
@@ -20,6 +22,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
     private final FriendlyIdResolver friendlyIdResolver;
 
+    @RequiresAddon(AddonCode.DASHBOARD)
     @GetMapping("/api/projects/{projectId}/dashboard")
     public ResponseEntity<DashboardResponse> get(
             @PathVariable String projectId,

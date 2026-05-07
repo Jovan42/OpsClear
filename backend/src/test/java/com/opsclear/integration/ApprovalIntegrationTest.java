@@ -15,9 +15,12 @@ import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -55,6 +59,9 @@ class ApprovalIntegrationTest {
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private OrgSubscriptionRepository subscriptionRepository;
+    @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
@@ -73,6 +80,7 @@ class ApprovalIntegrationTest {
         projectMemberRepository.deleteAll();
         milestoneRepository.deleteAll();
         projectRepository.deleteAll();
+        subscriptionRepository.deleteAll();
         organisationRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -111,6 +119,11 @@ class ApprovalIntegrationTest {
                 .createdBy(ownerId)
                 .build());
         jobId = job.getId();
+
+        UUID approvalsAddonId = addonRepository.findAll().stream()
+                .filter(a -> a.getKey().equals("APPROVALS")).findFirst().orElseThrow().getId();
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(approvalsAddonId));
     }
 
     // --- POST /api/projects/{projectId}/jobs/{jobId}/approvals ---

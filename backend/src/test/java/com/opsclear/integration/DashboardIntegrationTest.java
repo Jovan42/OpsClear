@@ -104,7 +104,7 @@ class DashboardIntegrationTest {
 
         UUID dashboardAddonId = addonRepository.findAll().stream()
                 .filter(a -> a.getKey().equals("DASHBOARD")).findFirst().orElseThrow().getId();
-        UUID tierId = tierRepository.findAll().get(0).getId();
+        UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(dashboardAddonId));
     }
 

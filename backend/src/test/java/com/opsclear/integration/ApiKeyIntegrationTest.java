@@ -12,8 +12,11 @@ import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +32,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.UUID;
 
 import com.opsclear.service.ApiKeyService;
@@ -58,6 +62,9 @@ class ApiKeyIntegrationTest {
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private OrgSubscriptionRepository subscriptionRepository;
+    @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID userId;
@@ -74,6 +81,7 @@ class ApiKeyIntegrationTest {
         milestoneRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
+        subscriptionRepository.deleteAll();
         organisationRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -86,6 +94,12 @@ class ApiKeyIntegrationTest {
         OrganisationModel org = organisationRepository.save(
                 OrganisationModel.builder().name("Test Org").slug("TST").createdBy(userId).build());
         organisationRepository.saveMember(org.getId(), userId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(org.getId(), otherUserId, OrganisationRole.OWNER);
+
+        UUID apiKeysAddonId = addonRepository.findAll().stream()
+                .filter(a -> a.getKey().equals("API_KEYS")).findFirst().orElseThrow().getId();
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        subscriptionRepository.create(org.getId(), tierId, "MONTHLY", Set.of(apiKeysAddonId));
     }
 
     // --- POST /api/user/api-keys ---
