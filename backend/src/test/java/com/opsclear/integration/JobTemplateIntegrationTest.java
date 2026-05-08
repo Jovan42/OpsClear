@@ -403,6 +403,29 @@ class JobTemplateIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("deleteTemplate — friendly ID not found returns 404")
+    void deleteTemplate_shouldReturn404_whenFriendlyIdNotFound() throws Exception {
+        mockMvc.perform(delete(ApiPaths.template(projectId.toString(), "TPL-999"))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("deleteTemplate — template from another project returns 404")
+    void deleteTemplate_shouldReturn404_whenTemplateBelongsToDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).organisationId(orgId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+        JobTemplateModel otherTemplate = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(otherProject.getId()).name("Other").assigneeMode("NONE").createdBy(ownerId).build());
+
+        mockMvc.perform(delete(ApiPaths.template(projectId, otherTemplate.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
     // --- POST /api/projects/{projectId}/templates/{templateId}/use ---
 
     @Test
@@ -446,6 +469,23 @@ class JobTemplateIntegrationTest {
     @DisplayName("recordUsage — unknown template returns 404")
     void recordUsage_shouldReturn404_whenTemplateNotFound() throws Exception {
         mockMvc.perform(post(ApiPaths.templateUse(projectId, UUID.randomUUID()))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("recordUsage — template from another project returns 404")
+    void recordUsage_shouldReturn404_whenTemplateBelongsToDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).organisationId(orgId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(ownerId).role(ProjectMemberRole.OWNER).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+        JobTemplateModel otherTemplate = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(otherProject.getId()).name("Other").assigneeMode("NONE").createdBy(ownerId).build());
+
+        mockMvc.perform(post(ApiPaths.templateUse(projectId, otherTemplate.getId()))
                         .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isNotFound());
     }
