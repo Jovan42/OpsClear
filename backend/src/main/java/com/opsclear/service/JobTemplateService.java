@@ -74,7 +74,8 @@ public class JobTemplateService {
     }
 
     @Transactional
-    public JobTemplateModel update(UUID projectId, UUID templateId, UpdateJobTemplateRequest request, UUID requesterId) {
+    public JobTemplateModel update(UUID projectId, UUID templateId,
+                                   UpdateJobTemplateRequest request, UUID requesterId) {
         requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         JobTemplateModel template = requireTemplate(projectId, templateId);
@@ -84,7 +85,8 @@ public class JobTemplateService {
         template.setDescription(request.getDescription());
         template.setClient(request.getClient());
         template.setPriority(request.getPriority());
-        template.setAssigneeMode(request.getAssigneeMode() != null ? request.getAssigneeMode() : template.getAssigneeMode());
+        template.setAssigneeMode(
+                request.getAssigneeMode() != null ? request.getAssigneeMode() : template.getAssigneeMode());
         template.setAssigneeId(request.getAssigneeId());
         template.setMilestoneId(request.getMilestoneId());
         template.setDeadlineOffsetDays(request.getDeadlineOffsetDays());
