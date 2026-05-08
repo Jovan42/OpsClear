@@ -7,7 +7,6 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.JobTemplateModel;
-import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.repository.JobTemplateRepository;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -45,13 +45,9 @@ public class JobTemplateService {
         requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
 
-        UUID orgId = organisationRepository.findByMember(requesterId)
-                .map(OrganisationModel::getId)
+        String friendlyId = organisationRepository.findByMember(requesterId)
+                .map(o -> friendlyIdService.nextFriendlyId(o.getId(), FriendlyIdEntityType.TEMPLATE))
                 .orElse(null);
-
-        String friendlyId = orgId != null
-                ? friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.TEMPLATE)
-                : null;
 
         JobTemplateModel template = JobTemplateModel.builder()
                 .friendlyId(friendlyId)
@@ -61,7 +57,7 @@ public class JobTemplateService {
                 .description(request.getDescription())
                 .client(request.getClient())
                 .priority(request.getPriority())
-                .assigneeMode(request.getAssigneeMode() != null ? request.getAssigneeMode() : "NONE")
+                .assigneeMode(Objects.requireNonNullElse(request.getAssigneeMode(), "NONE"))
                 .assigneeId(request.getAssigneeId())
                 .milestoneId(request.getMilestoneId())
                 .deadlineOffsetDays(request.getDeadlineOffsetDays())
