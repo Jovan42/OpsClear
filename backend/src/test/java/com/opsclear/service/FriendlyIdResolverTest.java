@@ -187,6 +187,48 @@ class FriendlyIdResolverTest {
                 .isInstanceOf(ForbiddenException.class);
     }
 
+    // --- resolveTemplate ---
+
+    @Test
+    @DisplayName("resolveTemplate — UUID param is returned directly without DB lookup")
+    void resolveTemplate_uuid_returnsDirectly() {
+        UUID result = resolver.resolveTemplate(targetId.toString(), callerId);
+
+        assertThat(result).isEqualTo(targetId);
+        verify(friendlyIdRepository, never()).findTemplateId(any(), any());
+    }
+
+    @Test
+    @DisplayName("resolveTemplate — friendly ID resolves via org-scoped DB lookup")
+    void resolveTemplate_friendlyId_resolvesViaDb() {
+        when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(org));
+        when(friendlyIdRepository.findTemplateId("TPL-001", orgId)).thenReturn(Optional.of(targetId));
+
+        UUID result = resolver.resolveTemplate("TPL-001", callerId);
+
+        assertThat(result).isEqualTo(targetId);
+    }
+
+    @Test
+    @DisplayName("resolveTemplate — unknown friendly ID throws NotFoundException")
+    void resolveTemplate_unknownFriendlyId_throwsNotFound() {
+        when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(org));
+        when(friendlyIdRepository.findTemplateId(eq("TPL-999"), any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> resolver.resolveTemplate("TPL-999", callerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Job template not found");
+    }
+
+    @Test
+    @DisplayName("resolveTemplate — caller with no org throws ForbiddenException")
+    void resolveTemplate_noOrg_throwsForbidden() {
+        when(organisationRepository.findByMember(callerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> resolver.resolveTemplate("TPL-001", callerId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
     // --- isFriendlyId ---
 
     @Test

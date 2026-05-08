@@ -8,6 +8,7 @@ import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
+import com.opsclear.generated.jooq.tables.JobTemplates;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
@@ -65,6 +66,12 @@ public class Public extends SchemaImpl {
      * The table <code>public.job_status_history</code>.
      */
     public final JobStatusHistory JOB_STATUS_HISTORY = JobStatusHistory.JOB_STATUS_HISTORY;
+
+    /**
+     * Reusable job blueprints — pre-fill fields and support {{wildcard}}
+     * placeholders
+     */
+    public final JobTemplates JOB_TEMPLATES = JobTemplates.JOB_TEMPLATES;
 
     /**
      * Jobs - central unit of work within a project
@@ -166,6 +173,7 @@ public class Public extends SchemaImpl {
             Approvals.APPROVALS,
             JobRelationships.JOB_RELATIONSHIPS,
             JobStatusHistory.JOB_STATUS_HISTORY,
+            JobTemplates.JOB_TEMPLATES,
             Jobs.JOBS,
             Milestones.MILESTONES,
             Notes.NOTES,

@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq;
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
+import com.opsclear.generated.jooq.tables.JobTemplates;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
@@ -52,5 +53,6 @@ public class Indexes {
     public static final Index IDX_PROJECTS_OWNER = Internal.createIndex(DSL.name("idx_projects_owner"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.OWNER_ID }, false);
     public static final Index IDX_PROJECTS_STATUS = Internal.createIndex(DSL.name("idx_projects_status"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.STATUS }, false);
     public static final Index IDX_USERS_EMAIL = Internal.createIndex(DSL.name("idx_users_email"), Users.USERS, new OrderField[] { Users.USERS.EMAIL }, false);
+    public static final Index JOB_TEMPLATES_PROJECT_ID_IDX = Internal.createIndex(DSL.name("job_templates_project_id_idx"), JobTemplates.JOB_TEMPLATES, new OrderField[] { JobTemplates.JOB_TEMPLATES.PROJECT_ID }, false);
     public static final Index UK_PROJECTS_NAME_OWNER_ACTIVE = Internal.createIndex(DSL.name("uk_projects_name_owner_active"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.NAME, Projects.PROJECTS.OWNER_ID }, true);
 }

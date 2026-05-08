@@ -202,6 +202,24 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/dashboard";
     }
 
+    // --- Job templates ---
+
+    static String templates(UUID projectId) {
+        return "/api/projects/" + projectId + "/templates";
+    }
+
+    static String template(UUID projectId, UUID templateId) {
+        return "/api/projects/" + projectId + "/templates/" + templateId;
+    }
+
+    static String template(String projectId, String templateId) {
+        return "/api/projects/" + projectId + "/templates/" + templateId;
+    }
+
+    static String templateUse(UUID projectId, UUID templateId) {
+        return "/api/projects/" + projectId + "/templates/" + templateId + "/use";
+    }
+
     private ApiPaths() {
     }
 }

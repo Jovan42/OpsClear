@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.JOB_TEMPLATES;
 import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.MILESTONES;
 import static com.opsclear.generated.jooq.Tables.ORG_SEQUENCES;
@@ -107,11 +108,26 @@ public class FriendlyIdRepository {
                 .fetchOptional(MILESTONES.ID);
     }
 
+    /**
+     * Resolves a friendly ID to the job template UUID, scoped to the given org via project join.
+     * Case-insensitive. Returns empty if not found or belongs to a different org.
+     */
+    public Optional<UUID> findTemplateId(String friendlyId, UUID orgId) {
+        return dsl.select(JOB_TEMPLATES.ID)
+                .from(JOB_TEMPLATES)
+                .join(PROJECTS).on(PROJECTS.ID.eq(JOB_TEMPLATES.PROJECT_ID))
+                .where(upper(JOB_TEMPLATES.FRIENDLY_ID).eq(friendlyId.toUpperCase()))
+                .and(PROJECTS.ORGANISATION_ID.eq(orgId))
+                .and(JOB_TEMPLATES.DELETED_AT.isNull())
+                .fetchOptional(JOB_TEMPLATES.ID);
+    }
+
     private Field<String> prefixField(FriendlyIdEntityType type) {
         return switch (type) {
             case PROJECT -> ORG_SETTINGS.PROJECT_PREFIX;
             case JOB -> ORG_SETTINGS.JOB_PREFIX;
             case MILESTONE -> ORG_SETTINGS.MILESTONE_PREFIX;
+            case TEMPLATE -> ORG_SETTINGS.TEMPLATE_PREFIX;
         };
     }
 }

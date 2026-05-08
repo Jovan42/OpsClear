@@ -7,5 +7,6 @@ public enum AddonCode {
     JOB_STATUS_HISTORY,
     MILESTONES,
     JOB_RELATIONSHIPS,
-    API_KEYS
+    API_KEYS,
+    JOB_TEMPLATES
 }
