@@ -204,6 +204,22 @@ class JobTemplateIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @DisplayName("createTemplate — org member who is not a project member receives 403")
+    void createTemplate_shouldReturn403_whenOrgMemberNotProjectMember() throws Exception {
+        UUID orgOnlyId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(orgOnlyId).email("orgonly@example.com").name("OrgOnly").build());
+        organisationRepository.saveMember(orgId, orgOnlyId, OrganisationRole.OWNER);
+
+        mockMvc.perform(post(ApiPaths.templates(projectId))
+                        .with(jwt().jwt(j -> j.subject(orgOnlyId.toString()).claim("email", "orgonly@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "T1", "assigneeMode": "NONE"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
     // --- GET /api/projects/{projectId}/templates ---
 
     @Test
@@ -234,6 +250,18 @@ class JobTemplateIntegrationTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].name").value("Alpha"))
                 .andExpect(jsonPath("$[1].name").value("Zebra"));
+    }
+
+    @Test
+    @DisplayName("listTemplates — org member who is not a project member receives 403")
+    void listTemplates_shouldReturn403_whenOrgMemberNotProjectMember() throws Exception {
+        UUID orgOnlyId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(orgOnlyId).email("orgonly2@example.com").name("OrgOnly2").build());
+        organisationRepository.saveMember(orgId, orgOnlyId, OrganisationRole.OWNER);
+
+        mockMvc.perform(get(ApiPaths.templates(projectId))
+                        .with(jwt().jwt(j -> j.subject(orgOnlyId.toString()).claim("email", "orgonly2@example.com"))))
+                .andExpect(status().isForbidden());
     }
 
     @Test
