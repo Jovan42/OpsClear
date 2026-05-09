@@ -44,7 +44,7 @@ function resolveBase(token: string, now: Date, ctx: WildcardContext): string | n
   }
 }
 
-function resolveWithArithmetic(token: string, offsetStr: string, sign: number, now: Date, ctx: WildcardContext): string | null {
+function resolveWithArithmetic(token: string, offsetStr: string, sign: number, now: Date): string | null {
   const offset = parseInt(offsetStr, 10);
   if (isNaN(offset)) return null;
   const n = offset * sign;
@@ -82,7 +82,7 @@ export function resolveWildcards(template: string, ctx: WildcardContext = {}): s
     const arithMatch = trimmed.match(/^([a-z]+)([+-])(\d+)$/);
     if (arithMatch) {
       const [, token, sign, offsetStr] = arithMatch;
-      const result = resolveWithArithmetic(token, offsetStr, sign === '+' ? 1 : -1, now, ctx);
+      const result = resolveWithArithmetic(token, offsetStr, sign === '+' ? 1 : -1, now);
       return result ?? match;
     }
 
