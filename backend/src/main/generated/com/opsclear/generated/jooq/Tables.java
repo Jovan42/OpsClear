@@ -8,6 +8,7 @@ import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
+import com.opsclear.generated.jooq.tables.JobTemplates;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
@@ -51,6 +52,12 @@ public class Tables {
      * The table <code>public.job_status_history</code>.
      */
     public static final JobStatusHistory JOB_STATUS_HISTORY = JobStatusHistory.JOB_STATUS_HISTORY;
+
+    /**
+     * Reusable job blueprints — pre-fill fields and support {{wildcard}}
+     * placeholders
+     */
+    public static final JobTemplates JOB_TEMPLATES = JobTemplates.JOB_TEMPLATES;
 
     /**
      * Jobs - central unit of work within a project

@@ -84,6 +84,13 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class JobTemplate {
+        public static final String NOT_FOUND = "Job template not found";
+
+        private JobTemplate() {
+        }
+    }
+
     public static final class Organisation {
         public static final String NOT_FOUND = "Organisation not found";
         public static final String NOT_IN_ORG = "You must belong to an organisation to perform this action";

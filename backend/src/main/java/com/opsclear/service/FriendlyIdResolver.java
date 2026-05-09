@@ -58,6 +58,16 @@ public class FriendlyIdResolver {
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Milestone.NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
+    public UUID resolveTemplate(String param, UUID callerId) {
+        if (!isFriendlyId(param)) {
+            return UUID.fromString(param);
+        }
+        UUID orgId = requireOrgId(callerId);
+        return friendlyIdRepository.findTemplateId(param, orgId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND));
+    }
+
     static boolean isFriendlyId(String param) {
         return FRIENDLY_ID_PATTERN.matcher(param).matches();
     }

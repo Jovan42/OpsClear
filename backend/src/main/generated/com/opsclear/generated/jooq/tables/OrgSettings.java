@@ -81,6 +81,11 @@ public class OrgSettings extends TableImpl<OrgSettingsRecord> {
      */
     public final TableField<OrgSettingsRecord, LocalDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "");
 
+    /**
+     * The column <code>public.org_settings.template_prefix</code>.
+     */
+    public final TableField<OrgSettingsRecord, String> TEMPLATE_PREFIX = createField(DSL.name("template_prefix"), SQLDataType.VARCHAR(3).nullable(false).defaultValue(DSL.field(DSL.raw("'TPL'::character varying"), SQLDataType.VARCHAR)), this, "");
+
     private OrgSettings(Name alias, Table<OrgSettingsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

@@ -111,6 +111,21 @@ public class OrgSettingsRecord extends UpdatableRecordImpl<OrgSettingsRecord> {
         return (LocalDateTime) get(5);
     }
 
+    /**
+     * Setter for <code>public.org_settings.template_prefix</code>.
+     */
+    public OrgSettingsRecord setTemplatePrefix(String value) {
+        set(6, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.org_settings.template_prefix</code>.
+     */
+    public String getTemplatePrefix() {
+        return (String) get(6);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -134,7 +149,7 @@ public class OrgSettingsRecord extends UpdatableRecordImpl<OrgSettingsRecord> {
     /**
      * Create a detached, initialised OrgSettingsRecord
      */
-    public OrgSettingsRecord(UUID orgId, String jobPrefix, String projectPrefix, String milestonePrefix, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public OrgSettingsRecord(UUID orgId, String jobPrefix, String projectPrefix, String milestonePrefix, LocalDateTime createdAt, LocalDateTime updatedAt, String templatePrefix) {
         super(OrgSettings.ORG_SETTINGS);
 
         setOrgId(orgId);
@@ -143,6 +158,7 @@ public class OrgSettingsRecord extends UpdatableRecordImpl<OrgSettingsRecord> {
         setMilestonePrefix(milestonePrefix);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setTemplatePrefix(templatePrefix);
         resetChangedOnNotNull();
     }
 }
