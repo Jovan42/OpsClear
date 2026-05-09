@@ -237,6 +237,31 @@ export interface CreateApiKeyResponse {
   expiresAt: string | null;
 }
 
+// ---- Job Templates ----
+
+export type AssigneeMode = 'NONE' | 'FIXED' | 'ASK';
+
+export interface JobTemplateResponse {
+  id: string;
+  friendlyId: string | null;
+  projectId: string;
+  name: string;
+  title: string | null;
+  description: string | null;
+  client: string | null;
+  priority: JobPriority | null;
+  assigneeMode: AssigneeMode;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  milestoneId: string | null;
+  milestoneName: string | null;
+  deadlineOffsetDays: number | null;
+  occurrenceCount: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ---- Dashboard ----
 
 export interface JobSummary {

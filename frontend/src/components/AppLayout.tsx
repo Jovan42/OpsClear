@@ -14,8 +14,9 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
   const { data: pending = [] } = useApprovalQueue(projectId);
   const { hasAddon } = useCurrentOrg();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
-  const dashboardLocked = !hasAddon('DASHBOARD');
+  const dashboardLocked  = !hasAddon('DASHBOARD');
   const milestonesLocked = !hasAddon('MILESTONES');
+  const templatesLocked  = !hasAddon('JOB_TEMPLATES');
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium px-1 py-1 border-b-2 transition-colors ${
@@ -49,6 +50,9 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
       {!milestonesLocked
         ? <NavLink to={`/projects/${projectId}/milestones`} className={linkClass}>Milestones</NavLink>
         : null}
+      {!templatesLocked
+        ? <NavLink to={`/projects/${projectId}/templates`} className={linkClass}>Templates</NavLink>
+        : null}
       {isOwnerOrAdmin && (
         <NavLink to={`/projects/${projectId}/approvals`} className={linkClass}>
           <span className="flex items-center gap-1.5">
@@ -66,6 +70,7 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
       </NavLink>
       {dashboardLocked && lockedNavLink(`/projects/${projectId}/dashboard`, 'Dashboard')}
       {milestonesLocked && lockedNavLink(`/projects/${projectId}/milestones`, 'Milestones')}
+      {templatesLocked  && lockedNavLink(`/projects/${projectId}/templates`, 'Templates')}
     </div>
   );
 }
