@@ -205,11 +205,34 @@ class OrgTemplateIntegrationTest {
     }
 
     @Test
-    @DisplayName("listOrgTemplates — non-member receives 403")
-    void listOrgTemplates_shouldReturn403_whenNotOrgMember() throws Exception {
+    @DisplayName("listOrgTemplates — user from a different org receives 403")
+    void listOrgTemplates_shouldReturn403_whenUserBelongsToDifferentOrg() throws Exception {
+        UUID otherUserId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(otherUserId).email("other2@example.com").name("Other2").build());
+        OrganisationModel otherOrg = organisationRepository.save(
+                OrganisationModel.builder().name("Other Org2").slug("OT2").createdBy(otherUserId).build());
+        organisationRepository.saveMember(otherOrg.getId(), otherUserId, OrganisationRole.OWNER);
+        friendlyIdRepository.seedForOrg(otherOrg.getId());
+        UUID addonId = addonRepository.findAll().stream()
+                .filter(a -> a.getKey().equals("JOB_TEMPLATES")).findFirst().orElseThrow().getId();
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        subscriptionRepository.create(otherOrg.getId(), tierId, "MONTHLY", Set.of(addonId));
+
         mockMvc.perform(get(ApiPaths.orgTemplates(orgId))
-                        .with(jwt().jwt(j -> j.subject(UUID.randomUUID().toString()).claim("email", "stranger@example.com"))))
+                        .with(jwt().jwt(j -> j.subject(otherUserId.toString()).claim("email", "other2@example.com"))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("createOrgTemplate — non-existent org returns 404")
+    void createOrgTemplate_shouldReturn404_whenOrgNotFound() throws Exception {
+        mockMvc.perform(post(ApiPaths.orgTemplates(UUID.randomUUID()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "T1", "assigneeMode": "NONE"}
+                                """))
+                .andExpect(status().isNotFound());
     }
 
     // --- PUT /api/organisations/{orgId}/templates/{templateId} ---
@@ -349,6 +372,44 @@ class OrgTemplateIntegrationTest {
         mockMvc.perform(post(ApiPaths.templateUse(projectId, otherOrgTemplate.getId()))
                         .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("createOrgTemplate — user from a different org receives 403")
+    void createOrgTemplate_shouldReturn403_whenUserBelongsToDifferentOrg() throws Exception {
+        UUID otherUserId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(otherUserId).email("other@example.com").name("Other").build());
+        OrganisationModel otherOrg = organisationRepository.save(
+                OrganisationModel.builder().name("Other Org").slug("OTH").createdBy(otherUserId).build());
+        organisationRepository.saveMember(otherOrg.getId(), otherUserId, OrganisationRole.OWNER);
+        friendlyIdRepository.seedForOrg(otherOrg.getId());
+        UUID addonId = addonRepository.findAll().stream()
+                .filter(a -> a.getKey().equals("JOB_TEMPLATES")).findFirst().orElseThrow().getId();
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        subscriptionRepository.create(otherOrg.getId(), tierId, "MONTHLY", Set.of(addonId));
+
+        // otherUserId is in otherOrg (with addon), but is trying to create a template for orgId
+        mockMvc.perform(post(ApiPaths.orgTemplates(orgId))
+                        .with(jwt().jwt(j -> j.subject(otherUserId.toString()).claim("email", "other@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Attempt", "assigneeMode": "NONE"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("findActiveByProjectIdOrOrgId — returns only project templates when orgId is null")
+    void findActiveByProjectIdOrOrgId_shouldReturnProjectTemplatesOnly_whenOrgIdIsNull() {
+        jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(projectId).name("Project T").assigneeMode("NONE").createdBy(ownerId).build());
+        jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-002").orgId(orgId).name("Org T").assigneeMode("NONE").createdBy(ownerId).build());
+
+        var results = jobTemplateRepository.findActiveByProjectIdOrOrgId(projectId, null);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().getName()).isEqualTo("Project T");
     }
 
     @Test
