@@ -71,7 +71,7 @@ public class JobTemplates extends TableImpl<JobTemplatesRecord> {
     /**
      * The column <code>public.job_templates.project_id</code>.
      */
-    public final TableField<JobTemplatesRecord, UUID> PROJECT_ID = createField(DSL.name("project_id"), SQLDataType.UUID.nullable(false), this, "");
+    public final TableField<JobTemplatesRecord, UUID> PROJECT_ID = createField(DSL.name("project_id"), SQLDataType.UUID, this, "");
 
     /**
      * The column <code>public.job_templates.name</code>.
@@ -147,6 +147,11 @@ public class JobTemplates extends TableImpl<JobTemplatesRecord> {
      */
     public final TableField<JobTemplatesRecord, LocalDateTime> DELETED_AT = createField(DSL.name("deleted_at"), SQLDataType.LOCALDATETIME(6), this, "Soft delete timestamp (NULL = active)");
 
+    /**
+     * The column <code>public.job_templates.org_id</code>.
+     */
+    public final TableField<JobTemplatesRecord, UUID> ORG_ID = createField(DSL.name("org_id"), SQLDataType.UUID, this, "");
+
     private JobTemplates(Name alias, Table<JobTemplatesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -183,7 +188,7 @@ public class JobTemplates extends TableImpl<JobTemplatesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.JOB_TEMPLATES_PROJECT_ID_IDX);
+        return Arrays.asList(Indexes.JOB_TEMPLATES_ORG_ID_IDX, Indexes.JOB_TEMPLATES_PROJECT_ID_IDX);
     }
 
     @Override
@@ -195,7 +200,8 @@ public class JobTemplates extends TableImpl<JobTemplatesRecord> {
     public List<Check<JobTemplatesRecord>> getChecks() {
         return Arrays.asList(
             Internal.createCheck(this, DSL.name("chk_template_assignee_mode"), "(((assignee_mode)::text = ANY ((ARRAY['NONE'::character varying, 'FIXED'::character varying, 'ASK'::character varying])::text[])))", true),
-            Internal.createCheck(this, DSL.name("chk_template_priority"), "(((priority)::text = ANY ((ARRAY['LOW'::character varying, 'MEDIUM'::character varying, 'HIGH'::character varying, 'CRITICAL'::character varying])::text[])))", true)
+            Internal.createCheck(this, DSL.name("chk_template_priority"), "(((priority)::text = ANY ((ARRAY['LOW'::character varying, 'MEDIUM'::character varying, 'HIGH'::character varying, 'CRITICAL'::character varying])::text[])))", true),
+            Internal.createCheck(this, DSL.name("job_templates_scope_check"), "(((project_id IS NULL) <> (org_id IS NULL)))", true)
         );
     }
 

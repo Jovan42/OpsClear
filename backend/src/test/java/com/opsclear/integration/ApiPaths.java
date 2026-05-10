@@ -220,6 +220,16 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/templates/" + templateId + "/use";
     }
 
+    // --- Org templates ---
+
+    static String orgTemplates(UUID orgId) {
+        return "/api/organisations/" + orgId + "/templates";
+    }
+
+    static String orgTemplate(UUID orgId, UUID templateId) {
+        return "/api/organisations/" + orgId + "/templates/" + templateId;
+    }
+
     private ApiPaths() {
     }
 }

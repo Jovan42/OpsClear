@@ -6,7 +6,9 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.JobTemplateModel;
+import com.opsclear.model.JobTemplateScope;
 import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -76,21 +78,43 @@ class JobTemplateServiceTest {
     // --- list ---
 
     @Test
-    @DisplayName("list — member can list templates")
+    @DisplayName("list — member can list templates (includes org-scoped)")
     void list_shouldReturnTemplates_forMember() {
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
         List<JobTemplateModel> templates = List.of(
-                JobTemplateModel.builder().id(UUID.randomUUID()).projectId(projectId).name("Daily Standup").build()
+                JobTemplateModel.builder().id(UUID.randomUUID()).projectId(projectId).scope(JobTemplateScope.PROJECT).name("Daily Standup").build(),
+                JobTemplateModel.builder().id(UUID.randomUUID()).orgId(orgId).scope(JobTemplateScope.ORG).name("Onboarding Call").build()
         );
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobTemplateRepository.findActiveByProjectId(projectId)).thenReturn(templates);
+        when(organisationRepository.findByMember(memberId)).thenReturn(Optional.of(org));
+        when(jobTemplateRepository.findActiveByProjectIdOrOrgId(projectId, orgId)).thenReturn(templates);
+
+        List<JobTemplateModel> result = jobTemplateService.list(projectId, memberId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getScope()).isEqualTo(JobTemplateScope.PROJECT);
+        assertThat(result.get(1).getScope()).isEqualTo(JobTemplateScope.ORG);
+    }
+
+    @Test
+    @DisplayName("list — passes null orgId when user has no org, returns project-scoped templates only")
+    void list_shouldPassNullOrgId_whenUserHasNoOrg() {
+        List<JobTemplateModel> templates = List.of(
+                JobTemplateModel.builder().id(UUID.randomUUID()).projectId(projectId).scope(JobTemplateScope.PROJECT).name("Daily Standup").build()
+        );
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+        when(organisationRepository.findByMember(memberId)).thenReturn(Optional.empty());
+        when(jobTemplateRepository.findActiveByProjectIdOrOrgId(projectId, null)).thenReturn(templates);
 
         List<JobTemplateModel> result = jobTemplateService.list(projectId, memberId);
 
         assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getName()).isEqualTo("Daily Standup");
     }
 
     @Test
@@ -445,6 +469,222 @@ class JobTemplateServiceTest {
         assertThatThrownBy(() -> jobTemplateService.recordUsage(projectId, templateId, nonMemberId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("You are not a member of this project");
+    }
+
+    @Test
+    @DisplayName("recordUsage — succeeds for org-scoped template when user belongs to that org")
+    void recordUsage_shouldSucceed_forOrgScopedTemplate() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel orgTemplate = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG).name("Onboarding").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(orgTemplate));
+        when(organisationRepository.findByMember(memberId)).thenReturn(Optional.of(org));
+
+        jobTemplateService.recordUsage(projectId, templateId, memberId);
+
+        verify(jobTemplateRepository).incrementOccurrenceCount(templateId);
+    }
+
+    @Test
+    @DisplayName("recordUsage — throws NotFoundException for org-scoped template from a different org")
+    void recordUsage_shouldThrow_whenOrgTemplateBelongsToDifferentOrg() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel otherOrgTemplate = JobTemplateModel.builder()
+                .id(templateId).orgId(UUID.randomUUID()).scope(JobTemplateScope.ORG).name("Other").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(otherOrgTemplate));
+        when(organisationRepository.findByMember(memberId)).thenReturn(Optional.of(org));
+
+        assertThatThrownBy(() -> jobTemplateService.recordUsage(projectId, templateId, memberId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Job template not found");
+    }
+
+    // --- listOrgTemplates ---
+
+    @Test
+    @DisplayName("listOrgTemplates — org member gets the list")
+    void listOrgTemplates_shouldReturnTemplates_forOrgMember() {
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        List<JobTemplateModel> templates = List.of(
+                JobTemplateModel.builder().id(UUID.randomUUID()).orgId(orgId).scope(JobTemplateScope.ORG).name("Onboarding").build()
+        );
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.existsMember(orgId, ownerId)).thenReturn(true);
+        when(jobTemplateRepository.findActiveByOrgId(orgId)).thenReturn(templates);
+
+        List<JobTemplateModel> result = jobTemplateService.listOrgTemplates(orgId, ownerId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getScope()).isEqualTo(JobTemplateScope.ORG);
+    }
+
+    @Test
+    @DisplayName("listOrgTemplates — throws ForbiddenException when not an org member")
+    void listOrgTemplates_shouldThrow_whenNotOrgMember() {
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.existsMember(orgId, memberId)).thenReturn(false);
+
+        assertThatThrownBy(() -> jobTemplateService.listOrgTemplates(orgId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    // --- createOrgTemplate ---
+
+    @Test
+    @DisplayName("createOrgTemplate — org admin creates template with friendly ID")
+    void createOrgTemplate_shouldCreateTemplate_forOrgAdmin() {
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("  Onboarding Call  ");
+        request.setAssigneeMode("NONE");
+
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel saved = JobTemplateModel.builder()
+                .id(UUID.randomUUID()).friendlyId("TPL-001").orgId(orgId)
+                .scope(JobTemplateScope.ORG).name("Onboarding Call").assigneeMode("NONE").build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.TEMPLATE)).thenReturn("TPL-001");
+        when(jobTemplateRepository.save(any())).thenReturn(saved);
+
+        JobTemplateModel result = jobTemplateService.createOrgTemplate(orgId, request, ownerId);
+
+        assertThat(result.getFriendlyId()).isEqualTo("TPL-001");
+        assertThat(result.getScope()).isEqualTo(JobTemplateScope.ORG);
+
+        ArgumentCaptor<JobTemplateModel> captor = ArgumentCaptor.forClass(JobTemplateModel.class);
+        verify(jobTemplateRepository).save(captor.capture());
+        assertThat(captor.getValue().getOrgId()).isEqualTo(orgId);
+        assertThat(captor.getValue().getProjectId()).isNull();
+        assertThat(captor.getValue().getName()).isEqualTo("Onboarding Call");
+    }
+
+    @Test
+    @DisplayName("createOrgTemplate — org member (not admin) is forbidden")
+    void createOrgTemplate_shouldThrow_whenOrgMemberRole() {
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("T1");
+
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> jobTemplateService.createOrgTemplate(orgId, request, memberId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
+    }
+
+    @Test
+    @DisplayName("createOrgTemplate — throws NotFoundException when org does not exist")
+    void createOrgTemplate_shouldThrow_whenOrgNotFound() {
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("T1");
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobTemplateService.createOrgTemplate(orgId, request, ownerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    // --- updateOrgTemplate ---
+
+    @Test
+    @DisplayName("updateOrgTemplate — org owner can update")
+    void updateOrgTemplate_shouldUpdateTemplate_forOrgOwner() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel existing = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG).name("Old").assigneeMode("NONE").build();
+        UpdateJobTemplateRequest request = new UpdateJobTemplateRequest();
+        request.setName("New Name");
+        JobTemplateModel updated = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG).name("New Name").assigneeMode("NONE").build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(existing));
+        when(jobTemplateRepository.save(any())).thenReturn(updated);
+
+        JobTemplateModel result = jobTemplateService.updateOrgTemplate(orgId, templateId, request, ownerId);
+
+        assertThat(result.getName()).isEqualTo("New Name");
+    }
+
+    @Test
+    @DisplayName("updateOrgTemplate — throws NotFoundException when template belongs to a different org")
+    void updateOrgTemplate_shouldThrow_whenTemplateBelongsToDifferentOrg() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel otherOrgTemplate = JobTemplateModel.builder()
+                .id(templateId).orgId(UUID.randomUUID()).scope(JobTemplateScope.ORG).name("Other").assigneeMode("NONE").build();
+        UpdateJobTemplateRequest request = new UpdateJobTemplateRequest();
+        request.setName("X");
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(otherOrgTemplate));
+
+        assertThatThrownBy(() -> jobTemplateService.updateOrgTemplate(orgId, templateId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Job template not found");
+    }
+
+    // --- deleteOrgTemplate ---
+
+    @Test
+    @DisplayName("deleteOrgTemplate — org owner can soft delete")
+    void deleteOrgTemplate_shouldSoftDelete_forOrgOwner() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel template = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG).name("T1").assigneeMode("NONE").build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+
+        jobTemplateService.deleteOrgTemplate(orgId, templateId, ownerId);
+
+        verify(jobTemplateRepository).softDelete(templateId);
+    }
+
+    @Test
+    @DisplayName("deleteOrgTemplate — org member is forbidden")
+    void deleteOrgTemplate_shouldThrow_whenOrgMemberRole() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> jobTemplateService.deleteOrgTemplate(orgId, templateId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("deleteOrgTemplate — throws NotFoundException when template not found")
+    void deleteOrgTemplate_shouldThrow_whenTemplateNotFound() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobTemplateService.deleteOrgTemplate(orgId, templateId, ownerId))
+                .isInstanceOf(NotFoundException.class);
     }
 
     // --- JobTemplateModel ---
