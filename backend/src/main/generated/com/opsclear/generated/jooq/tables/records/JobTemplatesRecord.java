@@ -285,6 +285,21 @@ public class JobTemplatesRecord extends UpdatableRecordImpl<JobTemplatesRecord> 
         return (LocalDateTime) get(16);
     }
 
+    /**
+     * Setter for <code>public.job_templates.org_id</code>.
+     */
+    public JobTemplatesRecord setOrgId(UUID value) {
+        set(17, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.job_templates.org_id</code>.
+     */
+    public UUID getOrgId() {
+        return (UUID) get(17);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -308,7 +323,7 @@ public class JobTemplatesRecord extends UpdatableRecordImpl<JobTemplatesRecord> 
     /**
      * Create a detached, initialised JobTemplatesRecord
      */
-    public JobTemplatesRecord(UUID id, String friendlyId, UUID projectId, String name, String title, String description, String client, String priority, String assigneeMode, UUID assigneeId, UUID milestoneId, Integer deadlineOffsetDays, Integer occurrenceCount, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+    public JobTemplatesRecord(UUID id, String friendlyId, UUID projectId, String name, String title, String description, String client, String priority, String assigneeMode, UUID assigneeId, UUID milestoneId, Integer deadlineOffsetDays, Integer occurrenceCount, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID orgId) {
         super(JobTemplates.JOB_TEMPLATES);
 
         setId(id);
@@ -328,6 +343,7 @@ public class JobTemplatesRecord extends UpdatableRecordImpl<JobTemplatesRecord> 
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setDeletedAt(deletedAt);
+        setOrgId(orgId);
         resetChangedOnNotNull();
     }
 }

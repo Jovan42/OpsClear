@@ -1,6 +1,7 @@
 package com.opsclear.dto;
 
 import com.opsclear.model.JobTemplateModel;
+import com.opsclear.model.JobTemplateScope;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,6 +19,8 @@ public class JobTemplateResponse {
     private UUID id;
     private String friendlyId;
     private UUID projectId;
+    private UUID orgId;
+    private JobTemplateScope scope;
     private String name;
     private String title;
     private String description;
@@ -39,6 +42,8 @@ public class JobTemplateResponse {
                 .id(m.getId())
                 .friendlyId(m.getFriendlyId())
                 .projectId(m.getProjectId())
+                .orgId(m.getOrgId())
+                .scope(m.getScope())
                 .name(m.getName())
                 .title(m.getTitle())
                 .description(m.getDescription())

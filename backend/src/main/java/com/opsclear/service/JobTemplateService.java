@@ -7,6 +7,8 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.JobTemplateModel;
+import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.repository.JobTemplateRepository;
@@ -33,11 +35,16 @@ public class JobTemplateService {
     private final OrganisationRepository organisationRepository;
     private final FriendlyIdService friendlyIdService;
 
+    // --- Project-scoped endpoints ---
+
     @Transactional(readOnly = true)
     public List<JobTemplateModel> list(UUID projectId, UUID requesterId) {
         requireProject(projectId);
         requireMember(projectId, requesterId);
-        return jobTemplateRepository.findActiveByProjectId(projectId);
+        UUID orgId = organisationRepository.findByMember(requesterId)
+                .map(OrganisationModel::getId)
+                .orElse(null);
+        return jobTemplateRepository.findActiveByProjectIdOrOrgId(projectId, orgId);
     }
 
     @Transactional
@@ -74,8 +81,89 @@ public class JobTemplateService {
                                    UpdateJobTemplateRequest request, UUID requesterId) {
         requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
-        JobTemplateModel template = requireTemplate(projectId, templateId);
+        JobTemplateModel template = requireTemplateForProject(projectId, templateId);
+        applyUpdate(template, request);
+        JobTemplateModel updated = jobTemplateRepository.save(template);
+        log.info("Updated job template {} in project {} by user {}", templateId, projectId, requesterId);
+        return updated;
+    }
 
+    @Transactional
+    public void softDelete(UUID projectId, UUID templateId, UUID requesterId) {
+        requireProject(projectId);
+        requireOwnerOrAdmin(projectId, requesterId);
+        requireTemplateForProject(projectId, templateId);
+        jobTemplateRepository.softDelete(templateId);
+        log.info("Soft-deleted job template {} from project {} by user {}", templateId, projectId, requesterId);
+    }
+
+    @Transactional
+    public void recordUsage(UUID projectId, UUID templateId, UUID requesterId) {
+        requireProject(projectId);
+        requireMember(projectId, requesterId);
+        requireTemplateForProjectOrOrg(projectId, templateId, requesterId);
+        jobTemplateRepository.incrementOccurrenceCount(templateId);
+        log.info("Recorded usage of job template {} by user {}", templateId, requesterId);
+    }
+
+    // --- Org-scoped endpoints ---
+
+    @Transactional(readOnly = true)
+    public List<JobTemplateModel> listOrgTemplates(UUID orgId, UUID requesterId) {
+        requireOrg(orgId);
+        requireOrgMember(orgId, requesterId);
+        return jobTemplateRepository.findActiveByOrgId(orgId);
+    }
+
+    @Transactional
+    public JobTemplateModel createOrgTemplate(UUID orgId, CreateJobTemplateRequest request, UUID requesterId) {
+        requireOrg(orgId);
+        requireOrgOwnerOrAdmin(orgId, requesterId);
+
+        String friendlyId = friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.TEMPLATE);
+
+        JobTemplateModel template = JobTemplateModel.builder()
+                .friendlyId(friendlyId)
+                .orgId(orgId)
+                .name(request.getName().strip())
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .client(request.getClient())
+                .priority(request.getPriority())
+                .assigneeMode(Objects.requireNonNullElse(request.getAssigneeMode(), "NONE"))
+                .deadlineOffsetDays(request.getDeadlineOffsetDays())
+                .createdBy(requesterId)
+                .build();
+
+        JobTemplateModel saved = jobTemplateRepository.save(template);
+        log.info("Created org-level job template '{}' in org {} by user {}", saved.getName(), orgId, requesterId);
+        return saved;
+    }
+
+    @Transactional
+    public JobTemplateModel updateOrgTemplate(UUID orgId, UUID templateId,
+                                              UpdateJobTemplateRequest request, UUID requesterId) {
+        requireOrg(orgId);
+        requireOrgOwnerOrAdmin(orgId, requesterId);
+        JobTemplateModel template = requireTemplateForOrg(orgId, templateId);
+        applyUpdate(template, request);
+        JobTemplateModel updated = jobTemplateRepository.save(template);
+        log.info("Updated org-level job template {} in org {} by user {}", templateId, orgId, requesterId);
+        return updated;
+    }
+
+    @Transactional
+    public void deleteOrgTemplate(UUID orgId, UUID templateId, UUID requesterId) {
+        requireOrg(orgId);
+        requireOrgOwnerOrAdmin(orgId, requesterId);
+        requireTemplateForOrg(orgId, templateId);
+        jobTemplateRepository.softDelete(templateId);
+        log.info("Soft-deleted org-level job template {} from org {} by user {}", templateId, orgId, requesterId);
+    }
+
+    // --- Shared helpers ---
+
+    private void applyUpdate(JobTemplateModel template, UpdateJobTemplateRequest request) {
         template.setName(request.getName().strip());
         template.setTitle(request.getTitle());
         template.setDescription(request.getDescription());
@@ -86,28 +174,6 @@ public class JobTemplateService {
         template.setAssigneeId(request.getAssigneeId());
         template.setMilestoneId(request.getMilestoneId());
         template.setDeadlineOffsetDays(request.getDeadlineOffsetDays());
-
-        JobTemplateModel updated = jobTemplateRepository.save(template);
-        log.info("Updated job template {} in project {} by user {}", templateId, projectId, requesterId);
-        return updated;
-    }
-
-    @Transactional
-    public void softDelete(UUID projectId, UUID templateId, UUID requesterId) {
-        requireProject(projectId);
-        requireOwnerOrAdmin(projectId, requesterId);
-        requireTemplate(projectId, templateId);
-        jobTemplateRepository.softDelete(templateId);
-        log.info("Soft-deleted job template {} from project {} by user {}", templateId, projectId, requesterId);
-    }
-
-    @Transactional
-    public void recordUsage(UUID projectId, UUID templateId, UUID requesterId) {
-        requireProject(projectId);
-        requireMember(projectId, requesterId);
-        requireTemplate(projectId, templateId);
-        jobTemplateRepository.incrementOccurrenceCount(templateId);
-        log.info("Recorded usage of job template {} by user {}", templateId, requesterId);
     }
 
     // --- Guards ---
@@ -130,9 +196,48 @@ public class JobTemplateService {
         }
     }
 
-    private JobTemplateModel requireTemplate(UUID projectId, UUID templateId) {
+    private void requireOrg(UUID orgId) {
+        organisationRepository.findByIdAndDeletedAtIsNull(orgId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Organisation.NOT_FOUND));
+    }
+
+    private void requireOrgMember(UUID orgId, UUID userId) {
+        if (!organisationRepository.existsMember(orgId, userId)) {
+            throw new ForbiddenException(ErrorMessages.Organisation.NOT_A_MEMBER);
+        }
+    }
+
+    private void requireOrgOwnerOrAdmin(UUID orgId, UUID userId) {
+        OrganisationRole role = organisationRepository.findMemberRole(orgId, userId)
+                .orElseThrow(() -> new ForbiddenException(ErrorMessages.Organisation.NOT_A_MEMBER));
+        if (role == OrganisationRole.MEMBER) {
+            throw new ForbiddenException(ErrorMessages.Organisation.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
+        }
+    }
+
+    private JobTemplateModel requireTemplateForProject(UUID projectId, UUID templateId) {
         return jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)
-                .filter(t -> t.getProjectId().equals(projectId))
+                .filter(t -> projectId.equals(t.getProjectId()))
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND));
+    }
+
+    private JobTemplateModel requireTemplateForOrg(UUID orgId, UUID templateId) {
+        return jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)
+                .filter(t -> orgId.equals(t.getOrgId()))
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND));
+    }
+
+    private void requireTemplateForProjectOrOrg(UUID projectId, UUID templateId, UUID requesterId) {
+        JobTemplateModel template = jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND));
+        if (projectId.equals(template.getProjectId())) {
+            return;
+        }
+        UUID orgId = organisationRepository.findByMember(requesterId)
+                .map(OrganisationModel::getId)
+                .orElse(null);
+        if (orgId == null || !orgId.equals(template.getOrgId())) {
+            throw new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND);
+        }
     }
 }

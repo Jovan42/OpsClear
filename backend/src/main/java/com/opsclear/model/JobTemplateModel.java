@@ -19,6 +19,8 @@ public class JobTemplateModel {
     private UUID id;
     private String friendlyId;
     private UUID projectId;
+    private UUID orgId;
+    private JobTemplateScope scope;
     private String name;
     private String title;
     private String description;

@@ -2,6 +2,7 @@ package com.opsclear.repository;
 
 import com.opsclear.generated.jooq.tables.Users;
 import com.opsclear.model.JobTemplateModel;
+import com.opsclear.model.JobTemplateScope;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -23,7 +24,7 @@ public class JobTemplateRepository {
 
     private final DSLContext dsl;
 
-    public List<JobTemplateModel> findActiveByProjectId(UUID projectId) {
+    public List<JobTemplateModel> findActiveByProjectIdOrOrgId(UUID projectId, UUID orgId) {
         Users assigneeUsers = USERS.as("assignee_users");
         return dsl.select(
                         JOB_TEMPLATES.asterisk(),
@@ -33,7 +34,25 @@ public class JobTemplateRepository {
                 .leftJoin(assigneeUsers).on(assigneeUsers.ID.eq(JOB_TEMPLATES.ASSIGNEE_ID))
                 .leftJoin(MILESTONES).on(MILESTONES.ID.eq(JOB_TEMPLATES.MILESTONE_ID)
                         .and(MILESTONES.DELETED_AT.isNull()))
-                .where(JOB_TEMPLATES.PROJECT_ID.eq(projectId))
+                .where(JOB_TEMPLATES.PROJECT_ID.eq(projectId)
+                        .or(orgId != null ? JOB_TEMPLATES.ORG_ID.eq(orgId) : org.jooq.impl.DSL.falseCondition()))
+                .and(JOB_TEMPLATES.DELETED_AT.isNull())
+                .orderBy(JOB_TEMPLATES.PROJECT_ID.isNull().asc(), JOB_TEMPLATES.NAME.asc())
+                .fetch()
+                .map(this::toModel);
+    }
+
+    public List<JobTemplateModel> findActiveByOrgId(UUID orgId) {
+        Users assigneeUsers = USERS.as("assignee_users");
+        return dsl.select(
+                        JOB_TEMPLATES.asterisk(),
+                        assigneeUsers.NAME.as("assignee_name"),
+                        MILESTONES.NAME.as("milestone_name"))
+                .from(JOB_TEMPLATES)
+                .leftJoin(assigneeUsers).on(assigneeUsers.ID.eq(JOB_TEMPLATES.ASSIGNEE_ID))
+                .leftJoin(MILESTONES).on(MILESTONES.ID.eq(JOB_TEMPLATES.MILESTONE_ID)
+                        .and(MILESTONES.DELETED_AT.isNull()))
+                .where(JOB_TEMPLATES.ORG_ID.eq(orgId))
                 .and(JOB_TEMPLATES.DELETED_AT.isNull())
                 .orderBy(JOB_TEMPLATES.NAME.asc())
                 .fetch()
@@ -61,6 +80,7 @@ public class JobTemplateRepository {
             UUID id = dsl.insertInto(JOB_TEMPLATES)
                     .set(JOB_TEMPLATES.FRIENDLY_ID, template.getFriendlyId())
                     .set(JOB_TEMPLATES.PROJECT_ID, template.getProjectId())
+                    .set(JOB_TEMPLATES.ORG_ID, template.getOrgId())
                     .set(JOB_TEMPLATES.NAME, template.getName())
                     .set(JOB_TEMPLATES.TITLE, template.getTitle())
                     .set(JOB_TEMPLATES.DESCRIPTION, template.getDescription())
@@ -113,10 +133,13 @@ public class JobTemplateRepository {
     }
 
     private JobTemplateModel toModel(Record r) {
+        UUID projectId = r.get(JOB_TEMPLATES.PROJECT_ID);
         return JobTemplateModel.builder()
                 .id(r.get(JOB_TEMPLATES.ID))
                 .friendlyId(r.get(JOB_TEMPLATES.FRIENDLY_ID))
-                .projectId(r.get(JOB_TEMPLATES.PROJECT_ID))
+                .projectId(projectId)
+                .orgId(r.get(JOB_TEMPLATES.ORG_ID))
+                .scope(projectId != null ? JobTemplateScope.PROJECT : JobTemplateScope.ORG)
                 .name(r.get(JOB_TEMPLATES.NAME))
                 .title(r.get(JOB_TEMPLATES.TITLE))
                 .description(r.get(JOB_TEMPLATES.DESCRIPTION))

@@ -272,6 +272,7 @@ class JobTemplateIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+
     // --- PUT /api/projects/{projectId}/templates/{templateId} ---
 
     @Test
