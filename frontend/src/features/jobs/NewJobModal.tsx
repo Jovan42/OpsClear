@@ -6,7 +6,12 @@ import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import MarkdownEditor from '../../components/MarkdownEditor';
 import { useCreateJob, useUpdateJob } from './useJobs';
-import { useProjectMembers } from '../projects/useProjects';
+import { useProjectMembers, useProject } from '../projects/useProjects';
+import { useCurrentOrg } from '../org/OrgContext';
+import { useAuth } from '../../auth/AuthContext';
+import { useTemplates } from '../templates/useTemplates';
+import { templatesApi } from '../../api/templates';
+import { resolveWildcards } from '../../utils/resolveWildcards';
 import type { JobPriority, JobResponse, MilestoneResponse, ProjectMemberResponse } from '../../types';
 
 const PRIORITIES: { value: JobPriority; label: string }[] = [
@@ -41,11 +46,18 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
   const isPending = isCreating || isUpdating;
 
   const { data: members = [] } = useProjectMembers(projectId);
+  const { data: project } = useProject(projectId);
+  const { hasAddon } = useCurrentOrg();
+  const { name: creatorName } = useAuth();
+  const { data: templates = [] } = useTemplates(projectId);
+  const showTemplates = !isEdit && hasAddon('JOB_TEMPLATES') && templates.length > 0;
 
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [assignedTo, setAssignedTo] = useState<ProjectMemberResponse | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef    = useRef<HTMLDivElement>(null);
+  const assigneeInputRef = useRef<HTMLInputElement>(null);
 
   const [prevKey, setPrevKey] = useState('');
   const currentKey = open ? (job?.id ?? 'new') : '';
@@ -103,7 +115,44 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
     reset();
     setAssignedTo(null);
     setMemberSearch('');
+    setSelectedTemplateId(null);
     onClose();
+  }
+
+  function handleTemplateSelect(templateId: string) {
+    if (!templateId) {
+      setSelectedTemplateId(null);
+      reset({ title: '', description: '', client: '', deadline: '', priority: 'MEDIUM', milestoneId: '' });
+      setAssignedTo(null);
+      setMemberSearch('');
+      return;
+    }
+    const template = templates.find((t) => t.id === templateId);
+    if (!template) return;
+    setSelectedTemplateId(templateId);
+    try {
+      const ctx = { project: project?.name ?? undefined, creator: creatorName ?? undefined, occurrence: template.occurrenceCount + 1 };
+      const deadline = template.deadlineOffsetDays != null
+        ? new Date(Date.now() + template.deadlineOffsetDays * 86_400_000).toISOString().split('T')[0]
+        : '';
+      const milestoneValid = milestones.some((ms) => ms.id === template.milestoneId);
+      reset({
+        title:       resolveWildcards(template.title ?? '', ctx),
+        description: resolveWildcards(template.description ?? '', ctx),
+        client:      template.client ?? '',
+        priority:    template.priority ?? 'MEDIUM',
+        milestoneId: milestoneValid ? (template.milestoneId ?? '') : '',
+        deadline,
+      });
+      if (template.assigneeMode === 'FIXED') {
+        setAssignedTo(members.find((m) => m.userId === template.assigneeId) ?? null);
+      } else {
+        setAssignedTo(null);
+        if (template.assigneeMode === 'ASK') assigneeInputRef.current?.focus();
+      }
+    } catch {
+      // malformed template data — leave fields as-is
+    }
   }
 
   function onSubmit(values: FormValues) {
@@ -120,7 +169,14 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
     if (isEdit && job) {
       updateJob({ jobId: job.id, body }, { onSuccess: handleClose });
     } else {
-      createJob(body, { onSuccess: handleClose });
+      createJob(body, {
+        onSuccess: () => {
+          if (selectedTemplateId) {
+            void templatesApi.recordUsage(projectId, selectedTemplateId).catch(() => {});
+          }
+          handleClose();
+        },
+      });
     }
   }
 
@@ -130,6 +186,22 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
   return (
     <Modal open={open} onClose={handleClose} title={isEdit ? 'Edit Job' : 'New Job'}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {showTemplates && (
+          <div>
+            <label className={labelClass}>Start from template</label>
+            <select
+              className={inputClass}
+              defaultValue=""
+              onChange={(e) => handleTemplateSelect(e.target.value)}
+            >
+              <option value="">— optional —</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div>
           <label className={labelClass}>
             Title <span className="text-red-500">*</span>
@@ -210,6 +282,7 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
           <label className={labelClass}>Assign to</label>
           <div className="relative" ref={containerRef}>
             <input
+              ref={assigneeInputRef}
               className={inputClass}
               placeholder="Search member…"
               value={assignedTo ? assignedTo.userName : memberSearch}
