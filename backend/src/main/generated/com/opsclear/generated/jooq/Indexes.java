@@ -15,6 +15,8 @@ import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
+import com.opsclear.generated.jooq.tables.RecurringSchedules;
+import com.opsclear.generated.jooq.tables.ScheduleAssignees;
 import com.opsclear.generated.jooq.tables.Users;
 
 import org.jooq.Index;
@@ -55,5 +57,8 @@ public class Indexes {
     public static final Index IDX_USERS_EMAIL = Internal.createIndex(DSL.name("idx_users_email"), Users.USERS, new OrderField[] { Users.USERS.EMAIL }, false);
     public static final Index JOB_TEMPLATES_ORG_ID_IDX = Internal.createIndex(DSL.name("job_templates_org_id_idx"), JobTemplates.JOB_TEMPLATES, new OrderField[] { JobTemplates.JOB_TEMPLATES.ORG_ID }, false);
     public static final Index JOB_TEMPLATES_PROJECT_ID_IDX = Internal.createIndex(DSL.name("job_templates_project_id_idx"), JobTemplates.JOB_TEMPLATES, new OrderField[] { JobTemplates.JOB_TEMPLATES.PROJECT_ID }, false);
+    public static final Index RECURRING_SCHEDULES_DUE_IDX = Internal.createIndex(DSL.name("recurring_schedules_due_idx"), RecurringSchedules.RECURRING_SCHEDULES, new OrderField[] { RecurringSchedules.RECURRING_SCHEDULES.NEXT_RUN_AT }, false);
+    public static final Index RECURRING_SCHEDULES_PROJECT_ID_IDX = Internal.createIndex(DSL.name("recurring_schedules_project_id_idx"), RecurringSchedules.RECURRING_SCHEDULES, new OrderField[] { RecurringSchedules.RECURRING_SCHEDULES.PROJECT_ID }, false);
+    public static final Index SCHEDULE_ASSIGNEES_POSITION_IDX = Internal.createIndex(DSL.name("schedule_assignees_position_idx"), ScheduleAssignees.SCHEDULE_ASSIGNEES, new OrderField[] { ScheduleAssignees.SCHEDULE_ASSIGNEES.SCHEDULE_ID, ScheduleAssignees.SCHEDULE_ASSIGNEES.ORDER }, true);
     public static final Index UK_PROJECTS_NAME_OWNER_ACTIVE = Internal.createIndex(DSL.name("uk_projects_name_owner_active"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.NAME, Projects.PROJECTS.OWNER_ID }, true);
 }

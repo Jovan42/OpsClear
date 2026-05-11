@@ -22,6 +22,8 @@ import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
+import com.opsclear.generated.jooq.tables.RecurringSchedules;
+import com.opsclear.generated.jooq.tables.ScheduleAssignees;
 import com.opsclear.generated.jooq.tables.SubscriptionAddons;
 import com.opsclear.generated.jooq.tables.SubscriptionTiers;
 import com.opsclear.generated.jooq.tables.Users;
@@ -123,6 +125,17 @@ public class Tables {
      * Projects - top-level tenant boundary for organizing work
      */
     public static final Projects PROJECTS = Projects.PROJECTS;
+
+    /**
+     * Cron-driven schedules that materialise jobs from a template on a fixed
+     * cadence
+     */
+    public static final RecurringSchedules RECURRING_SCHEDULES = RecurringSchedules.RECURRING_SCHEDULES;
+
+    /**
+     * The table <code>public.schedule_assignees</code>.
+     */
+    public static final ScheduleAssignees SCHEDULE_ASSIGNEES = ScheduleAssignees.SCHEDULE_ASSIGNEES;
 
     /**
      * The table <code>public.subscription_addons</code>.

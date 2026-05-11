@@ -303,6 +303,23 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         return (String) get(17);
     }
 
+    /**
+     * Setter for <code>public.jobs.source_schedule_id</code>. NULL for manually
+     * created jobs; set to the schedule that auto-created this job
+     */
+    public JobsRecord setSourceScheduleId(UUID value) {
+        set(18, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.jobs.source_schedule_id</code>. NULL for manually
+     * created jobs; set to the schedule that auto-created this job
+     */
+    public UUID getSourceScheduleId() {
+        return (UUID) get(18);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -326,7 +343,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
     /**
      * Create a detached, initialised JobsRecord
      */
-    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt, String priority, UUID milestoneId, String friendlyId) {
+    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt, String priority, UUID milestoneId, String friendlyId, UUID sourceScheduleId) {
         super(Jobs.JOBS);
 
         setId(id);
@@ -347,6 +364,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         setPriority(priority);
         setMilestoneId(milestoneId);
         setFriendlyId(friendlyId);
+        setSourceScheduleId(sourceScheduleId);
         resetChangedOnNotNull();
     }
 }
