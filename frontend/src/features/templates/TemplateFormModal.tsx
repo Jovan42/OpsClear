@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import MarkdownEditor from '../../components/MarkdownEditor';
-import { useCreateTemplate, useUpdateTemplate } from './useTemplates';
+import { useCreateTemplate, useUpdateTemplate, useCreateOrgTemplate, useUpdateOrgTemplate } from './useTemplates';
 import { useProjectMembers } from '../projects/useProjects';
 import { useMilestones } from '../jobs/useMilestones';
 import type { AssigneeMode, JobPriority, JobTemplateResponse, ProjectMemberResponse } from '../../types';
@@ -31,12 +31,14 @@ const WILDCARDS = [
 interface Props {
   open: boolean;
   onClose: () => void;
-  projectId: string;
+  projectId?: string;
+  orgId?: string;
   template?: JobTemplateResponse;
 }
 
-export default function TemplateFormModal({ open, onClose, projectId, template }: Readonly<Props>) {
-  const isEdit = !!template;
+export default function TemplateFormModal({ open, onClose, projectId, orgId, template }: Readonly<Props>) {
+  const isEdit    = !!template;
+  const isOrgMode = !!orgId && !projectId;
 
   const [name, setName]                   = useState(template?.name ?? '');
   const [title, setTitle]                 = useState(template?.title ?? '');
@@ -55,11 +57,16 @@ export default function TemplateFormModal({ open, onClose, projectId, template }
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { data: members = [] } = useProjectMembers(projectId);
-  const { data: milestones = [] } = useMilestones(projectId);
+  const { data: members = [] } = useProjectMembers(projectId ?? '');
+  const { data: milestones = [] } = useMilestones(projectId ?? '');
 
-  const create = useCreateTemplate(projectId);
-  const update = useUpdateTemplate(projectId);
+  const createProject = useCreateTemplate(projectId ?? '');
+  const updateProject = useUpdateTemplate(projectId ?? '');
+  const createOrg     = useCreateOrgTemplate(orgId ?? '');
+  const updateOrg     = useUpdateOrgTemplate(orgId ?? '');
+
+  const create = isOrgMode ? createOrg : createProject;
+  const update = isOrgMode ? updateOrg : updateProject;
   const isPending = create.isPending || update.isPending;
   const isError   = create.isError   || update.isError;
 
@@ -195,7 +202,7 @@ export default function TemplateFormModal({ open, onClose, projectId, template }
               className={inputClass}
             >
               <option value="NONE">None — leave blank</option>
-              <option value="FIXED">Fixed — pre-fill assignee</option>
+              {!isOrgMode && <option value="FIXED">Fixed — pre-fill assignee</option>}
               <option value="ASK">Ask — focus field on creation</option>
             </select>
           </div>
@@ -212,7 +219,7 @@ export default function TemplateFormModal({ open, onClose, projectId, template }
           </div>
         </div>
 
-        {assigneeMode === 'FIXED' && (
+        {assigneeMode === 'FIXED' && !isOrgMode && (
           <div>
             <label className={labelClass}>Assignee</label>
             <div className="relative" ref={containerRef}>
@@ -257,7 +264,7 @@ export default function TemplateFormModal({ open, onClose, projectId, template }
           </div>
         )}
 
-        {milestones.length > 0 && (
+        {!isOrgMode && milestones.length > 0 && (
           <div>
             <label className={labelClass}>Milestone</label>
             <select

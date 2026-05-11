@@ -196,7 +196,9 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
             >
               <option value="">— optional —</option>
               {templates.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+                <option key={t.id} value={t.id}>
+                  {t.scope === 'ORG' ? `[Org] ${t.name}` : t.name}
+                </option>
               ))}
             </select>
           </div>
