@@ -39,3 +39,42 @@ export function useDeleteTemplate(projectId: string) {
     },
   });
 }
+
+export function useOrgTemplates(orgId: string | null) {
+  return useQuery({
+    queryKey: ['org-templates', orgId],
+    queryFn: () => templatesApi.orgList(orgId!),
+    enabled: !!orgId,
+  });
+}
+
+export function useCreateOrgTemplate(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: TemplateBody) => templatesApi.orgCreate(orgId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['org-templates', orgId] });
+    },
+  });
+}
+
+export function useUpdateOrgTemplate(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ templateId, body }: { templateId: string; body: TemplateBody }) =>
+      templatesApi.orgUpdate(orgId, templateId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['org-templates', orgId] });
+    },
+  });
+}
+
+export function useDeleteOrgTemplate(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (templateId: string) => templatesApi.orgDelete(orgId, templateId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['org-templates', orgId] });
+    },
+  });
+}

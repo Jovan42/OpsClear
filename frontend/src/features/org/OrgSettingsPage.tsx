@@ -12,6 +12,11 @@ import { useCurrentOrg } from './OrgContext';
 import { useOrganisation, useUpdateOrganisation, useDeleteOrganisation, useOrgMembers } from './useOrganisation';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import SubscriptionSection from './SubscriptionSection';
+import { useOrgTemplates, useDeleteOrgTemplate } from '../templates/useTemplates';
+import TemplateFormModal from '../templates/TemplateFormModal';
+import ConfirmModal from '../../components/ConfirmModal';
+import PriorityBadge from '../../components/PriorityBadge';
+import type { JobTemplateResponse } from '../../types';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Max 100 characters'),
@@ -26,7 +31,7 @@ type FormValues = z.infer<typeof schema>;
 export default function OrgSettingsPage() {
   const navigate = useNavigate();
   const { userId } = useAuth();
-  const { org: ctxOrg, setOrg, clearOrg } = useCurrentOrg();
+  const { org: ctxOrg, setOrg, clearOrg, hasAddon } = useCurrentOrg();
 
   const { data: org, isLoading } = useOrganisation(ctxOrg?.id ?? null);
   const { data: members = [] } = useOrgMembers(ctxOrg?.id ?? null);
@@ -41,6 +46,12 @@ export default function OrgSettingsPage() {
 
   const [slugApiError, setSlugApiError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const { data: orgTemplates = [], isLoading: templatesLoading } = useOrgTemplates(ctxOrg?.id ?? null);
+  const deleteOrgTemplate = useDeleteOrgTemplate(ctxOrg?.id ?? '');
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<JobTemplateResponse | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState<JobTemplateResponse | null>(null);
 
   const {
     register,
@@ -218,6 +229,79 @@ export default function OrgSettingsPage() {
         </form>
       </section>
 
+      {/* ── Org Templates ── */}
+      {hasAddon('JOB_TEMPLATES') && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+              Org Templates
+            </h2>
+            {isOwnerOrAdmin && (
+              <Button variant="secondary" size="sm" onClick={() => setShowCreateTemplate(true)}>
+                + New Template
+              </Button>
+            )}
+          </div>
+
+          {templatesLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-14 rounded-xl" />
+              <Skeleton className="h-14 rounded-xl" />
+            </div>
+          ) : orgTemplates.length === 0 ? (
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No org-level templates yet.{' '}
+                {isOwnerOrAdmin && (
+                  <button
+                    onClick={() => setShowCreateTemplate(true)}
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Create one
+                  </button>
+                )}
+              </p>
+            </div>
+          ) : (
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+              {orgTemplates.map((t) => (
+                <div key={t.id} className="flex items-start justify-between gap-4 p-4">
+                  <div className="min-w-0 space-y-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t.name}</p>
+                      {t.friendlyId && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">{t.friendlyId}</span>
+                      )}
+                      {t.priority && <PriorityBadge priority={t.priority} />}
+                    </div>
+                    {t.title && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{t.title}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+                      {t.deadlineOffsetDays != null && <span>+{t.deadlineOffsetDays}d deadline</span>}
+                      {t.occurrenceCount > 0 && <span>Used {t.occurrenceCount}×</span>}
+                    </div>
+                  </div>
+                  {isOwnerOrAdmin && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button variant="ghost" size="sm" onClick={() => setEditingTemplate(t)}>Edit</Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeletingTemplate(t)}
+                        className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ── Subscription ── */}
       {isOwner && (
         <section>
@@ -249,6 +333,36 @@ export default function OrgSettingsPage() {
           </div>
         </section>
       )}
+
+      {/* ── Org template modals ── */}
+      <TemplateFormModal
+        key={showCreateTemplate ? 'org-create-open' : 'org-create-closed'}
+        open={showCreateTemplate}
+        onClose={() => setShowCreateTemplate(false)}
+        orgId={org.id}
+      />
+
+      <TemplateFormModal
+        key={editingTemplate?.id ?? 'org-edit-closed'}
+        open={editingTemplate !== null}
+        onClose={() => setEditingTemplate(null)}
+        orgId={org.id}
+        template={editingTemplate ?? undefined}
+      />
+
+      <ConfirmModal
+        open={deletingTemplate !== null}
+        onClose={() => setDeletingTemplate(null)}
+        onConfirm={() => {
+          if (!deletingTemplate) return;
+          deleteOrgTemplate.mutate(deletingTemplate.id, { onSuccess: () => setDeletingTemplate(null) });
+        }}
+        title="Delete Template"
+        message={`Delete "${deletingTemplate?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        isPending={deleteOrgTemplate.isPending}
+      />
 
       {/* ── Delete confirmation modal ── */}
       <Modal

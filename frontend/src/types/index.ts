@@ -244,7 +244,9 @@ export type AssigneeMode = 'NONE' | 'FIXED' | 'ASK';
 export interface JobTemplateResponse {
   id: string;
   friendlyId: string | null;
-  projectId: string;
+  projectId: string | null;
+  orgId: string | null;
+  scope: 'PROJECT' | 'ORG';
   name: string;
   title: string | null;
   description: string | null;
