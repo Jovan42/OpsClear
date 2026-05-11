@@ -153,6 +153,12 @@ public class Jobs extends TableImpl<JobsRecord> {
      */
     public final TableField<JobsRecord, String> FRIENDLY_ID = createField(DSL.name("friendly_id"), SQLDataType.VARCHAR(20), this, "");
 
+    /**
+     * The column <code>public.jobs.source_schedule_id</code>. NULL for manually
+     * created jobs; set to the schedule that auto-created this job
+     */
+    public final TableField<JobsRecord, UUID> SOURCE_SCHEDULE_ID = createField(DSL.name("source_schedule_id"), SQLDataType.UUID, this, "NULL for manually created jobs; set to the schedule that auto-created this job");
+
     private Jobs(Name alias, Table<JobsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

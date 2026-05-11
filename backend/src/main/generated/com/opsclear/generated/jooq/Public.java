@@ -22,6 +22,8 @@ import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
+import com.opsclear.generated.jooq.tables.RecurringSchedules;
+import com.opsclear.generated.jooq.tables.ScheduleAssignees;
 import com.opsclear.generated.jooq.tables.SubscriptionAddons;
 import com.opsclear.generated.jooq.tables.SubscriptionTiers;
 import com.opsclear.generated.jooq.tables.Users;
@@ -139,6 +141,17 @@ public class Public extends SchemaImpl {
     public final Projects PROJECTS = Projects.PROJECTS;
 
     /**
+     * Cron-driven schedules that materialise jobs from a template on a fixed
+     * cadence
+     */
+    public final RecurringSchedules RECURRING_SCHEDULES = RecurringSchedules.RECURRING_SCHEDULES;
+
+    /**
+     * The table <code>public.schedule_assignees</code>.
+     */
+    public final ScheduleAssignees SCHEDULE_ASSIGNEES = ScheduleAssignees.SCHEDULE_ASSIGNEES;
+
+    /**
      * The table <code>public.subscription_addons</code>.
      */
     public final SubscriptionAddons SUBSCRIPTION_ADDONS = SubscriptionAddons.SUBSCRIPTION_ADDONS;
@@ -187,6 +200,8 @@ public class Public extends SchemaImpl {
             ProjectBlockReasons.PROJECT_BLOCK_REASONS,
             ProjectMembers.PROJECT_MEMBERS,
             Projects.PROJECTS,
+            RecurringSchedules.RECURRING_SCHEDULES,
+            ScheduleAssignees.SCHEDULE_ASSIGNEES,
             SubscriptionAddons.SUBSCRIPTION_ADDONS,
             SubscriptionTiers.SUBSCRIPTION_TIERS,
             Users.USERS
