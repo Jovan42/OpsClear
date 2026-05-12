@@ -3,7 +3,6 @@ package com.opsclear.service;
 import com.opsclear.dto.CreateScheduleRequest;
 import com.opsclear.dto.PauseScheduleRequest;
 import com.opsclear.dto.RecurringScheduleResponse;
-import com.opsclear.dto.ScheduleAssigneeResponse;
 import com.opsclear.dto.UpdateScheduleRequest;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ForbiddenException;
