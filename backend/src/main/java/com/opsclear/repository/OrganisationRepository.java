@@ -21,6 +21,7 @@ import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static com.opsclear.generated.jooq.Tables.ORGANISATION_INVITES;
 import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
 import static com.opsclear.generated.jooq.Tables.ORGANISATION_MEMBERS;
+import static com.opsclear.generated.jooq.Tables.PROJECTS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static java.util.List.of;
 
@@ -40,6 +41,25 @@ public class OrganisationRepository {
 
     private static LocalDateTime toLocalDateTime(Instant instant) {
         return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
+    }
+
+    public Optional<OrganisationModel> findByProject(UUID projectId) {
+        return dsl.select(of(
+                        ORGANISATIONS.ID,
+                        ORGANISATIONS.NAME,
+                        ORGANISATIONS.SLUG,
+                        ORGANISATIONS.CREATED_BY,
+                        CREATOR_NAME,
+                        ORGANISATIONS.CREATED_AT,
+                        ORGANISATIONS.DELETED_AT))
+                .from(ORGANISATIONS)
+                .leftJoin(USERS).on(ORGANISATIONS.CREATED_BY.eq(USERS.ID))
+                .join(PROJECTS).on(PROJECTS.ORGANISATION_ID.eq(ORGANISATIONS.ID))
+                .where(PROJECTS.ID.eq(projectId))
+                .and(ORGANISATIONS.DELETED_AT.isNull())
+                .limit(1)
+                .fetchOptional()
+                .map(this::toModel);
     }
 
     public Optional<OrganisationModel> findByMember(UUID userId) {

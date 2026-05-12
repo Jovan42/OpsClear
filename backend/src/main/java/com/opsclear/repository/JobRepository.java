@@ -100,6 +100,7 @@ public class JobRepository {
                     .set(JOBS.PRIORITY, job.getPriority().name())
                     .set(JOBS.MILESTONE_ID, job.getMilestoneId())
                     .set(JOBS.CREATED_BY, job.getCreatedBy())
+                    .set(JOBS.SOURCE_SCHEDULE_ID, job.getSourceScheduleId())
                     .set(JOBS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(JOBS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .returning(JOBS.ID)
@@ -157,6 +158,7 @@ public class JobRepository {
                         JOBS.BLOCKED_REASON_ID,
                         JOBS.BLOCKED_AT,
                         JOBS.MILESTONE_ID,
+                        JOBS.SOURCE_SCHEDULE_ID,
                         ASSIGNED_TO_NAME,
                         BLOCKED_REASON_TEXT,
                         MILESTONE_NAME_TEXT))
@@ -185,6 +187,7 @@ public class JobRepository {
                 .deletedAt(toInstant(r.get(JOBS.DELETED_AT)))
                 .milestoneId(r.get(JOBS.MILESTONE_ID))
                 .milestoneName(r.get(MILESTONE_NAME_TEXT))
+                .sourceScheduleId(r.get(JOBS.SOURCE_SCHEDULE_ID))
                 .blockedBy(r.get(JOBS.BLOCKED_BY))
                 .blockedReasonId(r.get(JOBS.BLOCKED_REASON_ID))
                 .blockedReason(r.get(BLOCKED_REASON_TEXT))

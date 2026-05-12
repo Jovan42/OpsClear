@@ -91,6 +91,17 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class RecurringSchedule {
+        public static final String NOT_FOUND = "Recurring schedule not found";
+        public static final String INVALID_CRON = "Invalid cron expression: ";
+        public static final String CRON_INTERVAL_TOO_SHORT =
+                "Cron expression must have a minimum interval of 1 hour";
+        public static final String INVALID_TIMEZONE = "Invalid timezone: ";
+
+        private RecurringSchedule() {
+        }
+    }
+
     public static final class Organisation {
         public static final String NOT_FOUND = "Organisation not found";
         public static final String NOT_IN_ORG = "You must belong to an organisation to perform this action";

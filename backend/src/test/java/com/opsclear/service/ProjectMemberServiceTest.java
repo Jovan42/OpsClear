@@ -41,6 +41,9 @@ class ProjectMemberServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private RecurringScheduleService recurringScheduleService;
+
     private ProjectMemberService projectMemberService;
 
     private UUID projectId;
@@ -51,7 +54,7 @@ class ProjectMemberServiceTest {
     @BeforeEach
     void setUp() {
         projectMemberService = new ProjectMemberService(
-                projectMemberRepository, projectRepository, userRepository);
+                projectMemberRepository, projectRepository, userRepository, recurringScheduleService);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();

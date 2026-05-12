@@ -8,5 +8,6 @@ public enum AddonCode {
     MILESTONES,
     JOB_RELATIONSHIPS,
     API_KEYS,
-    JOB_TEMPLATES
+    JOB_TEMPLATES,
+    RECURRING_SCHEDULING
 }

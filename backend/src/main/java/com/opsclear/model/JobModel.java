@@ -42,6 +42,9 @@ public class JobModel {
     @Builder.Default
     private List<JobRelationshipEntry> relationships = new ArrayList<>();
 
+    // Set for jobs created by a recurring schedule; null for manual jobs
+    private UUID sourceScheduleId;
+
     // Blocking metadata — all null when not blocked
     private UUID blockedBy;
     private UUID blockedReasonId;
