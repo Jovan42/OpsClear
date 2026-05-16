@@ -60,9 +60,9 @@ class SchedulerPollerIntegrationTest {
     @BeforeEach
     void setUp() {
         assigneeRepository.deleteAll();
-        scheduleRepository.deleteAll();
         jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
+        scheduleRepository.deleteAll();
         jobTemplateRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
@@ -153,5 +153,124 @@ class SchedulerPollerIntegrationTest {
 
         assertThat(due).hasSize(1);
         assertThat(due.get(0).getName()).isEqualTo("Due");
+    }
+
+    @Test
+    @DisplayName("processSchedule — skips without job when timezone is invalid")
+    void processSchedule_shouldSkip_whenTimezoneIsInvalid() {
+        Instant nextRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow   = Instant.parse("2026-01-01T10:00:00Z");
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("Invalid TZ Test");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("Not/ATimezone");
+        row.setNextRunAt(nextRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.processSchedule(saved, testNow);
+
+        assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
+        assertThat(scheduleRepository.findById(saved.getId()).orElseThrow().getLastRunAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("processSchedule — skips without job when cron has no future occurrence")
+    void processSchedule_shouldSkip_whenNoNextOccurrence() {
+        // "0 0 9 31 2 *" = 09:00 on Feb 31 — never fires; CronExpression.next() returns null
+        Instant nextRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow   = Instant.parse("2026-01-01T10:00:00Z");
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("No-Occurrence Test");
+        row.setCronExpression("0 0 9 31 2 *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(nextRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.processSchedule(saved, testNow);
+
+        assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
+        assertThat(scheduleRepository.findById(saved.getId()).orElseThrow().getLastRunAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("processSchedule — advances schedule without creating a job on missed run")
+    void processSchedule_shouldAdvanceWithoutJob_onMissedRun() {
+        // nextRunAt=09:00; now=14:00; cron fires at noon → nextOccurrence(12:00) < now → MISSED RUN
+        Instant previousRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow       = Instant.parse("2026-01-01T14:00:00Z");
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("Missed Run Test");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(previousRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.processSchedule(saved, testNow);
+
+        assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
+        RecurringSchedulesRecord updated = scheduleRepository.findById(saved.getId()).orElseThrow();
+        assertThat(updated.getLastRunAt()).isNotNull();
+        assertThat(updated.getLastRunAt().toInstant()).isEqualTo(previousRunAt);
+        assertThat(updated.getNextRunAt().toInstant()).isAfter(testNow);
+    }
+
+    @Test
+    @DisplayName("processSchedule — skips without job when template has been soft-deleted")
+    void processSchedule_shouldSkip_whenTemplateNotFound() {
+        // Normal-run path (nextOccurrence=noon > testNow=10:00) reaches template lookup → null → return
+        Instant nextRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow   = Instant.parse("2026-01-01T10:00:00Z");
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("Missing Template Test");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(nextRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        jobTemplateRepository.softDelete(templateId);
+
+        poller.processSchedule(saved, testNow);
+
+        assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
+        assertThat(scheduleRepository.findById(saved.getId()).orElseThrow().getLastRunAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("tick — processes due schedules and advances them")
+    void tick_shouldProcessDueSchedules_whenScheduleIsDue() {
+        // nextRunAt 3 hours ago with hourly cron → findDue returns it → missed-run advances schedule
+        Instant pastNextRunAt = Instant.now().minusSeconds(3 * 3600);
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("Tick Test");
+        row.setCronExpression("0 0 * * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(pastNextRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.tick();
+
+        RecurringSchedulesRecord updated = scheduleRepository.findById(saved.getId()).orElseThrow();
+        assertThat(updated.getLastRunAt()).isNotNull();
+        assertThat(updated.getNextRunAt().toInstant()).isAfter(Instant.now().minusSeconds(60));
     }
 }
