@@ -242,6 +242,23 @@ public class RecurringSchedulesRecord extends UpdatableRecordImpl<RecurringSched
         return (OffsetDateTime) get(13);
     }
 
+    /**
+     * Setter for <code>public.recurring_schedules.deleted_at</code>. NULL =
+     * active; set on soft delete — jobs referencing this schedule are preserved
+     */
+    public RecurringSchedulesRecord setDeletedAt(OffsetDateTime value) {
+        set(14, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.recurring_schedules.deleted_at</code>. NULL =
+     * active; set on soft delete — jobs referencing this schedule are preserved
+     */
+    public OffsetDateTime getDeletedAt() {
+        return (OffsetDateTime) get(14);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -265,7 +282,7 @@ public class RecurringSchedulesRecord extends UpdatableRecordImpl<RecurringSched
     /**
      * Create a detached, initialised RecurringSchedulesRecord
      */
-    public RecurringSchedulesRecord(UUID id, UUID projectId, UUID templateId, String name, String cronExpression, String timezone, OffsetDateTime pausedUntil, OffsetDateTime expiresAt, Integer currentRotationIndex, OffsetDateTime nextRunAt, OffsetDateTime lastRunAt, UUID createdBy, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public RecurringSchedulesRecord(UUID id, UUID projectId, UUID templateId, String name, String cronExpression, String timezone, OffsetDateTime pausedUntil, OffsetDateTime expiresAt, Integer currentRotationIndex, OffsetDateTime nextRunAt, OffsetDateTime lastRunAt, UUID createdBy, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime deletedAt) {
         super(RecurringSchedules.RECURRING_SCHEDULES);
 
         setId(id);
@@ -282,6 +299,7 @@ public class RecurringSchedulesRecord extends UpdatableRecordImpl<RecurringSched
         setCreatedBy(createdBy);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setDeletedAt(deletedAt);
         resetChangedOnNotNull();
     }
 }

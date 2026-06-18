@@ -8,10 +8,12 @@ import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.ScheduleAssigneeRepository;
 import com.opsclear.service.FriendlyIdService;
@@ -48,6 +50,7 @@ public class SchedulerPoller {
     private final JobStatusHistoryRepository jobStatusHistoryRepository;
     private final JobTemplateRepository jobTemplateRepository;
     private final OrganisationRepository organisationRepository;
+    private final ProjectRepository projectRepository;
     private final FriendlyIdService friendlyIdService;
 
     @Scheduled(fixedRate = 60_000)
@@ -125,13 +128,16 @@ public class SchedulerPoller {
                         .atStartOfDay(zone).toInstant()
                 : null;
 
+        UUID projectId = schedule.getProjectId();
+        String projectName = projectRepository.findByIdAndDeletedAtIsNull(projectId)
+                .map(ProjectModel::getName)
+                .orElse("");
+
         Map<String, String> vars = buildWildcardVars(
-                pickedAssignee, scheduledForDate, template.getOccurrenceCount());
+                pickedAssignee, scheduledForDate, template.getOccurrenceCount(), projectName);
         String title = resolveWildcards(
                 template.getTitle() != null ? template.getTitle() : template.getName(), vars);
         String description = resolveWildcards(template.getDescription(), vars);
-
-        UUID projectId = schedule.getProjectId();
         UUID orgId = organisationRepository.findByProject(projectId)
                 .map(OrganisationModel::getId)
                 .orElse(null);
@@ -184,7 +190,7 @@ public class SchedulerPoller {
     }
 
     private Map<String, String> buildWildcardVars(ScheduleAssigneeResponse assignee,
-                                                   LocalDate date, int occurrenceCount) {
+                                                   LocalDate date, int occurrenceCount, String projectName) {
         Map<String, String> vars = new HashMap<>();
         vars.put("assignee", assignee != null ? assignee.getUserName() : "");
         vars.put("date", date.toString());
@@ -192,6 +198,7 @@ public class SchedulerPoller {
         vars.put("year", String.valueOf(date.getYear()));
         vars.put("occurrence", String.valueOf(occurrenceCount + 1));
         vars.put("creator", "System");
+        vars.put("project", projectName);
         return vars;
     }
 }

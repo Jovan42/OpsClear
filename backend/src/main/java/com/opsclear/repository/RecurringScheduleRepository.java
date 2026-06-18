@@ -23,6 +23,7 @@ public class RecurringScheduleRepository {
     public List<RecurringSchedulesRecord> findByProjectId(UUID projectId) {
         return dsl.selectFrom(RECURRING_SCHEDULES)
                 .where(RECURRING_SCHEDULES.PROJECT_ID.eq(projectId))
+                .and(RECURRING_SCHEDULES.DELETED_AT.isNull())
                 .orderBy(RECURRING_SCHEDULES.CREATED_AT.desc())
                 .fetch();
     }
@@ -30,6 +31,7 @@ public class RecurringScheduleRepository {
     public Optional<RecurringSchedulesRecord> findById(UUID id) {
         return dsl.selectFrom(RECURRING_SCHEDULES)
                 .where(RECURRING_SCHEDULES.ID.eq(id))
+                .and(RECURRING_SCHEDULES.DELETED_AT.isNull())
                 .fetchOptional();
     }
 
@@ -37,13 +39,15 @@ public class RecurringScheduleRepository {
         return dsl.selectFrom(RECURRING_SCHEDULES)
                 .where(RECURRING_SCHEDULES.TEMPLATE_ID.eq(templateId))
                 .and(RECURRING_SCHEDULES.PAUSED_UNTIL.isNull())
+                .and(RECURRING_SCHEDULES.DELETED_AT.isNull())
                 .fetch();
     }
 
     public List<RecurringSchedulesRecord> findDue(Instant now) {
         OffsetDateTime odt = toOffsetDateTime(now);
         return dsl.selectFrom(RECURRING_SCHEDULES)
-                .where(RECURRING_SCHEDULES.PAUSED_UNTIL.isNull()
+                .where(RECURRING_SCHEDULES.DELETED_AT.isNull())
+                .and(RECURRING_SCHEDULES.PAUSED_UNTIL.isNull()
                         .or(RECURRING_SCHEDULES.PAUSED_UNTIL.le(odt)))
                 .and(RECURRING_SCHEDULES.NEXT_RUN_AT.le(odt))
                 .and(RECURRING_SCHEDULES.EXPIRES_AT.isNull()
@@ -98,7 +102,8 @@ public class RecurringScheduleRepository {
     }
 
     public void delete(UUID id) {
-        dsl.deleteFrom(RECURRING_SCHEDULES)
+        dsl.update(RECURRING_SCHEDULES)
+                .set(RECURRING_SCHEDULES.DELETED_AT, OffsetDateTime.now(ZoneOffset.UTC))
                 .where(RECURRING_SCHEDULES.ID.eq(id))
                 .execute();
     }

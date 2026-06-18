@@ -6,10 +6,12 @@ import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.ScheduleAssigneeRepository;
 import com.opsclear.service.FriendlyIdService;
@@ -20,6 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,6 +44,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("SchedulerPoller")
 class SchedulerPollerTest {
 
@@ -49,6 +54,7 @@ class SchedulerPollerTest {
     @Mock private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Mock private JobTemplateRepository jobTemplateRepository;
     @Mock private OrganisationRepository organisationRepository;
+    @Mock private ProjectRepository projectRepository;
     @Mock private FriendlyIdService friendlyIdService;
 
     private SchedulerPoller poller;
@@ -63,12 +69,15 @@ class SchedulerPollerTest {
         poller = new SchedulerPoller(
                 scheduleRepository, assigneeRepository, jobRepository,
                 jobStatusHistoryRepository, jobTemplateRepository,
-                organisationRepository, friendlyIdService);
+                organisationRepository, projectRepository, friendlyIdService);
 
         projectId  = UUID.randomUUID();
         templateId = UUID.randomUUID();
         createdBy  = UUID.randomUUID();
         orgId      = UUID.randomUUID();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(any()))
+                .thenReturn(Optional.of(ProjectModel.builder().name("Test Project").build()));
     }
 
     // -------------------------------------------------------------------------

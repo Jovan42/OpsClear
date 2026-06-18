@@ -131,6 +131,12 @@ public class RecurringSchedules extends TableImpl<RecurringSchedulesRecord> {
      */
     public final TableField<RecurringSchedulesRecord, OffsetDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    /**
+     * The column <code>public.recurring_schedules.deleted_at</code>. NULL =
+     * active; set on soft delete — jobs referencing this schedule are preserved
+     */
+    public final TableField<RecurringSchedulesRecord, OffsetDateTime> DELETED_AT = createField(DSL.name("deleted_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "NULL = active; set on soft delete — jobs referencing this schedule are preserved");
+
     private RecurringSchedules(Name alias, Table<RecurringSchedulesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

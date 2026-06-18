@@ -17,6 +17,7 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
   const dashboardLocked  = !hasAddon('DASHBOARD');
   const milestonesLocked = !hasAddon('MILESTONES');
   const templatesLocked  = !hasAddon('JOB_TEMPLATES');
+  const schedulesLocked  = !hasAddon('RECURRING_SCHEDULING');
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium px-1 py-1 border-b-2 transition-colors ${
@@ -53,6 +54,9 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
       {!templatesLocked
         ? <NavLink to={`/projects/${projectId}/templates`} className={linkClass}>Templates</NavLink>
         : null}
+      {!schedulesLocked
+        ? <NavLink to={`/projects/${projectId}/schedules`} className={linkClass}>Schedules</NavLink>
+        : null}
       {isOwnerOrAdmin && (
         <NavLink to={`/projects/${projectId}/approvals`} className={linkClass}>
           <span className="flex items-center gap-1.5">
@@ -71,6 +75,7 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
       {dashboardLocked && lockedNavLink(`/projects/${projectId}/dashboard`, 'Dashboard')}
       {milestonesLocked && lockedNavLink(`/projects/${projectId}/milestones`, 'Milestones')}
       {templatesLocked  && lockedNavLink(`/projects/${projectId}/templates`, 'Templates')}
+      {schedulesLocked  && lockedNavLink(`/projects/${projectId}/schedules`, 'Schedules')}
     </div>
   );
 }
