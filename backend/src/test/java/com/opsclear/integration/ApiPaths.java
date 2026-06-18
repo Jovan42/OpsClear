@@ -230,6 +230,28 @@ final class ApiPaths {
         return "/api/organisations/" + orgId + "/templates/" + templateId;
     }
 
+    // --- Recurring schedules ---
+
+    static String schedules(UUID projectId) {
+        return "/api/projects/" + projectId + "/schedules";
+    }
+
+    static String schedule(UUID projectId, UUID scheduleId) {
+        return "/api/projects/" + projectId + "/schedules/" + scheduleId;
+    }
+
+    static String schedulePause(UUID projectId, UUID scheduleId) {
+        return "/api/projects/" + projectId + "/schedules/" + scheduleId + "/pause";
+    }
+
+    static String scheduleResume(UUID projectId, UUID scheduleId) {
+        return "/api/projects/" + projectId + "/schedules/" + scheduleId + "/resume";
+    }
+
+    // --- Cron preview ---
+
+    static final String CRON_PREVIEW = "/api/schedules/preview";
+
     private ApiPaths() {
     }
 }

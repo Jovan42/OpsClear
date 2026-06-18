@@ -26,6 +26,7 @@ public class ProjectMemberService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final RecurringScheduleService recurringScheduleService;
 
     @Transactional(readOnly = true)
     public List<ProjectMemberModel> listMembers(UUID projectId, UUID requesterId) {
@@ -79,6 +80,7 @@ public class ProjectMemberService {
         requireNotOwnerForRemoval(member);
 
         projectMemberRepository.delete(memberId);
+        recurringScheduleService.onAssigneeRemoved(projectId, member.getUserId());
         log.info("Removed member {} from project {}", memberId, projectId);
     }
 
