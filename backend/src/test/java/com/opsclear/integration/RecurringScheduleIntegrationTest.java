@@ -1,5 +1,6 @@
 package com.opsclear.integration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
@@ -34,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,6 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RecurringScheduleIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
     @Autowired private RecurringScheduleRepository scheduleRepository;
     @Autowired private ScheduleAssigneeRepository assigneeRepository;
     @Autowired private JobStatusHistoryRepository jobStatusHistoryRepository;
@@ -137,9 +140,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — owner receives 201 with populated fields")
     void createSchedule_shouldReturn201_forOwner() throws Exception {
-        if (!hasAddon()) {
-            return; // addon not seeded, skip
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,9 +164,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — member receives 403")
     void createSchedule_shouldReturn403_forMember() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -183,9 +182,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — blank name returns 400")
     void createSchedule_shouldReturn400_whenNameBlank() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -203,9 +200,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — sub-hourly cron returns 400")
     void createSchedule_shouldReturn400_whenCronTooFrequent() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -223,9 +218,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — non-member receives 403")
     void createSchedule_shouldReturn403_whenNotMember() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(UUID.randomUUID().toString())
                                 .claim("email", "stranger@example.com")))
@@ -244,9 +237,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — unknown project returns 404")
     void createSchedule_shouldReturn404_whenProjectNotFound() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(UUID.randomUUID()))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -266,9 +257,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("listSchedules — member can list schedules")
     void listSchedules_shouldReturn200_forMember() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         // Create a schedule via the owner first
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
@@ -295,9 +284,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("getSchedule — owner can retrieve specific schedule")
     void getSchedule_shouldReturn200_forOwner() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -323,9 +310,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("getSchedule — unknown schedule returns 404")
     void getSchedule_shouldReturn404_whenNotFound() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(get(ApiPaths.schedule(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
@@ -336,9 +321,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("updateSchedule — owner can update name")
     void updateSchedule_shouldReturn200_forOwner() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -374,9 +357,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("updateSchedule — member receives 403")
     void updateSchedule_shouldReturn403_forMember() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -413,9 +394,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("deleteSchedule — owner receives 204 and schedule is removed")
     void deleteSchedule_shouldReturn204_forOwner() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -441,9 +420,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("deleteSchedule — member receives 403")
     void deleteSchedule_shouldReturn403_forMember() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -467,9 +444,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("deleteSchedule — unknown schedule returns 404")
     void deleteSchedule_shouldReturn404_whenNotFound() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(delete(ApiPaths.schedule(projectId, UUID.randomUUID()))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNotFound());
@@ -480,9 +455,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("pauseSchedule — owner can pause schedule")
     void pauseSchedule_shouldReturn200_forOwner() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -511,9 +484,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("pauseSchedule — indefinite pause with null until sets PAUSED_NO_ASSIGNEES when no assignees")
     void pauseSchedule_shouldSetPausedNoAssignees_whenUntilIsNullAndNoAssignees() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         // A schedule with no assignees indefinitely paused → PAUSED_NO_ASSIGNEES
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
@@ -545,9 +516,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("resumeSchedule — owner can resume a paused schedule")
     void resumeSchedule_shouldReturn200_forOwner() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String createBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -581,9 +550,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("resumeSchedule — member receives 403")
     void resumeSchedule_shouldReturn403_forMember() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String createBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -673,9 +640,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — invalid timezone returns 400")
     void createSchedule_shouldReturn400_whenTimezoneInvalid() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -693,9 +658,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — impossible cron (Feb 31) returns 400")
     void createSchedule_shouldReturn400_whenCronNeverFires() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -715,9 +678,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("getSchedule — returns 404 when schedule belongs to a different project")
     void getSchedule_shouldReturn404_whenScheduleBelongsToDifferentProject() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         // Create a second project + schedule in that project
         ProjectModel otherProject = projectRepository.save(ProjectModel.builder()
                 .name("Other Project").ownerId(ownerId).organisationId(orgId).build());
@@ -751,9 +712,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("updateSchedule — sets pausedUntil and expiresAt fields")
     void updateSchedule_shouldSetPausedUntilAndExpiresAt() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -793,9 +752,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("createSchedule — returns populated assignees list when assigneeIds provided")
     void createSchedule_shouldReturnAssignees_whenAssigneeIdsProvided() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -839,9 +796,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("removeMember — auto-pauses schedule when last assignee is removed from project")
     void removeMember_shouldAutoPause_whenLastAssigneeRemoved() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         // Add a new user as the sole schedule assignee
         UUID assigneeUserId = UUID.randomUUID();
         userRepository.save(UserModel.builder().id(assigneeUserId).email("assignee@example.com")
@@ -883,9 +838,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("removeMember — does not pause schedule when other assignees remain")
     void removeMember_shouldNotAutoPause_whenOtherAssigneesRemain() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         // Add a new user alongside ownerId as a schedule assignee
         UUID assigneeUserId = UUID.randomUUID();
         userRepository.save(UserModel.builder().id(assigneeUserId).email("second@example.com")
@@ -928,9 +881,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("scheduleRepository.updateAfterRun — updates next_run_at, last_run_at, rotation_index")
     void scheduleRepository_updateAfterRun_shouldUpdateFields() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -960,9 +911,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("scheduleRepository.findByTemplateIdAndActive — returns active schedules for template")
     void scheduleRepository_findByTemplateIdAndActive_shouldReturnActiveSchedules() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         // Create two schedules: one active (no pausedUntil), one paused
         mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
@@ -1006,9 +955,7 @@ class RecurringScheduleIntegrationTest {
     @Test
     @DisplayName("removeMember — no schedule changes when removed member has no schedule assignments")
     void removeMember_shouldLeaveSchedulesUntouched_whenMemberHasNoAssignments() throws Exception {
-        if (!hasAddon()) {
-            return;
-        }
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         // Create a schedule (no assignees)
         String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
@@ -1036,11 +983,59 @@ class RecurringScheduleIntegrationTest {
         assertThat(assigneeRepository.findByScheduleId(scheduleId)).isEmpty();
     }
 
+    @Test
+    @DisplayName("createSchedule — sets pausedUntil and expiresAt when provided")
+    void createSchedule_shouldCreate_withPausedUntilAndExpiresAt() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Timed Schedule",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  "pausedUntil": "2030-06-01T00:00:00Z",
+                                  "expiresAt": "2031-01-01T00:00:00Z"
+                                }
+                                """.formatted(templateId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.pausedUntil").isNotEmpty())
+                .andExpect(jsonPath("$.expiresAt").isNotEmpty())
+                .andExpect(jsonPath("$.status").value("PAUSED"));
+    }
+
+    @Test
+    @DisplayName("getSchedule — returns EXPIRED status when expiresAt is in the past")
+    void getSchedule_shouldReturnExpiredStatus_whenExpiresAtIsInPast() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Expired Schedule",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  "expiresAt": "2020-01-01T00:00:00Z"
+                                }
+                                """.formatted(templateId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String scheduleId = extractId(responseBody);
+        mockMvc.perform(get(ApiPaths.schedule(projectId, UUID.fromString(scheduleId)))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("EXPIRED"))
+                .andExpect(jsonPath("$.expiresAt").isNotEmpty());
+    }
+
     // --- Helpers ---
 
-    private String extractId(String json) {
-        int start = json.indexOf("\"id\":\"") + 6;
-        int end = json.indexOf("\"", start);
-        return json.substring(start, end);
+    private String extractId(String json) throws Exception {
+        return objectMapper.readTree(json).get("id").asText();
     }
 }

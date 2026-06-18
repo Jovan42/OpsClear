@@ -3,6 +3,7 @@ package com.opsclear.integration;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.OrganisationModel;
+import org.jooq.DSLContext;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -28,10 +29,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -41,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SchedulerPollerIntegrationTest {
 
     @Autowired private SchedulerPoller poller;
+    @Autowired private DSLContext dsl;
     @Autowired private RecurringScheduleRepository scheduleRepository;
     @Autowired private ScheduleAssigneeRepository assigneeRepository;
     @Autowired private JobRepository jobRepository;
@@ -272,5 +276,107 @@ class SchedulerPollerIntegrationTest {
         RecurringSchedulesRecord updated = scheduleRepository.findById(saved.getId()).orElseThrow();
         assertThat(updated.getLastRunAt()).isNotNull();
         assertThat(updated.getNextRunAt().toInstant()).isAfter(Instant.now().minusSeconds(60));
+    }
+
+    @Test
+    @DisplayName("tick — does nothing when no schedules are due")
+    void tick_shouldDoNothing_whenNoDueSchedules() {
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("Future Schedule");
+        row.setCronExpression("0 0 9 * * MON");
+        row.setTimezone("UTC");
+        row.setNextRunAt(Instant.parse("2099-01-01T09:00:00Z").atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.tick();
+
+        RecurringSchedulesRecord unchanged = scheduleRepository.findById(saved.getId()).orElseThrow();
+        assertThat(unchanged.getLastRunAt()).isNull();
+        assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("processSchedule — creates job assigned to the rotation assignee")
+    void processSchedule_shouldCreateJobWithAssignee_whenAssigneeConfigured() {
+        Instant previousRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow       = Instant.parse("2026-01-01T10:00:00Z");
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("Assignee Test");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(previousRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        assigneeRepository.replaceForSchedule(saved.getId(), List.of(ownerId));
+
+        poller.processSchedule(saved, testNow);
+
+        List<com.opsclear.model.JobModel> jobs = jobRepository.findByProjectIdAndDeletedAtIsNull(projectId);
+        assertThat(jobs).hasSize(1);
+        assertThat(jobs.get(0).getAssignedTo()).isEqualTo(ownerId);
+    }
+
+    @Test
+    @DisplayName("processSchedule — creates job with deadline when template has deadlineOffsetDays")
+    void processSchedule_shouldApplyDeadlineOffset_whenTemplateHasDeadlineOffsetDays() {
+        Instant previousRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow       = Instant.parse("2026-01-01T10:00:00Z");
+
+        JobTemplateModel deadlineTemplate = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-DL").projectId(projectId).name("Deadline Template")
+                .title("Task {{date}}").assigneeMode("NONE")
+                .deadlineOffsetDays(3).createdBy(ownerId).build());
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(deadlineTemplate.getId());
+        row.setName("Deadline Test");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(previousRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.processSchedule(saved, testNow);
+
+        List<com.opsclear.model.JobModel> jobs = jobRepository.findByProjectIdAndDeletedAtIsNull(projectId);
+        assertThat(jobs).hasSize(1);
+        assertThat(jobs.get(0).getDeadline()).isNotNull();
+        assertThat(jobs.get(0).getDeadline()).isEqualTo(Instant.parse("2026-01-04T00:00:00Z"));
+    }
+
+    @Test
+    @DisplayName("processSchedule — creates job without friendlyId when org is deleted")
+    void processSchedule_shouldCreateJobWithNullFriendlyId_whenOrgNotFound() {
+        Instant previousRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow       = Instant.parse("2026-01-01T10:00:00Z");
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("No Org Test");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(previousRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        dsl.update(ORGANISATIONS)
+                .set(ORGANISATIONS.DELETED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .where(ORGANISATIONS.ID.eq(orgId))
+                .execute();
+
+        poller.processSchedule(saved, testNow);
+
+        List<com.opsclear.model.JobModel> jobs = jobRepository.findByProjectIdAndDeletedAtIsNull(projectId);
+        assertThat(jobs).hasSize(1);
+        assertThat(jobs.get(0).getFriendlyId()).isNull();
     }
 }

@@ -104,7 +104,6 @@ class RecurringScheduleServiceTest {
         when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
         when(scheduleRepository.insert(any())).thenReturn(saved);
         when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
 
         RecurringScheduleResponse result = service.create(projectId, req, ownerId);
 
@@ -522,7 +521,24 @@ class RecurringScheduleServiceTest {
         assertThat(result.getProjectId()).isEqualTo(projectId);
     }
 
+    @Test
+    @DisplayName("get — returns null templateName when template has been deleted")
+    void get_shouldReturnNullTemplateName_whenTemplateDeleted() {
+        UUID scheduleId = UUID.randomUUID();
+        RecurringSchedulesRecord row = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        row.setId(scheduleId);
 
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(row));
+        when(assigneeRepository.findByScheduleId(scheduleId)).thenReturn(List.of());
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.empty());
+
+        RecurringScheduleResponse result = service.get(projectId, scheduleId, memberId);
+
+        assertThat(result.getTemplateName()).isNull();
+    }
 
     @Test
     @DisplayName("list — member can list schedules")
