@@ -57,8 +57,7 @@ public class RecurringScheduleResponse {
                 .expiresAt(expiresAt)
                 .nextRunAt(toInstant(schedule.getNextRunAt()))
                 .lastRunAt(toInstant(schedule.getLastRunAt()))
-                .currentRotationIndex(schedule.getCurrentRotationIndex() != null
-                        ? schedule.getCurrentRotationIndex() : 0)
+                .currentRotationIndex(schedule.getCurrentRotationIndex())
                 .assignees(assignees)
                 .status(status)
                 .createdAt(toInstant(schedule.getCreatedAt()))

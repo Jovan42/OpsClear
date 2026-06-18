@@ -392,25 +392,10 @@ class SchedulerPollerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("processSchedule — handles null currentRotationIndex in missed-run path")
-    void processSchedule_shouldHandleNullRotationIndex_inMissedRun() {
-        Instant now = Instant.parse("2026-05-12T14:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(18000));
-        schedule.setCurrentRotationIndex(null);
-
-        poller.processSchedule(schedule, now);
-
-        // null → treated as 0, so newIndex = 0 + 1 = 1
-        verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), eq(1));
-        verify(jobRepository, never()).save(any());
-    }
-
-    @Test
     @DisplayName("processSchedule — falls back to template name when title is null, resolves description")
     void processSchedule_shouldFallbackToName_whenTitleNullAndDescriptionPresent() {
         Instant now = Instant.parse("2026-05-12T10:00:00Z");
         RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-        schedule.setCurrentRotationIndex(null); // also covers null rotationIndex in normal-run path
 
         JobTemplateModel template = JobTemplateModel.builder()
                 .id(templateId).projectId(projectId)
@@ -436,7 +421,6 @@ class SchedulerPollerTest {
         verify(jobRepository).save(captor.capture());
         assertThat(captor.getValue().getTitle()).isEqualTo("Fallback Name");
         assertThat(captor.getValue().getDescription()).contains("Report for ");
-        // newIndex = (null→0) + 1 = 1
         verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), eq(1));
     }
 

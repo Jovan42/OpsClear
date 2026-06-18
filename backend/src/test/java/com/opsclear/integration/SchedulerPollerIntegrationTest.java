@@ -353,6 +353,34 @@ class SchedulerPollerIntegrationTest {
     }
 
     @Test
+    @DisplayName("processSchedule — creates job with template priority when priority is set")
+    void processSchedule_shouldCreateJobWithTemplatePriority_whenTemplateHasPriority() {
+        Instant previousRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow       = Instant.parse("2026-01-01T10:00:00Z");
+
+        JobTemplateModel priorityTemplate = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-PRI").projectId(projectId).name("High Priority Task")
+                .title("High Priority Task").assigneeMode("NONE")
+                .priority("HIGH").createdBy(ownerId).build());
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(priorityTemplate.getId());
+        row.setName("Priority Test");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(previousRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.processSchedule(saved, testNow);
+
+        List<com.opsclear.model.JobModel> jobs = jobRepository.findByProjectIdAndDeletedAtIsNull(projectId);
+        assertThat(jobs).hasSize(1);
+        assertThat(jobs.get(0).getPriority()).isEqualTo(com.opsclear.model.JobPriority.HIGH);
+    }
+
+    @Test
     @DisplayName("processSchedule — creates job without friendlyId when org is deleted")
     void processSchedule_shouldCreateJobWithNullFriendlyId_whenOrgNotFound() {
         Instant previousRunAt = Instant.parse("2026-01-01T09:00:00Z");

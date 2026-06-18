@@ -1033,6 +1033,86 @@ class RecurringScheduleIntegrationTest {
                 .andExpect(jsonPath("$.expiresAt").isNotEmpty());
     }
 
+    @Test
+    @DisplayName("createSchedule — invalid cron syntax returns 400")
+    void createSchedule_shouldReturn400_whenCronSyntaxInvalid() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Bad Cron",
+                                  "templateId": "%s",
+                                  "cronExpression": "not-a-cron",
+                                  "timezone": "UTC"
+                                }
+                                """.formatted(templateId)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("createSchedule — returns ACTIVE status when pausedUntil is in the past")
+    void createSchedule_shouldReturnActive_whenPausedUntilIsInPast() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Stale Pause",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  "pausedUntil": "2020-01-01T00:00:00Z"
+                                }
+                                """.formatted(templateId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String scheduleId = extractId(responseBody);
+        mockMvc.perform(get(ApiPaths.schedule(projectId, UUID.fromString(scheduleId)))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.pausedUntil").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("updateSchedule — invalid cron syntax returns 400")
+    void updateSchedule_shouldReturn400_whenCronSyntaxInvalid() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Valid Schedule",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  "assigneeIds": []
+                                }
+                                """.formatted(templateId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String scheduleId = extractId(responseBody);
+        mockMvc.perform(put(ApiPaths.schedule(projectId, UUID.fromString(scheduleId)))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Invalid Update",
+                                  "templateId": "%s",
+                                  "cronExpression": "not-a-cron",
+                                  "timezone": "UTC",
+                                  "assigneeIds": []
+                                }
+                                """.formatted(templateId)))
+                .andExpect(status().isBadRequest());
+    }
+
     // --- Helpers ---
 
     private String extractId(String json) throws Exception {

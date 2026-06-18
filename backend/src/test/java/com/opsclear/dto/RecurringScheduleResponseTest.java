@@ -36,17 +36,6 @@ class RecurringScheduleResponseTest {
         assertThat(result.getStatus()).isEqualTo("ACTIVE");
     }
 
-    @Test
-    @DisplayName("from — defaults currentRotationIndex to 0 when null")
-    void from_shouldDefaultRotationIndex_whenCurrentRotationIndexIsNull() {
-        RecurringSchedulesRecord record = buildRecord();
-        record.setCurrentRotationIndex(null);
-
-        RecurringScheduleResponse result = RecurringScheduleResponse.from(record, List.of(), "Template");
-
-        assertThat(result.getCurrentRotationIndex()).isEqualTo(0);
-    }
-
     private RecurringSchedulesRecord buildRecord() {
         RecurringSchedulesRecord r = new RecurringSchedulesRecord();
         r.setId(UUID.randomUUID());

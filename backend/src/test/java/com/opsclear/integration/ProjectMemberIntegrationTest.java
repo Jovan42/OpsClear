@@ -495,4 +495,12 @@ class ProjectMemberIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString(";")));
     }
+
+    @Test
+    @DisplayName("Returns 404 when project does not exist")
+    void listMembers_shouldReturn404_whenProjectNotFound() throws Exception {
+        mockMvc.perform(get(ApiPaths.members(UUID.randomUUID()))
+                        .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
+                .andExpect(status().isNotFound());
+    }
 }

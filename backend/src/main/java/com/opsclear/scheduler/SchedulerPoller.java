@@ -95,8 +95,7 @@ public class SchedulerPoller {
                 futureZdt = CronExpression.parse(schedule.getCronExpression()).next(futureZdt);
             }
             Instant futureRunAt = futureZdt.toInstant();
-            int newIndex = (schedule.getCurrentRotationIndex() != null
-                    ? schedule.getCurrentRotationIndex() : 0) + 1;
+            int newIndex = schedule.getCurrentRotationIndex() + 1;
             scheduleRepository.updateAfterRun(schedule.getId(), futureRunAt, previousRunAt, newIndex);
             return;
         }
@@ -112,8 +111,7 @@ public class SchedulerPoller {
         }
 
         List<ScheduleAssigneeResponse> assignees = assigneeRepository.findByScheduleId(schedule.getId());
-        int rotationIndex = schedule.getCurrentRotationIndex() != null
-                ? schedule.getCurrentRotationIndex() : 0;
+        int rotationIndex = schedule.getCurrentRotationIndex();
 
         ScheduleAssigneeResponse pickedAssignee = null;
         if (!assignees.isEmpty()) {
@@ -131,8 +129,7 @@ public class SchedulerPoller {
                 pickedAssignee, scheduledForDate, template.getOccurrenceCount());
         String title = resolveWildcards(
                 template.getTitle() != null ? template.getTitle() : template.getName(), vars);
-        String description = template.getDescription() != null
-                ? resolveWildcards(template.getDescription(), vars) : null;
+        String description = resolveWildcards(template.getDescription(), vars);
 
         UUID projectId = schedule.getProjectId();
         UUID orgId = organisationRepository.findByProject(projectId)
