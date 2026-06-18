@@ -264,6 +264,39 @@ export interface JobTemplateResponse {
   updatedAt: string;
 }
 
+// ---- Recurring Schedules ----
+
+export interface ScheduleAssigneeResponse {
+  userId: string;
+  userName: string;
+  order: number;
+}
+
+export type ScheduleStatus = 'ACTIVE' | 'PAUSED' | 'PAUSED_NO_ASSIGNEES' | 'EXPIRED';
+
+export interface RecurringScheduleResponse {
+  id: string;
+  projectId: string;
+  templateId: string;
+  templateName: string | null;
+  name: string;
+  cronExpression: string;
+  timezone: string;
+  pausedUntil: string | null;
+  expiresAt: string | null;
+  currentRotationIndex: number;
+  nextRunAt: string;
+  lastRunAt: string | null;
+  assignees: ScheduleAssigneeResponse[];
+  status: ScheduleStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CronPreviewResponse {
+  nextRuns: string[];
+}
+
 // ---- Dashboard ----
 
 export interface JobSummary {
