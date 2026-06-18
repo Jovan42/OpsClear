@@ -1,5 +1,7 @@
 package com.opsclear.integration;
 
+import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
+import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
@@ -9,11 +11,17 @@ import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
+import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.RecurringScheduleRepository;
+import com.opsclear.repository.ScheduleAssigneeRepository;
 import com.opsclear.repository.UserRepository;
+
+import java.time.Instant;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +33,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,6 +76,15 @@ class ProjectMemberIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ScheduleAssigneeRepository scheduleAssigneeRepository;
+
+    @Autowired
+    private RecurringScheduleRepository scheduleRepository;
+
+    @Autowired
+    private JobTemplateRepository jobTemplateRepository;
+
     private UUID ownerId;
     private UUID project1Id;
     private UUID orgId;
@@ -76,6 +94,9 @@ class ProjectMemberIntegrationTest {
         jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
         blockReasonRepository.deleteAll();
+        scheduleAssigneeRepository.deleteAll();
+        scheduleRepository.deleteAll();
+        jobTemplateRepository.deleteAll();
         projectMemberRepository.deleteAll();
         milestoneRepository.deleteAll();
         projectRepository.deleteAll();
@@ -502,5 +523,38 @@ class ProjectMemberIntegrationTest {
         mockMvc.perform(get(ApiPaths.members(UUID.randomUUID()))
                         .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("removeMember — auto-pauses schedule when removed member was its only assignee")
+    void removeMember_shouldAutoPauseSchedule_whenMemberWasScheduleAssignee() throws Exception {
+        UUID memberId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(memberId).email("member@example.com").name("Member User").build());
+        ProjectMemberModel membership = projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project1Id).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(project1Id).name("Test Template")
+                .assigneeMode("NONE").createdBy(ownerId).build());
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(project1Id);
+        row.setTemplateId(template.getId());
+        row.setName("Test Schedule");
+        row.setCronExpression("0 0 9 * * MON");
+        row.setTimezone("UTC");
+        row.setNextRunAt(Instant.now().plusSeconds(3600).atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord savedSchedule = scheduleRepository.insert(row);
+        scheduleAssigneeRepository.replaceForSchedule(savedSchedule.getId(), List.of(memberId));
+
+        mockMvc.perform(delete(ApiPaths.member(project1Id, membership.getId()))
+                        .with(jwtFor(ownerId, "owner@example.com", "Owner User")))
+                .andExpect(status().isNoContent());
+
+        RecurringSchedulesRecord updated = scheduleRepository.findById(savedSchedule.getId()).orElseThrow();
+        assertThat(updated.getPausedUntil()).isNotNull();
+        assertThat(updated.getPausedUntil().toInstant()).isEqualTo(Instant.parse("9999-01-01T00:00:00Z"));
     }
 }

@@ -86,7 +86,7 @@ public class SchedulerPoller {
         }
         Instant nextOccurrence = nextOccurrenceZdt.toInstant();
 
-        if (nextOccurrence.isBefore(now) || nextOccurrence.equals(now)) {
+        if (!nextOccurrence.isAfter(now)) {
             // Missed run — advance next_run_at to first future occurrence without creating a job
             ZonedDateTime futureZdt = nextOccurrenceZdt;
             while (!futureZdt.toInstant().isAfter(now)) {

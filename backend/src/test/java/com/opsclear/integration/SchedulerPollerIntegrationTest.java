@@ -35,7 +35,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
+import static com.opsclear.generated.jooq.Tables.RECURRING_SCHEDULES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -406,5 +408,56 @@ class SchedulerPollerIntegrationTest {
         List<com.opsclear.model.JobModel> jobs = jobRepository.findByProjectIdAndDeletedAtIsNull(projectId);
         assertThat(jobs).hasSize(1);
         assertThat(jobs.get(0).getFriendlyId()).isNull();
+    }
+
+    @Test
+    @DisplayName("processSchedule — uses template name as title when title is null")
+    void processSchedule_shouldUseTemplateName_whenTitleIsNull() {
+        Instant previousRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow       = Instant.parse("2026-01-01T10:00:00Z");
+
+        JobTemplateModel noTitleTemplate = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-NT").projectId(projectId).name("No Title Template")
+                .assigneeMode("NONE").createdBy(ownerId).build());
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(noTitleTemplate.getId());
+        row.setName("No Title Schedule");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(previousRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.processSchedule(saved, testNow);
+
+        List<com.opsclear.model.JobModel> jobs = jobRepository.findByProjectIdAndDeletedAtIsNull(projectId);
+        assertThat(jobs).hasSize(1);
+        assertThat(jobs.get(0).getTitle()).isEqualTo("No Title Template");
+    }
+
+    @Test
+    @DisplayName("tick — catches and logs exception when schedule has invalid cron, does not propagate")
+    void tick_shouldCatchAndContinue_whenProcessScheduleThrows() {
+        Instant past = Instant.parse("2026-01-01T09:00:00Z");
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("Bad Cron Schedule");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(past.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        dsl.update(RECURRING_SCHEDULES)
+                .set(RECURRING_SCHEDULES.CRON_EXPRESSION, "not-a-cron")
+                .where(RECURRING_SCHEDULES.ID.eq(saved.getId()))
+                .execute();
+
+        assertThatCode(() -> poller.tick()).doesNotThrowAnyException();
+        assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
     }
 }
