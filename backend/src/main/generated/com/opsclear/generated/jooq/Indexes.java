@@ -17,6 +17,7 @@ import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.RecurringSchedules;
 import com.opsclear.generated.jooq.tables.ScheduleAssignees;
+import com.opsclear.generated.jooq.tables.ScheduleMissedRuns;
 import com.opsclear.generated.jooq.tables.Users;
 
 import org.jooq.Index;
@@ -60,5 +61,6 @@ public class Indexes {
     public static final Index RECURRING_SCHEDULES_DUE_IDX = Internal.createIndex(DSL.name("recurring_schedules_due_idx"), RecurringSchedules.RECURRING_SCHEDULES, new OrderField[] { RecurringSchedules.RECURRING_SCHEDULES.NEXT_RUN_AT }, false);
     public static final Index RECURRING_SCHEDULES_PROJECT_ID_IDX = Internal.createIndex(DSL.name("recurring_schedules_project_id_idx"), RecurringSchedules.RECURRING_SCHEDULES, new OrderField[] { RecurringSchedules.RECURRING_SCHEDULES.PROJECT_ID }, false);
     public static final Index SCHEDULE_ASSIGNEES_POSITION_IDX = Internal.createIndex(DSL.name("schedule_assignees_position_idx"), ScheduleAssignees.SCHEDULE_ASSIGNEES, new OrderField[] { ScheduleAssignees.SCHEDULE_ASSIGNEES.SCHEDULE_ID, ScheduleAssignees.SCHEDULE_ASSIGNEES.ORDER }, true);
+    public static final Index SCHEDULE_MISSED_RUNS_SCHEDULE_ID_IDX = Internal.createIndex(DSL.name("schedule_missed_runs_schedule_id_idx"), ScheduleMissedRuns.SCHEDULE_MISSED_RUNS, new OrderField[] { ScheduleMissedRuns.SCHEDULE_MISSED_RUNS.SCHEDULE_ID }, false);
     public static final Index UK_PROJECTS_NAME_OWNER_ACTIVE = Internal.createIndex(DSL.name("uk_projects_name_owner_active"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.NAME, Projects.PROJECTS.OWNER_ID }, true);
 }

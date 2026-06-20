@@ -24,6 +24,7 @@ import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.RecurringSchedules;
 import com.opsclear.generated.jooq.tables.ScheduleAssignees;
+import com.opsclear.generated.jooq.tables.ScheduleMissedRuns;
 import com.opsclear.generated.jooq.tables.SubscriptionAddons;
 import com.opsclear.generated.jooq.tables.SubscriptionTiers;
 import com.opsclear.generated.jooq.tables.Users;
@@ -152,6 +153,12 @@ public class Public extends SchemaImpl {
     public final ScheduleAssignees SCHEDULE_ASSIGNEES = ScheduleAssignees.SCHEDULE_ASSIGNEES;
 
     /**
+     * One row per cron tick the poller skipped due to downtime; reviewed and
+     * actioned manually
+     */
+    public final ScheduleMissedRuns SCHEDULE_MISSED_RUNS = ScheduleMissedRuns.SCHEDULE_MISSED_RUNS;
+
+    /**
      * The table <code>public.subscription_addons</code>.
      */
     public final SubscriptionAddons SUBSCRIPTION_ADDONS = SubscriptionAddons.SUBSCRIPTION_ADDONS;
@@ -202,6 +209,7 @@ public class Public extends SchemaImpl {
             Projects.PROJECTS,
             RecurringSchedules.RECURRING_SCHEDULES,
             ScheduleAssignees.SCHEDULE_ASSIGNEES,
+            ScheduleMissedRuns.SCHEDULE_MISSED_RUNS,
             SubscriptionAddons.SUBSCRIPTION_ADDONS,
             SubscriptionTiers.SUBSCRIPTION_TIERS,
             Users.USERS
