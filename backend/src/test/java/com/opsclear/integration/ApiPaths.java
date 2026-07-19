@@ -259,7 +259,7 @@ final class ApiPaths {
     }
 
     static String missedRunMaterialize(UUID projectId, UUID scheduleId, UUID missedRunId) {
-        return "/api/projects/" + projectId + "/schedules/" + scheduleId + "/missed-runs/" + missedRunId + "/materialize";
+        return missedRun(projectId, scheduleId, missedRunId) + "/materialize";
     }
 
     // --- Cron preview ---
