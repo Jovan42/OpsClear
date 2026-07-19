@@ -1,15 +1,19 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.CreateScheduleRequest;
+import com.opsclear.dto.JobResponse;
 import com.opsclear.dto.PauseScheduleRequest;
 import com.opsclear.dto.RecurringScheduleResponse;
 import com.opsclear.dto.ScheduleAssigneeResponse;
+import com.opsclear.dto.ScheduleMissedRunResponse;
 import com.opsclear.dto.UpdateScheduleRequest;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
+import com.opsclear.generated.jooq.tables.records.ScheduleMissedRunsRecord;
+import com.opsclear.model.JobModel;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -18,6 +22,7 @@ import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.ScheduleAssigneeRepository;
+import com.opsclear.repository.ScheduleMissedRunRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.support.CronExpression;
@@ -44,6 +49,8 @@ public class RecurringScheduleService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final JobTemplateRepository jobTemplateRepository;
+    private final ScheduleMissedRunRepository missedRunRepository;
+    private final ScheduleJobCreator scheduleJobCreator;
 
     @Transactional
     public RecurringScheduleResponse create(UUID projectId, CreateScheduleRequest req, UUID requesterId) {
@@ -196,6 +203,66 @@ public class RecurringScheduleService {
                         sid, userId, projectId);
             });
         }
+    }
+
+    // --- Missed runs ---
+
+    @Transactional(readOnly = true)
+    public List<ScheduleMissedRunResponse> listMissedRuns(UUID projectId, UUID scheduleId, UUID requesterId) {
+        requireProject(projectId);
+        requireMember(projectId, requesterId);
+        requireScheduleInProject(projectId, scheduleId);
+        return missedRunRepository.findByScheduleId(scheduleId).stream()
+                .map(ScheduleMissedRunResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public JobResponse materializeMissedRun(UUID projectId, UUID scheduleId, UUID missedRunId, UUID requesterId) {
+        requireProject(projectId);
+        requireOwnerOrAdmin(projectId, requesterId);
+        RecurringSchedulesRecord schedule = requireScheduleInProject(projectId, scheduleId);
+
+        ScheduleMissedRunsRecord missed = missedRunRepository.findByScheduleId(scheduleId).stream()
+                .filter(r -> missedRunId.equals(r.getId()))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.ScheduleMissedRun.NOT_FOUND));
+
+        ZoneId zone;
+        try {
+            zone = ZoneId.of(schedule.getTimezone());
+        } catch (Exception e) {
+            throw new BadRequestException(ErrorMessages.RecurringSchedule.INVALID_TIMEZONE + schedule.getTimezone());
+        }
+
+        JobModel job = scheduleJobCreator.createJob(schedule, missed.getExpectedAt().toInstant(), zone, requesterId);
+        missedRunRepository.deleteById(missedRunId);
+
+        log.info("Materialized missed run {} for schedule {} by user {}", missedRunId, scheduleId, requesterId);
+        return JobResponse.from(job);
+    }
+
+    @Transactional
+    public void dismissMissedRun(UUID projectId, UUID scheduleId, UUID missedRunId, UUID requesterId) {
+        requireProject(projectId);
+        requireOwnerOrAdmin(projectId, requesterId);
+        requireScheduleInProject(projectId, scheduleId);
+
+        int deleted = missedRunRepository.deleteById(missedRunId);
+        if (deleted == 0) {
+            throw new NotFoundException(ErrorMessages.ScheduleMissedRun.NOT_FOUND);
+        }
+        log.info("Dismissed missed run {} for schedule {} by user {}", missedRunId, scheduleId, requesterId);
+    }
+
+    @Transactional
+    public void dismissAllMissedRuns(UUID projectId, UUID scheduleId, UUID requesterId) {
+        requireProject(projectId);
+        requireOwnerOrAdmin(projectId, requesterId);
+        requireScheduleInProject(projectId, scheduleId);
+
+        missedRunRepository.deleteAllForSchedule(scheduleId);
+        log.info("Dismissed all missed runs for schedule {} by user {}", scheduleId, requesterId);
     }
 
     // --- Cron validation ---

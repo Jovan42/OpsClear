@@ -18,6 +18,7 @@ import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.ScheduleAssigneeRepository;
+import com.opsclear.repository.ScheduleMissedRunRepository;
 import com.opsclear.repository.UserRepository;
 import com.opsclear.scheduler.SchedulerPoller;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,7 @@ import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
 import static com.opsclear.generated.jooq.Tables.RECURRING_SCHEDULES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -57,6 +59,7 @@ class SchedulerPollerIntegrationTest {
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private ScheduleMissedRunRepository missedRunRepository;
 
     private UUID ownerId;
     private UUID projectId;
@@ -68,6 +71,7 @@ class SchedulerPollerIntegrationTest {
         assigneeRepository.deleteAll();
         jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
+        missedRunRepository.deleteAll();
         scheduleRepository.deleteAll();
         jobTemplateRepository.deleteAll();
         projectMemberRepository.deleteAll();
@@ -233,9 +237,11 @@ class SchedulerPollerIntegrationTest {
     }
 
     @Test
-    @DisplayName("processSchedule — skips without job when template has been soft-deleted")
+    @DisplayName("processSchedule — throws NotFoundException when template is soft-deleted on normal-run path")
     void processSchedule_shouldSkip_whenTemplateNotFound() {
-        // Normal-run path (nextOccurrence=noon > testNow=10:00) reaches template lookup → null → return
+        // Normal-run path: nextRunAt=09:00, testNow=10:00, cron fires at noon → nextOccurrence(12:00) is future.
+        // ScheduleJobCreator.createJob throws NotFoundException for soft-deleted templates.
+        // tick() catches it; processSchedule() propagates it — verify no job is created.
         Instant nextRunAt = Instant.parse("2026-01-01T09:00:00Z");
         Instant testNow   = Instant.parse("2026-01-01T10:00:00Z");
 
@@ -251,7 +257,11 @@ class SchedulerPollerIntegrationTest {
 
         jobTemplateRepository.softDelete(templateId);
 
-        poller.processSchedule(saved, testNow);
+        // processSchedule propagates the NotFoundException from ScheduleJobCreator;
+        // tick() is what swallows it — here we verify the exception type and that no job was created
+        assertThatThrownBy(() -> poller.processSchedule(saved, testNow))
+                .isInstanceOf(com.opsclear.exception.NotFoundException.class)
+                .hasMessageContaining("Job template not found");
 
         assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
         assertThat(scheduleRepository.findById(saved.getId()).orElseThrow().getLastRunAt()).isNull();
@@ -459,5 +469,38 @@ class SchedulerPollerIntegrationTest {
 
         assertThatCode(() -> poller.tick()).doesNotThrowAnyException();
         assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("processSchedule — records missed run in DB when nextOccurrence is in the past")
+    void processSchedule_shouldRecordMissedRun_inDatabase() {
+        // nextRunAt=09:00; testNow=14:00; cron fires at noon → missed tick at 12:00 is recorded
+        Instant previousRunAt = Instant.parse("2026-01-01T09:00:00Z");
+        Instant testNow       = Instant.parse("2026-01-01T14:00:00Z");
+
+        RecurringSchedulesRecord row = new RecurringSchedulesRecord();
+        row.setProjectId(projectId);
+        row.setTemplateId(templateId);
+        row.setName("Missed Run DB Test");
+        row.setCronExpression("0 0 12 * * *");
+        row.setTimezone("UTC");
+        row.setNextRunAt(previousRunAt.atOffset(ZoneOffset.UTC));
+        row.setCreatedBy(ownerId);
+        RecurringSchedulesRecord saved = scheduleRepository.insert(row);
+
+        poller.processSchedule(saved, testNow);
+
+        // No job should be created
+        assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
+
+        // A missed-run record should be persisted for the noon tick
+        var missedRuns = missedRunRepository.findByScheduleId(saved.getId());
+        assertThat(missedRuns).hasSize(1);
+        assertThat(missedRuns.get(0).getExpectedAt().toInstant())
+                .isEqualTo(Instant.parse("2026-01-01T12:00:00Z"));
+
+        // Schedule should advance to next occurrence after testNow
+        RecurringSchedulesRecord updated = scheduleRepository.findById(saved.getId()).orElseThrow();
+        assertThat(updated.getNextRunAt().toInstant()).isAfter(testNow);
     }
 }

@@ -1,20 +1,11 @@
 package com.opsclear.scheduler;
 
-import com.opsclear.dto.ScheduleAssigneeResponse;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
-import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.JobModel;
-import com.opsclear.model.JobTemplateModel;
-import com.opsclear.model.OrganisationModel;
-import com.opsclear.model.ProjectModel;
-import com.opsclear.repository.JobRepository;
-import com.opsclear.repository.JobStatusHistoryRepository;
-import com.opsclear.repository.JobTemplateRepository;
-import com.opsclear.repository.OrganisationRepository;
-import com.opsclear.repository.ProjectRepository;
+import com.opsclear.model.JobStatus;
 import com.opsclear.repository.RecurringScheduleRepository;
-import com.opsclear.repository.ScheduleAssigneeRepository;
-import com.opsclear.service.FriendlyIdService;
+import com.opsclear.repository.ScheduleMissedRunRepository;
+import com.opsclear.service.ScheduleJobCreator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,12 +17,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,35 +37,26 @@ import static org.mockito.Mockito.when;
 class SchedulerPollerTest {
 
     @Mock private RecurringScheduleRepository scheduleRepository;
-    @Mock private ScheduleAssigneeRepository assigneeRepository;
-    @Mock private JobRepository jobRepository;
-    @Mock private JobStatusHistoryRepository jobStatusHistoryRepository;
-    @Mock private JobTemplateRepository jobTemplateRepository;
-    @Mock private OrganisationRepository organisationRepository;
-    @Mock private ProjectRepository projectRepository;
-    @Mock private FriendlyIdService friendlyIdService;
+    @Mock private ScheduleMissedRunRepository missedRunRepository;
+    @Mock private ScheduleJobCreator scheduleJobCreator;
 
     private SchedulerPoller poller;
 
     private UUID projectId;
     private UUID templateId;
     private UUID createdBy;
-    private UUID orgId;
 
     @BeforeEach
     void setUp() {
-        poller = new SchedulerPoller(
-                scheduleRepository, assigneeRepository, jobRepository,
-                jobStatusHistoryRepository, jobTemplateRepository,
-                organisationRepository, projectRepository, friendlyIdService);
+        poller = new SchedulerPoller(scheduleRepository, missedRunRepository, scheduleJobCreator);
 
         projectId  = UUID.randomUUID();
         templateId = UUID.randomUUID();
         createdBy  = UUID.randomUUID();
-        orgId      = UUID.randomUUID();
 
-        when(projectRepository.findByIdAndDeletedAtIsNull(any()))
-                .thenReturn(Optional.of(ProjectModel.builder().name("Test Project").build()));
+        when(scheduleJobCreator.createJob(any(), any(), any(), any()))
+                .thenReturn(JobModel.builder().id(UUID.randomUUID()).title("Job")
+                        .projectId(projectId).status(JobStatus.NEW).build());
     }
 
     // -------------------------------------------------------------------------
@@ -85,154 +64,42 @@ class SchedulerPollerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("processSchedule — creates job from template on normal run")
-    void processSchedule_shouldCreateJob_onNormalRun() {
-        // nextRunAt = 09:00, now = 10:00, cron fires at noon → nextOccurrence (12:00) is in the future
+    @DisplayName("processSchedule — delegates to ScheduleJobCreator on normal run")
+    void processSchedule_shouldDelegateToCreator_onNormalRun() {
         Instant now = Instant.parse("2026-05-11T10:00:00Z");
         RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
 
-        JobTemplateModel template = buildTemplate("Deploy checklist", null);
-        JobModel savedJob = JobModel.builder().id(UUID.randomUUID()).title("Deploy checklist")
-                .projectId(projectId).status(com.opsclear.model.JobStatus.NEW).build();
-
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
-        when(assigneeRepository.findByScheduleId(schedule.getId())).thenReturn(List.of());
-        when(organisationRepository.findByProject(projectId))
-                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
-        when(friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.JOB)).thenReturn("JOB-999");
-        when(jobRepository.save(any())).thenReturn(savedJob);
-
         poller.processSchedule(schedule, now);
 
-        verify(jobRepository).save(any());
-        verify(jobStatusHistoryRepository).insert(eq(savedJob.getId()), eq(null), eq("NEW"),
-                eq(createdBy), eq(null));
-        verify(jobTemplateRepository).incrementOccurrenceCount(templateId);
+        verify(scheduleJobCreator).createJob(eq(schedule), any(Instant.class), any(), eq(createdBy));
         verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), anyInt());
+        verify(missedRunRepository, never()).insert(any(), any());
     }
 
     @Test
-    @DisplayName("processSchedule — sets sourceScheduleId on created job")
-    void processSchedule_shouldSetSourceScheduleId_onCreatedJob() {
+    @DisplayName("processSchedule — passes previousRunAt as scheduledFor to creator")
+    void processSchedule_shouldPassPreviousRunAt_asScheduledFor() {
         Instant now = Instant.parse("2026-05-11T10:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId))
-                .thenReturn(Optional.of(buildTemplate("T", null)));
-        when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
-        when(organisationRepository.findByProject(any())).thenReturn(Optional.empty());
-        when(jobRepository.save(any())).thenAnswer(inv -> {
-            JobModel m = inv.getArgument(0);
-            return JobModel.builder().id(UUID.randomUUID()).title(m.getTitle())
-                    .projectId(m.getProjectId()).status(m.getStatus())
-                    .sourceScheduleId(m.getSourceScheduleId()).build();
-        });
+        Instant previousRunAt = now.minusSeconds(3600); // 09:00
+        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", previousRunAt);
 
         poller.processSchedule(schedule, now);
 
-        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
-        verify(jobRepository).save(captor.capture());
-        assertThat(captor.getValue().getSourceScheduleId()).isEqualTo(schedule.getId());
+        ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
+        verify(scheduleJobCreator).createJob(any(), captor.capture(), any(), any());
+        assertThat(captor.getValue()).isEqualTo(previousRunAt);
     }
 
     @Test
-    @DisplayName("processSchedule — applies deadline offset when template has deadlineOffsetDays")
-    void processSchedule_shouldApplyDeadlineOffset_whenTemplateHasOffset() {
+    @DisplayName("processSchedule — increments rotation index in updateAfterRun")
+    void processSchedule_shouldIncrementRotationIndex_onNormalRun() {
         Instant now = Instant.parse("2026-05-11T10:00:00Z");
         RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-
-        JobTemplateModel template = buildTemplate("T", 3);
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
-        when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
-        when(organisationRepository.findByProject(any())).thenReturn(Optional.empty());
-        when(jobRepository.save(any())).thenAnswer(inv -> {
-            JobModel m = inv.getArgument(0);
-            return JobModel.builder().id(UUID.randomUUID()).title(m.getTitle())
-                    .deadline(m.getDeadline()).projectId(m.getProjectId())
-                    .status(m.getStatus()).build();
-        });
+        schedule.setCurrentRotationIndex(3);
 
         poller.processSchedule(schedule, now);
 
-        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
-        verify(jobRepository).save(captor.capture());
-        // previousRunAt = 09:00 on 2026-05-11 UTC → scheduledForDate = 2026-05-11, +3 days = 2026-05-14
-        LocalDate expectedDeadlineDate = LocalDate.parse("2026-05-14");
-        Instant expectedDeadline = expectedDeadlineDate.atStartOfDay(ZoneOffset.UTC).toInstant();
-        assertThat(captor.getValue().getDeadline()).isEqualTo(expectedDeadline);
-    }
-
-    @Test
-    @DisplayName("processSchedule — deadline is null when template has no offset")
-    void processSchedule_shouldSetNullDeadline_whenNoOffset() {
-        Instant now = Instant.parse("2026-05-11T10:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId))
-                .thenReturn(Optional.of(buildTemplate("T", null)));
-        when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
-        when(organisationRepository.findByProject(any())).thenReturn(Optional.empty());
-        when(jobRepository.save(any())).thenReturn(
-                JobModel.builder().id(UUID.randomUUID()).title("T")
-                        .projectId(projectId).status(com.opsclear.model.JobStatus.NEW).build());
-
-        poller.processSchedule(schedule, now);
-
-        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
-        verify(jobRepository).save(captor.capture());
-        assertThat(captor.getValue().getDeadline()).isNull();
-    }
-
-    @Test
-    @DisplayName("processSchedule — picks round-robin assignee by rotation index")
-    void processSchedule_shouldPickAssignee_byRotationIndex() {
-        Instant now = Instant.parse("2026-05-11T10:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-        schedule.setCurrentRotationIndex(1); // second in list
-
-        UUID user1 = UUID.randomUUID();
-        UUID user2 = UUID.randomUUID();
-        ScheduleAssigneeResponse a1 = new ScheduleAssigneeResponse(user1, "Alice", 0);
-        ScheduleAssigneeResponse a2 = new ScheduleAssigneeResponse(user2, "Bob", 1);
-
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId))
-                .thenReturn(Optional.of(buildTemplate("T", null)));
-        when(assigneeRepository.findByScheduleId(schedule.getId())).thenReturn(List.of(a1, a2));
-        when(organisationRepository.findByProject(any())).thenReturn(Optional.empty());
-        when(jobRepository.save(any())).thenAnswer(inv -> {
-            JobModel m = inv.getArgument(0);
-            return JobModel.builder().id(UUID.randomUUID()).title(m.getTitle())
-                    .assignedTo(m.getAssignedTo()).projectId(m.getProjectId())
-                    .status(m.getStatus()).build();
-        });
-
-        poller.processSchedule(schedule, now);
-
-        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
-        verify(jobRepository).save(captor.capture());
-        assertThat(captor.getValue().getAssignedTo()).isEqualTo(user2);
-        verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), eq(2));
-    }
-
-    @Test
-    @DisplayName("processSchedule — job has null assignedTo when no assignees configured")
-    void processSchedule_shouldSetNullAssignedTo_whenNoAssignees() {
-        Instant now = Instant.parse("2026-05-11T10:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId))
-                .thenReturn(Optional.of(buildTemplate("T", null)));
-        when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
-        when(organisationRepository.findByProject(any())).thenReturn(Optional.empty());
-        when(jobRepository.save(any())).thenReturn(
-                JobModel.builder().id(UUID.randomUUID()).title("T")
-                        .projectId(projectId).status(com.opsclear.model.JobStatus.NEW).build());
-
-        poller.processSchedule(schedule, now);
-
-        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
-        verify(jobRepository).save(captor.capture());
-        assertThat(captor.getValue().getAssignedTo()).isNull();
+        verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), eq(4));
     }
 
     // -------------------------------------------------------------------------
@@ -240,49 +107,55 @@ class SchedulerPollerTest {
     // -------------------------------------------------------------------------
 
     @Test
+    @DisplayName("processSchedule — records missed run when nextOccurrence is in the past")
+    void processSchedule_shouldRecordMissedRun_whenNextOccurrenceInPast() {
+        // nextRunAt = 09:00, now = 14:00, cron fires at noon → 12:00 is before 14:00
+        Instant now = Instant.parse("2026-05-11T14:00:00Z");
+        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC",
+                Instant.parse("2026-05-11T09:00:00Z"));
+
+        poller.processSchedule(schedule, now);
+
+        verify(missedRunRepository).insert(eq(schedule.getId()), eq(Instant.parse("2026-05-11T12:00:00Z")));
+        verify(scheduleJobCreator, never()).createJob(any(), any(), any(), any());
+        verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), anyInt());
+    }
+
+    @Test
     @DisplayName("processSchedule — records missed run when nextOccurrence equals now exactly")
     void processSchedule_shouldRecordMissedRun_whenNextOccurrenceEqualsNow() {
-        // now = noon exactly; cron fires at noon from 09:00 → nextOccurrence == now → equals(now) = TRUE
         Instant now = Instant.parse("2026-05-12T12:00:00Z");
         RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC",
                 Instant.parse("2026-05-12T09:00:00Z"));
 
         poller.processSchedule(schedule, now);
 
-        verify(jobRepository, never()).save(any());
+        verify(missedRunRepository).insert(eq(schedule.getId()), eq(now));
+        verify(scheduleJobCreator, never()).createJob(any(), any(), any(), any());
         verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), anyInt());
     }
 
     @Test
-    @DisplayName("processSchedule — records missed run and advances next_run_at without creating job")
-    void processSchedule_shouldAdvanceWithoutJob_onMissedRun() {
-        // nextRunAt = 09:00, now = 14:00, cron fires at noon → nextOccurrence (12:00) is in the past
-        Instant now = Instant.parse("2026-05-11T14:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(18000)); // 09:00
+    @DisplayName("processSchedule — advances next_run_at to first future occurrence on missed run")
+    void processSchedule_shouldAdvanceToFutureOccurrence_onMissedRun() {
+        // nextRunAt = 09:00, now = 13:00, cron fires at noon → missed tick at 12:00, next is 12:00+1d
+        Instant now = Instant.parse("2026-05-11T13:00:00Z");
+        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC",
+                Instant.parse("2026-05-11T09:00:00Z"));
 
         poller.processSchedule(schedule, now);
 
-        verify(jobRepository, never()).save(any());
-        verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), anyInt());
+        // next after 12:00 is 12:00 next day (2026-05-12)
+        Instant expectedNextRun = Instant.parse("2026-05-12T12:00:00Z");
+        ArgumentCaptor<Instant> nextRunCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(scheduleRepository).updateAfterRun(
+                eq(schedule.getId()), nextRunCaptor.capture(), any(), anyInt());
+        assertThat(nextRunCaptor.getValue()).isEqualTo(expectedNextRun);
     }
 
     // -------------------------------------------------------------------------
     // processSchedule — skip conditions
     // -------------------------------------------------------------------------
-
-    @Test
-    @DisplayName("processSchedule — skips when template is missing")
-    void processSchedule_shouldSkip_whenTemplateNotFound() {
-        Instant now = Instant.parse("2026-05-11T10:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.empty());
-
-        poller.processSchedule(schedule, now);
-
-        verify(jobRepository, never()).save(any());
-        verify(scheduleRepository, never()).updateAfterRun(any(), any(), any(), anyInt());
-    }
 
     @Test
     @DisplayName("processSchedule — skips when timezone is invalid")
@@ -292,61 +165,21 @@ class SchedulerPollerTest {
 
         poller.processSchedule(schedule, now);
 
-        verify(jobRepository, never()).save(any());
+        verify(scheduleJobCreator, never()).createJob(any(), any(), any(), any());
         verify(scheduleRepository, never()).updateAfterRun(any(), any(), any(), anyInt());
     }
 
     @Test
     @DisplayName("processSchedule — skips when cron has no further occurrences")
     void processSchedule_shouldSkip_whenCronHasNoNextOccurrence() {
-        // Feb 31 cron — parse succeeds but .next() returns null from the previousRunAt date
         Instant now = Instant.parse("2026-05-11T10:00:00Z");
+        // Feb 31 — parse succeeds but .next() returns null
         RecurringSchedulesRecord schedule = buildSchedule("0 0 9 31 2 *", "UTC", now.minusSeconds(3600));
 
         poller.processSchedule(schedule, now);
 
-        verify(jobRepository, never()).save(any());
+        verify(scheduleJobCreator, never()).createJob(any(), any(), any(), any());
         verify(scheduleRepository, never()).updateAfterRun(any(), any(), any(), anyInt());
-    }
-
-    // -------------------------------------------------------------------------
-    // resolveWildcards
-    // -------------------------------------------------------------------------
-
-    @Test
-    @DisplayName("resolveWildcards — replaces all known wildcards")
-    void resolveWildcards_shouldReplaceKnownWildcards() {
-        Map<String, String> vars = Map.of(
-                "assignee", "Alice",
-                "date", "2026-05-11",
-                "month", "May",
-                "year", "2026",
-                "occurrence", "5",
-                "creator", "System"
-        );
-        String result = poller.resolveWildcards(
-                "{{assignee}} — {{month}} {{year}} run #{{occurrence}} by {{creator}} on {{date}}", vars);
-        assertThat(result).isEqualTo("Alice — May 2026 run #5 by System on 2026-05-11");
-    }
-
-    @Test
-    @DisplayName("resolveWildcards — leaves unknown wildcards as literal text")
-    void resolveWildcards_shouldLeaveLiteral_forUnknownWildcard() {
-        String result = poller.resolveWildcards("Hello {{client}} and {{unknown}}", Map.of());
-        assertThat(result).isEqualTo("Hello {{client}} and {{unknown}}");
-    }
-
-    @Test
-    @DisplayName("resolveWildcards — returns null when text is null")
-    void resolveWildcards_shouldReturnNull_whenTextIsNull() {
-        assertThat(poller.resolveWildcards(null, Map.of())).isNull();
-    }
-
-    @Test
-    @DisplayName("resolveWildcards — returns text unchanged when no wildcards present")
-    void resolveWildcards_shouldReturnUnchanged_whenNoWildcards() {
-        assertThat(poller.resolveWildcards("Plain text", Map.of("key", "value")))
-                .isEqualTo("Plain text");
     }
 
     // -------------------------------------------------------------------------
@@ -361,13 +194,12 @@ class SchedulerPollerTest {
         poller.tick();
 
         verify(scheduleRepository).findDue(any());
-        verify(jobRepository, never()).save(any());
+        verify(scheduleJobCreator, never()).createJob(any(), any(), any(), any());
     }
 
     @Test
     @DisplayName("tick — advances schedule when one is due")
     void tick_shouldAdvanceSchedule_whenScheduleIsDue() {
-        // nextRunAt far in past → missed-run path (no template/org stubs needed)
         RecurringSchedulesRecord schedule = buildSchedule("0 0 9 * * *", "UTC",
                 Instant.parse("2026-01-01T09:00:00Z"));
         when(scheduleRepository.findDue(any())).thenReturn(List.of(schedule));
@@ -375,7 +207,26 @@ class SchedulerPollerTest {
         poller.tick();
 
         verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), anyInt());
-        verify(jobRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("tick — records missed run for a due schedule in the past")
+    void tick_shouldRecordMissedRun_whenScheduleWasDueInPast() {
+        // nextRunAt = yesterday 09:00; cron fires daily at 9am → exactly 1 missed tick at yesterday 09:00
+        // Use a fixed recent date so the loop fires exactly once: nextRunAt is 9am yesterday,
+        // so the first (and only) occurrence in the past is yesterday 9am, next is today 9am (future).
+        Instant yesterday9am = Instant.now()
+                .atZone(java.time.ZoneId.of("UTC"))
+                .minusDays(1)
+                .withHour(9).withMinute(0).withSecond(0).withNano(0)
+                .toInstant();
+        RecurringSchedulesRecord schedule = buildSchedule("0 0 9 * * *", "UTC", yesterday9am);
+        when(scheduleRepository.findDue(any())).thenReturn(List.of(schedule));
+
+        poller.tick();
+
+        verify(missedRunRepository).insert(eq(schedule.getId()), any(Instant.class));
+        verify(scheduleJobCreator, never()).createJob(any(), any(), any(), any());
     }
 
     @Test
@@ -392,73 +243,7 @@ class SchedulerPollerTest {
 
         poller.tick();
 
-        // schedule2 still processed despite schedule1 throwing
         verify(scheduleRepository).updateAfterRun(eq(schedule2.getId()), any(), any(), anyInt());
-    }
-
-    // -------------------------------------------------------------------------
-    // processSchedule — additional branches
-    // -------------------------------------------------------------------------
-
-    @Test
-    @DisplayName("processSchedule — falls back to template name when title is null, resolves description")
-    void processSchedule_shouldFallbackToName_whenTitleNullAndDescriptionPresent() {
-        Instant now = Instant.parse("2026-05-12T10:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-
-        JobTemplateModel template = JobTemplateModel.builder()
-                .id(templateId).projectId(projectId)
-                .name("Fallback Name")
-                // no title — forces fallback to name
-                .description("Report for {{date}}")
-                .assigneeMode("NONE").occurrenceCount(0)
-                .createdBy(createdBy).build();
-
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
-        when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
-        when(organisationRepository.findByProject(any())).thenReturn(Optional.empty());
-        when(jobRepository.save(any())).thenAnswer(inv -> {
-            JobModel m = inv.getArgument(0);
-            return JobModel.builder().id(UUID.randomUUID()).title(m.getTitle())
-                    .description(m.getDescription()).projectId(m.getProjectId())
-                    .status(m.getStatus()).build();
-        });
-
-        poller.processSchedule(schedule, now);
-
-        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
-        verify(jobRepository).save(captor.capture());
-        assertThat(captor.getValue().getTitle()).isEqualTo("Fallback Name");
-        assertThat(captor.getValue().getDescription()).contains("Report for ");
-        verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), eq(1));
-    }
-
-    @Test
-    @DisplayName("processSchedule — uses template priority when non-null")
-    void processSchedule_shouldUseTemplatePriority_whenNotNull() {
-        Instant now = Instant.parse("2026-05-12T10:00:00Z");
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
-
-        JobTemplateModel template = JobTemplateModel.builder()
-                .id(templateId).projectId(projectId).name("High Priority Task")
-                .title("High Priority Task").assigneeMode("NONE").occurrenceCount(0)
-                .priority("HIGH").deadlineOffsetDays(null).createdBy(createdBy).build();
-
-        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
-        when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
-        when(organisationRepository.findByProject(any())).thenReturn(Optional.empty());
-        when(jobRepository.save(any())).thenAnswer(inv -> {
-            JobModel m = inv.getArgument(0);
-            return JobModel.builder().id(UUID.randomUUID()).title(m.getTitle())
-                    .priority(m.getPriority()).projectId(m.getProjectId())
-                    .status(m.getStatus()).build();
-        });
-
-        poller.processSchedule(schedule, now);
-
-        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
-        verify(jobRepository).save(captor.capture());
-        assertThat(captor.getValue().getPriority()).isEqualTo(com.opsclear.model.JobPriority.HIGH);
     }
 
     // -------------------------------------------------------------------------
@@ -479,18 +264,5 @@ class SchedulerPollerTest {
         r.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
         r.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
         return r;
-    }
-
-    private JobTemplateModel buildTemplate(String name, Integer deadlineOffsetDays) {
-        return JobTemplateModel.builder()
-                .id(templateId)
-                .projectId(projectId)
-                .name(name)
-                .title(name)
-                .assigneeMode("NONE")
-                .occurrenceCount(0)
-                .deadlineOffsetDays(deadlineOffsetDays)
-                .createdBy(createdBy)
-                .build();
     }
 }
