@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -212,20 +213,15 @@ class SchedulerPollerTest {
     @Test
     @DisplayName("tick — records missed run for a due schedule in the past")
     void tick_shouldRecordMissedRun_whenScheduleWasDueInPast() {
-        // nextRunAt = yesterday 09:00; cron fires daily at 9am → exactly 1 missed tick at yesterday 09:00
-        // Use a fixed recent date so the loop fires exactly once: nextRunAt is 9am yesterday,
-        // so the first (and only) occurrence in the past is yesterday 9am, next is today 9am (future).
-        Instant yesterday9am = Instant.now()
-                .atZone(java.time.ZoneId.of("UTC"))
-                .minusDays(1)
-                .withHour(9).withMinute(0).withSecond(0).withNano(0)
-                .toInstant();
-        RecurringSchedulesRecord schedule = buildSchedule("0 0 9 * * *", "UTC", yesterday9am);
+        // Fixed past date guarantees the missed-run path regardless of what time the test runs.
+        // next("0 0 9 * * *", 2026-01-01T09:00) = 2026-01-02T09:00 — already in the past.
+        RecurringSchedulesRecord schedule = buildSchedule("0 0 9 * * *", "UTC",
+                Instant.parse("2026-01-01T09:00:00Z"));
         when(scheduleRepository.findDue(any())).thenReturn(List.of(schedule));
 
         poller.tick();
 
-        verify(missedRunRepository).insert(eq(schedule.getId()), any(Instant.class));
+        verify(missedRunRepository, atLeastOnce()).insert(eq(schedule.getId()), any(Instant.class));
         verify(scheduleJobCreator, never()).createJob(any(), any(), any(), any());
     }
 
