@@ -102,6 +102,13 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class ScheduleMissedRun {
+        public static final String NOT_FOUND = "Missed run not found";
+
+        private ScheduleMissedRun() {
+        }
+    }
+
     public static final class Organisation {
         public static final String NOT_FOUND = "Organisation not found";
         public static final String NOT_IN_ORG = "You must belong to an organisation to perform this action";

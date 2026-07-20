@@ -252,6 +252,24 @@ class RecurringScheduleIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("createSchedule — unknown template returns 404")
+    void createSchedule_shouldReturn404_whenTemplateNotFound() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "S1",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC"
+                                }
+                                """.formatted(UUID.randomUUID())))
+                .andExpect(status().isNotFound());
+    }
+
     // --- GET /api/projects/{projectId}/schedules ---
 
     @Test

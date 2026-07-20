@@ -248,6 +248,20 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/schedules/" + scheduleId + "/resume";
     }
 
+    // --- Missed runs ---
+
+    static String missedRuns(UUID projectId, UUID scheduleId) {
+        return "/api/projects/" + projectId + "/schedules/" + scheduleId + "/missed-runs";
+    }
+
+    static String missedRun(UUID projectId, UUID scheduleId, UUID missedRunId) {
+        return "/api/projects/" + projectId + "/schedules/" + scheduleId + "/missed-runs/" + missedRunId;
+    }
+
+    static String missedRunMaterialize(UUID projectId, UUID scheduleId, UUID missedRunId) {
+        return missedRun(projectId, scheduleId, missedRunId) + "/materialize";
+    }
+
     // --- Cron preview ---
 
     static final String CRON_PREVIEW = "/api/schedules/preview";

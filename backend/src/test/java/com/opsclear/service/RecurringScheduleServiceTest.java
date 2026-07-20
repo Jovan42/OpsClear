@@ -1,13 +1,19 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.CreateScheduleRequest;
+import com.opsclear.dto.JobResponse;
 import com.opsclear.dto.PauseScheduleRequest;
 import com.opsclear.dto.RecurringScheduleResponse;
+import com.opsclear.dto.ScheduleMissedRunResponse;
 import com.opsclear.dto.UpdateScheduleRequest;
 import com.opsclear.exception.BadRequestException;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
+import com.opsclear.generated.jooq.tables.records.ScheduleMissedRunsRecord;
+import com.opsclear.model.JobModel;
+import com.opsclear.model.JobStatus;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -17,6 +23,7 @@ import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.ScheduleAssigneeRepository;
+import com.opsclear.repository.ScheduleMissedRunRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,6 +56,8 @@ class RecurringScheduleServiceTest {
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private JobTemplateRepository jobTemplateRepository;
+    @Mock private ScheduleMissedRunRepository missedRunRepository;
+    @Mock private ScheduleJobCreator scheduleJobCreator;
 
     private RecurringScheduleService service;
 
@@ -69,7 +78,8 @@ class RecurringScheduleServiceTest {
     void setUp() {
         service = new RecurringScheduleService(
                 scheduleRepository, assigneeRepository,
-                projectRepository, projectMemberRepository, jobTemplateRepository);
+                projectRepository, projectMemberRepository, jobTemplateRepository,
+                missedRunRepository, scheduleJobCreator);
 
         projectId  = UUID.randomUUID();
         ownerId    = UUID.randomUUID();
@@ -583,6 +593,255 @@ class RecurringScheduleServiceTest {
         assertThatThrownBy(() -> service.get(projectId, scheduleId, memberId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Recurring schedule not found");
+    }
+
+    // --- listMissedRuns ---
+
+    @Test
+    @DisplayName("listMissedRuns — returns mapped responses for member")
+    void listMissedRuns_shouldReturnResponses_forMember() {
+        UUID scheduleId = UUID.randomUUID();
+        RecurringSchedulesRecord record = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        record.setId(scheduleId);
+
+        ScheduleMissedRunsRecord mr = new ScheduleMissedRunsRecord();
+        mr.setId(UUID.randomUUID());
+        mr.setScheduleId(scheduleId);
+        mr.setExpectedAt(OffsetDateTime.now(ZoneOffset.UTC).minusHours(2));
+        mr.setRecordedAt(OffsetDateTime.now(ZoneOffset.UTC).minusHours(1));
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(record));
+        when(missedRunRepository.findByScheduleId(scheduleId)).thenReturn(List.of(mr));
+
+        List<ScheduleMissedRunResponse> result = service.listMissedRuns(projectId, scheduleId, memberId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getScheduleId()).isEqualTo(scheduleId);
+    }
+
+    @Test
+    @DisplayName("listMissedRuns — non-member receives ForbiddenException")
+    void listMissedRuns_shouldThrow_whenNonMember() {
+        UUID scheduleId = UUID.randomUUID();
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.listMissedRuns(projectId, scheduleId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    // --- materializeMissedRun ---
+
+    @Test
+    @DisplayName("materializeMissedRun — owner materializes missed run and gets JobResponse")
+    void materializeMissedRun_shouldReturnJobResponse_forOwner() {
+        UUID scheduleId = UUID.randomUUID();
+        UUID missedRunId = UUID.randomUUID();
+        RecurringSchedulesRecord record = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        record.setId(scheduleId);
+
+        ScheduleMissedRunsRecord mr = new ScheduleMissedRunsRecord();
+        mr.setId(missedRunId);
+        mr.setScheduleId(scheduleId);
+        mr.setExpectedAt(OffsetDateTime.now(ZoneOffset.UTC).minusHours(2));
+        mr.setRecordedAt(OffsetDateTime.now(ZoneOffset.UTC).minusHours(1));
+
+        JobModel job = JobModel.builder().id(UUID.randomUUID()).title("T").projectId(projectId)
+                .status(JobStatus.NEW).priority(com.opsclear.model.JobPriority.MEDIUM).createdBy(ownerId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(record));
+        when(missedRunRepository.findByScheduleId(scheduleId)).thenReturn(List.of(mr));
+        when(scheduleJobCreator.createJob(any(), any(), any(), any())).thenReturn(job);
+        when(missedRunRepository.deleteById(missedRunId)).thenReturn(1);
+
+        JobResponse result = service.materializeMissedRun(projectId, scheduleId, missedRunId, ownerId);
+
+        assertThat(result).isNotNull();
+        verify(scheduleJobCreator).createJob(eq(record), any(), any(), eq(ownerId));
+        verify(missedRunRepository).deleteById(missedRunId);
+    }
+
+    @Test
+    @DisplayName("materializeMissedRun — throws NotFoundException for unknown missedRunId")
+    void materializeMissedRun_shouldThrow_whenMissedRunNotFound() {
+        UUID scheduleId = UUID.randomUUID();
+        RecurringSchedulesRecord record = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        record.setId(scheduleId);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(record));
+        when(missedRunRepository.findByScheduleId(scheduleId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.materializeMissedRun(projectId, scheduleId, UUID.randomUUID(), ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Missed run not found");
+    }
+
+    @Test
+    @DisplayName("materializeMissedRun — throws BadRequestException when schedule has invalid timezone")
+    void materializeMissedRun_shouldThrow_whenTimezoneInvalid() {
+        UUID scheduleId = UUID.randomUUID();
+        UUID missedRunId = UUID.randomUUID();
+        RecurringSchedulesRecord record = buildRecord(projectId, templateId, VALID_CRON, "Not/ATimezone");
+        record.setId(scheduleId);
+
+        ScheduleMissedRunsRecord mr = new ScheduleMissedRunsRecord();
+        mr.setId(missedRunId);
+        mr.setScheduleId(scheduleId);
+        mr.setExpectedAt(OffsetDateTime.now(ZoneOffset.UTC).minusHours(1));
+        mr.setRecordedAt(OffsetDateTime.now(ZoneOffset.UTC));
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(record));
+        when(missedRunRepository.findByScheduleId(scheduleId)).thenReturn(List.of(mr));
+
+        assertThatThrownBy(() -> service.materializeMissedRun(projectId, scheduleId, missedRunId, ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Invalid timezone");
+    }
+
+    @Test
+    @DisplayName("materializeMissedRun — member receives ForbiddenException")
+    void materializeMissedRun_shouldThrow_whenMemberRole() {
+        UUID scheduleId = UUID.randomUUID();
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+
+        assertThatThrownBy(() -> service.materializeMissedRun(projectId, scheduleId, UUID.randomUUID(), memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    // --- dismissMissedRun ---
+
+    @Test
+    @DisplayName("dismissMissedRun — owner dismisses successfully")
+    void dismissMissedRun_shouldDelete_forOwner() {
+        UUID scheduleId = UUID.randomUUID();
+        UUID missedRunId = UUID.randomUUID();
+        RecurringSchedulesRecord record = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        record.setId(scheduleId);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(record));
+        when(missedRunRepository.deleteById(missedRunId)).thenReturn(1);
+
+        service.dismissMissedRun(projectId, scheduleId, missedRunId, ownerId);
+
+        verify(missedRunRepository).deleteById(missedRunId);
+    }
+
+    @Test
+    @DisplayName("dismissMissedRun — throws NotFoundException when row not found")
+    void dismissMissedRun_shouldThrow_whenNotFound() {
+        UUID scheduleId = UUID.randomUUID();
+        UUID missedRunId = UUID.randomUUID();
+        RecurringSchedulesRecord record = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        record.setId(scheduleId);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(record));
+        when(missedRunRepository.deleteById(missedRunId)).thenReturn(0);
+
+        assertThatThrownBy(() -> service.dismissMissedRun(projectId, scheduleId, missedRunId, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Missed run not found");
+    }
+
+    @Test
+    @DisplayName("dismissMissedRun — member receives ForbiddenException")
+    void dismissMissedRun_shouldThrow_whenMemberRole() {
+        UUID scheduleId = UUID.randomUUID();
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+
+        assertThatThrownBy(() -> service.dismissMissedRun(projectId, scheduleId, UUID.randomUUID(), memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    // --- dismissAllMissedRuns ---
+
+    @Test
+    @DisplayName("dismissAllMissedRuns — owner dismisses all successfully")
+    void dismissAllMissedRuns_shouldDeleteAll_forOwner() {
+        UUID scheduleId = UUID.randomUUID();
+        RecurringSchedulesRecord record = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        record.setId(scheduleId);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(record));
+
+        service.dismissAllMissedRuns(projectId, scheduleId, ownerId);
+
+        verify(missedRunRepository).deleteAllForSchedule(scheduleId);
+    }
+
+    @Test
+    @DisplayName("dismissAllMissedRuns — member receives ForbiddenException")
+    void dismissAllMissedRuns_shouldThrow_whenMemberRole() {
+        UUID scheduleId = UUID.randomUUID();
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
+                .thenReturn(Optional.of(memberMembership));
+
+        assertThatThrownBy(() -> service.dismissAllMissedRuns(projectId, scheduleId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    // --- guard coverage: requireOwnerOrAdmin and requireTemplate lambdas ---
+
+    @Test
+    @DisplayName("create — throws ForbiddenException when requester is not a project member at all")
+    void create_shouldThrowNotMember_whenRequesterHasNoMembership() {
+        CreateScheduleRequest req = new CreateScheduleRequest();
+        req.setName("S1");
+        req.setTemplateId(templateId);
+        req.setCronExpression(VALID_CRON);
+        req.setTimezone(VALID_TZ);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(projectId, req, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Member.NOT_A_MEMBER);
+    }
+
+    @Test
+    @DisplayName("create — throws NotFoundException when template is not found")
+    void create_shouldThrow_whenTemplateNotFound() {
+        CreateScheduleRequest req = new CreateScheduleRequest();
+        req.setName("S1");
+        req.setTemplateId(templateId);
+        req.setCronExpression(VALID_CRON);
+        req.setTimezone(VALID_TZ);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(projectId, req, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.JobTemplate.NOT_FOUND);
     }
 
     // --- validateCron ---
