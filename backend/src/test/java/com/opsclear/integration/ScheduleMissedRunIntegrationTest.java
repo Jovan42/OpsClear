@@ -69,6 +69,7 @@ class ScheduleMissedRunIntegrationTest {
 
     private UUID ownerId;
     private UUID memberId;
+    private UUID orgOnlyMemberId;
     private UUID projectId;
     private UUID orgId;
     private UUID templateId;
@@ -88,17 +89,20 @@ class ScheduleMissedRunIntegrationTest {
         organisationRepository.deleteAll();
         userRepository.deleteAll();
 
-        ownerId  = UUID.randomUUID();
+        ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();
+        orgOnlyMemberId = UUID.randomUUID();
 
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
+        userRepository.save(UserModel.builder().id(orgOnlyMemberId).email("orgonly@example.com").name("OrgOnly").build());
 
         OrganisationModel org = organisationRepository.save(
                 OrganisationModel.builder().name("MR Org").slug("MRO").createdBy(ownerId).build());
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.MEMBER);
+        organisationRepository.saveMember(orgId, orgOnlyMemberId, OrganisationRole.MEMBER);
         friendlyIdRepository.seedForOrg(orgId);
 
         ProjectModel project = projectRepository.save(
@@ -307,5 +311,50 @@ class ScheduleMissedRunIntegrationTest {
         mockMvc.perform(delete(ApiPaths.missedRuns(projectId, scheduleId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isNoContent());
+    }
+
+    // -------------------------------------------------------------------------
+    // Guard coverage — org member not in project
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("listMissedRuns — org member not in project receives 403")
+    void listMissedRuns_shouldReturn403_forOrgMemberNotInProject() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        mockMvc.perform(get(ApiPaths.missedRuns(projectId, scheduleId))
+                        .with(jwt().jwt(j -> j.subject(orgOnlyMemberId.toString()).claim("email", "orgonly@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("materializeMissedRun — org member not in project receives 403")
+    void materializeMissedRun_shouldReturn403_forOrgMemberNotInProject() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        UUID missedRunId = missedRunRepository.insert(scheduleId, Instant.parse("2026-01-01T12:00:00Z")).getId();
+        mockMvc.perform(post(ApiPaths.missedRunMaterialize(projectId, scheduleId, missedRunId))
+                        .with(jwt().jwt(j -> j.subject(orgOnlyMemberId.toString()).claim("email", "orgonly@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("materializeMissedRun — 400 when schedule has invalid timezone")
+    void materializeMissedRun_shouldReturn400_whenScheduleHasInvalidTimezone() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+
+        RecurringSchedulesRecord badRow = new RecurringSchedulesRecord();
+        badRow.setProjectId(projectId);
+        badRow.setTemplateId(templateId);
+        badRow.setName("Bad TZ Schedule");
+        badRow.setCronExpression("0 0 12 * * *");
+        badRow.setTimezone("INVALID/ZONE");
+        badRow.setNextRunAt(Instant.parse("2026-01-01T09:00:00Z").atOffset(java.time.ZoneOffset.UTC));
+        badRow.setCreatedBy(ownerId);
+        UUID badScheduleId = scheduleRepository.insert(badRow).getId();
+
+        UUID missedRunId = missedRunRepository.insert(badScheduleId, Instant.parse("2026-01-01T12:00:00Z")).getId();
+
+        mockMvc.perform(post(ApiPaths.missedRunMaterialize(projectId, badScheduleId, missedRunId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isBadRequest());
     }
 }
