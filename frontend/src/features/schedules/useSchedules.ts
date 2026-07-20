@@ -64,7 +64,10 @@ export function useMaterializeMissedRun(projectId: string, scheduleId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (missedRunId: string) => schedulesApi.materializeMissedRun(projectId, scheduleId, missedRunId),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['missed-runs', projectId, scheduleId] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['missed-runs', projectId, scheduleId] });
+      void qc.invalidateQueries({ queryKey: ['jobs', projectId] });
+    },
   });
 }
 
