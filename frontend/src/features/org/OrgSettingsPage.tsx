@@ -52,6 +52,7 @@ export default function OrgSettingsPage() {
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<JobTemplateResponse | null>(null);
   const [deletingTemplate, setDeletingTemplate] = useState<JobTemplateResponse | null>(null);
+  const [deleteTemplateError, setDeleteTemplateError] = useState<string | null>(null);
 
   const {
     register,
@@ -288,7 +289,7 @@ export default function OrgSettingsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setDeletingTemplate(t)}
+                        onClick={() => { setDeletingTemplate(t); setDeleteTemplateError(null); }}
                         className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
                         Delete
@@ -352,16 +353,24 @@ export default function OrgSettingsPage() {
 
       <ConfirmModal
         open={deletingTemplate !== null}
-        onClose={() => setDeletingTemplate(null)}
+        onClose={() => { setDeletingTemplate(null); setDeleteTemplateError(null); }}
         onConfirm={() => {
           if (!deletingTemplate) return;
-          deleteOrgTemplate.mutate(deletingTemplate.id, { onSuccess: () => setDeletingTemplate(null) });
+          deleteOrgTemplate.mutate(deletingTemplate.id, {
+            onSuccess: () => { setDeletingTemplate(null); setDeleteTemplateError(null); },
+            onError: (err) => {
+              if (isAxiosError(err) && err.response?.status === 409) {
+                setDeleteTemplateError(err.response.data.message as string);
+              }
+            },
+          });
         }}
         title="Delete Template"
         message={`Delete "${deletingTemplate?.name}"? This cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
         isPending={deleteOrgTemplate.isPending}
+        errorMessage={deleteTemplateError}
       />
 
       {/* ── Delete confirmation modal ── */}

@@ -17,6 +17,7 @@ import RelationshipsSection from './components/RelationshipsSection';
 import AddRelationshipModal from './components/AddRelationshipModal';
 import StatusHistory from './components/StatusHistory';
 import { useJob, useUpdateJobStatus, useDeleteJob } from './useJobs';
+import { useSchedule } from '../schedules/useSchedules';
 import { useMilestones } from './useMilestones';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
 import { useAuth } from '../../auth/AuthContext';
@@ -64,6 +65,8 @@ export default function JobDetailPage() {
 
   const { hasAddon } = useCurrentOrg();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+
+  const { data: sourceSchedule } = useSchedule(projectId, job?.sourceScheduleId ?? null);
   const isProjectCompleted = project?.status === 'COMPLETED';
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
 
@@ -176,6 +179,22 @@ export default function JobDetailPage() {
 
       {/* Blocked banner */}
       <BlockedBanner job={job} />
+
+      {/* Auto-created by schedule badge */}
+      {sourceSchedule && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700">
+            <span>🔄</span>
+            Auto-created by schedule{' '}
+            <Link
+              to={`/projects/${projectId}/schedules`}
+              className="font-semibold hover:underline"
+            >
+              {sourceSchedule.name}
+            </Link>
+          </span>
+        </div>
+      )}
 
       {/* Info section */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-4 space-y-3">

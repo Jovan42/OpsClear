@@ -87,6 +87,15 @@ export function useDismissAllMissedRuns(projectId: string, scheduleId: string) {
   });
 }
 
+export function useSchedule(projectId: string, scheduleId: string | null) {
+  return useQuery({
+    queryKey: ['schedule', projectId, scheduleId],
+    queryFn: () => schedulesApi.get(projectId, scheduleId!),
+    enabled: !!projectId && !!scheduleId,
+    retry: false,
+  });
+}
+
 export function useSchedulePreview(cronExpression: string, timezone: string) {
   const debouncedCron = useDebounce(cronExpression, 500);
   return useQuery({

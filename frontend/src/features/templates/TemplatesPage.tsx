@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 import { useTemplates, useDeleteTemplate } from './useTemplates';
-import { useProject } from '../projects/useProjects';
+import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from '../org/OrgContext';
 import TemplateFormModal from './TemplateFormModal';
+import ScheduleFormModal from '../schedules/ScheduleFormModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
@@ -32,9 +34,10 @@ interface TemplateRowProps {
   template: JobTemplateResponse;
   onEdit: (t: JobTemplateResponse) => void;
   onDelete: (t: JobTemplateResponse) => void;
+  onSchedule?: (t: JobTemplateResponse) => void;
 }
 
-function TemplateRow({ template, onEdit, onDelete }: Readonly<TemplateRowProps>) {
+function TemplateRow({ template, onEdit, onDelete, onSchedule }: Readonly<TemplateRowProps>) {
   return (
     <div className="flex items-start justify-between gap-4 p-5">
       <div className="min-w-0 space-y-1 flex-1">
@@ -57,6 +60,11 @@ function TemplateRow({ template, onEdit, onDelete }: Readonly<TemplateRowProps>)
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        {onSchedule && (
+          <Button variant="ghost" size="sm" onClick={() => onSchedule(template)}>
+            Schedule
+          </Button>
+        )}
         <Button variant="ghost" size="sm" onClick={() => onEdit(template)}>Edit</Button>
         <Button
           variant="ghost"
@@ -77,10 +85,15 @@ export default function TemplatesPage() {
   const { data: templates = [], isLoading, isError, refetch } = useTemplates(projectId);
   const deleteTemplate = useDeleteTemplate(projectId);
   const { hasAddon } = useCurrentOrg();
+  const role = useProjectRole(projectId);
+  const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+  const canSchedule = isOwnerOrAdmin && hasAddon('RECURRING_SCHEDULING');
 
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing]       = useState<JobTemplateResponse | null>(null);
   const [deleting, setDeleting]     = useState<JobTemplateResponse | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [scheduling, setScheduling] = useState<JobTemplateResponse | null>(null);
 
   usePageTitle('Templates', project?.name);
 
@@ -124,7 +137,8 @@ export default function TemplatesPage() {
                 key={t.id}
                 template={t}
                 onEdit={setEditing}
-                onDelete={setDeleting}
+                onDelete={(tmpl) => { setDeleting(tmpl); setDeleteError(null); }}
+                onSchedule={canSchedule ? setScheduling : undefined}
               />
             ))}
           </div>
@@ -146,18 +160,34 @@ export default function TemplatesPage() {
         template={editing ?? undefined}
       />
 
+      <ScheduleFormModal
+        key={scheduling?.id ?? 'schedule-closed'}
+        open={scheduling !== null}
+        onClose={() => setScheduling(null)}
+        projectId={projectId}
+        initialTemplateId={scheduling?.id}
+      />
+
       <ConfirmModal
         open={deleting !== null}
-        onClose={() => setDeleting(null)}
+        onClose={() => { setDeleting(null); setDeleteError(null); }}
         onConfirm={() => {
           if (!deleting) return;
-          deleteTemplate.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
+          deleteTemplate.mutate(deleting.id, {
+            onSuccess: () => { setDeleting(null); setDeleteError(null); },
+            onError: (err) => {
+              if (isAxiosError(err) && err.response?.status === 409) {
+                setDeleteError(err.response.data.message as string);
+              }
+            },
+          });
         }}
         title="Delete Template"
         message={`Delete "${deleting?.name}"? This cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
         isPending={deleteTemplate.isPending}
+        errorMessage={deleteError}
       />
     </>
   );
