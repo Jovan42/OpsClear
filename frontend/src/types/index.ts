@@ -73,6 +73,7 @@ export interface JobResponse {
   milestoneId: string | null;
   milestoneName: string | null;
   relationships: JobRelationshipView[];
+  sourceScheduleId: string | null;
 }
 
 // ---- Job History ----

@@ -46,6 +46,8 @@ public class JobResponse {
     // Populated only on getById — empty list on list responses
     private List<JobRelationshipView> relationships;
 
+    private UUID sourceScheduleId;
+
     public static JobResponse from(JobModel job) {
         return JobResponse.builder()
                 .id(job.getId())
@@ -70,6 +72,7 @@ public class JobResponse {
                 .relationships(job.getRelationships().stream()
                         .map(JobRelationshipView::from)
                         .toList())
+                .sourceScheduleId(job.getSourceScheduleId())
                 .build();
     }
 }

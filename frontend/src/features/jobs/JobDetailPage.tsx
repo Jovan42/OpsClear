@@ -17,6 +17,7 @@ import RelationshipsSection from './components/RelationshipsSection';
 import AddRelationshipModal from './components/AddRelationshipModal';
 import StatusHistory from './components/StatusHistory';
 import { useJob, useUpdateJobStatus, useDeleteJob } from './useJobs';
+import { useSchedule } from '../schedules/useSchedules';
 import { useMilestones } from './useMilestones';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
 import { useAuth } from '../../auth/AuthContext';
@@ -64,6 +65,8 @@ export default function JobDetailPage() {
 
   const { hasAddon } = useCurrentOrg();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+
+  const { data: sourceSchedule } = useSchedule(projectId, job?.sourceScheduleId ?? null);
   const isProjectCompleted = project?.status === 'COMPLETED';
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
 
@@ -132,10 +135,26 @@ export default function JobDetailPage() {
         </nav>
 
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{job.title}</h1>
-            <PriorityBadge priority={job.priority} />
-            <StatusBadge status={job.status} />
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{job.title}</h1>
+              <PriorityBadge priority={job.priority} />
+              <StatusBadge status={job.status} />
+            </div>
+            {sourceSchedule && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Created by schedule{' '}
+                <Link
+                  to={`/projects/${projectId}/schedules`}
+                  className="font-medium text-[var(--brand)] hover:underline"
+                >
+                  {sourceSchedule.name}
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">

@@ -23,6 +23,7 @@ interface Props {
   onClose: () => void;
   projectId: string;
   schedule?: RecurringScheduleResponse;
+  initialTemplateId?: string;
 }
 
 function AssigneeRow({
@@ -78,7 +79,7 @@ function AssigneeRow({
   );
 }
 
-export default function ScheduleFormModal({ open, onClose, projectId, schedule }: Readonly<Props>) {
+export default function ScheduleFormModal({ open, onClose, projectId, schedule, initialTemplateId }: Readonly<Props>) {
   const isEdit = !!schedule;
   const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -92,7 +93,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule }
 
   // ── Form state ──
   const [name, setName] = useState(schedule?.name ?? '');
-  const [templateId, setTemplateId] = useState(schedule?.templateId ?? '');
+  const [templateId, setTemplateId] = useState(schedule?.templateId ?? initialTemplateId ?? '');
   const [timezone, setTimezone] = useState(schedule?.timezone ?? userTz);
   const [pausedUntil, setPausedUntil] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
