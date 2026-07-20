@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation, NavLink, Link } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { useAuth } from '../auth/AuthContext';
 import { useProject, useProjectRole } from '../features/projects/useProjects';
 import { useApprovalQueue } from '../features/approvals/useApprovalQueue';
@@ -163,6 +164,12 @@ export default function AppLayout() {
         <OrgLoader />
         <Outlet />
       </main>
+      <Toaster
+        position="bottom-right"
+        theme="system"
+        richColors
+        toastOptions={{ duration: 5000 }}
+      />
     </div>
   );
 }
