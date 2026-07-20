@@ -14,10 +14,12 @@ import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.NoteRepository;
+import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
@@ -31,6 +33,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Set;
 import java.util.UUID;
 
@@ -63,6 +67,7 @@ class OrgTemplateIntegrationTest {
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private FriendlyIdRepository friendlyIdRepository;
+    @Autowired private RecurringScheduleRepository scheduleRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
@@ -75,6 +80,7 @@ class OrgTemplateIntegrationTest {
         approvalRepository.deleteAll();
         noteRepository.deleteAll();
         jobStatusHistoryRepository.deleteAll();
+        scheduleRepository.deleteAll();
         jobTemplateRepository.deleteAll();
         jobRepository.deleteAll();
         milestoneRepository.deleteAll();
@@ -424,5 +430,27 @@ class OrgTemplateIntegrationTest {
 
         JobTemplateModel after = jobTemplateRepository.findByIdAndDeletedAtIsNull(orgTemplate.getId()).orElseThrow();
         assertThat(after.getOccurrenceCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("deleteOrgTemplate — 409 when template has active schedules")
+    void deleteOrgTemplate_shouldReturn409_whenActiveScheduleExists() throws Exception {
+        JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").orgId(orgId).name("Shared Scheduled").assigneeMode("NONE").createdBy(ownerId).build());
+
+        RecurringSchedulesRecord schedule = new RecurringSchedulesRecord();
+        schedule.setProjectId(projectId);
+        schedule.setTemplateId(template.getId());
+        schedule.setName("Weekly Report");
+        schedule.setCronExpression("0 0 9 * * MON");
+        schedule.setTimezone("UTC");
+        schedule.setNextRunAt(Instant.parse("2099-01-01T09:00:00Z").atOffset(ZoneOffset.UTC));
+        schedule.setCreatedBy(ownerId);
+        scheduleRepository.insert(schedule);
+
+        mockMvc.perform(delete(ApiPaths.orgTemplate(orgId, template.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Weekly Report")));
     }
 }

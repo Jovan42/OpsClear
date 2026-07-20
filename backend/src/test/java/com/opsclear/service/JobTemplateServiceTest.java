@@ -2,8 +2,10 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateJobTemplateRequest;
 import com.opsclear.dto.UpdateJobTemplateRequest;
+import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.JobTemplateScope;
@@ -16,6 +18,7 @@ import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.RecurringScheduleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,6 +45,7 @@ class JobTemplateServiceTest {
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private OrganisationRepository organisationRepository;
+    @Mock private RecurringScheduleRepository recurringScheduleRepository;
     @Mock private FriendlyIdService friendlyIdService;
 
     private JobTemplateService jobTemplateService;
@@ -60,7 +64,7 @@ class JobTemplateServiceTest {
     void setUp() {
         jobTemplateService = new JobTemplateService(
                 jobTemplateRepository, projectRepository, projectMemberRepository,
-                organisationRepository, friendlyIdService);
+                organisationRepository, recurringScheduleRepository, friendlyIdService);
 
         projectId = UUID.randomUUID();
         ownerId   = UUID.randomUUID();
@@ -376,10 +380,30 @@ class JobTemplateServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
         when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(recurringScheduleRepository.findByTemplateIdAndActive(templateId)).thenReturn(List.of());
 
         jobTemplateService.softDelete(projectId, templateId, ownerId);
 
         verify(jobTemplateRepository).softDelete(templateId);
+    }
+
+    @Test
+    @DisplayName("softDelete — throws ConflictException when template has active schedules")
+    void softDelete_shouldThrow409_whenActiveScheduleExists() {
+        UUID templateId = UUID.randomUUID();
+        JobTemplateModel template = JobTemplateModel.builder()
+                .id(templateId).projectId(projectId).name("T1").build();
+        RecurringSchedulesRecord activeSchedule = new RecurringSchedulesRecord();
+        activeSchedule.setName("Daily Standup");
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(recurringScheduleRepository.findByTemplateIdAndActive(templateId)).thenReturn(List.of(activeSchedule));
+
+        assertThatThrownBy(() -> jobTemplateService.softDelete(projectId, templateId, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Daily Standup");
     }
 
     @Test
@@ -487,6 +511,23 @@ class JobTemplateServiceTest {
         jobTemplateService.recordUsage(projectId, templateId, memberId);
 
         verify(jobTemplateRepository).incrementOccurrenceCount(templateId);
+    }
+
+    @Test
+    @DisplayName("recordUsage — throws NotFoundException when template is org-scoped and user has no org")
+    void recordUsage_shouldThrow_whenOrgTemplateAndUserHasNoOrg() {
+        UUID templateId = UUID.randomUUID();
+        JobTemplateModel orgTemplate = JobTemplateModel.builder()
+                .id(templateId).orgId(UUID.randomUUID()).scope(JobTemplateScope.ORG).name("Onboarding").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(orgTemplate));
+        when(organisationRepository.findByMember(memberId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobTemplateService.recordUsage(projectId, templateId, memberId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Job template not found");
     }
 
     @Test
@@ -654,10 +695,46 @@ class JobTemplateServiceTest {
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
         when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(recurringScheduleRepository.findByTemplateIdAndActive(templateId)).thenReturn(List.of());
 
         jobTemplateService.deleteOrgTemplate(orgId, templateId, ownerId);
 
         verify(jobTemplateRepository).softDelete(templateId);
+    }
+
+    @Test
+    @DisplayName("deleteOrgTemplate — throws ConflictException when template has active schedules")
+    void deleteOrgTemplate_shouldThrow409_whenActiveScheduleExists() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel template = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG).name("T1").assigneeMode("NONE").build();
+        RecurringSchedulesRecord activeSchedule = new RecurringSchedulesRecord();
+        activeSchedule.setName("Weekly Report");
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(recurringScheduleRepository.findByTemplateIdAndActive(templateId)).thenReturn(List.of(activeSchedule));
+
+        assertThatThrownBy(() -> jobTemplateService.deleteOrgTemplate(orgId, templateId, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Weekly Report");
+    }
+
+    @Test
+    @DisplayName("deleteOrgTemplate — throws ForbiddenException when user is not an org member at all")
+    void deleteOrgTemplate_shouldThrow_whenNotOrgMember() {
+        UUID templateId = UUID.randomUUID();
+        UUID nonMemberId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, nonMemberId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobTemplateService.deleteOrgTemplate(orgId, templateId, nonMemberId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this organisation");
     }
 
     @Test
