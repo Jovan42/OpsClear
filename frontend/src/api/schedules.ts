@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { RecurringScheduleResponse, CronPreviewResponse } from '../types';
+import type { RecurringScheduleResponse, CronPreviewResponse, ScheduleMissedRunResponse, JobResponse } from '../types';
 
 export interface ScheduleBody {
   name: string;
@@ -41,4 +41,20 @@ export const schedulesApi = {
     apiClient
       .post<CronPreviewResponse>(`/api/schedules/preview`, { cronExpression, timezone })
       .then((r) => r.data),
+
+  listMissedRuns: (projectId: string, scheduleId: string) =>
+    apiClient
+      .get<ScheduleMissedRunResponse[]>(`/api/projects/${projectId}/schedules/${scheduleId}/missed-runs`)
+      .then((r) => r.data),
+
+  materializeMissedRun: (projectId: string, scheduleId: string, missedRunId: string) =>
+    apiClient
+      .post<JobResponse>(`/api/projects/${projectId}/schedules/${scheduleId}/missed-runs/${missedRunId}/materialize`)
+      .then((r) => r.data),
+
+  dismissMissedRun: (projectId: string, scheduleId: string, missedRunId: string) =>
+    apiClient.delete(`/api/projects/${projectId}/schedules/${scheduleId}/missed-runs/${missedRunId}`),
+
+  dismissAllMissedRuns: (projectId: string, scheduleId: string) =>
+    apiClient.delete(`/api/projects/${projectId}/schedules/${scheduleId}/missed-runs`),
 };

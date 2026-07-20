@@ -52,6 +52,41 @@ export function useResumeSchedule(projectId: string) {
   });
 }
 
+export function useScheduleMissedRuns(projectId: string, scheduleId: string) {
+  return useQuery({
+    queryKey: ['missed-runs', projectId, scheduleId],
+    queryFn: () => schedulesApi.listMissedRuns(projectId, scheduleId),
+    enabled: !!projectId && !!scheduleId,
+  });
+}
+
+export function useMaterializeMissedRun(projectId: string, scheduleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (missedRunId: string) => schedulesApi.materializeMissedRun(projectId, scheduleId, missedRunId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['missed-runs', projectId, scheduleId] });
+      void qc.invalidateQueries({ queryKey: ['jobs', projectId] });
+    },
+  });
+}
+
+export function useDismissMissedRun(projectId: string, scheduleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (missedRunId: string) => schedulesApi.dismissMissedRun(projectId, scheduleId, missedRunId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['missed-runs', projectId, scheduleId] }),
+  });
+}
+
+export function useDismissAllMissedRuns(projectId: string, scheduleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => schedulesApi.dismissAllMissedRuns(projectId, scheduleId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['missed-runs', projectId, scheduleId] }),
+  });
+}
+
 export function useSchedulePreview(cronExpression: string, timezone: string) {
   const debouncedCron = useDebounce(cronExpression, 500);
   return useQuery({

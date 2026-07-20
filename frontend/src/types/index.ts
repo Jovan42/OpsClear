@@ -297,6 +297,13 @@ export interface CronPreviewResponse {
   nextRuns: string[];
 }
 
+export interface ScheduleMissedRunResponse {
+  id: string;
+  scheduleId: string;
+  expectedAt: string;
+  recordedAt: string;
+}
+
 // ---- Dashboard ----
 
 export interface JobSummary {
