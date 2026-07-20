@@ -135,10 +135,26 @@ export default function JobDetailPage() {
         </nav>
 
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{job.title}</h1>
-            <PriorityBadge priority={job.priority} />
-            <StatusBadge status={job.status} />
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{job.title}</h1>
+              <PriorityBadge priority={job.priority} />
+              <StatusBadge status={job.status} />
+            </div>
+            {sourceSchedule && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Created by schedule{' '}
+                <Link
+                  to={`/projects/${projectId}/schedules`}
+                  className="font-medium text-[var(--brand)] hover:underline"
+                >
+                  {sourceSchedule.name}
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -179,22 +195,6 @@ export default function JobDetailPage() {
 
       {/* Blocked banner */}
       <BlockedBanner job={job} />
-
-      {/* Auto-created by schedule badge */}
-      {sourceSchedule && (
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700">
-            <span>🔄</span>
-            Auto-created by schedule{' '}
-            <Link
-              to={`/projects/${projectId}/schedules`}
-              className="font-semibold hover:underline"
-            >
-              {sourceSchedule.name}
-            </Link>
-          </span>
-        </div>
-      )}
 
       {/* Info section */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-4 space-y-3">
