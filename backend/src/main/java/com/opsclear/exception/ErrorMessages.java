@@ -86,6 +86,7 @@ public final class ErrorMessages {
 
     public static final class JobTemplate {
         public static final String NOT_FOUND = "Job template not found";
+        public static final String ACTIVE_SCHEDULES = "Template is used by active schedules: ";
 
         private JobTemplate() {
         }

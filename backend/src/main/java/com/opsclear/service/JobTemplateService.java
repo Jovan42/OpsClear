@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateJobTemplateRequest;
 import com.opsclear.dto.UpdateJobTemplateRequest;
+import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
@@ -15,6 +16,7 @@ import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.RecurringScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class JobTemplateService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final OrganisationRepository organisationRepository;
+    private final RecurringScheduleRepository recurringScheduleRepository;
     private final FriendlyIdService friendlyIdService;
 
     // --- Project-scoped endpoints ---
@@ -93,6 +96,7 @@ public class JobTemplateService {
         requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         requireTemplateForProject(projectId, templateId);
+        requireNoActiveSchedules(templateId);
         jobTemplateRepository.softDelete(templateId);
         log.info("Soft-deleted job template {} from project {} by user {}", templateId, projectId, requesterId);
     }
@@ -157,6 +161,7 @@ public class JobTemplateService {
         requireOrg(orgId);
         requireOrgOwnerOrAdmin(orgId, requesterId);
         requireTemplateForOrg(orgId, templateId);
+        requireNoActiveSchedules(templateId);
         jobTemplateRepository.softDelete(templateId);
         log.info("Soft-deleted org-level job template {} from org {} by user {}", templateId, orgId, requesterId);
     }
@@ -238,6 +243,14 @@ public class JobTemplateService {
                 .orElse(null);
         if (orgId == null || !orgId.equals(template.getOrgId())) {
             throw new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND);
+        }
+    }
+
+    private void requireNoActiveSchedules(UUID templateId) {
+        List<String> names = recurringScheduleRepository.findByTemplateIdAndActive(templateId)
+                .stream().map(r -> r.getName()).toList();
+        if (!names.isEmpty()) {
+            throw new ConflictException(ErrorMessages.JobTemplate.ACTIVE_SCHEDULES + names);
         }
     }
 }
