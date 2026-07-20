@@ -6,6 +6,7 @@ import { useCurrentOrg } from '../org/OrgContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { toReadable } from '../../utils/cron';
 import ScheduleFormModal from './ScheduleFormModal';
+import MissedRunsPanel from './MissedRunsPanel';
 import PauseDialog from './PauseDialog';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
@@ -52,6 +53,7 @@ function AssigneeAvatars({ assignees }: Readonly<{ assignees: RecurringScheduleR
 
 interface ScheduleRowProps {
   schedule: RecurringScheduleResponse;
+  projectId: string;
   onEdit: (s: RecurringScheduleResponse) => void;
   onDelete: (s: RecurringScheduleResponse) => void;
   onPause: (s: RecurringScheduleResponse) => void;
@@ -61,6 +63,7 @@ interface ScheduleRowProps {
 
 function ScheduleRow({
   schedule,
+  projectId,
   onEdit,
   onDelete,
   onPause,
@@ -70,6 +73,7 @@ function ScheduleRow({
   const isPaused = schedule.status === 'PAUSED' || schedule.status === 'PAUSED_NO_ASSIGNEES';
 
   return (
+    <>
     <div className="flex items-start justify-between gap-4 p-4">
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -117,6 +121,8 @@ function ScheduleRow({
         </Button>
       </div>
     </div>
+    <MissedRunsPanel projectId={projectId} scheduleId={schedule.id} />
+    </>
   );
 }
 
@@ -190,6 +196,7 @@ export default function SchedulesPage() {
               <ScheduleRow
                 key={s.id}
                 schedule={s}
+                projectId={projectId}
                 onEdit={setEditing}
                 onDelete={setDeleting}
                 onPause={setPausing}
