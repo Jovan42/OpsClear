@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth/AuthContext';
 import { projectsApi } from '../../api/projects';
+import { projectLinksApi } from '../../api/links';
 import type { ProjectStatus } from '../../types';
 
 const PROJECT_ID_RE = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[A-Za-z]{2,6}-\d+)$/i;
@@ -107,5 +108,36 @@ export function useRemoveMember(projectId: string) {
     mutationFn: (memberId: string) => projectsApi.removeMember(projectId, memberId),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: ['projects', projectId, 'members'] }),
+  });
+}
+
+export function useCreateProjectLink(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { url: string; label?: string }) => projectLinksApi.create(projectId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+    },
+  });
+}
+
+export function useUpdateProjectLink(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ linkId, body }: { linkId: string; body: { url: string; label?: string } }) =>
+      projectLinksApi.update(projectId, linkId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+    },
+  });
+}
+
+export function useDeleteProjectLink(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (linkId: string) => projectLinksApi.delete(projectId, linkId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+    },
   });
 }

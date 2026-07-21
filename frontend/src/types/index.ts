@@ -11,6 +11,7 @@ export interface ProjectResponse {
   ownerName: string | null;
   status: ProjectStatus;
   createdAt: string;
+  links: LinkResponse[];
 }
 
 export interface ProjectMemberResponse {
