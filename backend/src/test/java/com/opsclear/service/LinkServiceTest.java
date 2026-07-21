@@ -95,6 +95,24 @@ class LinkServiceTest {
     }
 
     @Test
+    @DisplayName("Should create a job link with a null label")
+    void createForJob_shouldCreateLink_withNullLabel() {
+        JobLinkModel saved = JobLinkModel.builder()
+                .id(UUID.randomUUID()).jobId(job.getId()).url("https://example.com").createdBy(memberId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(jobRepository.findByIdAndDeletedAtIsNull(job.getId())).thenReturn(Optional.of(job));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(jobLinkRepository.save(any())).thenReturn(saved);
+
+        service.createForJob(projectId, job.getId(), "https://example.com", null, memberId);
+
+        ArgumentCaptor<JobLinkModel> captor = ArgumentCaptor.forClass(JobLinkModel.class);
+        verify(jobLinkRepository).save(captor.capture());
+        assertThat(captor.getValue().getLabel()).isNull();
+    }
+
+    @Test
     @DisplayName("Should throw NotFoundException when project does not exist on createForJob")
     void createForJob_shouldThrow_whenProjectNotFound() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
@@ -193,6 +211,43 @@ class LinkServiceTest {
     }
 
     @Test
+    @DisplayName("Should update a job link with a null label")
+    void updateJobLink_shouldUpdate_withNullLabel() {
+        UUID linkId = UUID.randomUUID();
+        JobLinkModel existing = JobLinkModel.builder().id(linkId).jobId(job.getId())
+                .url("https://old.example.com").label("Old").createdBy(memberId).build();
+        JobLinkModel updated = JobLinkModel.builder().id(linkId).jobId(job.getId())
+                .url("https://new.example.com").createdBy(memberId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(jobRepository.findByIdAndDeletedAtIsNull(job.getId())).thenReturn(Optional.of(job));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobLinkRepository.findById(linkId)).thenReturn(Optional.of(existing));
+        when(jobLinkRepository.save(any())).thenReturn(updated);
+
+        service.updateJobLink(projectId, job.getId(), linkId, "https://new.example.com", null, ownerId);
+
+        ArgumentCaptor<JobLinkModel> captor = ArgumentCaptor.forClass(JobLinkModel.class);
+        verify(jobLinkRepository).save(captor.capture());
+        assertThat(captor.getValue().getLabel()).isNull();
+    }
+
+    @Test
+    @DisplayName("Should throw ForbiddenException when requester is not a project member at all on update")
+    void updateJobLink_shouldThrow_whenNotMember() {
+        UUID strangerId = UUID.randomUUID();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(jobRepository.findByIdAndDeletedAtIsNull(job.getId())).thenReturn(Optional.of(job));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, strangerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateJobLink(
+                projectId, job.getId(), UUID.randomUUID(), "https://example.com", null, strangerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this project");
+    }
+
+    @Test
     @DisplayName("Should throw ForbiddenException when member tries to update a job link")
     void updateJobLink_shouldThrow_whenMember() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
@@ -282,6 +337,23 @@ class LinkServiceTest {
     }
 
     @Test
+    @DisplayName("Should create a project link with a null label")
+    void createForProject_shouldCreateLink_withNullLabel() {
+        ProjectLinkModel saved = ProjectLinkModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).url("https://example.com").createdBy(memberId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(projectLinkRepository.save(any())).thenReturn(saved);
+
+        service.createForProject(projectId, "https://example.com", null, memberId);
+
+        ArgumentCaptor<ProjectLinkModel> captor = ArgumentCaptor.forClass(ProjectLinkModel.class);
+        verify(projectLinkRepository).save(captor.capture());
+        assertThat(captor.getValue().getLabel()).isNull();
+    }
+
+    @Test
     @DisplayName("Should throw ForbiddenException when requester is not a project member on createForProject")
     void createForProject_shouldThrow_whenNotMember() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
@@ -312,6 +384,27 @@ class LinkServiceTest {
                 projectId, linkId, "https://new.example.com", "New", ownerId);
 
         assertThat(result.getUrl()).isEqualTo("https://new.example.com");
+    }
+
+    @Test
+    @DisplayName("Should update a project link with a null label")
+    void updateProjectLink_shouldUpdate_withNullLabel() {
+        UUID linkId = UUID.randomUUID();
+        ProjectLinkModel existing = ProjectLinkModel.builder().id(linkId).projectId(projectId)
+                .url("https://old.example.com").label("Old").createdBy(memberId).build();
+        ProjectLinkModel updated = ProjectLinkModel.builder().id(linkId).projectId(projectId)
+                .url("https://new.example.com").createdBy(memberId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(projectLinkRepository.findById(linkId)).thenReturn(Optional.of(existing));
+        when(projectLinkRepository.save(any())).thenReturn(updated);
+
+        service.updateProjectLink(projectId, linkId, "https://new.example.com", null, ownerId);
+
+        ArgumentCaptor<ProjectLinkModel> captor = ArgumentCaptor.forClass(ProjectLinkModel.class);
+        verify(projectLinkRepository).save(captor.capture());
+        assertThat(captor.getValue().getLabel()).isNull();
     }
 
     @Test
