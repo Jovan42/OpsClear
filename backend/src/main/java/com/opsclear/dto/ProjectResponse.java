@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -27,6 +28,7 @@ public class ProjectResponse {
     private ProjectStatus status;
     private Instant createdAt;
     private Instant updatedAt;
+    private List<LinkResponse> links;
 
     public static ProjectResponse from(ProjectModel project) {
         return ProjectResponse.builder()
@@ -39,6 +41,9 @@ public class ProjectResponse {
                 .status(project.getStatus())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
+                .links(project.getLinks().stream()
+                        .map(LinkResponse::from)
+                        .toList())
                 .build();
     }
 }

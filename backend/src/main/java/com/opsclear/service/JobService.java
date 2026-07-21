@@ -10,6 +10,7 @@ import com.opsclear.exception.ConflictException;
 import com.opsclear.model.BlockReasonModel;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.JobLinkModel;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobRelationshipDirection;
@@ -19,6 +20,7 @@ import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.repository.JobLinkRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
@@ -45,6 +47,7 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final JobRelationshipRepository jobRelationshipRepository;
+    private final JobLinkRepository jobLinkRepository;
     private final JobStatusHistoryRepository jobStatusHistoryRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
@@ -94,7 +97,9 @@ public class JobService {
         boolean isMember = requester.getRole() == ProjectMemberRole.MEMBER;
         UUID assignedTo = isMember ? requesterId : null;
         String trimmedQ = (q != null && !q.isBlank()) ? q.trim() : null;
-        return jobRepository.findByFilters(projectId, assignedTo, trimmedQ, priority, milestoneId);
+        List<JobModel> jobs = jobRepository.findByFilters(projectId, assignedTo, trimmedQ, priority, milestoneId);
+        attachLinks(jobs);
+        return jobs;
     }
 
     @Transactional(readOnly = true)
@@ -107,7 +112,15 @@ public class JobService {
         requireCanViewJob(requester, job, requesterId);
 
         job.setRelationships(fetchRelationships(jobId));
+        job.setLinks(jobLinkRepository.findByJobId(jobId));
         return job;
+    }
+
+    private void attachLinks(List<JobModel> jobs) {
+        List<UUID> jobIds = jobs.stream().map(JobModel::getId).toList();
+        Map<UUID, List<JobLinkModel>> byJobId = jobLinkRepository.findByJobIds(jobIds).stream()
+                .collect(Collectors.groupingBy(JobLinkModel::getJobId));
+        jobs.forEach(j -> j.setLinks(byJobId.getOrDefault(j.getId(), List.of())));
     }
 
     private List<JobRelationshipEntry> fetchRelationships(UUID jobId) {

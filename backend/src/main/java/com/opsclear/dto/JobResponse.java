@@ -46,6 +46,8 @@ public class JobResponse {
     // Populated only on getById — empty list on list responses
     private List<JobRelationshipView> relationships;
 
+    private List<LinkResponse> links;
+
     private UUID sourceScheduleId;
 
     public static JobResponse from(JobModel job) {
@@ -71,6 +73,9 @@ public class JobResponse {
                 .blockedAt(job.getBlockedAt())
                 .relationships(job.getRelationships().stream()
                         .map(JobRelationshipView::from)
+                        .toList())
+                .links(job.getLinks().stream()
+                        .map(LinkResponse::from)
                         .toList())
                 .sourceScheduleId(job.getSourceScheduleId())
                 .build();

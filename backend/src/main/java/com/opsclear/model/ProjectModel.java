@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -28,6 +30,10 @@ public class ProjectModel {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
+
+    // Populated by ProjectService on both list and getById — not stored in DB
+    @Builder.Default
+    private List<ProjectLinkModel> links = new ArrayList<>();
 
     public boolean isCompleted() {
         return status == ProjectStatus.COMPLETED;

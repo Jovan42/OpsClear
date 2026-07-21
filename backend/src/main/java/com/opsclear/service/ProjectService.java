@@ -8,12 +8,14 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.ProjectLinkModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.ProjectLinkRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -23,7 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +39,7 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final BlockReasonRepository blockReasonRepository;
     private final OrganisationRepository organisationRepository;
+    private final ProjectLinkRepository projectLinkRepository;
     private final FriendlyIdService friendlyIdService;
 
     @Transactional
@@ -76,7 +81,9 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectModel> getProjectsForMember(UUID userId, ProjectStatus status) {
         requireOrgMembership(userId);
-        return projectRepository.findByMemberIdAndStatusAndDeletedAtIsNull(userId, status);
+        List<ProjectModel> projects = projectRepository.findByMemberIdAndStatusAndDeletedAtIsNull(userId, status);
+        attachLinks(projects);
+        return projects;
     }
 
     @Transactional(readOnly = true)
@@ -84,7 +91,15 @@ public class ProjectService {
         requireOrgMembership(requesterId);
         ProjectModel project = requireProject(projectId);
         requireMember(projectId, requesterId);
+        project.setLinks(projectLinkRepository.findByProjectId(projectId));
         return project;
+    }
+
+    private void attachLinks(List<ProjectModel> projects) {
+        List<UUID> projectIds = projects.stream().map(ProjectModel::getId).toList();
+        Map<UUID, List<ProjectLinkModel>> byProjectId = projectLinkRepository.findByProjectIds(projectIds).stream()
+                .collect(Collectors.groupingBy(ProjectLinkModel::getProjectId));
+        projects.forEach(p -> p.setLinks(byProjectId.getOrDefault(p.getId(), List.of())));
     }
 
     @Transactional
