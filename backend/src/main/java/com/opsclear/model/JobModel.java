@@ -42,6 +42,10 @@ public class JobModel {
     @Builder.Default
     private List<JobRelationshipEntry> relationships = new ArrayList<>();
 
+    // Populated by JobService on both list and getById — not stored in DB
+    @Builder.Default
+    private List<JobLinkModel> links = new ArrayList<>();
+
     // Set for jobs created by a recurring schedule; null for manual jobs
     private UUID sourceScheduleId;
 

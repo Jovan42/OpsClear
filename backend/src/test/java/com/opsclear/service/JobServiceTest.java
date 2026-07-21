@@ -21,6 +21,7 @@ import com.opsclear.exception.ErrorMessages;
 import com.opsclear.model.JobRelationshipType;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.repository.JobStatusHistoryRepository;
+import com.opsclear.repository.JobLinkRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -51,6 +52,7 @@ class JobServiceTest {
 
     @Mock private JobRepository jobRepository;
     @Mock private JobRelationshipRepository jobRelationshipRepository;
+    @Mock private JobLinkRepository jobLinkRepository;
     @Mock private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
@@ -71,7 +73,7 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, jobRelationshipRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService, organisationRepository, friendlyIdService);
+        jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, blockReasonService, organisationRepository, friendlyIdService);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();

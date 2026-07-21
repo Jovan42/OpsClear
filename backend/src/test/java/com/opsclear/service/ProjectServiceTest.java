@@ -14,6 +14,7 @@ import com.opsclear.exception.ErrorMessages;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.ProjectLinkRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -58,6 +59,9 @@ class ProjectServiceTest {
     private OrganisationRepository organisationRepository;
 
     @Mock
+    private ProjectLinkRepository projectLinkRepository;
+
+    @Mock
     private FriendlyIdService friendlyIdService;
 
     private ProjectService projectService;
@@ -67,7 +71,7 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository, blockReasonRepository, organisationRepository, friendlyIdService);
+        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository, blockReasonRepository, organisationRepository, projectLinkRepository, friendlyIdService);
         ownerId = UUID.randomUUID();
         testOwner = UserModel.builder()
                 .id(ownerId)

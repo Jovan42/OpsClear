@@ -151,4 +151,12 @@ public final class ErrorMessages {
         private Approval() {
         }
     }
+
+    public static final class Link {
+        public static final String NOT_FOUND = "Link not found";
+        public static final String INVALID_URL = "URL is invalid or uses a disallowed scheme";
+
+        private Link() {
+        }
+    }
 }

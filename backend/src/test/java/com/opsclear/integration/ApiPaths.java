@@ -266,6 +266,26 @@ final class ApiPaths {
 
     static final String CRON_PREVIEW = "/api/schedules/preview";
 
+    // --- Job links ---
+
+    static String jobLinks(UUID projectId, UUID jobId) {
+        return "/api/projects/" + projectId + "/jobs/" + jobId + "/links";
+    }
+
+    static String jobLink(UUID projectId, UUID jobId, UUID linkId) {
+        return "/api/projects/" + projectId + "/jobs/" + jobId + "/links/" + linkId;
+    }
+
+    // --- Project links ---
+
+    static String projectLinks(UUID projectId) {
+        return "/api/projects/" + projectId + "/links";
+    }
+
+    static String projectLink(UUID projectId, UUID linkId) {
+        return "/api/projects/" + projectId + "/links/" + linkId;
+    }
+
     private ApiPaths() {
     }
 }

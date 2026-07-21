@@ -6,6 +6,7 @@ import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -44,6 +45,7 @@ class AddonGatingIntegrationTest {
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
+    @Autowired private JobRepository jobRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
@@ -58,6 +60,7 @@ class AddonGatingIntegrationTest {
     @BeforeEach
     void setUp() {
         projectMemberRepository.deleteAll();
+        jobRepository.deleteAll();
         projectRepository.deleteAll();
         subscriptionRepository.deleteAll();
         organisationRepository.deleteAll();
