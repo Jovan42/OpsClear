@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, NavLink, Link } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuth } from '../auth/AuthContext';
@@ -8,17 +8,22 @@ import { useMyOrg } from '../features/org/useOrganisation';
 import { useOrgSubscription } from '../features/org/useSubscription';
 import { useCurrentOrg } from '../features/org/OrgContext';
 import UserMenu from './UserMenu';
+import ProjectLinksDropdown from './ProjectLinksDropdown';
 import { useTheme } from '../hooks/useTheme';
 
 function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
   const role = useProjectRole(projectId);
   const { data: pending = [] } = useApprovalQueue(projectId);
+  const { data: project } = useProject(projectId);
   const { hasAddon } = useCurrentOrg();
+  const [linksOpen, setLinksOpen] = useState(false);
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
   const dashboardLocked  = !hasAddon('DASHBOARD');
   const milestonesLocked = !hasAddon('MILESTONES');
   const templatesLocked  = !hasAddon('JOB_TEMPLATES');
   const schedulesLocked  = !hasAddon('RECURRING_SCHEDULING');
+  const linksLocked      = !hasAddon('JOB_LINKS');
+  const links = project?.links ?? [];
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium px-1 py-1 border-b-2 transition-colors ${
@@ -73,10 +78,38 @@ function ProjectNav({ projectId }: Readonly<{ projectId: string }>) {
       <NavLink to={`/projects/${projectId}/settings`} className={linkClass}>
         Settings
       </NavLink>
+      {!linksLocked && (
+        <div className="relative">
+          <button
+            onClick={() => setLinksOpen((v) => !v)}
+            className={`text-sm font-medium px-1 py-1 border-b-2 transition-colors cursor-pointer ${
+              linksOpen ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              Links
+              {links.length > 0 && (
+                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-orange-500 text-white leading-none">
+                  {links.length}
+                </span>
+              )}
+            </span>
+          </button>
+          {linksOpen && (
+            <ProjectLinksDropdown
+              projectId={projectId}
+              links={links}
+              canManage={isOwnerOrAdmin}
+              onClose={() => setLinksOpen(false)}
+            />
+          )}
+        </div>
+      )}
       {dashboardLocked && lockedNavLink(`/projects/${projectId}/dashboard`, 'Dashboard')}
       {milestonesLocked && lockedNavLink(`/projects/${projectId}/milestones`, 'Milestones')}
       {templatesLocked  && lockedNavLink(`/projects/${projectId}/templates`, 'Templates')}
       {schedulesLocked  && lockedNavLink(`/projects/${projectId}/schedules`, 'Schedules')}
+      {linksLocked      && lockedNavLink('/org/settings', 'Links')}
     </div>
   );
 }

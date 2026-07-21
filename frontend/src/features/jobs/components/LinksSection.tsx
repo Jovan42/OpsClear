@@ -91,7 +91,6 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
         editingId === link.id ? (
           <div key={link.id} className="flex flex-col sm:flex-row gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-3">
             <input
-              autoFocus
               value={editUrl}
               onChange={(e) => setEditUrl(e.target.value)}
               placeholder="https://…"
@@ -176,7 +175,6 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
         (adding ? (
           <div className="flex flex-col sm:flex-row gap-2 mt-2">
             <input
-              autoFocus
               value={url}
               onChange={(e) => handleUrlChange(e.target.value)}
               placeholder="https://…"
