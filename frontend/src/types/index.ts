@@ -73,7 +73,19 @@ export interface JobResponse {
   milestoneId: string | null;
   milestoneName: string | null;
   relationships: JobRelationshipView[];
+  links: LinkResponse[];
   sourceScheduleId: string | null;
+}
+
+// ---- Links ----
+
+export interface LinkResponse {
+  id: string;
+  url: string;
+  label: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ---- Job History ----
@@ -179,7 +191,8 @@ export type AddonCode =
   | 'JOB_RELATIONSHIPS'
   | 'API_KEYS'
   | 'JOB_TEMPLATES'
-  | 'RECURRING_SCHEDULING';
+  | 'RECURRING_SCHEDULING'
+  | 'JOB_LINKS';
 
 
 export interface SubscriptionTierResponse {

@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobsApi } from '../../api/jobs';
+import { jobLinksApi } from '../../api/links';
 import type { JobPriority, JobRelationshipType, JobStatus } from '../../types';
 
 export function useJobList(projectId: string, q?: string, priority?: JobPriority, milestoneId?: string) {
@@ -112,6 +113,37 @@ export function useDeleteRelationship(projectId: string, jobId: string) {
   return useMutation({
     mutationFn: (relationshipId: string) =>
       jobsApi.deleteRelationship(projectId, jobId, relationshipId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId] });
+    },
+  });
+}
+
+export function useCreateJobLink(projectId: string, jobId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { url: string; label?: string }) => jobLinksApi.create(projectId, jobId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId] });
+    },
+  });
+}
+
+export function useUpdateJobLink(projectId: string, jobId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ linkId, body }: { linkId: string; body: { url: string; label?: string } }) =>
+      jobLinksApi.update(projectId, jobId, linkId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId] });
+    },
+  });
+}
+
+export function useDeleteJobLink(projectId: string, jobId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (linkId: string) => jobLinksApi.delete(projectId, jobId, linkId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId] });
     },
