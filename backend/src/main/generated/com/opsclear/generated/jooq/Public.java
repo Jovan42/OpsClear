@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.JobTemplates;
@@ -20,6 +21,7 @@ import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.OrganisationMembers;
 import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
+import com.opsclear.generated.jooq.tables.ProjectLinks;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.RecurringSchedules;
@@ -59,6 +61,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.approvals</code>.
      */
     public final Approvals APPROVALS = Approvals.APPROVALS;
+
+    /**
+     * External resource links attached to a job (ADR-0035)
+     */
+    public final JobLinks JOB_LINKS = JobLinks.JOB_LINKS;
 
     /**
      * The table <code>public.job_relationships</code>.
@@ -132,6 +139,11 @@ public class Public extends SchemaImpl {
     public final ProjectBlockReasons PROJECT_BLOCK_REASONS = ProjectBlockReasons.PROJECT_BLOCK_REASONS;
 
     /**
+     * External resource links attached to a project (ADR-0035)
+     */
+    public final ProjectLinks PROJECT_LINKS = ProjectLinks.PROJECT_LINKS;
+
+    /**
      * Project membership — links users to projects with a role
      */
     public final ProjectMembers PROJECT_MEMBERS = ProjectMembers.PROJECT_MEMBERS;
@@ -191,6 +203,7 @@ public class Public extends SchemaImpl {
         return Arrays.asList(
             ApiKeys.API_KEYS,
             Approvals.APPROVALS,
+            JobLinks.JOB_LINKS,
             JobRelationships.JOB_RELATIONSHIPS,
             JobStatusHistory.JOB_STATUS_HISTORY,
             JobTemplates.JOB_TEMPLATES,
@@ -205,6 +218,7 @@ public class Public extends SchemaImpl {
             OrganisationMembers.ORGANISATION_MEMBERS,
             Organisations.ORGANISATIONS,
             ProjectBlockReasons.PROJECT_BLOCK_REASONS,
+            ProjectLinks.PROJECT_LINKS,
             ProjectMembers.PROJECT_MEMBERS,
             Projects.PROJECTS,
             RecurringSchedules.RECURRING_SCHEDULES,

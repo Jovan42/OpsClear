@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.JobTemplates;
 import com.opsclear.generated.jooq.tables.Jobs;
@@ -13,6 +14,7 @@ import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
 import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
+import com.opsclear.generated.jooq.tables.ProjectLinks;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.RecurringSchedules;
@@ -56,8 +58,10 @@ public class Indexes {
     public static final Index IDX_PROJECTS_OWNER = Internal.createIndex(DSL.name("idx_projects_owner"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.OWNER_ID }, false);
     public static final Index IDX_PROJECTS_STATUS = Internal.createIndex(DSL.name("idx_projects_status"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.STATUS }, false);
     public static final Index IDX_USERS_EMAIL = Internal.createIndex(DSL.name("idx_users_email"), Users.USERS, new OrderField[] { Users.USERS.EMAIL }, false);
+    public static final Index JOB_LINKS_JOB_ID_IDX = Internal.createIndex(DSL.name("job_links_job_id_idx"), JobLinks.JOB_LINKS, new OrderField[] { JobLinks.JOB_LINKS.JOB_ID }, false);
     public static final Index JOB_TEMPLATES_ORG_ID_IDX = Internal.createIndex(DSL.name("job_templates_org_id_idx"), JobTemplates.JOB_TEMPLATES, new OrderField[] { JobTemplates.JOB_TEMPLATES.ORG_ID }, false);
     public static final Index JOB_TEMPLATES_PROJECT_ID_IDX = Internal.createIndex(DSL.name("job_templates_project_id_idx"), JobTemplates.JOB_TEMPLATES, new OrderField[] { JobTemplates.JOB_TEMPLATES.PROJECT_ID }, false);
+    public static final Index PROJECT_LINKS_PROJECT_ID_IDX = Internal.createIndex(DSL.name("project_links_project_id_idx"), ProjectLinks.PROJECT_LINKS, new OrderField[] { ProjectLinks.PROJECT_LINKS.PROJECT_ID }, false);
     public static final Index RECURRING_SCHEDULES_DUE_IDX = Internal.createIndex(DSL.name("recurring_schedules_due_idx"), RecurringSchedules.RECURRING_SCHEDULES, new OrderField[] { RecurringSchedules.RECURRING_SCHEDULES.NEXT_RUN_AT }, false);
     public static final Index RECURRING_SCHEDULES_PROJECT_ID_IDX = Internal.createIndex(DSL.name("recurring_schedules_project_id_idx"), RecurringSchedules.RECURRING_SCHEDULES, new OrderField[] { RecurringSchedules.RECURRING_SCHEDULES.PROJECT_ID }, false);
     public static final Index SCHEDULE_ASSIGNEES_POSITION_IDX = Internal.createIndex(DSL.name("schedule_assignees_position_idx"), ScheduleAssignees.SCHEDULE_ASSIGNEES, new OrderField[] { ScheduleAssignees.SCHEDULE_ASSIGNEES.SCHEDULE_ID, ScheduleAssignees.SCHEDULE_ASSIGNEES.ORDER }, true);
