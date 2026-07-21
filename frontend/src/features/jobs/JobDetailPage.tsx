@@ -16,6 +16,7 @@ import RequestApprovalModal from './components/RequestApprovalModal';
 import RelationshipsSection from './components/RelationshipsSection';
 import AddRelationshipModal from './components/AddRelationshipModal';
 import StatusHistory from './components/StatusHistory';
+import LinksSection from './components/LinksSection';
 import { useJob, useUpdateJobStatus, useDeleteJob } from './useJobs';
 import { useSchedule } from '../schedules/useSchedules';
 import { useMilestones } from './useMilestones';
@@ -60,6 +61,7 @@ export default function JobDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(true);
   const [approvalsExpanded, setApprovalsExpanded] = useState(false);
+  const [linksExpanded, setLinksExpanded] = useState(true);
   const [kebabOpen, setKebabOpen] = useState(false);
   const [addRelOpen, setAddRelOpen] = useState(false);
 
@@ -75,6 +77,7 @@ export default function JobDetailPage() {
     !hasAddon('APPROVALS') && 'Approvals',
     !hasAddon('JOB_STATUS_HISTORY') && 'Job History',
     !hasAddon('JOB_RELATIONSHIPS') && 'Relationships',
+    !hasAddon('JOB_LINKS') && 'Links',
   ].filter((s): s is string => Boolean(s));
 
   function handleStatusChange(status: JobStatus) {
@@ -299,6 +302,31 @@ export default function JobDetailPage() {
           {approvalsExpanded && (
             <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
               <ApprovalList projectId={projectId} jobId={jobId} role={role} members={members} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Links accordion */}
+      {hasAddon('JOB_LINKS') && (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setLinksExpanded((v) => !v)}
+            className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+          >
+            <span>Links</span>
+            <span className="text-gray-400 dark:text-gray-500">{linksExpanded ? '▲' : '▼'}</span>
+          </button>
+          {linksExpanded && (
+            <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
+              <LinksSection
+                projectId={projectId}
+                jobId={jobId}
+                links={job.links}
+                members={members}
+                canManage={isOwnerOrAdmin}
+                projectCompleted={isProjectCompleted}
+              />
             </div>
           )}
         </div>
