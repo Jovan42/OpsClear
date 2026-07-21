@@ -23,7 +23,7 @@ public class JobLinkRepository {
     private final DSLContext dsl;
 
     private static Instant toInstant(OffsetDateTime odt) {
-        return odt != null ? odt.toInstant() : null;
+        return odt.toInstant();
     }
 
     public JobLinkModel save(JobLinkModel link) {

@@ -72,6 +72,7 @@ class JobLinkIntegrationTest {
 
     private UUID ownerId;
     private UUID memberId;
+    private UUID outsiderId;
     private UUID projectId;
     private UUID orgId;
     private JobModel job;
@@ -93,17 +94,20 @@ class JobLinkIntegrationTest {
         organisationRepository.deleteAll();
         userRepository.deleteAll();
 
-        ownerId  = UUID.randomUUID();
+        ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();
+        outsiderId = UUID.randomUUID();
 
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
 
         OrganisationModel org = organisationRepository.save(
                 OrganisationModel.builder().name("Test Org").slug("TST").createdBy(ownerId).build());
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, outsiderId, OrganisationRole.OWNER);
 
         ProjectModel project = projectRepository.save(
                 ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
@@ -180,6 +184,19 @@ class JobLinkIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should return 403 when requester belongs to the org but not the project")
+    void create_shouldReturn403_whenOrgMemberNotProjectMember() throws Exception {
+        mockMvc.perform(post(ApiPaths.jobLinks(projectId, job.getId()))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://example.com"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You are not a member of this project"));
+    }
+
+    @Test
     @DisplayName("Should return 404 when job does not exist")
     void create_shouldReturn404_whenJobNotFound() throws Exception {
         mockMvc.perform(post(ApiPaths.jobLinks(projectId, UUID.randomUUID()))
@@ -189,6 +206,72 @@ class JobLinkIntegrationTest {
                                 {"url": "https://example.com"}
                                 """))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when project does not exist")
+    void create_shouldReturn404_whenProjectNotFound() throws Exception {
+        mockMvc.perform(post(ApiPaths.jobLinks(UUID.randomUUID(), job.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://example.com"}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when job belongs to a different project")
+    void create_shouldReturn404_whenJobBelongsToDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).organisationId(orgId).build());
+        JobModel otherJob = jobRepository.save(JobModel.builder()
+                .projectId(otherProject.getId()).title("Other job").status(JobStatus.NEW).createdBy(ownerId).build());
+
+        mockMvc.perform(post(ApiPaths.jobLinks(projectId, otherJob.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://example.com"}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when URL has no scheme")
+    void create_shouldReturn400_whenSchemeMissing() throws Exception {
+        mockMvc.perform(post(ApiPaths.jobLinks(projectId, job.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "not-a-url"}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when URL is malformed")
+    void create_shouldReturn400_whenUrlMalformed() throws Exception {
+        mockMvc.perform(post(ApiPaths.jobLinks(projectId, job.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "http://exa mple.com"}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should create a job link with a null label")
+    void create_shouldReturn201_withNullLabel() throws Exception {
+        mockMvc.perform(post(ApiPaths.jobLinks(projectId, job.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://example.com"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.label").doesNotExist());
     }
 
     // --- PUT /api/projects/{projectId}/jobs/{jobId}/links/{linkId} ---
@@ -221,6 +304,36 @@ class JobLinkIntegrationTest {
                                 {"url": "https://new.example.com"}
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when requester belongs to the org but not the project on update")
+    void update_shouldReturn403_whenOrgMemberNotProjectMember() throws Exception {
+        JobLinkModel link = createLink("https://old.example.com", "Old");
+
+        mockMvc.perform(put(ApiPaths.jobLink(projectId, job.getId(), link.getId()))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://new.example.com"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You are not a member of this project"));
+    }
+
+    @Test
+    @DisplayName("Should update a job link with a null label")
+    void update_shouldReturn200_withNullLabel() throws Exception {
+        JobLinkModel link = createLink("https://old.example.com", "Old");
+
+        mockMvc.perform(put(ApiPaths.jobLink(projectId, job.getId(), link.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://new.example.com"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.label").doesNotExist());
     }
 
     @Test

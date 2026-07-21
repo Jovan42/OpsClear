@@ -70,6 +70,7 @@ class ProjectLinkIntegrationTest {
 
     private UUID ownerId;
     private UUID memberId;
+    private UUID outsiderId;
     private UUID projectId;
     private UUID orgId;
 
@@ -90,17 +91,20 @@ class ProjectLinkIntegrationTest {
         organisationRepository.deleteAll();
         userRepository.deleteAll();
 
-        ownerId  = UUID.randomUUID();
+        ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();
+        outsiderId = UUID.randomUUID();
 
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
 
         OrganisationModel org = organisationRepository.save(
                 OrganisationModel.builder().name("Test Org").slug("TST").createdBy(ownerId).build());
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, outsiderId, OrganisationRole.OWNER);
 
         ProjectModel project = projectRepository.save(
                 ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
@@ -147,6 +151,44 @@ class ProjectLinkIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @DisplayName("Should return 403 when requester belongs to the org but not the project")
+    void create_shouldReturn403_whenOrgMemberNotProjectMember() throws Exception {
+        mockMvc.perform(post(ApiPaths.projectLinks(projectId))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://example.com"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You are not a member of this project"));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when project does not exist")
+    void create_shouldReturn404_whenProjectNotFound() throws Exception {
+        mockMvc.perform(post(ApiPaths.projectLinks(UUID.randomUUID()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://example.com"}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should create a project link with a null label")
+    void create_shouldReturn201_withNullLabel() throws Exception {
+        mockMvc.perform(post(ApiPaths.projectLinks(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://example.com"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.label").doesNotExist());
+    }
+
     // --- PUT /api/projects/{projectId}/links/{linkId} ---
 
     @Test
@@ -176,6 +218,36 @@ class ProjectLinkIntegrationTest {
                                 {"url": "https://new.example.com"}
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should return 403 when requester belongs to the org but not the project on update")
+    void update_shouldReturn403_whenOrgMemberNotProjectMember() throws Exception {
+        ProjectLinkModel link = createLink("https://old.example.com", "Old");
+
+        mockMvc.perform(put(ApiPaths.projectLink(projectId, link.getId()))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://new.example.com"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You are not a member of this project"));
+    }
+
+    @Test
+    @DisplayName("Should update a project link with a null label")
+    void update_shouldReturn200_withNullLabel() throws Exception {
+        ProjectLinkModel link = createLink("https://old.example.com", "Old");
+
+        mockMvc.perform(put(ApiPaths.projectLink(projectId, link.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"url": "https://new.example.com"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.label").doesNotExist());
     }
 
     // --- DELETE /api/projects/{projectId}/links/{linkId} ---

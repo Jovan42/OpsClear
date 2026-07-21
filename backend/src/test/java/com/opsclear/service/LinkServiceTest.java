@@ -123,6 +123,17 @@ class LinkServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw NotFoundException when job does not exist on createForJob")
+    void createForJob_shouldThrow_whenJobDoesNotExist() {
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(jobRepository.findByIdAndDeletedAtIsNull(job.getId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createForJob(projectId, job.getId(), "https://example.com", null, memberId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Job not found");
+    }
+
+    @Test
     @DisplayName("Should throw NotFoundException when job belongs to a different project on createForJob")
     void createForJob_shouldThrow_whenJobInDifferentProject() {
         JobModel foreignJob = JobModel.builder().id(UUID.randomUUID()).projectId(UUID.randomUUID())

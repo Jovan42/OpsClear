@@ -23,7 +23,7 @@ public class ProjectLinkRepository {
     private final DSLContext dsl;
 
     private static Instant toInstant(OffsetDateTime odt) {
-        return odt != null ? odt.toInstant() : null;
+        return odt.toInstant();
     }
 
     public ProjectLinkModel save(ProjectLinkModel link) {
