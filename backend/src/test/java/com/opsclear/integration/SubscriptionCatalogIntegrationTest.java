@@ -36,11 +36,11 @@ class SubscriptionCatalogIntegrationTest {
     }
 
     @Test
-    @DisplayName("getCatalog_shouldReturn9Addons")
-    void getCatalog_shouldReturn9Addons() throws Exception {
+    @DisplayName("getCatalog_shouldReturn10Addons")
+    void getCatalog_shouldReturn10Addons() throws Exception {
         mockMvc.perform(get(ApiPaths.SUBSCRIPTION_CATALOG))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.addons.length()").value(9));
+                .andExpect(jsonPath("$.addons.length()").value(10));
     }
 
     @Test
@@ -87,6 +87,15 @@ class SubscriptionCatalogIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.addons[8].key").value("RECURRING_SCHEDULING"))
                 .andExpect(jsonPath("$.addons[8].available").value(false));
+    }
+
+    @Test
+    @DisplayName("getCatalog_shouldMarkJobLinksAsUnavailable")
+    void getCatalog_shouldMarkJobLinksAsUnavailable() throws Exception {
+        mockMvc.perform(get(ApiPaths.SUBSCRIPTION_CATALOG))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.addons[9].key").value("JOB_LINKS"))
+                .andExpect(jsonPath("$.addons[9].available").value(false));
     }
 
     @Test

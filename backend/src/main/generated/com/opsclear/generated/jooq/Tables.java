@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.JobTemplates;
@@ -20,6 +21,7 @@ import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.OrganisationMembers;
 import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
+import com.opsclear.generated.jooq.tables.ProjectLinks;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
 import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.RecurringSchedules;
@@ -45,6 +47,11 @@ public class Tables {
      * The table <code>public.approvals</code>.
      */
     public static final Approvals APPROVALS = Approvals.APPROVALS;
+
+    /**
+     * External resource links attached to a job (ADR-0035)
+     */
+    public static final JobLinks JOB_LINKS = JobLinks.JOB_LINKS;
 
     /**
      * The table <code>public.job_relationships</code>.
@@ -116,6 +123,11 @@ public class Tables {
      * Per-project vocabulary of block reasons used in the UI dropdown
      */
     public static final ProjectBlockReasons PROJECT_BLOCK_REASONS = ProjectBlockReasons.PROJECT_BLOCK_REASONS;
+
+    /**
+     * External resource links attached to a project (ADR-0035)
+     */
+    public static final ProjectLinks PROJECT_LINKS = ProjectLinks.PROJECT_LINKS;
 
     /**
      * Project membership — links users to projects with a role
