@@ -43,7 +43,7 @@ compose exec -T keycloak /opt/keycloak/bin/kcadm.sh update realms/opsclear \
   -s displayName=OpsClear \
   -s loginTheme=opsclear \
   -s internationalizationEnabled=true \
-  -s 'supportedLocales=["en"]' \
+  -s 'supportedLocales=["en","sr"]' \
   -s defaultLocale=en
 
-echo "Realm 'opsclear' updated: displayName=OpsClear, loginTheme=opsclear, internationalizationEnabled=true, supportedLocales=[en]"
+echo "Realm 'opsclear' updated: displayName=OpsClear, loginTheme=opsclear, internationalizationEnabled=true, supportedLocales=[en,sr]"
