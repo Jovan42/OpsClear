@@ -1,1 +1,44 @@
-{}
+{
+  "errorPage": {
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred.",
+    "reloadPage": "Reload page"
+  },
+  "pageError": {
+    "tryAgain": "Try again"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "status": {
+    "new": "New",
+    "inProgress": "In Progress",
+    "blocked": "Blocked",
+    "completed": "Completed"
+  },
+  "role": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "projectNav": {
+    "links": "Links"
+  },
+  "upgrade": {
+    "inOrgSettings": "Upgrade in org settings"
+  },
+  "subscriptionWall": {
+    "setupTitle": "Set up your subscription",
+    "setupDescription": "Choose a plan and the add-ons your team needs to get started.",
+    "requiredTitle": "Subscription required",
+    "contactOwner": "Contact <b>{{name}}</b> to set up a subscription for <b>{{org}}</b>.",
+    "askOwner": "Ask your organisation owner to set up a subscription for <b>{{org}}</b>."
+  },
+  "upgradeCard": {
+    "notIncluded": "{{featureName}} is not included in your plan",
+    "description": "Add this feature to your subscription to unlock it for your team."
+  }
+}

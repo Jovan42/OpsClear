@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
@@ -18,10 +19,11 @@ import type { OrgMemberResponse, OrgRole } from '../../types';
 const ASSIGNABLE_ROLES: OrgRole[] = ['MEMBER', 'ADMIN'];
 
 export default function OrgMembersPage() {
+  const { t } = useTranslation(['org', 'common']);
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { org } = useCurrentOrg();
-  usePageTitle('Organisation members');
+  usePageTitle(t('org:membersPageTitle'));
 
   const { data: members = [], isLoading } = useOrgMembers(org?.id ?? null);
   const { mutate: updateRole } = useUpdateOrgMemberRole(org?.id ?? '');
@@ -44,12 +46,12 @@ export default function OrgMembersPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          No organisation found.{' '}
+          {t('org:noOrgFound')}{' '}
           <button
             onClick={() => navigate('/org/new')}
             className="text-blue-600 dark:text-blue-400 hover:underline"
           >
-            Create one
+            {t('org:createOne')}
           </button>
         </p>
       </div>
@@ -77,13 +79,13 @@ export default function OrgMembersPage() {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Members
+          {t('org:membersHeading')}
         </h1>
         <button
           onClick={() => navigate('/org/settings')}
           className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
         >
-          ← Organisation settings
+          {t('org:backToOrgSettings')}
         </button>
       </div>
 
@@ -96,10 +98,10 @@ export default function OrgMembersPage() {
           <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
             <tr>
               <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-                Member
+                {t('org:colMember')}
               </th>
               <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-                Role
+                {t('org:colRole')}
               </th>
               {isOwnerOrAdmin && <th className="px-4 py-2.5" />}
             </tr>
@@ -131,7 +133,7 @@ export default function OrgMembersPage() {
                       >
                         {ASSIGNABLE_ROLES.map((r) => (
                           <option key={r} value={r}>
-                            {r.charAt(0) + r.slice(1).toLowerCase()}
+                            {t(`org:roles.${r}`)}
                           </option>
                         ))}
                       </select>
@@ -146,7 +148,7 @@ export default function OrgMembersPage() {
                           onClick={() => setConfirmTarget(member)}
                           className="text-xs text-red-500 hover:text-red-700 transition-colors cursor-pointer"
                         >
-                          Remove
+                          {t('common:remove')}
                         </button>
                       )}
                     </td>
@@ -161,21 +163,22 @@ export default function OrgMembersPage() {
       <Modal
         open={!!confirmTarget}
         onClose={() => setConfirmTarget(null)}
-        title="Remove member?"
+        title={t('org:removeMemberTitle')}
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            Remove{' '}
-            <span className="font-semibold">{confirmTarget?.userName}</span> from{' '}
-            <span className="font-semibold">{org.name}</span>? Their project memberships
-            will not be affected.
+            {t('org:removeMemberMessagePrefix')}{' '}
+            <span className="font-semibold">{confirmTarget?.userName}</span>{' '}
+            {t('org:removeMemberMessageMiddle')}{' '}
+            <span className="font-semibold">{org.name}</span>
+            {t('org:removeMemberMessageSuffix')}
           </p>
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setConfirmTarget(null)}>
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button variant="danger" loading={removing} onClick={handleRemoveConfirm}>
-              Remove
+              {t('common:remove')}
             </Button>
           </div>
         </div>

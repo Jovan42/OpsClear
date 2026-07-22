@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from './Button';
 import ConfirmModal from './ConfirmModal';
 import LinkIcon from './LinkIcon';
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export default function ProjectLinksDropdown({ projectId, links, canManage, onClose, className }: Props) {
+  const { t } = useTranslation(['shared1', 'common']);
   const ref = useRef<HTMLDivElement>(null);
   const { mutate: createLink, isPending: isCreating } = useCreateProjectLink(projectId);
   const { mutate: updateLink, isPending: isUpdating } = useUpdateProjectLink(projectId);
@@ -92,23 +94,23 @@ export default function ProjectLinksDropdown({ projectId, links, canManage, onCl
       ref={ref}
       className={className ?? 'absolute right-0 mt-2 w-80 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 p-3 space-y-2'}
     >
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">Project Links</p>
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">{t('shared1:projectLinks')}</p>
 
       {links.length === 0 && !adding && (
-        <p className="text-sm text-gray-400 dark:text-gray-500 px-1 py-1">No links yet.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 px-1 py-1">{t('shared1:noLinksYet')}</p>
       )}
 
       {links.map((link) =>
         editingId === link.id ? (
           <div key={link.id} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-            <input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="https://…" className={inputClass} />
-            <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="Label" className={inputClass} />
+            <input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder={t('shared1:urlPlaceholder')} className={inputClass} />
+            <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder={t('shared1:labelPlaceholder')} className={inputClass} />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleSaveEdit} loading={isUpdating} disabled={!editUrl.trim()}>
-                Save
+                {t('common:save')}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>
-                Cancel
+                {t('common:cancel')}
               </Button>
             </div>
           </div>
@@ -128,7 +130,7 @@ export default function ProjectLinksDropdown({ projectId, links, canManage, onCl
                 <button
                   onClick={() => startEdit(link)}
                   className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
-                  title="Edit link"
+                  title={t('shared1:editLinkTitle')}
                 >
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 20h9" />
@@ -138,7 +140,7 @@ export default function ProjectLinksDropdown({ projectId, links, canManage, onCl
                 <button
                   onClick={() => setDeleteTarget(link)}
                   className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none cursor-pointer"
-                  title="Delete link"
+                  title={t('shared1:deleteLinkTitle')}
                 >
                   ×
                 </button>
@@ -150,14 +152,14 @@ export default function ProjectLinksDropdown({ projectId, links, canManage, onCl
 
       {adding ? (
         <div className="flex flex-col gap-2 mt-1">
-          <input value={url} onChange={(e) => handleUrlChange(e.target.value)} placeholder="https://…" className={inputClass} />
-          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional)" className={inputClass} />
+          <input value={url} onChange={(e) => handleUrlChange(e.target.value)} placeholder={t('shared1:urlPlaceholder')} className={inputClass} />
+          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t('shared1:labelOptionalPlaceholder')} className={inputClass} />
           <div className="flex gap-2">
             <Button size="sm" onClick={handleAdd} loading={isCreating} disabled={!url.trim()}>
-              Save
+              {t('common:save')}
             </Button>
             <Button size="sm" variant="secondary" onClick={resetAddForm}>
-              Cancel
+              {t('common:cancel')}
             </Button>
           </div>
         </div>
@@ -166,7 +168,7 @@ export default function ProjectLinksDropdown({ projectId, links, canManage, onCl
           onClick={() => setAdding(true)}
           className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer px-1 mt-1"
         >
-          + Add link
+          {t('shared1:addLink')}
         </button>
       )}
 
@@ -174,9 +176,9 @@ export default function ProjectLinksDropdown({ projectId, links, canManage, onCl
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Link"
-        message={`Remove "${deleteTarget?.label || deleteTarget?.url}"?`}
-        confirmLabel="Delete"
+        title={t('shared1:deleteLinkModalTitle')}
+        message={t('shared1:removeLinkConfirm', { name: deleteTarget?.label || deleteTarget?.url })}
+        confirmLabel={t('common:delete')}
         variant="danger"
         isPending={isDeleting}
       />

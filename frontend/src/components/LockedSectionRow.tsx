@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   sections: string[];
@@ -6,6 +7,7 @@ interface Props {
 
 export default function LockedSectionRow({ sections }: Props) {
   const navigate = useNavigate();
+  const { t } = useTranslation('shared2');
   if (sections.length === 0) return null;
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-3.5 flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
@@ -29,7 +31,7 @@ export default function LockedSectionRow({ sections }: Props) {
         onClick={() => navigate('/org/settings')}
         className="shrink-0 text-brand hover:underline cursor-pointer font-medium whitespace-nowrap"
       >
-        Upgrade in org settings
+        {t('upgrade.inOrgSettings')}
       </button>
     </div>
   );

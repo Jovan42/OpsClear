@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
@@ -40,6 +41,7 @@ function formatDate(dateStr: string | null) {
 }
 
 export default function JobDetailPage() {
+  const { t } = useTranslation(['jobsPages', 'common']);
   const { projectFriendlyId: projectId = '', jobFriendlyId: jobId = '' } = useParams();
   const navigate = useNavigate();
   const { userId } = useAuth();
@@ -73,11 +75,11 @@ export default function JobDetailPage() {
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
 
   const lockedSections = [
-    !hasAddon('NOTES') && 'Notes',
-    !hasAddon('APPROVALS') && 'Approvals',
-    !hasAddon('JOB_STATUS_HISTORY') && 'Job History',
-    !hasAddon('JOB_RELATIONSHIPS') && 'Relationships',
-    !hasAddon('JOB_LINKS') && 'Links',
+    !hasAddon('NOTES') && t('jobDetailPage.notesSection'),
+    !hasAddon('APPROVALS') && t('jobDetailPage.approvalsSection'),
+    !hasAddon('JOB_STATUS_HISTORY') && t('jobDetailPage.jobHistorySection'),
+    !hasAddon('JOB_RELATIONSHIPS') && t('jobDetailPage.relationshipsSection'),
+    !hasAddon('JOB_LINKS') && t('jobDetailPage.linksSection'),
   ].filter((s): s is string => Boolean(s));
 
   function handleStatusChange(status: JobStatus) {
@@ -119,7 +121,7 @@ export default function JobDetailPage() {
   }
 
   if (isError || !job) {
-    return <PageError message="Failed to load job." onRetry={() => void refetch()} />;
+    return <PageError message={t('jobDetailPage.failedToLoad')} onRetry={() => void refetch()} />;
   }
 
   return (
@@ -131,7 +133,7 @@ export default function JobDetailPage() {
             to={`/projects/${projectId}/jobs`}
             className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
           >
-            Jobs
+            {t('jobDetailPage.jobsBreadcrumb')}
           </Link>
           <span>/</span>
           <span className="text-gray-700 dark:text-gray-200 truncate">{job.title}</span>
@@ -149,7 +151,7 @@ export default function JobDetailPage() {
                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Created by schedule{' '}
+                {t('jobDetailPage.createdBySchedule')}{' '}
                 <Link
                   to={`/projects/${projectId}/schedules`}
                   className="font-medium text-[var(--brand)] hover:underline"
@@ -163,7 +165,7 @@ export default function JobDetailPage() {
           <div className="flex items-center gap-2 shrink-0">
             {isOwnerOrAdmin && (
               <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)} disabled={isProjectCompleted}>
-                Edit
+                {t('jobDetailPage.editButton')}
               </Button>
             )}
             {isOwnerOrAdmin && (
@@ -185,7 +187,7 @@ export default function JobDetailPage() {
                         onClick={() => { setKebabOpen(false); setDeleteOpen(true); }}
                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
                       >
-                        Delete Job
+                        {t('jobDetailPage.deleteJobButton')}
                       </button>
                     </div>
                   </>
@@ -203,15 +205,15 @@ export default function JobDetailPage() {
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-4 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div>
-            <span className="text-gray-500 dark:text-gray-400">Client</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('clientLabel')}</span>
             <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">{job.client ?? '—'}</p>
           </div>
           <div>
-            <span className="text-gray-500 dark:text-gray-400">Assigned to</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('assignedToLabel')}</span>
             <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">{job.assignedToName ?? '—'}</p>
           </div>
           <div>
-            <span className="text-gray-500 dark:text-gray-400">Deadline</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('deadlineLabel')}</span>
             {(() => {
               const d = formatDeadline(job.deadline, job.status);
               return (
@@ -222,14 +224,14 @@ export default function JobDetailPage() {
             })()}
           </div>
           <div>
-            <span className="text-gray-500 dark:text-gray-400">Created</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('jobDetailPage.createdLabel')}</span>
             <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">{formatDate(job.createdAt)}</p>
           </div>
         </div>
 
         {job.description && (
           <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Description</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('descriptionLabel')}</p>
             <Markdown className="text-sm text-gray-700 dark:text-gray-300">{job.description}</Markdown>
           </div>
         )}
@@ -268,7 +270,7 @@ export default function JobDetailPage() {
             onClick={() => setNotesExpanded((v) => !v)}
             className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
           >
-            <span>Notes</span>
+            <span>{t('jobDetailPage.notesSection')}</span>
             <span className="text-gray-400 dark:text-gray-500">{notesExpanded ? '▲' : '▼'}</span>
           </button>
           {notesExpanded && (
@@ -290,10 +292,10 @@ export default function JobDetailPage() {
             className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
           >
             <div className="flex items-center gap-2">
-              <span>Approvals</span>
+              <span>{t('jobDetailPage.approvalsSection')}</span>
               {pendingCount > 0 && (
                 <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-medium px-1.5 py-0.5 rounded-full">
-                  {pendingCount} pending
+                  {t('jobDetailPage.pendingCount', { count: pendingCount })}
                 </span>
               )}
             </div>
@@ -314,7 +316,7 @@ export default function JobDetailPage() {
             onClick={() => setLinksExpanded((v) => !v)}
             className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
           >
-            <span>Links</span>
+            <span>{t('jobDetailPage.linksSection')}</span>
             <span className="text-gray-400 dark:text-gray-500">{linksExpanded ? '▲' : '▼'}</span>
           </button>
           {linksExpanded && (
@@ -363,9 +365,9 @@ export default function JobDetailPage() {
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Job"
-        message={`Delete "${job.title}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('jobDetailPage.deleteJobButton')}
+        message={t('jobDetailPage.deleteJobConfirmMessage', { title: job.title })}
+        confirmLabel={t('common:delete')}
         variant="danger"
         isPending={isDeleting}
       />

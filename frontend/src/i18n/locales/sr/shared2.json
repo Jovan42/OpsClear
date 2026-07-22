@@ -1,1 +1,44 @@
-{}
+{
+  "errorPage": {
+    "somethingWentWrong": "Nešto je pošlo naopako",
+    "unexpectedError": "Došlo je do neočekivane greške.",
+    "reloadPage": "Osveži stranicu"
+  },
+  "pageError": {
+    "tryAgain": "Pokušaj ponovo"
+  },
+  "priority": {
+    "low": "Nizak",
+    "medium": "Srednji",
+    "high": "Visok",
+    "critical": "Kritičan"
+  },
+  "status": {
+    "new": "Novo",
+    "inProgress": "U toku",
+    "blocked": "Blokirano",
+    "completed": "Završeno"
+  },
+  "role": {
+    "owner": "Vlasnik",
+    "admin": "Administrator",
+    "member": "Član"
+  },
+  "projectNav": {
+    "links": "Linkovi"
+  },
+  "upgrade": {
+    "inOrgSettings": "Nadogradi u podešavanjima organizacije"
+  },
+  "subscriptionWall": {
+    "setupTitle": "Podesite vašu pretplatu",
+    "setupDescription": "Izaberite plan i dodatke koji su potrebni vašem timu da počne sa radom.",
+    "requiredTitle": "Potrebna je pretplata",
+    "contactOwner": "Kontaktirajte <b>{{name}}</b> da podesi pretplatu za <b>{{org}}</b>.",
+    "askOwner": "Zamolite vlasnika organizacije da podesi pretplatu za <b>{{org}}</b>."
+  },
+  "upgradeCard": {
+    "notIncluded": "{{featureName}} nije uključeno u vaš plan",
+    "description": "Dodajte ovu funkciju vašoj pretplati da je otključate za vaš tim."
+  }
+}

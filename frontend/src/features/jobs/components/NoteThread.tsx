@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../../../components/Button';
 import ConfirmModal from '../../../components/ConfirmModal';
 import Markdown from '../../../components/Markdown';
 import MarkdownEditor from '../../../components/MarkdownEditor';
 import { useNotes, useAddNote } from '../useNotes';
 import type { ProjectMemberResponse } from '../../../types';
+import type { TFunction } from 'i18next';
 
 const NOTE_MAX = 10000;
 const SESSION_KEY = 'note_immutability_confirmed';
@@ -19,8 +21,8 @@ function formatDateTime(dateStr: string) {
   });
 }
 
-function memberName(members: ProjectMemberResponse[], userId: string): string {
-  return members.find((m) => m.userId === userId)?.userName ?? 'Unknown user';
+function memberName(members: ProjectMemberResponse[], userId: string, t: TFunction): string {
+  return members.find((m) => m.userId === userId)?.userName ?? t('jobsComponents:unknownUser');
 }
 
 interface Props {
@@ -31,6 +33,7 @@ interface Props {
 }
 
 export default function NoteThread({ projectId, jobId, members, projectCompleted }: Props) {
+  const { t } = useTranslation('jobsComponents');
   const { data: notes = [] } = useNotes(projectId, jobId);
   const { mutate: addNote, isPending } = useAddNote(projectId, jobId);
   const [content, setContent] = useState('');
@@ -60,14 +63,14 @@ export default function NoteThread({ projectId, jobId, members, projectCompleted
   return (
     <div className="space-y-3">
       {notes.length === 0 && (
-        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">No notes yet.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{t('jobsComponents:noteThread.noNotes')}</p>
       )}
 
       {notes.map((note) => (
         <div key={note.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-3">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {memberName(members, note.authorId)}
+              {memberName(members, note.authorId, t)}
             </span>
             <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateTime(note.createdAt)}</span>
           </div>
@@ -81,7 +84,7 @@ export default function NoteThread({ projectId, jobId, members, projectCompleted
             <MarkdownEditor
               value={content}
               onChange={setContent}
-              placeholder="Add a note… (markdown supported)"
+              placeholder={t('jobsComponents:noteThread.placeholder')}
               rows={4}
             />
           </div>
@@ -96,7 +99,7 @@ export default function NoteThread({ projectId, jobId, members, projectCompleted
               disabled={isEmpty || isOverLimit}
               loading={isPending}
             >
-              Add Note
+              {t('jobsComponents:noteThread.addNote')}
             </Button>
           </div>
         </>
@@ -106,9 +109,9 @@ export default function NoteThread({ projectId, jobId, members, projectCompleted
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleConfirmNote}
-        title="Add Note"
-        message="Notes cannot be edited or deleted. Add anyway?"
-        confirmLabel="Add Note"
+        title={t('jobsComponents:noteThread.addNote')}
+        message={t('jobsComponents:noteThread.confirmMessage')}
+        confirmLabel={t('jobsComponents:noteThread.addNote')}
         isPending={isPending}
       />
     </div>

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Button from '../../../components/Button';
 import ConfirmModal from '../../../components/ConfirmModal';
 import LinkIcon from '../../../components/LinkIcon';
@@ -10,8 +12,8 @@ const inputClass =
   'flex-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 ' +
   'text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]';
 
-function memberName(members: ProjectMemberResponse[], userId: string): string {
-  return members.find((m) => m.userId === userId)?.userName ?? 'Unknown user';
+function memberName(members: ProjectMemberResponse[], userId: string, t: TFunction): string {
+  return members.find((m) => m.userId === userId)?.userName ?? t('jobsComponents:unknownUser');
 }
 
 interface Props {
@@ -24,6 +26,7 @@ interface Props {
 }
 
 export default function LinksSection({ projectId, jobId, links, members, canManage, projectCompleted }: Props) {
+  const { t } = useTranslation(['jobsComponents', 'common']);
   const { mutate: createLink, isPending: isCreating } = useCreateJobLink(projectId, jobId);
   const { mutate: updateLink, isPending: isUpdating } = useUpdateJobLink(projectId, jobId);
   const { mutate: deleteLink, isPending: isDeleting } = useDeleteJobLink(projectId, jobId);
@@ -84,7 +87,7 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
   return (
     <div className="space-y-2">
       {links.length === 0 && !adding && (
-        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">No links yet.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{t('jobsComponents:linksSection.noLinks')}</p>
       )}
 
       {links.map((link) =>
@@ -93,21 +96,21 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
             <input
               value={editUrl}
               onChange={(e) => setEditUrl(e.target.value)}
-              placeholder="https://…"
+              placeholder={t('jobsComponents:linksSection.urlPlaceholder')}
               className={inputClass}
             />
             <input
               value={editLabel}
               onChange={(e) => setEditLabel(e.target.value)}
-              placeholder="Label"
+              placeholder={t('jobsComponents:linksSection.labelPlaceholder')}
               className={`${inputClass} sm:w-40 sm:flex-none`}
             />
             <div className="flex gap-2 shrink-0">
               <Button size="sm" onClick={handleSaveEdit} loading={isUpdating} disabled={!editUrl.trim()}>
-                Save
+                {t('common:save')}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>
-                Cancel
+                {t('common:cancel')}
               </Button>
             </div>
           </div>
@@ -125,14 +128,14 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
                 {link.label || link.url}
               </a>
               <span className="text-xs text-gray-400 dark:text-gray-500">
-                Added by {memberName(members, link.createdBy)}
+                {t('jobsComponents:linksSection.addedBy', { name: memberName(members, link.createdBy, t) })}
               </span>
             </div>
 
             <button
               onClick={() => handleCopy(link)}
               className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
-              title={copiedId === link.id ? 'Copied!' : 'Copy URL'}
+              title={copiedId === link.id ? t('jobsComponents:linksSection.copied') : t('jobsComponents:linksSection.copyUrl')}
             >
               {copiedId === link.id ? (
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -151,7 +154,7 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
                 <button
                   onClick={() => startEdit(link)}
                   className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
-                  title="Edit link"
+                  title={t('jobsComponents:linksSection.editLink')}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 20h9" />
@@ -161,7 +164,7 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
                 <button
                   onClick={() => setDeleteTarget(link)}
                   className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none cursor-pointer"
-                  title="Delete link"
+                  title={t('jobsComponents:linksSection.deleteLink')}
                 >
                   ×
                 </button>
@@ -177,21 +180,21 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
             <input
               value={url}
               onChange={(e) => handleUrlChange(e.target.value)}
-              placeholder="https://…"
+              placeholder={t('jobsComponents:linksSection.urlPlaceholder')}
               className={inputClass}
             />
             <input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Label (optional)"
+              placeholder={t('jobsComponents:linksSection.labelOptionalPlaceholder')}
               className={`${inputClass} sm:w-40 sm:flex-none`}
             />
             <div className="flex gap-2 shrink-0">
               <Button size="sm" onClick={handleAdd} loading={isCreating} disabled={!url.trim()}>
-                Save
+                {t('common:save')}
               </Button>
               <Button size="sm" variant="secondary" onClick={resetAddForm}>
-                Cancel
+                {t('common:cancel')}
               </Button>
             </div>
           </div>
@@ -200,7 +203,7 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
             onClick={() => setAdding(true)}
             className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer mt-2"
           >
-            + Add link
+            {t('jobsComponents:linksSection.addLink')}
           </button>
         ))}
 
@@ -208,9 +211,9 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Link"
-        message={`Remove "${deleteTarget?.label || deleteTarget?.url}"?`}
-        confirmLabel="Delete"
+        title={t('jobsComponents:linksSection.deleteModal.title')}
+        message={t('jobsComponents:linksSection.deleteModal.message', { name: deleteTarget?.label || deleteTarget?.url })}
+        confirmLabel={t('common:delete')}
         variant="danger"
         isPending={isDeleting}
       />

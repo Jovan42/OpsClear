@@ -1,1 +1,272 @@
-{}
+{
+  "settings": {
+    "pageTitle": "Settings",
+    "appearance": {
+      "heading": "Appearance",
+      "theme": {
+        "label": "Theme",
+        "description": "Choose how OpsClear looks on this device.",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      },
+      "language": {
+        "label": "Language",
+        "description": "Choose the language used across OpsClear."
+      },
+      "deadlineFormat": {
+        "label": "Deadline format",
+        "description": "How deadlines are displayed across the app.",
+        "absolute": "Absolute",
+        "relative": "Relative"
+      }
+    },
+    "jobList": {
+      "heading": "Job list",
+      "defaultViewMode": {
+        "label": "Default view mode",
+        "description": "How jobs are grouped when you open a project.",
+        "grouped": "Grouped",
+        "flat": "Flat"
+      },
+      "milestoneAccordion": {
+        "label": "Milestone accordion",
+        "description": "Whether milestone groups start expanded or collapsed.",
+        "expanded": "Expanded",
+        "collapsed": "Collapsed"
+      },
+      "defaultStatusTab": {
+        "label": "Default status tab",
+        "description": "Which tab is selected when you open the job list.",
+        "all": "All",
+        "new": "New",
+        "inProgress": "In Progress",
+        "blocked": "Blocked",
+        "completed": "Completed"
+      },
+      "hideCompleted": {
+        "label": "Completed jobs in All tab",
+        "description": "Whether completed jobs appear when the All tab is active."
+      },
+      "defaultSortOrder": {
+        "label": "Default sort order",
+        "description": "How jobs are sorted when you open the job list.",
+        "deadlineAsc": "Deadline ↑",
+        "deadlineDesc": "Deadline ↓",
+        "priority": "Priority",
+        "newestFirst": "Newest first"
+      }
+    },
+    "dashboardSection": {
+      "heading": "Dashboard",
+      "blockedSection": {
+        "label": "Blocked jobs section",
+        "description": "Show or hide the blocked jobs list on the dashboard."
+      },
+      "overdueSection": {
+        "label": "Overdue jobs section",
+        "description": "Show or hide the overdue jobs list on the dashboard."
+      },
+      "pendingApprovalsSection": {
+        "label": "Pending approvals section",
+        "description": "Show or hide the pending approvals list on the dashboard."
+      }
+    },
+    "showHide": {
+      "show": "Show",
+      "hide": "Hide"
+    },
+    "navigation": {
+      "heading": "Navigation",
+      "defaultProjectPage": {
+        "label": "Default project page",
+        "description": "Which page opens when you navigate to a project.",
+        "dashboard": "Dashboard",
+        "jobs": "Jobs",
+        "approvals": "Approvals"
+      }
+    },
+    "milestonesSection": {
+      "heading": "Milestones",
+      "progressFormat": {
+        "label": "Progress format",
+        "description": "How milestone progress is displayed (e.g. 4/6 or 67%).",
+        "fraction": "Fraction",
+        "percentage": "Percentage"
+      }
+    },
+    "apiKeysFeatureName": "API Keys"
+  },
+  "apiKeySection": {
+    "heading": "API Keys",
+    "newKeyButton": "+ New API Key",
+    "unusedWarning": "⚠ Unused 90+ days",
+    "created": "Created {{date}}",
+    "lastUsed": "Last used {{date}}",
+    "neverUsed": "Never used",
+    "revoke": "Revoke",
+    "emptyState": "No active API keys. Create one to authenticate scripts and tools.",
+    "revokeModal": {
+      "title": "Revoke API Key",
+      "message": "Revoke \"{{name}}\"? Any scripts using this key will stop working immediately."
+    }
+  },
+  "newApiKeyModal": {
+    "title": "New API Key",
+    "copyWarning": "Copy your key now — it will not be shown again.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "done": "I've copied it, close",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. deploy script, monitoring",
+    "createError": "Failed to create key. Please try again."
+  },
+  "approvals": {
+    "pageTitle": "Approvals",
+    "unknownUser": "Unknown user",
+    "requestedBy": "Requested by {{name}} · {{date}}",
+    "reject": "Reject",
+    "approve": "Approve",
+    "loadError": "Failed to load approvals.",
+    "pendingBadge": "{{count}} pending",
+    "emptyState": "All caught up — no pending approvals.",
+    "jobLink": "→ Job"
+  },
+  "dashboard": {
+    "pageTitle": "Dashboard",
+    "featureName": "Dashboard",
+    "today": "today",
+    "oneDayAgo": "1 day ago",
+    "daysAgo": "{{count}} days ago",
+    "statusDistribution": "Status distribution",
+    "summaryHeading": "Summary",
+    "statusLabels": {
+      "new": "New",
+      "inProgress": "In Progress",
+      "blocked": "Blocked",
+      "completed": "Completed",
+      "overdue": "Overdue",
+      "pendingApprovals": "Pending approvals"
+    },
+    "unassigned": "Unassigned",
+    "blockedSuffix": "· blocked {{time}}",
+    "dueSuffix": "· due {{time}}",
+    "completedBanner": "This project is completed. It is now read-only.",
+    "loadError": "Failed to load dashboard.",
+    "sections": {
+      "blocked": "Blocked",
+      "overdue": "Overdue",
+      "pendingApprovals": "Pending Approvals"
+    },
+    "viewAll": "→ View all",
+    "allClear": "All clear — no blocked, overdue, or pending items.",
+    "noJobs": "No jobs yet.",
+    "createFirstJob": "Create the first job →"
+  },
+  "landing": {
+    "logIn": "Log in",
+    "hero": {
+      "headlineLine1": "What's actually happening",
+      "headlineLine2": "with your work today?",
+      "subtitle": "One screen tells you where every job stands, who's blocked, and what needs your attention today. No status calls, no chasing updates. Just clarity.",
+      "getStarted": "Get started"
+    },
+    "problem": {
+      "heading": "The status call is stealing your day",
+      "body": "Every day, owners and managers spend hours chasing updates. Who's blocked? What's late? When will it be done? The answer is buried in messages, calls, and memory — not somewhere you can actually see it.",
+      "footer": "Built for SME owners and operations managers who need the truth about their work, not another meeting."
+    },
+    "cta": {
+      "heading": "Ready to get clarity?",
+      "subtitle": "Start now. No credit card required.",
+      "button": "Start now"
+    }
+  },
+  "productPricing": {
+    "addonTaglines": {
+      "DASHBOARD": "Single-screen ops overview",
+      "APPROVALS": "Sign-off workflows with logged decisions",
+      "NOTES": "Immutable audit trail on any job",
+      "JOB_STATUS_HISTORY": "Full chronological status log",
+      "MILESTONES": "Group jobs into phases (max 5 per project)",
+      "JOB_RELATIONSHIPS": "Blocks / depends on / related to links",
+      "API_KEYS": "Programmatic access & integrations",
+      "JOB_TEMPLATES": "Reusable job presets",
+      "RECURRING_SCHEDULING": "Auto-create jobs on a schedule (requires Templates)"
+    },
+    "heading": "See what's included. Know what it costs.",
+    "subheading": "Start with the base plan and add only what your team needs.",
+    "seeAllFeatures": "See all features in detail",
+    "basePlanLabel": "Base plan",
+    "teamMembersLabel": "Team members",
+    "upTo": "Up to {{count}}",
+    "activeProjectsLabel": "Active projects",
+    "unlimited": "Unlimited",
+    "basePriceLabel": "Base price",
+    "perMonth": "{{amount}} {{currency}}/mo",
+    "addonsHeading": "Add-ons — click to include",
+    "comingSoon": "Soon",
+    "annualBillingLabel": "Annual billing",
+    "saveAnnual": "Save {{amount}} {{currency}}/yr compared to monthly billing.",
+    "monthlyTotalAnnual": "Monthly total (annual)",
+    "monthlyTotal": "Monthly total",
+    "perMonthSuffix": "{{currency}}/mo"
+  },
+  "featuresPage": {
+    "pageHeading": "Everything OpsClear can do",
+    "backToHome": "← Back to home",
+    "noPreview": "No preview yet",
+    "noCreditCard": "No credit card required.",
+    "badges": {
+      "base": "Included",
+      "addon": "Add-on",
+      "comingSoon": "Coming soon"
+    },
+    "cards": {
+      "job-tracking": {
+        "name": "Job tracking",
+        "description": "See all your jobs across milestones in one place. Filter by status, priority, or assignee. Group by milestone to track progress at a glance — no spreadsheets, no chasing."
+      },
+      "blockage": {
+        "name": "Blockage visibility",
+        "description": "When a job is blocked, you see exactly why, who flagged it, and since when. No more hunting through messages to find out what's stuck."
+      },
+      "dashboard": {
+        "name": "Dashboard",
+        "description": "Status distribution, overdue jobs, and pending approvals in one screen. Open the dashboard and you know exactly where the project stands."
+      },
+      "approvals": {
+        "name": "Approvals",
+        "description": "Structured sign-off directly on the job. Employees request, you decide, everything is logged permanently with your comment. No ambiguity about what was decided or when."
+      },
+      "notes": {
+        "name": "Notes",
+        "description": "Add decisions and agreements directly to any job. Notes are permanent and timestamped — your record of what was said and decided. Once written, they're part of the permanent record."
+      },
+      "history": {
+        "name": "Job status history",
+        "description": "See the complete history of every status change on any job — who moved it, when, and why it was blocked. Full accountability, no gaps."
+      },
+      "milestones": {
+        "name": "Milestones",
+        "description": "Organise jobs into delivery phases with deadlines and progress tracking. See exactly how much of each milestone is done at a glance."
+      },
+      "relationships": {
+        "name": "Job relationships",
+        "description": "Define how jobs relate to each other — blocked by, blocks, or related to. See what a blocked job is waiting on and trace dependencies across your project."
+      },
+      "templates": {
+        "name": "Job templates",
+        "description": "Save frequently created jobs as templates and spin them up in one click. Consistent structure, zero repeated effort."
+      },
+      "recurring": {
+        "name": "Recurring scheduling",
+        "description": "Set up recurring jobs that create themselves automatically — daily, weekly, or monthly. Requires Job templates."
+      },
+      "api-keys": {
+        "name": "API keys",
+        "description": "Generate scoped API keys for integrations and automation — pull job data into your own tools or scripts without going through the UI."
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../../../components/Button';
 import ConfirmModal from '../../../components/ConfirmModal';
 import type { JobResponse, JobStatus } from '../../../types';
@@ -26,6 +27,7 @@ export default function JobStatusBar({
   isPending,
   projectCompleted,
 }: Props) {
+  const { t } = useTranslation('jobsComponents');
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
   const isAssigned = job.assignedTo === userId;
   const canAct = isOwnerOrAdmin || isAssigned;
@@ -41,24 +43,24 @@ export default function JobStatusBar({
       <div className="flex flex-wrap gap-2">
         {job.status === 'NEW' && canAct && (
           <Button onClick={() => onStatusChange('IN_PROGRESS')} loading={isPending} size="sm">
-            Start
+            {t('jobsComponents:jobStatusBar.start')}
           </Button>
         )}
 
         {job.status === 'IN_PROGRESS' && canAct && (
           <>
             <Button onClick={() => setConfirmComplete(true)} loading={isPending} size="sm">
-              Complete
+              {t('jobsComponents:jobStatusBar.complete')}
             </Button>
             <Button variant="secondary" onClick={onBlock} size="sm">
-              Block
+              {t('jobsComponents:jobStatusBar.block')}
             </Button>
           </>
         )}
 
         {job.status === 'BLOCKED' && canAct && (
           <Button onClick={() => setConfirmUnblock(true)} loading={isPending} size="sm">
-            Unblock
+            {t('jobsComponents:jobStatusBar.unblock')}
           </Button>
         )}
 
@@ -69,13 +71,13 @@ export default function JobStatusBar({
             loading={isPending}
             size="sm"
           >
-            Reopen
+            {t('jobsComponents:jobStatusBar.reopen')}
           </Button>
         )}
 
         {job.status !== 'COMPLETED' && canAct && (
           <Button variant="secondary" onClick={onRequestApproval} size="sm">
-            Request Approval
+            {t('jobsComponents:jobStatusBar.requestApproval')}
           </Button>
         )}
       </div>
@@ -84,9 +86,9 @@ export default function JobStatusBar({
         open={confirmComplete}
         onClose={() => setConfirmComplete(false)}
         onConfirm={() => { setConfirmComplete(false); onStatusChange('COMPLETED'); }}
-        title="Complete Job"
-        message="Mark this job as complete? This cannot be undone by the assigned member."
-        confirmLabel="Mark Complete"
+        title={t('jobsComponents:jobStatusBar.completeModal.title')}
+        message={t('jobsComponents:jobStatusBar.completeModal.message')}
+        confirmLabel={t('jobsComponents:jobStatusBar.completeModal.confirmLabel')}
         isPending={isPending}
       />
 
@@ -94,9 +96,9 @@ export default function JobStatusBar({
         open={confirmUnblock}
         onClose={() => setConfirmUnblock(false)}
         onConfirm={() => { setConfirmUnblock(false); onStatusChange('IN_PROGRESS'); }}
-        title="Unblock Job"
-        message="Unblock this job and resume work?"
-        confirmLabel="Unblock"
+        title={t('jobsComponents:jobStatusBar.unblockModal.title')}
+        message={t('jobsComponents:jobStatusBar.unblockModal.message')}
+        confirmLabel={t('jobsComponents:jobStatusBar.unblock')}
         isPending={isPending}
       />
     </>

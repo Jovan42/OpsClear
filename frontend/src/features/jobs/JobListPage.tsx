@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
 import ProgressBar from '../../components/ProgressBar';
@@ -44,25 +46,29 @@ const PRIORITY_ORDER: Record<JobPriority, number> = {
   CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3,
 };
 
-const PRIORITY_FILTERS: { key: JobPriority | 'ALL'; label: string }[] = [
-  { key: 'ALL',      label: 'All priorities' },
-  { key: 'CRITICAL', label: 'Critical' },
-  { key: 'HIGH',     label: 'High' },
-  { key: 'MEDIUM',   label: 'Medium' },
-  { key: 'LOW',      label: 'Low' },
-];
+function getPriorityFilters(t: TFunction): { key: JobPriority | 'ALL'; label: string }[] {
+  return [
+    { key: 'ALL',      label: t('jobListPage.allPrioritiesOption') },
+    { key: 'CRITICAL', label: t('priorityCritical') },
+    { key: 'HIGH',     label: t('priorityHigh') },
+    { key: 'MEDIUM',   label: t('priorityMedium') },
+    { key: 'LOW',      label: t('priorityLow') },
+  ];
+}
 
 const STATUS_ORDER: Record<JobStatus, number> = {
   BLOCKED: 0, IN_PROGRESS: 1, NEW: 2, COMPLETED: 3,
 };
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'ALL', label: 'All' },
-  { key: 'NEW', label: 'New' },
-  { key: 'IN_PROGRESS', label: 'In Progress' },
-  { key: 'BLOCKED', label: 'Blocked' },
-  { key: 'COMPLETED', label: 'Completed' },
-];
+function getFilters(t: TFunction): { key: Filter; label: string }[] {
+  return [
+    { key: 'ALL', label: t('jobListPage.statusFilterAll') },
+    { key: 'NEW', label: t('jobListPage.statusFilterNew') },
+    { key: 'IN_PROGRESS', label: t('jobListPage.statusFilterInProgress') },
+    { key: 'BLOCKED', label: t('jobListPage.statusFilterBlocked') },
+    { key: 'COMPLETED', label: t('jobListPage.statusFilterCompleted') },
+  ];
+}
 
 const STATUS_COLORS: Record<JobStatus, { badge: string; text: string }> = {
   NEW:         { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', text: 'text-amber-700 dark:text-amber-400' },
@@ -191,14 +197,16 @@ function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
   );
 }
 
-const TABLE_HEADERS: { key: SortKey; label: string }[] = [
-  { key: 'title',          label: 'Title' },
-  { key: 'client',         label: 'Client' },
-  { key: 'assignedToName', label: 'Assigned to' },
-  { key: 'deadline',       label: 'Deadline' },
-  { key: 'priority',       label: 'Priority' },
-  { key: 'status',         label: 'Status' },
-];
+function getTableHeaders(t: TFunction): { key: SortKey; label: string }[] {
+  return [
+    { key: 'title',          label: t('titleLabel') },
+    { key: 'client',         label: t('clientLabel') },
+    { key: 'assignedToName', label: t('assignedToLabel') },
+    { key: 'deadline',       label: t('deadlineLabel') },
+    { key: 'priority',       label: t('priorityLabel') },
+    { key: 'status',         label: t('jobListPage.statusHeader') },
+  ];
+}
 
 interface GroupSectionProps {
   groupKey: string;
@@ -223,10 +231,12 @@ function GroupSection({
   collapsedGroups, toggleGroup,
   completed, total, progressFormat,
 }: GroupSectionProps) {
+  const { t } = useTranslation(['jobsPages']);
   const isCollapsed = collapsedGroups.has(groupKey);
   const formatDeadline = useFormatDeadline();
   const formattedDeadline = formatDeadline(deadline);
   const showProgress = groupKey !== '__ungrouped__';
+  const tableHeaders = useMemo(() => getTableHeaders(t), [t]);
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -265,7 +275,7 @@ function GroupSection({
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  {TABLE_HEADERS.map(({ key, label }) => (
+                  {tableHeaders.map(({ key, label }) => (
                     <th
                       key={key}
                       onClick={(e) => { e.stopPropagation(); toggleSort(key); }}
@@ -291,7 +301,7 @@ function GroupSection({
 
       {!isCollapsed && jobs.length === 0 && (
         <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500 italic bg-white dark:bg-gray-800">
-          No jobs in this group.
+          {t('jobListPage.noJobsInGroup')}
         </p>
       )}
     </div>
@@ -299,13 +309,17 @@ function GroupSection({
 }
 
 export default function JobListPage() {
+  const { t } = useTranslation(['jobsPages']);
   const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
-  usePageTitle('Jobs', project?.name);
+  usePageTitle(t('jobListPage.heading'), project?.name);
   const { prefs } = usePreferences();
   const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => getFilters(t), [t]);
+  const priorityFilters = useMemo(() => getPriorityFilters(t), [t]);
+  const tableHeaders = useMemo(() => getTableHeaders(t), [t]);
   const statusParam = searchParams.get('status');
-  const filter: Filter = statusParam && FILTERS.some((f) => f.key === statusParam)
+  const filter: Filter = statusParam && filters.some((f) => f.key === statusParam)
     ? (statusParam as Filter)
     : 'ALL';
   const setFilter = (key: Filter) => {
@@ -399,14 +413,14 @@ export default function JobListPage() {
   }
 
   if (isError) {
-    return <PageError message="Failed to load jobs." onRetry={() => void refetch()} />;
+    return <PageError message={t('jobListPage.failedToLoad')} onRetry={() => void refetch()} />;
   }
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Jobs</h1>
-        <Button onClick={() => setModalOpen(true)} disabled={project?.status === 'COMPLETED'}>+ New Job</Button>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('jobListPage.heading')}</h1>
+        <Button onClick={() => setModalOpen(true)} disabled={project?.status === 'COMPLETED'}>{t('jobListPage.newJobButton')}</Button>
       </div>
 
       {/* Search + Priority filter + Milestone filter + View toggle */}
@@ -415,7 +429,7 @@ export default function JobListPage() {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by title, client, or assignee…"
+          placeholder={t('jobListPage.searchPlaceholder')}
           className="flex-1 min-w-0 sm:max-w-sm rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
         />
         <select
@@ -423,7 +437,7 @@ export default function JobListPage() {
           onChange={(e) => setPriorityFilter(e.target.value as JobPriority | 'ALL')}
           className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
         >
-          {PRIORITY_FILTERS.map(({ key, label }) => (
+          {priorityFilters.map(({ key, label }) => (
             <option key={key} value={key}>{label}</option>
           ))}
         </select>
@@ -433,7 +447,7 @@ export default function JobListPage() {
             onChange={(e) => setMilestoneFilter(e.target.value)}
             className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
           >
-            <option value="ALL">All milestones</option>
+            <option value="ALL">{t('jobListPage.allMilestonesOption')}</option>
             {milestones.map((ms: MilestoneResponse) => (
               <option key={ms.id} value={ms.id}>{ms.name}</option>
             ))}
@@ -448,7 +462,7 @@ export default function JobListPage() {
                 : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
           >
-            {effectiveViewMode === 'grouped' ? 'Grouped' : 'Flat'}
+            {effectiveViewMode === 'grouped' ? t('jobListPage.groupedToggle') : t('jobListPage.flatToggle')}
           </button>
         )}
       </div>
@@ -456,7 +470,7 @@ export default function JobListPage() {
       {/* Status filter tabs */}
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 min-w-max sm:min-w-0">
-        {FILTERS.map(({ key, label }) => {
+        {filters.map(({ key, label }) => {
           const count = key === 'ALL' ? allCount : counts[key as JobStatus];
           const isActive = filter === key;
           const hasJobs = count > 0;
@@ -495,13 +509,13 @@ export default function JobListPage() {
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
             {debouncedSearch
-              ? `No results for "${debouncedSearch}".`
+              ? t('jobListPage.noResultsFor', { query: debouncedSearch })
               : jobs.length === 0
-                ? 'No jobs yet.'
-                : 'No jobs match this filter.'}
+                ? t('jobListPage.noJobsYet')
+                : t('jobListPage.noJobsMatchFilter')}
           </p>
           {!debouncedSearch && jobs.length === 0 && (
-            <Button onClick={() => setModalOpen(true)}>Create first job</Button>
+            <Button onClick={() => setModalOpen(true)}>{t('jobListPage.createFirstJob')}</Button>
           )}
         </div>
       ) : effectiveViewMode === 'grouped' ? (
@@ -544,7 +558,7 @@ export default function JobListPage() {
               <GroupSection
                 key="__ungrouped__"
                 groupKey="__ungrouped__"
-                title="Ungrouped"
+                title={t('jobListPage.ungroupedGroupTitle')}
                 deadline={null}
                 jobs={ungrouped}
                 projectId={projectId}
@@ -564,13 +578,13 @@ export default function JobListPage() {
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
                 {debouncedSearch
-                  ? `No results for "${debouncedSearch}".`
+                  ? t('jobListPage.noResultsFor', { query: debouncedSearch })
                   : jobs.length === 0
-                    ? 'No jobs yet.'
-                    : 'No jobs match this filter.'}
+                    ? t('jobListPage.noJobsYet')
+                    : t('jobListPage.noJobsMatchFilter')}
               </p>
               {!debouncedSearch && jobs.length === 0 && (
-                <Button onClick={() => setModalOpen(true)}>Create first job</Button>
+                <Button onClick={() => setModalOpen(true)}>{t('jobListPage.createFirstJob')}</Button>
               )}
             </div>
           )}
@@ -589,7 +603,7 @@ export default function JobListPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  {TABLE_HEADERS.map(({ key, label }) => (
+                  {tableHeaders.map(({ key, label }) => (
                     <th
                       key={key}
                       onClick={() => toggleSort(key)}

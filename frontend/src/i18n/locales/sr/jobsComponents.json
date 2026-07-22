@@ -1,1 +1,113 @@
-{}
+{
+  "unknownUser": "Nepoznat korisnik",
+  "addRelationshipModal": {
+    "title": "Dodaj vezu",
+    "typeLabel": "Tip",
+    "jobLabel": "Zadatak",
+    "searchPlaceholder": "Pretraži zadatke…",
+    "noJobsFound": "Nema pronađenih zadataka.",
+    "types": {
+      "blockedBy": {
+        "label": "Blokiran od strane",
+        "description": "Ovaj zadatak je blokiran izabranim zadatkom"
+      },
+      "relatedTo": {
+        "label": "Povezan sa",
+        "description": "Ovi zadaci su povezani"
+      },
+      "duplicates": {
+        "label": "Duplira",
+        "description": "Ovaj zadatak duplira izabrani zadatak"
+      }
+    }
+  },
+  "approvalDecisionModal": {
+    "approveTitle": "Odobri zahtev",
+    "rejectTitle": "Odbij zahtev",
+    "alreadyDecided": "O ovom odobrenju je već odlučio drugi korisnik.",
+    "commentLabel": "Komentar",
+    "approveCommentPlaceholder": "npr. Odobreno, u okviru budžeta",
+    "rejectCommentPlaceholder": "npr. Koristi alternativnog dobavljača",
+    "approve": "Odobri",
+    "reject": "Odbij"
+  },
+  "approvalList": {
+    "noRequests": "Nema zahteva za odobrenje.",
+    "requestedBy": "Zatražio {{name}}",
+    "approvedBy": "Odobrio {{name}}",
+    "rejectedBy": "Odbio {{name}}",
+    "status": {
+      "pending": "Na čekanju",
+      "approved": "Odobreno",
+      "rejected": "Odbijeno"
+    }
+  },
+  "blockedBanner": {
+    "blockedSince": "Blokirano od {{date}}"
+  },
+  "blockModal": {
+    "title": "Blokiraj zadatak",
+    "reasonLabel": "Razlog blokiranja",
+    "reasonPlaceholder": "Izaberi ili unesi razlog…"
+  },
+  "jobStatusBar": {
+    "start": "Započni",
+    "complete": "Završi",
+    "block": "Blokiraj",
+    "unblock": "Odblokiraj",
+    "reopen": "Ponovo otvori",
+    "requestApproval": "Zatraži odobrenje",
+    "completeModal": {
+      "title": "Završi zadatak",
+      "message": "Označiti ovaj zadatak kao završen? Dodeljeni član ovo ne može poništiti.",
+      "confirmLabel": "Označi kao završeno"
+    },
+    "unblockModal": {
+      "title": "Odblokiraj zadatak",
+      "message": "Odblokirati ovaj zadatak i nastaviti rad?"
+    }
+  },
+  "linksSection": {
+    "noLinks": "Još nema linkova.",
+    "urlPlaceholder": "https://…",
+    "labelPlaceholder": "Naziv",
+    "labelOptionalPlaceholder": "Naziv (opciono)",
+    "addedBy": "Dodao {{name}}",
+    "copied": "Kopirano!",
+    "copyUrl": "Kopiraj URL",
+    "editLink": "Izmeni link",
+    "deleteLink": "Obriši link",
+    "addLink": "+ Dodaj link",
+    "deleteModal": {
+      "title": "Obriši link",
+      "message": "Ukloniti \"{{name}}\"?"
+    }
+  },
+  "noteThread": {
+    "noNotes": "Još nema beleški.",
+    "placeholder": "Dodaj belešku… (markdown podržan)",
+    "addNote": "Dodaj belešku",
+    "confirmMessage": "Beleške se ne mogu menjati niti brisati. Ipak dodati?"
+  },
+  "relationshipsSection": {
+    "heading": "Veze",
+    "add": "+ Dodaj",
+    "noRelationships": "Još nema veza.",
+    "deletedJob": "(obrisano)",
+    "removeRelationship": "Ukloni vezu",
+    "blocks": "Blokira",
+    "duplicatedBy": "Duplirano od strane"
+  },
+  "requestApprovalModal": {
+    "descriptionLabel": "Opis",
+    "placeholder": "Šta treba odobriti i zašto…"
+  },
+  "statusHistory": {
+    "createdAs": "Kreirano kao",
+    "heading": "Istorija statusa",
+    "noHistory": "Još nema istorije.",
+    "durationIn": "{{duration}} u statusu {{status}}",
+    "unknown": "Nepoznato",
+    "reason": "Razlog: {{reason}}"
+  }
+}

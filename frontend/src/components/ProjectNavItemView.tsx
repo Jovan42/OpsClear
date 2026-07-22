@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import ProjectLinksDropdown from './ProjectLinksDropdown';
 import type { ProjectNavItem } from '../hooks/useProjectNavItems';
 import type { LinkResponse } from '../types';
@@ -42,6 +43,7 @@ export default function ProjectNavItemView({
   linksDropdownClassName,
   onNavigate,
 }: Readonly<Props>) {
+  const { t } = useTranslation('shared2');
   const [linksOpen, setLinksOpen] = useState(false);
 
   if (item.kind === 'links-dropdown') {
@@ -52,7 +54,7 @@ export default function ProjectNavItemView({
           className={`${linkClassName({ isActive: linksOpen })} cursor-pointer`}
         >
           <span className="flex items-center gap-1.5">
-            Links
+            {t('projectNav.links')}
             {item.badgeCount > 0 && <NavBadge count={item.badgeCount} />}
           </span>
         </button>

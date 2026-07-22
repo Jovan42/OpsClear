@@ -1,1 +1,272 @@
-{}
+{
+  "settings": {
+    "pageTitle": "Podešavanja",
+    "appearance": {
+      "heading": "Izgled",
+      "theme": {
+        "label": "Tema",
+        "description": "Izaberite kako OpsClear izgleda na ovom uređaju.",
+        "light": "Svetla",
+        "dark": "Tamna",
+        "system": "Sistemska"
+      },
+      "language": {
+        "label": "Jezik",
+        "description": "Izaberite jezik koji se koristi u celoj aplikaciji OpsClear."
+      },
+      "deadlineFormat": {
+        "label": "Format roka",
+        "description": "Kako se rokovi prikazuju u celoj aplikaciji.",
+        "absolute": "Apsolutno",
+        "relative": "Relativno"
+      }
+    },
+    "jobList": {
+      "heading": "Lista poslova",
+      "defaultViewMode": {
+        "label": "Podrazumevani prikaz",
+        "description": "Kako se poslovi grupišu kada otvorite projekat.",
+        "grouped": "Grupisano",
+        "flat": "Ravno"
+      },
+      "milestoneAccordion": {
+        "label": "Akordeon etapa",
+        "description": "Da li grupe etapa počinju proširene ili skupljene.",
+        "expanded": "Prošireno",
+        "collapsed": "Skupljeno"
+      },
+      "defaultStatusTab": {
+        "label": "Podrazumevani status tab",
+        "description": "Koji tab je izabran kada otvorite listu poslova.",
+        "all": "Svi",
+        "new": "Novo",
+        "inProgress": "U toku",
+        "blocked": "Blokirano",
+        "completed": "Završeno"
+      },
+      "hideCompleted": {
+        "label": "Završeni poslovi u tabu Svi",
+        "description": "Da li se završeni poslovi prikazuju kada je aktivan tab Svi."
+      },
+      "defaultSortOrder": {
+        "label": "Podrazumevano sortiranje",
+        "description": "Kako se poslovi sortiraju kada otvorite listu poslova.",
+        "deadlineAsc": "Rok ↑",
+        "deadlineDesc": "Rok ↓",
+        "priority": "Prioritet",
+        "newestFirst": "Najnovije prvo"
+      }
+    },
+    "dashboardSection": {
+      "heading": "Kontrolna tabla",
+      "blockedSection": {
+        "label": "Sekcija blokiranih poslova",
+        "description": "Prikaži ili sakrij listu blokiranih poslova na kontrolnoj tabli."
+      },
+      "overdueSection": {
+        "label": "Sekcija zakasnelih poslova",
+        "description": "Prikaži ili sakrij listu zakasnelih poslova na kontrolnoj tabli."
+      },
+      "pendingApprovalsSection": {
+        "label": "Sekcija odobrenja na čekanju",
+        "description": "Prikaži ili sakrij listu odobrenja na čekanju na kontrolnoj tabli."
+      }
+    },
+    "showHide": {
+      "show": "Prikaži",
+      "hide": "Sakrij"
+    },
+    "navigation": {
+      "heading": "Navigacija",
+      "defaultProjectPage": {
+        "label": "Podrazumevana stranica projekta",
+        "description": "Koja stranica se otvara kada odete na projekat.",
+        "dashboard": "Kontrolna tabla",
+        "jobs": "Poslovi",
+        "approvals": "Odobrenja"
+      }
+    },
+    "milestonesSection": {
+      "heading": "Etape",
+      "progressFormat": {
+        "label": "Format napretka",
+        "description": "Kako se prikazuje napredak etape (npr. 4/6 ili 67%).",
+        "fraction": "Razlomak",
+        "percentage": "Procenat"
+      }
+    },
+    "apiKeysFeatureName": "API ključevi"
+  },
+  "apiKeySection": {
+    "heading": "API ključevi",
+    "newKeyButton": "+ Novi API ključ",
+    "unusedWarning": "⚠ Nekorišćen 90+ dana",
+    "created": "Kreiran {{date}}",
+    "lastUsed": "Poslednji put korišćen {{date}}",
+    "neverUsed": "Nikad korišćen",
+    "revoke": "Opozovi",
+    "emptyState": "Nema aktivnih API ključeva. Kreirajte jedan za autentifikaciju skripti i alata.",
+    "revokeModal": {
+      "title": "Opozovi API ključ",
+      "message": "Opozvati \"{{name}}\"? Svi skriptovi koji koriste ovaj ključ prestaće odmah da rade."
+    }
+  },
+  "newApiKeyModal": {
+    "title": "Novi API ključ",
+    "copyWarning": "Kopirajte ključ sada — neće biti ponovo prikazan.",
+    "copy": "Kopiraj",
+    "copied": "Kopirano!",
+    "done": "Kopirao/la sam, zatvori",
+    "nameLabel": "Naziv",
+    "namePlaceholder": "npr. deploy skripta, monitoring",
+    "createError": "Kreiranje ključa nije uspelo. Pokušajte ponovo."
+  },
+  "approvals": {
+    "pageTitle": "Odobrenja",
+    "unknownUser": "Nepoznat korisnik",
+    "requestedBy": "Zatražio/la {{name}} · {{date}}",
+    "reject": "Odbij",
+    "approve": "Odobri",
+    "loadError": "Učitavanje odobrenja nije uspelo.",
+    "pendingBadge": "{{count}} na čekanju",
+    "emptyState": "Sve je sređeno — nema odobrenja na čekanju.",
+    "jobLink": "→ Posao"
+  },
+  "dashboard": {
+    "pageTitle": "Kontrolna tabla",
+    "featureName": "Kontrolna tabla",
+    "today": "danas",
+    "oneDayAgo": "pre 1 dan",
+    "daysAgo": "pre {{count}} dana",
+    "statusDistribution": "Raspodela statusa",
+    "summaryHeading": "Pregled",
+    "statusLabels": {
+      "new": "Novo",
+      "inProgress": "U toku",
+      "blocked": "Blokirano",
+      "completed": "Završeno",
+      "overdue": "Zakasnelo",
+      "pendingApprovals": "Odobrenja na čekanju"
+    },
+    "unassigned": "Nedodeljeno",
+    "blockedSuffix": "· blokirano {{time}}",
+    "dueSuffix": "· rok {{time}}",
+    "completedBanner": "Ovaj projekat je završen. Sada je samo za čitanje.",
+    "loadError": "Učitavanje kontrolne table nije uspelo.",
+    "sections": {
+      "blocked": "Blokirano",
+      "overdue": "Zakasnelo",
+      "pendingApprovals": "Odobrenja na čekanju"
+    },
+    "viewAll": "→ Prikaži sve",
+    "allClear": "Sve je čisto — nema blokiranih, zakasnelih ni poslova na čekanju.",
+    "noJobs": "Još nema poslova.",
+    "createFirstJob": "Kreiraj prvi posao →"
+  },
+  "landing": {
+    "logIn": "Prijava",
+    "hero": {
+      "headlineLine1": "Šta se zaista dešava",
+      "headlineLine2": "sa vašim poslom danas?",
+      "subtitle": "Jedan ekran vam pokazuje gde je svaki posao, ko je blokiran i šta zahteva vašu pažnju danas. Bez poziva za status, bez jurenja izveštaja. Samo jasnoća.",
+      "getStarted": "Započni"
+    },
+    "problem": {
+      "heading": "Poziv za status vam krade dan",
+      "body": "Svaki dan, vlasnici i menadžeri troše sate jureći izveštaje. Ko je blokiran? Šta kasni? Kada će biti gotovo? Odgovor je zakopan u porukama, pozivima i sećanju — a ne negde gde ga zaista možete videti.",
+      "footer": "Napravljeno za vlasnike malih i srednjih preduzeća i operativne menadžere kojima treba istina o njihovom poslu, a ne još jedan sastanak."
+    },
+    "cta": {
+      "heading": "Spremni za jasnoću?",
+      "subtitle": "Počnite odmah. Nije potrebna kreditna kartica.",
+      "button": "Počni odmah"
+    }
+  },
+  "productPricing": {
+    "addonTaglines": {
+      "DASHBOARD": "Pregled poslovanja na jednom ekranu",
+      "APPROVALS": "Tok odobrenja sa zabeleženim odlukama",
+      "NOTES": "Nepromenljiv trag revizije na svakom poslu",
+      "JOB_STATUS_HISTORY": "Potpuna hronološka istorija statusa",
+      "MILESTONES": "Grupišite poslove u faze (najviše 5 po projektu)",
+      "JOB_RELATIONSHIPS": "Veze blokira / zavisi od / povezano sa",
+      "API_KEYS": "Programski pristup i integracije",
+      "JOB_TEMPLATES": "Ponovo upotrebljivi šabloni poslova",
+      "RECURRING_SCHEDULING": "Automatsko kreiranje poslova po rasporedu (zahteva šablone)"
+    },
+    "heading": "Vidite šta je uključeno. Znajte koliko košta.",
+    "subheading": "Počnite sa osnovnim planom i dodajte samo ono što vašem timu treba.",
+    "seeAllFeatures": "Pogledajte sve funkcionalnosti u detalje",
+    "basePlanLabel": "Osnovni plan",
+    "teamMembersLabel": "Članovi tima",
+    "upTo": "Do {{count}}",
+    "activeProjectsLabel": "Aktivni projekti",
+    "unlimited": "Neograničeno",
+    "basePriceLabel": "Osnovna cena",
+    "perMonth": "{{amount}} {{currency}}/mes",
+    "addonsHeading": "Dodaci — kliknite da uključite",
+    "comingSoon": "Uskoro",
+    "annualBillingLabel": "Godišnje naplaćivanje",
+    "saveAnnual": "Uštedite {{amount}} {{currency}}/god u poređenju sa mesečnim naplaćivanjem.",
+    "monthlyTotalAnnual": "Mesečni ukupno (godišnje)",
+    "monthlyTotal": "Mesečni ukupno",
+    "perMonthSuffix": "{{currency}}/mes"
+  },
+  "featuresPage": {
+    "pageHeading": "Sve što OpsClear može da uradi",
+    "backToHome": "← Nazad na početnu",
+    "noPreview": "Nema pregleda još",
+    "noCreditCard": "Nije potrebna kreditna kartica.",
+    "badges": {
+      "base": "Uključeno",
+      "addon": "Dodatak",
+      "comingSoon": "Uskoro"
+    },
+    "cards": {
+      "job-tracking": {
+        "name": "Praćenje poslova",
+        "description": "Vidite sve svoje poslove kroz etape na jednom mestu. Filtrirajte po statusu, prioritetu ili izvršiocu. Grupišite po etapi da biste pratili napredak na prvi pogled — bez tabela, bez jurenja."
+      },
+      "blockage": {
+        "name": "Vidljivost blokade",
+        "description": "Kada je posao blokiran, vidite tačno zašto, ko je to prijavio i od kada. Nema više pretraživanja poruka da biste saznali šta je zaglavljeno."
+      },
+      "dashboard": {
+        "name": "Kontrolna tabla",
+        "description": "Raspodela statusa, zakasneli poslovi i odobrenja na čekanju na jednom ekranu. Otvorite kontrolnu tablu i tačno znate gde je projekat."
+      },
+      "approvals": {
+        "name": "Odobrenja",
+        "description": "Strukturirano odobravanje direktno na poslu. Zaposleni zahtevaju, vi odlučujete, sve se trajno beleži uz vaš komentar. Nema nejasnoća o tome šta je odlučeno ili kada."
+      },
+      "notes": {
+        "name": "Beleške",
+        "description": "Dodajte odluke i dogovore direktno na bilo koji posao. Beleške su trajne i vremenski označene — vaš zapis o tome šta je rečeno i odlučeno. Jednom napisane, postaju deo trajne evidencije."
+      },
+      "history": {
+        "name": "Istorija statusa posla",
+        "description": "Vidite potpunu istoriju svake promene statusa na bilo kom poslu — ko ju je promenio, kada i zašto je bio blokiran. Puna odgovornost, bez praznina."
+      },
+      "milestones": {
+        "name": "Etape",
+        "description": "Organizujte poslove u faze isporuke sa rokovima i praćenjem napretka. Vidite tačno koliko je svaka etapa završena na prvi pogled."
+      },
+      "relationships": {
+        "name": "Veze između poslova",
+        "description": "Definišite kako se poslovi odnose jedni prema drugima — blokiran od, blokira, ili povezano sa. Vidite šta blokirani posao čeka i pratite zavisnosti kroz projekat."
+      },
+      "templates": {
+        "name": "Šabloni poslova",
+        "description": "Sačuvajte često kreirane poslove kao šablone i pokrenite ih jednim klikom. Dosledna struktura, bez ponovljenog truda."
+      },
+      "recurring": {
+        "name": "Ponavljajuće zakazivanje",
+        "description": "Podesite ponavljajuće poslove koji se automatski kreiraju — dnevno, nedeljno ili mesečno. Zahteva šablone poslova."
+      },
+      "api-keys": {
+        "name": "API ključevi",
+        "description": "Generišite API ključeve ograničenog obima za integracije i automatizaciju — preuzmite podatke o poslovima u sopstvene alate ili skripte bez korišćenja interfejsa."
+      }
+    }
+  }
+}

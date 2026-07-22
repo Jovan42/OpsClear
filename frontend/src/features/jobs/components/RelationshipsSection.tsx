@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Link } from 'react-router-dom';
 import StatusBadge from '../../../components/StatusBadge';
 import { useDeleteRelationship } from '../useJobs';
@@ -12,24 +14,22 @@ interface Props {
   projectCompleted: boolean;
 }
 
-const TYPE_LABELS: Record<JobRelationshipType, string> = {
-  BLOCKED_BY: 'Blocked by',
-  RELATED_TO: 'Related to',
-  DUPLICATES: 'Duplicates',
-};
-
 const TYPE_COLORS: Record<JobRelationshipType, string> = {
   BLOCKED_BY: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   RELATED_TO: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
   DUPLICATES: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
 };
 
-function directionLabel(type: JobRelationshipType, direction: JobRelationshipDirection): string {
-  if (direction === 'OUTGOING') return TYPE_LABELS[type];
+function directionLabel(type: JobRelationshipType, direction: JobRelationshipDirection, t: TFunction): string {
+  if (direction === 'OUTGOING') {
+    if (type === 'BLOCKED_BY') return t('jobsComponents:addRelationshipModal.types.blockedBy.label');
+    if (type === 'DUPLICATES') return t('jobsComponents:addRelationshipModal.types.duplicates.label');
+    return t('jobsComponents:addRelationshipModal.types.relatedTo.label');
+  }
   // Incoming — flip the label
-  if (type === 'BLOCKED_BY') return 'Blocks';
-  if (type === 'DUPLICATES') return 'Duplicated by';
-  return 'Related to';
+  if (type === 'BLOCKED_BY') return t('jobsComponents:relationshipsSection.blocks');
+  if (type === 'DUPLICATES') return t('jobsComponents:relationshipsSection.duplicatedBy');
+  return t('jobsComponents:addRelationshipModal.types.relatedTo.label');
 }
 
 export default function RelationshipsSection({
@@ -40,24 +40,25 @@ export default function RelationshipsSection({
   onAdd,
   projectCompleted,
 }: Props) {
+  const { t } = useTranslation('jobsComponents');
   const { mutate: deleteRel, isPending: isDeleting } = useDeleteRelationship(projectId, jobId);
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100">Relationships</h2>
+        <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('jobsComponents:relationshipsSection.heading')}</h2>
         {canManage && !projectCompleted && (
           <button
             onClick={onAdd}
             className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
           >
-            + Add
+            {t('jobsComponents:relationshipsSection.add')}
           </button>
         )}
       </div>
 
       {relationships.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">No relationships yet.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t('jobsComponents:relationshipsSection.noRelationships')}</p>
       ) : (
         <ul className="space-y-2">
           {relationships.map((rel) => (
@@ -65,7 +66,7 @@ export default function RelationshipsSection({
               <span
                 className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full ${TYPE_COLORS[rel.type]}`}
               >
-                {directionLabel(rel.type, rel.direction)}
+                {directionLabel(rel.type, rel.direction, t)}
               </span>
 
               {rel.job.id ? (
@@ -77,11 +78,11 @@ export default function RelationshipsSection({
                       : 'text-gray-900 dark:text-gray-100'
                   }`}
                 >
-                  {rel.job.title ?? '(deleted)'}
+                  {rel.job.title ?? t('jobsComponents:relationshipsSection.deletedJob')}
                 </Link>
               ) : (
                 <span className="flex-1 truncate text-gray-400 dark:text-gray-500 italic">
-                  {rel.job.title ?? '(deleted)'}
+                  {rel.job.title ?? t('jobsComponents:relationshipsSection.deletedJob')}
                 </span>
               )}
 
@@ -94,7 +95,7 @@ export default function RelationshipsSection({
                   onClick={() => deleteRel(rel.id)}
                   disabled={isDeleting}
                   className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none cursor-pointer disabled:opacity-50"
-                  title="Remove relationship"
+                  title={t('jobsComponents:relationshipsSection.removeRelationship')}
                 >
                   ×
                 </button>

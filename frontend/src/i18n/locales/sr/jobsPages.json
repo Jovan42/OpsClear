@@ -1,1 +1,71 @@
-{}
+{
+  "titleLabel": "Naslov",
+  "clientLabel": "Klijent",
+  "deadlineLabel": "Rok",
+  "assignedToLabel": "Zadužen",
+  "priorityLabel": "Prioritet",
+  "descriptionLabel": "Opis",
+  "priorityLow": "Nizak",
+  "priorityMedium": "Srednji",
+  "priorityHigh": "Visok",
+  "priorityCritical": "Kritičan",
+
+  "newJobModal": {
+    "editTitle": "Izmeni posao",
+    "newTitle": "Novi posao",
+    "titleRequired": "Naslov je obavezan",
+    "max255Characters": "Maksimalno 255 karaktera",
+    "max10000Characters": "Maksimalno 10000 karaktera",
+    "startFromTemplateLabel": "Počni od šablona",
+    "optionalPlaceholder": "— opciono —",
+    "orgTemplateName": "[Org] {{name}}",
+    "titlePlaceholder": "npr. Ispravi grešku pri prijavi",
+    "descriptionPlaceholder": "Opcioni detalji… (podržan markdown)",
+    "clientPlaceholder": "Ime klijenta",
+    "milestoneLabel": "Etapa",
+    "noMilestoneOption": "Bez etape",
+    "assignToLabel": "Dodeli",
+    "searchMemberPlaceholder": "Pretraži člana…",
+    "saveChanges": "Sačuvaj izmene",
+    "createJob": "Kreiraj posao"
+  },
+
+  "jobListPage": {
+    "heading": "Poslovi",
+    "newJobButton": "+ Novi posao",
+    "searchPlaceholder": "Pretraga po nazivu, klijentu ili zaduženom…",
+    "allPrioritiesOption": "Svi prioriteti",
+    "statusFilterAll": "Svi",
+    "statusFilterNew": "Novo",
+    "statusFilterInProgress": "U toku",
+    "statusFilterBlocked": "Blokirano",
+    "statusFilterCompleted": "Završeno",
+    "statusHeader": "Status",
+    "allMilestonesOption": "Sve etape",
+    "groupedToggle": "Grupisano",
+    "flatToggle": "Ravno",
+    "noResultsFor": "Nema rezultata za \"{{query}}\".",
+    "noJobsYet": "Još uvek nema poslova.",
+    "noJobsMatchFilter": "Nijedan posao ne odgovara ovom filteru.",
+    "createFirstJob": "Kreiraj prvi posao",
+    "ungroupedGroupTitle": "Negrupisano",
+    "noJobsInGroup": "Nema poslova u ovoj grupi.",
+    "failedToLoad": "Neuspelo učitavanje poslova."
+  },
+
+  "jobDetailPage": {
+    "failedToLoad": "Neuspelo učitavanje posla.",
+    "jobsBreadcrumb": "Poslovi",
+    "createdBySchedule": "Kreirano rasporedom",
+    "editButton": "Izmeni",
+    "deleteJobButton": "Obriši posao",
+    "createdLabel": "Kreirano",
+    "notesSection": "Beleške",
+    "approvalsSection": "Odobrenja",
+    "linksSection": "Linkovi",
+    "jobHistorySection": "Istorija posla",
+    "relationshipsSection": "Veze",
+    "pendingCount": "{{count}} na čekanju",
+    "deleteJobConfirmMessage": "Obrisati \"{{title}}\"? Ovo se ne može poništiti."
+  }
+}

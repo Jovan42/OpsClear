@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   featureName: string;
@@ -6,6 +7,7 @@ interface Props {
 
 export default function UpgradeCard({ featureName }: Props) {
   const navigate = useNavigate();
+  const { t } = useTranslation('shared2');
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center max-w-sm px-4">
@@ -23,17 +25,17 @@ export default function UpgradeCard({ featureName }: Props) {
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-          {featureName} is not included in your plan
+          {t('upgradeCard.notIncluded', { featureName })}
         </h2>
         <p className="text-gray-500 dark:text-gray-400 mb-6">
-          Add this feature to your subscription to unlock it for your team.
+          {t('upgradeCard.description')}
         </p>
         <button
           onClick={() => navigate('/org/settings')}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer transition-opacity hover:opacity-90"
           style={{ backgroundColor: 'var(--brand)' }}
         >
-          Upgrade in org settings
+          {t('upgrade.inOrgSettings')}
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import ApiKeySection from './ApiKeySection';
 import UpgradeCard from '../../components/UpgradeCard';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -75,94 +76,93 @@ function SettingRow({ label, description, children }: SettingRowProps) {
   );
 }
 
-// ---- option lists ----
-
-const THEME_OPTIONS: { value: Theme; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
-];
-
-const LOCALE_OPTIONS: { value: Locale; label: string }[] = [
-  { value: 'en', label: 'English' },
-  { value: 'sr', label: 'Srpski' },
-];
-
-const VIEW_MODE_OPTIONS: { value: ViewMode; label: string }[] = [
-  { value: 'GROUPED', label: 'Grouped' },
-  { value: 'FLAT', label: 'Flat' },
-];
-
-const ACCORDION_OPTIONS: { value: AccordionState; label: string }[] = [
-  { value: 'EXPANDED', label: 'Expanded' },
-  { value: 'COLLAPSED', label: 'Collapsed' },
-];
-
-const STATUS_TAB_OPTIONS: { value: StatusTab; label: string }[] = [
-  { value: 'ALL', label: 'All' },
-  { value: 'NEW', label: 'New' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'BLOCKED', label: 'Blocked' },
-  { value: 'COMPLETED', label: 'Completed' },
-];
-
-const HIDE_COMPLETED_OPTIONS: { value: 'true' | 'false'; label: string }[] = [
-  { value: 'false', label: 'Show' },
-  { value: 'true', label: 'Hide' },
-];
-
-const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
-  { value: 'DEADLINE_ASC', label: 'Deadline ↑' },
-  { value: 'DEADLINE_DESC', label: 'Deadline ↓' },
-  { value: 'PRIORITY_DESC', label: 'Priority' },
-  { value: 'CREATED_DESC', label: 'Newest first' },
-];
-
-const DEADLINE_FORMAT_OPTIONS: { value: DeadlineFormat; label: string }[] = [
-  { value: 'ABSOLUTE', label: 'Absolute' },
-  { value: 'RELATIVE', label: 'Relative' },
-];
-
-const SHOW_HIDE_OPTIONS: { value: 'true' | 'false'; label: string }[] = [
-  { value: 'true', label: 'Show' },
-  { value: 'false', label: 'Hide' },
-];
-
-const PROJECT_PAGE_OPTIONS: { value: ProjectPage; label: string }[] = [
-  { value: 'DASHBOARD', label: 'Dashboard' },
-  { value: 'JOBS', label: 'Jobs' },
-  { value: 'APPROVALS', label: 'Approvals' },
-];
-
-const PROGRESS_FORMAT_OPTIONS: { value: ProgressFormat; label: string }[] = [
-  { value: 'FRACTION', label: 'Fraction' },
-  { value: 'PERCENTAGE', label: 'Percentage' },
-];
-
 // ---- page ----
 
 export default function SettingsPage() {
-  usePageTitle('Settings');
+  const { t } = useTranslation(['approvalsDashboardSettingsLanding']);
+  usePageTitle(t('approvalsDashboardSettingsLanding:settings.pageTitle'));
   const { prefs, update } = usePreferences();
   const { hasAddon } = useCurrentOrg();
 
+  const THEME_OPTIONS: { value: Theme; label: string }[] = [
+    { value: 'light', label: t('settings.appearance.theme.light') },
+    { value: 'dark', label: t('settings.appearance.theme.dark') },
+    { value: 'system', label: t('settings.appearance.theme.system') },
+  ];
+
+  const LOCALE_OPTIONS: { value: Locale; label: string }[] = [
+    { value: 'en', label: 'English' },
+    { value: 'sr', label: 'Srpski' },
+  ];
+
+  const VIEW_MODE_OPTIONS: { value: ViewMode; label: string }[] = [
+    { value: 'GROUPED', label: t('settings.jobList.defaultViewMode.grouped') },
+    { value: 'FLAT', label: t('settings.jobList.defaultViewMode.flat') },
+  ];
+
+  const ACCORDION_OPTIONS: { value: AccordionState; label: string }[] = [
+    { value: 'EXPANDED', label: t('settings.jobList.milestoneAccordion.expanded') },
+    { value: 'COLLAPSED', label: t('settings.jobList.milestoneAccordion.collapsed') },
+  ];
+
+  const STATUS_TAB_OPTIONS: { value: StatusTab; label: string }[] = [
+    { value: 'ALL', label: t('settings.jobList.defaultStatusTab.all') },
+    { value: 'NEW', label: t('settings.jobList.defaultStatusTab.new') },
+    { value: 'IN_PROGRESS', label: t('settings.jobList.defaultStatusTab.inProgress') },
+    { value: 'BLOCKED', label: t('settings.jobList.defaultStatusTab.blocked') },
+    { value: 'COMPLETED', label: t('settings.jobList.defaultStatusTab.completed') },
+  ];
+
+  const HIDE_COMPLETED_OPTIONS: { value: 'true' | 'false'; label: string }[] = [
+    { value: 'false', label: t('settings.showHide.show') },
+    { value: 'true', label: t('settings.showHide.hide') },
+  ];
+
+  const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
+    { value: 'DEADLINE_ASC', label: t('settings.jobList.defaultSortOrder.deadlineAsc') },
+    { value: 'DEADLINE_DESC', label: t('settings.jobList.defaultSortOrder.deadlineDesc') },
+    { value: 'PRIORITY_DESC', label: t('settings.jobList.defaultSortOrder.priority') },
+    { value: 'CREATED_DESC', label: t('settings.jobList.defaultSortOrder.newestFirst') },
+  ];
+
+  const DEADLINE_FORMAT_OPTIONS: { value: DeadlineFormat; label: string }[] = [
+    { value: 'ABSOLUTE', label: t('settings.appearance.deadlineFormat.absolute') },
+    { value: 'RELATIVE', label: t('settings.appearance.deadlineFormat.relative') },
+  ];
+
+  const SHOW_HIDE_OPTIONS: { value: 'true' | 'false'; label: string }[] = [
+    { value: 'true', label: t('settings.showHide.show') },
+    { value: 'false', label: t('settings.showHide.hide') },
+  ];
+
+  const PROJECT_PAGE_OPTIONS: { value: ProjectPage; label: string }[] = [
+    { value: 'DASHBOARD', label: t('settings.navigation.defaultProjectPage.dashboard') },
+    { value: 'JOBS', label: t('settings.navigation.defaultProjectPage.jobs') },
+    { value: 'APPROVALS', label: t('settings.navigation.defaultProjectPage.approvals') },
+  ];
+
+  const PROGRESS_FORMAT_OPTIONS: { value: ProgressFormat; label: string }[] = [
+    { value: 'FRACTION', label: t('settings.milestonesSection.progressFormat.fraction') },
+    { value: 'PERCENTAGE', label: t('settings.milestonesSection.progressFormat.percentage') },
+  ];
+
   return (
     <div className="max-w-lg mx-auto px-4 py-10 space-y-8">
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Settings</h1>
+      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('settings.pageTitle')}</h1>
 
       {/* Appearance */}
       <section>
         <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Appearance
+          {t('settings.appearance.heading')}
         </h2>
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-          <SettingRow label="Theme" description="Choose how OpsClear looks on this device.">
+          <SettingRow label={t('settings.appearance.theme.label')} description={t('settings.appearance.theme.description')}>
             <SegmentedControl value={prefs.theme} options={THEME_OPTIONS} onChange={(v) => update({ theme: v })} />
           </SettingRow>
-          <SettingRow label="Language" description="Choose the language used across OpsClear.">
+          <SettingRow label={t('settings.appearance.language.label')} description={t('settings.appearance.language.description')}>
             <SegmentedControl value={prefs.locale} options={LOCALE_OPTIONS} onChange={(v) => update({ locale: v })} />
           </SettingRow>
-          <SettingRow label="Deadline format" description="How deadlines are displayed across the app.">
+          <SettingRow label={t('settings.appearance.deadlineFormat.label')} description={t('settings.appearance.deadlineFormat.description')}>
             <SegmentedControl value={prefs.deadlineFormat} options={DEADLINE_FORMAT_OPTIONS} onChange={(v) => update({ deadlineFormat: v })} />
           </SettingRow>
         </div>
@@ -171,26 +171,26 @@ export default function SettingsPage() {
       {/* Job list */}
       <section>
         <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Job list
+          {t('settings.jobList.heading')}
         </h2>
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-          <SettingRow label="Default view mode" description="How jobs are grouped when you open a project.">
+          <SettingRow label={t('settings.jobList.defaultViewMode.label')} description={t('settings.jobList.defaultViewMode.description')}>
             <SegmentedControl value={prefs.defaultViewMode} options={VIEW_MODE_OPTIONS} onChange={(v) => update({ defaultViewMode: v })} />
           </SettingRow>
-          <SettingRow label="Milestone accordion" description="Whether milestone groups start expanded or collapsed.">
+          <SettingRow label={t('settings.jobList.milestoneAccordion.label')} description={t('settings.jobList.milestoneAccordion.description')}>
             <SegmentedControl value={prefs.milestoneAccordionState} options={ACCORDION_OPTIONS} onChange={(v) => update({ milestoneAccordionState: v })} />
           </SettingRow>
-          <SettingRow label="Default status tab" description="Which tab is selected when you open the job list.">
+          <SettingRow label={t('settings.jobList.defaultStatusTab.label')} description={t('settings.jobList.defaultStatusTab.description')}>
             <SelectControl value={prefs.defaultStatusTab} options={STATUS_TAB_OPTIONS} onChange={(v) => update({ defaultStatusTab: v })} />
           </SettingRow>
-          <SettingRow label="Completed jobs in All tab" description="Whether completed jobs appear when the All tab is active.">
+          <SettingRow label={t('settings.jobList.hideCompleted.label')} description={t('settings.jobList.hideCompleted.description')}>
             <SegmentedControl
               value={prefs.hideCompletedFromAll ? 'true' : 'false'}
               options={HIDE_COMPLETED_OPTIONS}
               onChange={(v) => update({ hideCompletedFromAll: v === 'true' })}
             />
           </SettingRow>
-          <SettingRow label="Default sort order" description="How jobs are sorted when you open the job list.">
+          <SettingRow label={t('settings.jobList.defaultSortOrder.label')} description={t('settings.jobList.defaultSortOrder.description')}>
             <SelectControl value={prefs.defaultSortOrder} options={SORT_ORDER_OPTIONS} onChange={(v) => update({ defaultSortOrder: v })} />
           </SettingRow>
         </div>
@@ -199,24 +199,24 @@ export default function SettingsPage() {
       {/* Dashboard */}
       <section>
         <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Dashboard
+          {t('settings.dashboardSection.heading')}
         </h2>
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-          <SettingRow label="Blocked jobs section" description="Show or hide the blocked jobs list on the dashboard.">
+          <SettingRow label={t('settings.dashboardSection.blockedSection.label')} description={t('settings.dashboardSection.blockedSection.description')}>
             <SegmentedControl
               value={prefs.showBlockedSection ? 'true' : 'false'}
               options={SHOW_HIDE_OPTIONS}
               onChange={(v) => update({ showBlockedSection: v === 'true' })}
             />
           </SettingRow>
-          <SettingRow label="Overdue jobs section" description="Show or hide the overdue jobs list on the dashboard.">
+          <SettingRow label={t('settings.dashboardSection.overdueSection.label')} description={t('settings.dashboardSection.overdueSection.description')}>
             <SegmentedControl
               value={prefs.showOverdueSection ? 'true' : 'false'}
               options={SHOW_HIDE_OPTIONS}
               onChange={(v) => update({ showOverdueSection: v === 'true' })}
             />
           </SettingRow>
-          <SettingRow label="Pending approvals section" description="Show or hide the pending approvals list on the dashboard.">
+          <SettingRow label={t('settings.dashboardSection.pendingApprovalsSection.label')} description={t('settings.dashboardSection.pendingApprovalsSection.description')}>
             <SegmentedControl
               value={prefs.showPendingApprovalsSection ? 'true' : 'false'}
               options={SHOW_HIDE_OPTIONS}
@@ -229,10 +229,10 @@ export default function SettingsPage() {
       {/* Navigation */}
       <section>
         <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Navigation
+          {t('settings.navigation.heading')}
         </h2>
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-          <SettingRow label="Default project page" description="Which page opens when you navigate to a project.">
+          <SettingRow label={t('settings.navigation.defaultProjectPage.label')} description={t('settings.navigation.defaultProjectPage.description')}>
             <SegmentedControl value={prefs.defaultProjectPage} options={PROJECT_PAGE_OPTIONS} onChange={(v) => update({ defaultProjectPage: v })} />
           </SettingRow>
         </div>
@@ -241,16 +241,16 @@ export default function SettingsPage() {
       {/* Milestones */}
       <section>
         <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Milestones
+          {t('settings.milestonesSection.heading')}
         </h2>
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-          <SettingRow label="Progress format" description="How milestone progress is displayed (e.g. 4/6 or 67%).">
+          <SettingRow label={t('settings.milestonesSection.progressFormat.label')} description={t('settings.milestonesSection.progressFormat.description')}>
             <SegmentedControl value={prefs.milestoneProgressFormat} options={PROGRESS_FORMAT_OPTIONS} onChange={(v) => update({ milestoneProgressFormat: v })} />
           </SettingRow>
         </div>
       </section>
 
-      {hasAddon('API_KEYS') ? <ApiKeySection /> : <UpgradeCard featureName="API Keys" />}
+      {hasAddon('API_KEYS') ? <ApiKeySection /> : <UpgradeCard featureName={t('settings.apiKeysFeatureName')} />}
     </div>
   );
 }

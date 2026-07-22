@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import MarkdownEditor from '../../components/MarkdownEditor';
@@ -6,27 +7,6 @@ import { useCreateTemplate, useUpdateTemplate, useCreateOrgTemplate, useUpdateOr
 import { useProjectMembers } from '../projects/useProjects';
 import { useMilestones } from '../jobs/useMilestones';
 import type { AssigneeMode, JobPriority, JobTemplateResponse, ProjectMemberResponse } from '../../types';
-
-const PRIORITIES: { value: JobPriority; label: string }[] = [
-  { value: 'LOW',      label: 'Low' },
-  { value: 'MEDIUM',   label: 'Medium' },
-  { value: 'HIGH',     label: 'High' },
-  { value: 'CRITICAL', label: 'Critical' },
-];
-
-const WILDCARDS = [
-  { token: '{{date}}',         desc: 'Today\'s date (YYYY-MM-DD)' },
-  { token: '{{date+N}}',       desc: 'Date offset by N days' },
-  { token: '{{day}}',          desc: 'Day of month (01–31)' },
-  { token: '{{month}}',        desc: 'Month number (01–12)' },
-  { token: '{{year}}',         desc: 'Full year' },
-  { token: '{{week}}',         desc: 'ISO week number' },
-  { token: '{{quarter}}',      desc: 'Quarter (Q1–Q4)' },
-  { token: '{{project}}',      desc: 'Project name' },
-  { token: '{{creator}}',      desc: 'User creating the job' },
-  { token: '{{assignee}}',     desc: 'Assigned member name' },
-  { token: '{{occurrence}}',   desc: 'Template usage count + 1' },
-];
 
 interface Props {
   open: boolean;
@@ -36,9 +16,31 @@ interface Props {
   template?: JobTemplateResponse;
 }
 
+const WILDCARD_TOKENS = [
+  '{{date}}', '{{date+N}}', '{{day}}', '{{month}}', '{{year}}', '{{week}}',
+  '{{quarter}}', '{{project}}', '{{creator}}', '{{assignee}}', '{{occurrence}}',
+];
+const WILDCARD_DESC_KEYS = [
+  'wildcardDate', 'wildcardDateOffset', 'wildcardDay', 'wildcardMonth', 'wildcardYear',
+  'wildcardWeek', 'wildcardQuarter', 'wildcardProject', 'wildcardCreator', 'wildcardAssignee', 'wildcardOccurrence',
+] as const;
+
 export default function TemplateFormModal({ open, onClose, projectId, orgId, template }: Readonly<Props>) {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const isEdit    = !!template;
   const isOrgMode = !!orgId && !projectId;
+
+  const PRIORITIES: { value: JobPriority; label: string }[] = [
+    { value: 'LOW',      label: t('milestonesTemplatesSchedules:templateModal.priorityLow') },
+    { value: 'MEDIUM',   label: t('milestonesTemplatesSchedules:templateModal.priorityMedium') },
+    { value: 'HIGH',     label: t('milestonesTemplatesSchedules:templateModal.priorityHigh') },
+    { value: 'CRITICAL', label: t('milestonesTemplatesSchedules:templateModal.priorityCritical') },
+  ];
+
+  const WILDCARDS = WILDCARD_TOKENS.map((token, i) => ({
+    token,
+    desc: t(`milestonesTemplatesSchedules:templateModal.${WILDCARD_DESC_KEYS[i]}`),
+  }));
 
   const [name, setName]                   = useState(template?.name ?? '');
   const [title, setTitle]                 = useState(template?.title ?? '');
@@ -125,16 +127,16 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
   const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
   return (
-    <Modal open={open} onClose={handleClose} title={isEdit ? 'Edit Template' : 'New Template'}>
+    <Modal open={open} onClose={handleClose} title={isEdit ? t('milestonesTemplatesSchedules:templateModal.editTitle') : t('milestonesTemplatesSchedules:templateModal.newTitle')}>
       <form onSubmit={handleSubmit} className="space-y-4">
 
         <div>
-          <label className={labelClass}>Name <span className="text-red-500">*</span></label>
+          <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.nameLabel')} <span className="text-red-500">*</span></label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Weekly status report"
+            placeholder={t('milestonesTemplatesSchedules:templateModal.namePlaceholder')}
             maxLength={100}
             className={inputClass}
             autoFocus
@@ -142,7 +144,7 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
         </div>
 
         <div>
-          <label className={labelClass}>Title template</label>
+          <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.titleLabel')}</label>
           <input
             type="text"
             value={title}
@@ -154,35 +156,35 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
         </div>
 
         <div>
-          <label className={labelClass}>Description template</label>
+          <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.descriptionLabel')}</label>
           <MarkdownEditor
             value={description}
             onChange={setDescription}
-            placeholder="Optional template body… (markdown + {{wildcards}} supported)"
+            placeholder={t('milestonesTemplatesSchedules:templateModal.descriptionPlaceholder')}
             rows={5}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Client</label>
+            <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.clientLabel')}</label>
             <input
               type="text"
               value={client}
               onChange={(e) => setClient(e.target.value)}
-              placeholder="Client name"
+              placeholder={t('milestonesTemplatesSchedules:templateModal.clientPlaceholder')}
               maxLength={255}
               className={inputClass}
             />
           </div>
           <div>
-            <label className={labelClass}>Priority</label>
+            <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.priorityLabel')}</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as JobPriority | '')}
               className={inputClass}
             >
-              <option value="">— none —</option>
+              <option value="">{t('milestonesTemplatesSchedules:templateModal.priorityNoneOption')}</option>
               {PRIORITIES.map(({ value, label }) => (
                 <option key={value} value={value}>{label}</option>
               ))}
@@ -192,7 +194,7 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Assignee mode</label>
+            <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.assigneeModeLabel')}</label>
             <select
               value={assigneeMode}
               onChange={(e) => {
@@ -201,19 +203,19 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
               }}
               className={inputClass}
             >
-              <option value="NONE">None — leave blank</option>
-              {!isOrgMode && <option value="FIXED">Fixed — pre-fill assignee</option>}
-              <option value="ASK">Ask — focus field on creation</option>
+              <option value="NONE">{t('milestonesTemplatesSchedules:templateModal.assigneeModeNone')}</option>
+              {!isOrgMode && <option value="FIXED">{t('milestonesTemplatesSchedules:templateModal.assigneeModeFixed')}</option>}
+              <option value="ASK">{t('milestonesTemplatesSchedules:templateModal.assigneeModeAsk')}</option>
             </select>
           </div>
           <div>
-            <label className={labelClass}>Deadline offset (days)</label>
+            <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.deadlineOffsetLabel')}</label>
             <input
               type="number"
               min={1}
               value={deadlineOffset}
               onChange={(e) => setDeadlineOffset(e.target.value)}
-              placeholder="e.g. 7"
+              placeholder={t('milestonesTemplatesSchedules:templateModal.deadlineOffsetPlaceholder')}
               className={inputClass}
             />
           </div>
@@ -221,11 +223,11 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
 
         {assigneeMode === 'FIXED' && !isOrgMode && (
           <div>
-            <label className={labelClass}>Assignee</label>
+            <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.assigneeLabel')}</label>
             <div className="relative" ref={containerRef}>
               <input
                 className={inputClass}
-                placeholder="Search member…"
+                placeholder={t('milestonesTemplatesSchedules:templateModal.assigneeSearchPlaceholder')}
                 value={selectedAssignee ? selectedAssignee.userName : memberSearch}
                 onChange={(e) => {
                   setMemberSearch(e.target.value);
@@ -266,13 +268,13 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
 
         {!isOrgMode && milestones.length > 0 && (
           <div>
-            <label className={labelClass}>Milestone</label>
+            <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.milestoneLabel')}</label>
             <select
               value={milestoneId}
               onChange={(e) => setMilestoneId(e.target.value)}
               className={inputClass}
             >
-              <option value="">No milestone</option>
+              <option value="">{t('milestonesTemplatesSchedules:templateModal.milestoneNoneOption')}</option>
               {milestones.map((ms) => (
                 <option key={ms.id} value={ms.id}>{ms.name}</option>
               ))}
@@ -287,7 +289,7 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
             className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
           >
             <span>{wildcardOpen ? '▾' : '▸'}</span>
-            Available wildcards
+            {t('milestonesTemplatesSchedules:templateModal.wildcardsToggle')}
           </button>
           {wildcardOpen && (
             <div className="mt-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3">
@@ -305,14 +307,14 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
 
         {isError && (
           <p className="text-sm text-red-600 dark:text-red-400">
-            Failed to {isEdit ? 'update' : 'create'} template. Please try again.
+            {isEdit ? t('milestonesTemplatesSchedules:templateModal.errorUpdate') : t('milestonesTemplatesSchedules:templateModal.errorCreate')}
           </p>
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" type="button" onClick={handleClose}>Cancel</Button>
+          <Button variant="secondary" type="button" onClick={handleClose}>{t('common:cancel')}</Button>
           <Button variant="primary" type="submit" disabled={!name.trim()} loading={isPending}>
-            {isEdit ? 'Save' : 'Create'}
+            {isEdit ? t('common:save') : t('common:create')}
           </Button>
         </div>
 

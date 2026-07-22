@@ -1,1 +1,71 @@
-{}
+{
+  "titleLabel": "Title",
+  "clientLabel": "Client",
+  "deadlineLabel": "Deadline",
+  "assignedToLabel": "Assigned to",
+  "priorityLabel": "Priority",
+  "descriptionLabel": "Description",
+  "priorityLow": "Low",
+  "priorityMedium": "Medium",
+  "priorityHigh": "High",
+  "priorityCritical": "Critical",
+
+  "newJobModal": {
+    "editTitle": "Edit Job",
+    "newTitle": "New Job",
+    "titleRequired": "Title is required",
+    "max255Characters": "Max 255 characters",
+    "max10000Characters": "Max 10000 characters",
+    "startFromTemplateLabel": "Start from template",
+    "optionalPlaceholder": "— optional —",
+    "orgTemplateName": "[Org] {{name}}",
+    "titlePlaceholder": "e.g. Fix login bug",
+    "descriptionPlaceholder": "Optional details… (markdown supported)",
+    "clientPlaceholder": "Client name",
+    "milestoneLabel": "Milestone",
+    "noMilestoneOption": "No milestone",
+    "assignToLabel": "Assign to",
+    "searchMemberPlaceholder": "Search member…",
+    "saveChanges": "Save changes",
+    "createJob": "Create job"
+  },
+
+  "jobListPage": {
+    "heading": "Jobs",
+    "newJobButton": "+ New Job",
+    "searchPlaceholder": "Search by title, client, or assignee…",
+    "allPrioritiesOption": "All priorities",
+    "statusFilterAll": "All",
+    "statusFilterNew": "New",
+    "statusFilterInProgress": "In Progress",
+    "statusFilterBlocked": "Blocked",
+    "statusFilterCompleted": "Completed",
+    "statusHeader": "Status",
+    "allMilestonesOption": "All milestones",
+    "groupedToggle": "Grouped",
+    "flatToggle": "Flat",
+    "noResultsFor": "No results for \"{{query}}\".",
+    "noJobsYet": "No jobs yet.",
+    "noJobsMatchFilter": "No jobs match this filter.",
+    "createFirstJob": "Create first job",
+    "ungroupedGroupTitle": "Ungrouped",
+    "noJobsInGroup": "No jobs in this group.",
+    "failedToLoad": "Failed to load jobs."
+  },
+
+  "jobDetailPage": {
+    "failedToLoad": "Failed to load job.",
+    "jobsBreadcrumb": "Jobs",
+    "createdBySchedule": "Created by schedule",
+    "editButton": "Edit",
+    "deleteJobButton": "Delete Job",
+    "createdLabel": "Created",
+    "notesSection": "Notes",
+    "approvalsSection": "Approvals",
+    "linksSection": "Links",
+    "jobHistorySection": "Job History",
+    "relationshipsSection": "Relationships",
+    "pendingCount": "{{count}} pending",
+    "deleteJobConfirmMessage": "Delete \"{{title}}\"? This cannot be undone."
+  }
+}

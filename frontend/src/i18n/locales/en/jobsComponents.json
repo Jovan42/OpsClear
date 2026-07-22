@@ -1,1 +1,113 @@
-{}
+{
+  "unknownUser": "Unknown user",
+  "addRelationshipModal": {
+    "title": "Add Relationship",
+    "typeLabel": "Type",
+    "jobLabel": "Job",
+    "searchPlaceholder": "Search jobs…",
+    "noJobsFound": "No jobs found.",
+    "types": {
+      "blockedBy": {
+        "label": "Blocked by",
+        "description": "This job is blocked by the selected job"
+      },
+      "relatedTo": {
+        "label": "Related to",
+        "description": "These jobs are related"
+      },
+      "duplicates": {
+        "label": "Duplicates",
+        "description": "This job duplicates the selected job"
+      }
+    }
+  },
+  "approvalDecisionModal": {
+    "approveTitle": "Approve Request",
+    "rejectTitle": "Reject Request",
+    "alreadyDecided": "This approval was already decided by another user.",
+    "commentLabel": "Comment",
+    "approveCommentPlaceholder": "e.g. Approved, order within budget",
+    "rejectCommentPlaceholder": "e.g. Use alternative supplier",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "approvalList": {
+    "noRequests": "No approval requests.",
+    "requestedBy": "Requested by {{name}}",
+    "approvedBy": "Approved by {{name}}",
+    "rejectedBy": "Rejected by {{name}}",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    }
+  },
+  "blockedBanner": {
+    "blockedSince": "Blocked since {{date}}"
+  },
+  "blockModal": {
+    "title": "Block Job",
+    "reasonLabel": "Block reason",
+    "reasonPlaceholder": "Select or type a reason…"
+  },
+  "jobStatusBar": {
+    "start": "Start",
+    "complete": "Complete",
+    "block": "Block",
+    "unblock": "Unblock",
+    "reopen": "Reopen",
+    "requestApproval": "Request Approval",
+    "completeModal": {
+      "title": "Complete Job",
+      "message": "Mark this job as complete? This cannot be undone by the assigned member.",
+      "confirmLabel": "Mark Complete"
+    },
+    "unblockModal": {
+      "title": "Unblock Job",
+      "message": "Unblock this job and resume work?"
+    }
+  },
+  "linksSection": {
+    "noLinks": "No links yet.",
+    "urlPlaceholder": "https://…",
+    "labelPlaceholder": "Label",
+    "labelOptionalPlaceholder": "Label (optional)",
+    "addedBy": "Added by {{name}}",
+    "copied": "Copied!",
+    "copyUrl": "Copy URL",
+    "editLink": "Edit link",
+    "deleteLink": "Delete link",
+    "addLink": "+ Add link",
+    "deleteModal": {
+      "title": "Delete Link",
+      "message": "Remove \"{{name}}\"?"
+    }
+  },
+  "noteThread": {
+    "noNotes": "No notes yet.",
+    "placeholder": "Add a note… (markdown supported)",
+    "addNote": "Add Note",
+    "confirmMessage": "Notes cannot be edited or deleted. Add anyway?"
+  },
+  "relationshipsSection": {
+    "heading": "Relationships",
+    "add": "+ Add",
+    "noRelationships": "No relationships yet.",
+    "deletedJob": "(deleted)",
+    "removeRelationship": "Remove relationship",
+    "blocks": "Blocks",
+    "duplicatedBy": "Duplicated by"
+  },
+  "requestApprovalModal": {
+    "descriptionLabel": "Description",
+    "placeholder": "What needs approval and why…"
+  },
+  "statusHistory": {
+    "createdAs": "Created as",
+    "heading": "Status history",
+    "noHistory": "No history yet.",
+    "durationIn": "{{duration}} in {{status}}",
+    "unknown": "Unknown",
+    "reason": "Reason: {{reason}}"
+  }
+}
