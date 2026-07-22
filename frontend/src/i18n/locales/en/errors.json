@@ -1,0 +1,10 @@
+{
+  "notFound": "Not Found",
+  "conflict": "Conflict",
+  "badRequest": "Bad Request",
+  "validationError": "Validation Error",
+  "forbidden": "Forbidden",
+  "internalServerError": "Internal Server Error",
+  "somethingWentWrong": "Something went wrong.",
+  "networkError": "Network error — check your connection."
+}

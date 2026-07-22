@@ -1,0 +1,22 @@
+{
+  "save": "Sačuvaj",
+  "cancel": "Otkaži",
+  "delete": "Obriši",
+  "edit": "Izmeni",
+  "add": "Dodaj",
+  "close": "Zatvori",
+  "confirm": "Potvrdi",
+  "loading": "Učitavanje…",
+  "back": "Nazad",
+  "next": "Dalje",
+  "optional": "Opciono",
+  "search": "Pretraga",
+  "yes": "Da",
+  "no": "Ne",
+  "remove": "Ukloni",
+  "update": "Ažuriraj",
+  "create": "Kreiraj",
+  "submit": "Pošalji",
+  "required": "Obavezno",
+  "none": "Ništa"
+}

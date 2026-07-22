@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import i18n from '../i18n';
 import {
   PreferencesContext,
   defaults,
@@ -17,6 +18,10 @@ function load(): Preferences {
 
 export default function PreferencesProvider({ children }: { readonly children: ReactNode }) {
   const [prefs, setPrefs] = useState<Preferences>(load);
+
+  useEffect(() => {
+    void i18n.changeLanguage(prefs.locale);
+  }, [prefs.locale]);
 
   function update(patch: Partial<Preferences>) {
     const next = { ...prefs, ...patch };
