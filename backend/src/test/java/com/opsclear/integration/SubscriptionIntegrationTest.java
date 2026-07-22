@@ -3,6 +3,7 @@ package com.opsclear.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.model.ProjectStatus;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrgSubscriptionRepository;
@@ -307,6 +308,36 @@ class SubscriptionIntegrationTest {
                         .content(objectMapper.writeValueAsString(Map.of("tierId", tierId, "billingCycle", "MONTHLY"))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("active projects")));
+    }
+
+    @Test
+    @DisplayName("upsertSubscription_shouldReturn200_whenCompletedProjectsExcludedFromActiveCount")
+    void upsertSubscription_shouldReturn200_whenCompletedProjectsExcludedFromActiveCount() throws Exception {
+        // Tier allows maxProjects=3. Create 3 active + 2 completed (5 total) — only the 3 active
+        // should count, so the downgrade must succeed despite 5 total projects existing.
+        for (int i = 0; i < 3; i++) {
+            projectRepository.save(ProjectModel.builder()
+                    .friendlyId("PRJ-ACTIVE-" + i)
+                    .name("Active project " + i)
+                    .ownerId(ownerId)
+                    .organisationId(orgId)
+                    .build());
+        }
+        for (int i = 0; i < 2; i++) {
+            projectRepository.save(ProjectModel.builder()
+                    .friendlyId("PRJ-DONE-" + i)
+                    .name("Completed project " + i)
+                    .ownerId(ownerId)
+                    .organisationId(orgId)
+                    .status(ProjectStatus.COMPLETED)
+                    .build());
+        }
+
+        mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId, "billingCycle", "MONTHLY"))))
+                .andExpect(status().isOk());
     }
 
     @Test
