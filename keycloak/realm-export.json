@@ -4,7 +4,7 @@
   "displayName": "OpsClear",
   "loginTheme": "opsclear",
   "internationalizationEnabled": true,
-  "supportedLocales": ["en"],
+  "supportedLocales": ["en", "sr"],
   "defaultLocale": "en",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
