@@ -19,9 +19,13 @@ interface Props {
   links: LinkResponse[];
   canManage: boolean;
   onClose: () => void;
+  /** Overrides the default floating-dropdown positioning — used by the mobile NavDrawer
+   *  (ADR-0038) to render the panel inline instead, since an absolutely-positioned
+   *  `right-0` panel can get clipped inside the drawer's scrollable item list. */
+  className?: string;
 }
 
-export default function ProjectLinksDropdown({ projectId, links, canManage, onClose }: Props) {
+export default function ProjectLinksDropdown({ projectId, links, canManage, onClose, className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const { mutate: createLink, isPending: isCreating } = useCreateProjectLink(projectId);
   const { mutate: updateLink, isPending: isUpdating } = useUpdateProjectLink(projectId);
@@ -86,7 +90,7 @@ export default function ProjectLinksDropdown({ projectId, links, canManage, onCl
   return (
     <div
       ref={ref}
-      className="absolute right-0 mt-2 w-80 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 p-3 space-y-2"
+      className={className ?? 'absolute right-0 mt-2 w-80 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 p-3 space-y-2'}
     >
       <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">Project Links</p>
 
