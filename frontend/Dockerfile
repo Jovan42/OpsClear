@@ -17,6 +17,11 @@ ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL
 ENV VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM
 ENV VITE_KEYCLOAK_CLIENT_ID=$VITE_KEYCLOAK_CLIENT_ID
 
+# The deploy host is a 1GB-RAM VPS; Node's default heap-size heuristic under-detects
+# headroom there and V8 hits its own heap ceiling mid-build well before the OS would
+# actually run out of memory (with swap backing it). Raise the ceiling explicitly.
+ENV NODE_OPTIONS=--max-old-space-size=3072
+
 RUN npm run build
 
 # ── Serve stage ───────────────────────────────────────────────────────────────
