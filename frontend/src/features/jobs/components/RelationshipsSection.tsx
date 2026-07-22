@@ -70,7 +70,7 @@ export default function RelationshipsSection({
 
               {rel.job.id ? (
                 <Link
-                  to={`/projects/${projectId}/jobs/${rel.job.id}`}
+                  to={`/projects/${projectId}/jobs/${rel.job.friendlyId ?? rel.job.id}`}
                   className={`flex-1 truncate font-medium hover:underline ${
                     rel.job.status === 'COMPLETED'
                       ? 'line-through text-gray-400 dark:text-gray-500'

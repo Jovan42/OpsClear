@@ -28,6 +28,7 @@ public class JobRelationshipView {
     @Builder
     public static class JobRef {
         private UUID id;
+        private String friendlyId;
         private String title;
         private JobStatus status;
     }
@@ -39,6 +40,7 @@ public class JobRelationshipView {
                 .direction(entry.getDirection())
                 .job(JobRef.builder()
                         .id(entry.getLinkedJobId())
+                        .friendlyId(entry.getLinkedJobFriendlyId())
                         .title(entry.getLinkedJobTitle())
                         .status(entry.getLinkedJobStatus())
                         .build())

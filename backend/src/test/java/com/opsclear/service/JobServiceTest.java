@@ -422,7 +422,7 @@ class JobServiceTest {
         UUID jobId = UUID.randomUUID();
         UUID linkedJobId = UUID.randomUUID();
         JobModel job = JobModel.builder().id(jobId).projectId(projectId).title("Source").status(JobStatus.NEW).build();
-        JobModel linkedJob = JobModel.builder().id(linkedJobId).projectId(projectId).title("Target").status(JobStatus.IN_PROGRESS).build();
+        JobModel linkedJob = JobModel.builder().id(linkedJobId).friendlyId("JOB-042").projectId(projectId).title("Target").status(JobStatus.IN_PROGRESS).build();
         JobRelationshipModel rel = JobRelationshipModel.builder()
                 .id(UUID.randomUUID())
                 .sourceJobId(jobId)
@@ -443,6 +443,7 @@ class JobServiceTest {
         assertThat(result.getRelationships().getFirst().getDirection()).isEqualTo(JobRelationshipDirection.OUTGOING);
         assertThat(result.getRelationships().getFirst().getType()).isEqualTo(JobRelationshipType.BLOCKED_BY);
         assertThat(result.getRelationships().getFirst().getLinkedJobId()).isEqualTo(linkedJobId);
+        assertThat(result.getRelationships().getFirst().getLinkedJobFriendlyId()).isEqualTo("JOB-042");
         assertThat(result.getRelationships().getFirst().getLinkedJobTitle()).isEqualTo("Target");
         assertThat(result.getRelationships().getFirst().getLinkedJobStatus()).isEqualTo(JobStatus.IN_PROGRESS);
     }
@@ -499,6 +500,7 @@ class JobServiceTest {
         JobModel result = jobService.getById(projectId, jobId, ownerId);
 
         assertThat(result.getRelationships()).hasSize(1);
+        assertThat(result.getRelationships().getFirst().getLinkedJobFriendlyId()).isNull();
         assertThat(result.getRelationships().getFirst().getLinkedJobTitle()).isNull();
         assertThat(result.getRelationships().getFirst().getLinkedJobStatus()).isNull();
     }

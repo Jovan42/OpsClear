@@ -419,6 +419,7 @@ class JobRelationshipIntegrationTest {
                 .andExpect(jsonPath("$.relationships[0].type").value("BLOCKED_BY"))
                 .andExpect(jsonPath("$.relationships[0].direction").value("OUTGOING"))
                 .andExpect(jsonPath("$.relationships[0].job.id").value(target.getId().toString()))
+                .andExpect(jsonPath("$.relationships[0].job.friendlyId").value(target.getFriendlyId()))
                 .andExpect(jsonPath("$.relationships[0].job.title").value("Target job"))
                 .andExpect(jsonPath("$.relationships[0].job.status").value("NEW"));
     }
@@ -444,6 +445,7 @@ class JobRelationshipIntegrationTest {
                 .andExpect(jsonPath("$.relationships[0].type").value("RELATED_TO"))
                 .andExpect(jsonPath("$.relationships[0].direction").value("INCOMING"))
                 .andExpect(jsonPath("$.relationships[0].job.id").value(source.getId().toString()))
+                .andExpect(jsonPath("$.relationships[0].job.friendlyId").value(source.getFriendlyId()))
                 .andExpect(jsonPath("$.relationships[0].job.title").value("Source job"));
     }
 
@@ -482,6 +484,7 @@ class JobRelationshipIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.relationships.length()").value(1))
+                .andExpect(jsonPath("$.relationships[0].job.friendlyId").doesNotExist())
                 .andExpect(jsonPath("$.relationships[0].job.title").doesNotExist())
                 .andExpect(jsonPath("$.relationships[0].job.status").doesNotExist());
     }
@@ -521,6 +524,7 @@ class JobRelationshipIntegrationTest {
 
     private JobModel createJob(String title) {
         return jobRepository.save(JobModel.builder()
+                .friendlyId("JOB-" + UUID.randomUUID().toString().substring(0, 8))
                 .projectId(projectId)
                 .title(title)
                 .status(JobStatus.NEW)

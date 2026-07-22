@@ -23,6 +23,7 @@ public class JobRelationshipEntry {
     private JobRelationshipType type;
     private JobRelationshipDirection direction;
     private UUID linkedJobId;
+    private String linkedJobFriendlyId;
     private String linkedJobTitle;
     private JobStatus linkedJobStatus;
 }
