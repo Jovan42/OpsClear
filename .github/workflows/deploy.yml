@@ -13,7 +13,6 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
-      keycloak: ${{ steps.filter.outputs.keycloak }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -24,12 +23,10 @@ jobs:
               - 'backend/**'
             frontend:
               - 'frontend/**'
-            keycloak:
-              - 'keycloak/**'
 
-  # deploy-backend, deploy-frontend, and deploy-keycloak all `git pull` + `docker compose`
-  # against the same checkout on the same host — sharing one concurrency group serializes
-  # them instead of racing when a single push touches more than one path.
+  # deploy-backend and deploy-frontend both `git pull` + `docker compose` against the
+  # same checkout on the same host — sharing one concurrency group serializes them
+  # instead of racing when a single push touches both paths.
   deploy-backend:
     name: Deploy backend
     needs: changes
@@ -73,25 +70,3 @@ jobs:
             git pull origin main
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build frontend
             docker image prune -f
-
-  deploy-keycloak:
-    name: Deploy Keycloak theme
-    needs: changes
-    if: needs.changes.outputs.keycloak == 'true'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: deploy-ssh
-      cancel-in-progress: false
-    steps:
-      - name: Deploy Keycloak theme via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            cd ~/OpsClear
-            git pull origin main
-            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d keycloak
-            ./keycloak/apply-realm-config.sh docker-compose.prod.yml .env.prod
