@@ -1,0 +1,259 @@
+/* OpsClear Keycloak auth theme — brand tokens ported by hand from frontend/src/index.css
+   (--brand, --brand-dark, --brand-light, --font-sans). No shared build step with the React
+   app, so a future brand-color change needs updating both places (see ADR-0036). */
+
+:root {
+  --oc-brand: #059669;
+  --oc-brand-dark: #047857;
+  --oc-brand-light: #d1fae5;
+  --oc-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --oc-gray-50: #ffffff;
+  --oc-gray-100: #f3f4f6;
+  --oc-gray-200: #e5e7eb;
+  --oc-gray-300: #d1d5db;
+  --oc-gray-500: #6b7280;
+  --oc-gray-700: #374151;
+  --oc-gray-900: #111827;
+  --oc-red-600: #dc2626;
+}
+
+/* Two competing decorative backgrounds to neutralize here:
+   - PatternFly's patternfly-additions.min.css: `.login-pf { background: ...bg-login.jpg }`
+     (`.login-pf` is the class on <html>)
+   - The base "keycloak" theme's own login.css: `.login-pf body { background: ...keycloak-bg.png }`
+     (a descendant selector, specificity 0,1,1 — higher than a plain `body` rule)
+   `!important` is used deliberately here: these are vendor decorative images we're
+   intentionally replacing wholesale, not incrementally tweaking. */
+html,
+html.login-pf,
+body,
+.login-pf body {
+  min-height: 100%;
+  background-color: var(--oc-gray-50) !important;
+  background-image: none !important;
+  font-family: var(--oc-font-sans), sans-serif;
+  color: var(--oc-gray-900);
+}
+
+.login-pf-page {
+  background-color: var(--oc-gray-50) !important;
+  background-image: none !important;
+}
+
+#kc-header,
+.login-pf-page-header {
+  color: var(--oc-brand);
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  padding: 2rem 0 0.5rem;
+}
+
+#kc-header-wrapper {
+  color: inherit;
+}
+
+/* Card */
+.card-pf,
+#kc-content {
+  background: #fff;
+  border: 1px solid var(--oc-gray-200);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  max-width: 420px;
+  margin: 1rem auto;
+  padding: 2rem;
+}
+
+#kc-page-title,
+h1 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--oc-gray-900);
+  text-align: center;
+  margin: 0 0 1.5rem;
+}
+
+/* Form groups (kcFormGroupClass/kcFormOptionsClass/kcFormButtonsClass from the parent
+   "keycloak" base theme's theme.properties all resolve to "form-group") */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+label,
+.control-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--oc-gray-700);
+  margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+.form-control {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--oc-gray-900);
+  background-color: #fff;
+  border: 1px solid var(--oc-gray-300);
+  border-radius: 0.5rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+.form-control:focus {
+  outline: none;
+  border-color: var(--oc-brand);
+  box-shadow: 0 0 0 3px var(--oc-brand-light);
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--oc-red-600);
+}
+
+.input-error,
+#input-error,
+#input-error-firstname,
+#input-error-lastname,
+#input-error-email,
+#input-error-username,
+#input-error-password,
+#input-error-password-confirm {
+  display: block;
+  color: var(--oc-red-600);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* Buttons. The parent theme renders these with PatternFly classes
+   (pf-c-button pf-m-primary pf-m-block btn-lg) whose own color rules are more
+   specific than a plain `.btn-primary`/`input[type=submit]` selector, so the
+   brand-color overrides need `!important` to reliably win. */
+.btn,
+button,
+input[type="submit"] {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  padding: 0.625rem 1rem;
+}
+
+.btn-primary,
+input[type="submit"],
+.pf-c-button.pf-m-primary {
+  background-color: var(--oc-brand) !important;
+  border-color: var(--oc-brand) !important;
+  color: #fff !important;
+  width: 100%;
+}
+
+.btn-primary:hover,
+input[type="submit"]:hover,
+.pf-c-button.pf-m-primary:hover {
+  background-color: var(--oc-brand-dark) !important;
+  border-color: var(--oc-brand-dark) !important;
+}
+
+.btn-default,
+.pf-c-button.pf-m-secondary {
+  background-color: #fff !important;
+  color: var(--oc-gray-700) !important;
+  border: 1px solid var(--oc-gray-300) !important;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+#kc-form-buttons {
+  margin-top: 1.5rem;
+}
+
+/* Checkbox rows (remember me / logout other sessions) */
+.checkbox label,
+#kc-form-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 400;
+  color: var(--oc-gray-700);
+}
+
+.checkbox input[type="checkbox"],
+#kc-form-options input[type="checkbox"] {
+  width: auto;
+}
+
+/* Links */
+a {
+  color: var(--oc-brand);
+  text-decoration: none;
+  font-size: 0.8125rem;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+#kc-form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+/* Register / forgot-password footer links.
+   #kc-registration-container sits nested inside #kc-info — style only the
+   outer wrapper, or the divider (border + spacing) doubles up.
+   The base theme's login.css gives #kc-info a full-bleed treatment
+   (negative left/right/bottom margins) and a gray #kc-info-wrapper
+   background for its own card layout — reset both, we want it flush
+   with our own card padding instead. */
+#kc-info {
+  margin: 1.5rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--oc-gray-200);
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--oc-gray-500);
+}
+
+#kc-info-wrapper {
+  padding: 0;
+  background-color: transparent;
+}
+
+/* Alert / message banner */
+.alert {
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+}
+
+.alert-error {
+  background-color: #fef2f2;
+  color: var(--oc-red-600);
+  border: 1px solid #fecaca;
+}
+
+.alert-warning {
+  background-color: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.alert-success {
+  background-color: var(--oc-brand-light);
+  color: var(--oc-brand-dark);
+  border: 1px solid var(--oc-brand);
+}
