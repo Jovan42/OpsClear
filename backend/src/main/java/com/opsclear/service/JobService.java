@@ -140,6 +140,7 @@ public class JobService {
                             .type(r.getType())
                             .direction(outgoing ? JobRelationshipDirection.OUTGOING : JobRelationshipDirection.INCOMING)
                             .linkedJobId(linkedId)
+                            .linkedJobFriendlyId(linked != null ? linked.getFriendlyId() : null)
                             .linkedJobTitle(linked != null ? linked.getTitle() : null)
                             .linkedJobStatus(linked != null ? linked.getStatus() : null)
                             .build();

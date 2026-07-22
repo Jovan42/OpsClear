@@ -42,6 +42,7 @@ export type JobRelationshipDirection = 'OUTGOING' | 'INCOMING';
 
 export interface JobRef {
   id: string;
+  friendlyId: string | null;
   title: string | null;
   status: JobStatus | null;
 }
