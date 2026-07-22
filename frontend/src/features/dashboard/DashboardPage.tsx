@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -11,6 +12,7 @@ import { useDashboard } from './useDashboard';
 import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from '../org/OrgContext';
+import i18n from '../../i18n';
 import type { DashboardSummary, JobSummary, PendingApprovalResponse } from '../../types';
 
 // ---- helpers ----
@@ -27,9 +29,9 @@ function formatDate(dateStr: string | null) {
 function blockedFor(blockedAt: string | null) {
   if (!blockedAt) return null;
   const days = Math.floor((Date.now() - new Date(blockedAt).getTime()) / 86_400_000);
-  if (days === 0) return 'today';
-  if (days === 1) return '1 day ago';
-  return `${days} days ago`;
+  if (days === 0) return i18n.t('approvalsDashboardSettingsLanding:dashboard.today');
+  if (days === 1) return i18n.t('approvalsDashboardSettingsLanding:dashboard.oneDayAgo');
+  return i18n.t('approvalsDashboardSettingsLanding:dashboard.daysAgo', { count: days });
 }
 
 // ---- Donut chart ----
@@ -42,18 +44,19 @@ const CHART_COLORS = {
 };
 
 function StatusDonut({ summary }: Readonly<{ summary: DashboardSummary }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
   if (summary.total === 0) return null;
 
   const data = [
-    { name: 'New', value: summary.newCount, fill: CHART_COLORS.NEW },
-    { name: 'In Progress', value: summary.inProgressCount, fill: CHART_COLORS.IN_PROGRESS },
-    { name: 'Blocked', value: summary.blockedCount, fill: CHART_COLORS.BLOCKED },
-    { name: 'Completed', value: summary.completedCount, fill: CHART_COLORS.COMPLETED },
+    { name: t('dashboard.statusLabels.new'), value: summary.newCount, fill: CHART_COLORS.NEW },
+    { name: t('dashboard.statusLabels.inProgress'), value: summary.inProgressCount, fill: CHART_COLORS.IN_PROGRESS },
+    { name: t('dashboard.statusLabels.blocked'), value: summary.blockedCount, fill: CHART_COLORS.BLOCKED },
+    { name: t('dashboard.statusLabels.completed'), value: summary.completedCount, fill: CHART_COLORS.COMPLETED },
   ].filter((d) => d.value > 0);
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 flex flex-col">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Status distribution</h2>
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t('dashboard.statusDistribution')}</h2>
       <div className="flex-1" style={{ minHeight: 180 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -114,6 +117,7 @@ function SummaryCards({
   projectId: string;
   isOwnerOrAdmin: boolean;
 }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const navigate = useNavigate();
 
   const goToJobs = (status?: string) => {
@@ -123,40 +127,40 @@ function SummaryCards({
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Summary</h2>
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t('dashboard.summaryHeading')}</h2>
       <div className="grid grid-cols-2 gap-2">
         <SummaryCard
-          label="New"
+          label={t('dashboard.statusLabels.new')}
           value={summary.newCount}
           colorClass="text-amber-600"
           onClick={() => goToJobs('NEW')}
         />
         <SummaryCard
-          label="In Progress"
+          label={t('dashboard.statusLabels.inProgress')}
           value={summary.inProgressCount}
           colorClass="text-blue-600"
           onClick={() => goToJobs('IN_PROGRESS')}
         />
         <SummaryCard
-          label="Blocked"
+          label={t('dashboard.statusLabels.blocked')}
           value={summary.blockedCount}
           colorClass="text-red-600"
           onClick={() => goToJobs('BLOCKED')}
         />
         <SummaryCard
-          label="Completed"
+          label={t('dashboard.statusLabels.completed')}
           value={summary.completedCount}
           colorClass="text-green-600"
           onClick={() => goToJobs('COMPLETED')}
         />
         <SummaryCard
-          label="Overdue"
+          label={t('dashboard.statusLabels.overdue')}
           value={summary.overdueCount}
           colorClass="text-orange-600"
         />
         {isOwnerOrAdmin && (
           <SummaryCard
-            label="Pending approvals"
+            label={t('dashboard.statusLabels.pendingApprovals')}
             value={summary.pendingApprovalsCount}
             colorClass="text-purple-600"
             onClick={() => navigate(`/projects/${projectId}/approvals`)}
@@ -170,14 +174,15 @@ function SummaryCards({
 // ---- Blocked jobs ----
 
 function BlockedJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId: string }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const navigate = useNavigate();
   return (
     <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{job.title}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          {job.assignedToName ?? 'Unassigned'}
-          {job.blockedAt && <> · blocked {blockedFor(job.blockedAt)}</>}
+          {job.assignedToName ?? t('dashboard.unassigned')}
+          {job.blockedAt && <> {t('dashboard.blockedSuffix', { time: blockedFor(job.blockedAt) })}</>}
         </p>
         {job.blockedReason && (
           <p className="text-xs text-red-600 dark:text-red-400 mt-1 italic">"{job.blockedReason}"</p>
@@ -196,6 +201,7 @@ function BlockedJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId
 // ---- Overdue jobs ----
 
 function OverdueJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId: string }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const navigate = useNavigate();
   const formatDeadline = useFormatDeadline();
   return (
@@ -203,8 +209,8 @@ function OverdueJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId
       <div className="min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{job.title}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          {job.assignedToName ?? 'Unassigned'}
-          {job.deadline && <> · due {formatDeadline(job.deadline, job.status).text}</>}
+          {job.assignedToName ?? t('dashboard.unassigned')}
+          {job.deadline && <> {t('dashboard.dueSuffix', { time: formatDeadline(job.deadline, job.status).text })}</>}
         </p>
       </div>
       <button
@@ -277,18 +283,19 @@ function Section({
 // ---- Page ----
 
 export default function DashboardPage() {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const { projectFriendlyId: projectId = '' } = useParams();
   const navigate = useNavigate();
   const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);
   const { data, isLoading, isError, refetch } = useDashboard(projectId);
-  usePageTitle('Dashboard', project?.name);
+  usePageTitle(t('dashboard.pageTitle'), project?.name);
   const { prefs } = usePreferences();
   const { hasAddon } = useCurrentOrg();
 
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
-  if (!hasAddon('DASHBOARD')) return <UpgradeCard featureName="Dashboard" />;
+  if (!hasAddon('DASHBOARD')) return <UpgradeCard featureName={t('dashboard.featureName')} />;
 
   if (isLoading) {
     return (
@@ -313,7 +320,7 @@ export default function DashboardPage() {
   }
 
   if (isError || !data) {
-    return <PageError message="Failed to load dashboard." onRetry={() => void refetch()} />;
+    return <PageError message={t('dashboard.loadError')} onRetry={() => void refetch()} />;
   }
 
   const { summary, blockedJobs, overdueJobs, pendingApprovals } = data;
@@ -328,7 +335,7 @@ export default function DashboardPage() {
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
-          This project is completed. It is now read-only.
+          {t('dashboard.completedBanner')}
         </div>
       )}
 
@@ -347,7 +354,7 @@ export default function DashboardPage() {
 
       {/* Blocked jobs */}
       {prefs.showBlockedSection && blockedJobs.length > 0 && (
-        <Section title="Blocked" count={blockedJobs.length}>
+        <Section title={t('dashboard.sections.blocked')} count={blockedJobs.length}>
           {blockedJobs.map((job) => (
             <BlockedJobRow key={job.id} job={job} projectId={projectId} />
           ))}
@@ -356,7 +363,7 @@ export default function DashboardPage() {
 
       {/* Overdue jobs */}
       {prefs.showOverdueSection && overdueJobs.length > 0 && (
-        <Section title="Overdue" count={overdueJobs.length}>
+        <Section title={t('dashboard.sections.overdue')} count={overdueJobs.length}>
           {overdueJobs.map((job) => (
             <OverdueJobRow key={job.id} job={job} projectId={projectId} />
           ))}
@@ -366,7 +373,7 @@ export default function DashboardPage() {
       {/* Pending approvals (owner/admin only) */}
       {prefs.showPendingApprovalsSection && isOwnerOrAdmin && pendingApprovals.length > 0 && (
         <Section
-          title="Pending Approvals"
+          title={t('dashboard.sections.pendingApprovals')}
           count={pendingApprovals.length}
           action={
             pendingApprovals.length > 5 ? (
@@ -374,7 +381,7 @@ export default function DashboardPage() {
                 onClick={() => navigate(`/projects/${projectId}/approvals`)}
                 className="text-xs text-brand hover:underline cursor-pointer"
               >
-                → View all
+                {t('dashboard.viewAll')}
               </button>
             ) : undefined
           }
@@ -391,18 +398,18 @@ export default function DashboardPage() {
         (!prefs.showPendingApprovalsSection || !isOwnerOrAdmin || pendingApprovals.length === 0) &&
         summary.total > 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">All clear — no blocked, overdue, or pending items.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dashboard.allClear')}</p>
         </div>
       )}
 
       {summary.total === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">No jobs yet.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dashboard.noJobs')}</p>
           <button
             onClick={() => navigate(`/projects/${projectId}/jobs`)}
             className="mt-2 text-sm text-brand hover:underline cursor-pointer"
           >
-            Create the first job →
+            {t('dashboard.createFirstJob')}
           </button>
         </div>
       )}

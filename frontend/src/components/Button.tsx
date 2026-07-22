@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
 type Size = 'sm' | 'md';
@@ -32,6 +33,7 @@ export default function Button({
   style,
   ...props
 }: ButtonProps) {
+  const { t } = useTranslation('common');
   const primaryStyle =
     variant === 'primary'
       ? { backgroundColor: 'var(--brand)', ...style }
@@ -44,7 +46,7 @@ export default function Button({
       disabled={loading || props.disabled}
       {...props}
     >
-      {loading ? 'Loading…' : children}
+      {loading ? t('loading') : children}
     </button>
   );
 }

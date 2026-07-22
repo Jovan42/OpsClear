@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import type { RecurringScheduleResponse } from '../../types';
@@ -25,16 +26,17 @@ function addMonths(n: number): string {
   return d.toISOString();
 }
 
-const OPTIONS: { value: Option; label: string }[] = [
-  { value: '1d', label: '1 day' },
-  { value: '1w', label: '1 week' },
-  { value: '1m', label: '1 month' },
-  { value: 'custom', label: 'Custom date' },
-  { value: 'indefinite', label: 'Indefinitely' },
-];
-
 export default function PauseDialog({ schedule, open, onClose, onPause, isPending }: Readonly<Props>) {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const [selected, setSelected] = useState<Option>('1d');
+
+  const OPTIONS: { value: Option; label: string }[] = [
+    { value: '1d', label: t('milestonesTemplatesSchedules:pauseDialog.option1Day') },
+    { value: '1w', label: t('milestonesTemplatesSchedules:pauseDialog.option1Week') },
+    { value: '1m', label: t('milestonesTemplatesSchedules:pauseDialog.option1Month') },
+    { value: 'custom', label: t('milestonesTemplatesSchedules:pauseDialog.optionCustom') },
+    { value: 'indefinite', label: t('milestonesTemplatesSchedules:pauseDialog.optionIndefinite') },
+  ];
   const [customDate, setCustomDate] = useState('');
 
   function handleConfirm() {
@@ -48,7 +50,7 @@ export default function PauseDialog({ schedule, open, onClose, onPause, isPendin
   const canConfirm = selected !== 'custom' || !!customDate;
 
   return (
-    <Modal open={open} onClose={onClose} title={`Pause "${schedule.name}"`}>
+    <Modal open={open} onClose={onClose} title={t('milestonesTemplatesSchedules:pauseDialog.title', { name: schedule.name })}>
       <div className="space-y-4">
         <div className="space-y-2">
           {OPTIONS.map((opt) => (
@@ -69,7 +71,7 @@ export default function PauseDialog({ schedule, open, onClose, onPause, isPendin
         {selected === 'custom' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Resume on
+              {t('milestonesTemplatesSchedules:pauseDialog.resumeOnLabel')}
             </label>
             <input
               type="datetime-local"
@@ -82,9 +84,9 @@ export default function PauseDialog({ schedule, open, onClose, onPause, isPendin
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose} disabled={isPending}>{t('common:cancel')}</Button>
           <Button variant="primary" onClick={handleConfirm} loading={isPending} disabled={!canConfirm}>
-            Pause
+            {t('milestonesTemplatesSchedules:schedulesPage.pauseAction')}
           </Button>
         </div>
       </div>

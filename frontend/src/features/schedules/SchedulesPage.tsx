@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useSchedules, useDeleteSchedule, usePauseSchedule, useResumeSchedule } from './useSchedules';
 import { useProject } from '../projects/useProjects';
@@ -15,14 +16,15 @@ import PageError from '../../components/PageError';
 import type { RecurringScheduleResponse, ScheduleStatus } from '../../types';
 
 function StatusBadge({ status }: Readonly<{ status: ScheduleStatus }>) {
+  const { t } = useTranslation('milestonesTemplatesSchedules');
   const map: Record<ScheduleStatus, { label: string; cls: string }> = {
-    ACTIVE: { label: 'Active', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    PAUSED: { label: 'Paused', cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+    ACTIVE: { label: t('milestonesTemplatesSchedules:schedulesPage.statusActive'), cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+    PAUSED: { label: t('milestonesTemplatesSchedules:schedulesPage.statusPaused'), cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
     PAUSED_NO_ASSIGNEES: {
-      label: 'No assignees',
+      label: t('milestonesTemplatesSchedules:schedulesPage.statusNoAssignees'),
       cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     },
-    EXPIRED: { label: 'Expired', cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' },
+    EXPIRED: { label: t('milestonesTemplatesSchedules:schedulesPage.statusExpired'), cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' },
   };
   const { label, cls } = map[status];
   return <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
@@ -70,6 +72,7 @@ function ScheduleRow({
   onResume,
   isResuming,
 }: Readonly<ScheduleRowProps>) {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const isPaused = schedule.status === 'PAUSED' || schedule.status === 'PAUSED_NO_ASSIGNEES';
 
   return (
@@ -81,12 +84,12 @@ function ScheduleRow({
           <StatusBadge status={schedule.status} />
         </div>
         {schedule.templateName && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">Template: {schedule.templateName}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('milestonesTemplatesSchedules:schedulesPage.templateLabel', { name: schedule.templateName })}</p>
         )}
         <p className="text-xs text-gray-500 dark:text-gray-400">{toReadable(schedule.cronExpression)}</p>
         <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
           <span>
-            Next:{' '}
+            {t('milestonesTemplatesSchedules:schedulesPage.nextLabel')}{' '}
             {new Date(schedule.nextRunAt).toLocaleString(undefined, {
               weekday: 'short',
               month: 'short',
@@ -101,15 +104,15 @@ function ScheduleRow({
       <div className="flex items-center gap-1 shrink-0">
         {isPaused ? (
           <Button variant="ghost" size="sm" onClick={() => onResume(schedule)} loading={isResuming}>
-            Resume
+            {t('milestonesTemplatesSchedules:schedulesPage.resumeButton')}
           </Button>
         ) : (
           <Button variant="ghost" size="sm" onClick={() => onPause(schedule)}>
-            Pause
+            {t('milestonesTemplatesSchedules:schedulesPage.pauseAction')}
           </Button>
         )}
         <Button variant="ghost" size="sm" onClick={() => onEdit(schedule)}>
-          Edit
+          {t('common:edit')}
         </Button>
         <Button
           variant="ghost"
@@ -117,7 +120,7 @@ function ScheduleRow({
           onClick={() => onDelete(schedule)}
           className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
         >
-          Delete
+          {t('common:delete')}
         </Button>
       </div>
     </div>
@@ -143,6 +146,7 @@ function LoadingSkeleton() {
 }
 
 export default function SchedulesPage() {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   const { data: schedules = [], isLoading, isError, refetch } = useSchedules(projectId);
@@ -157,9 +161,9 @@ export default function SchedulesPage() {
   const [pausing, setPausing] = useState<RecurringScheduleResponse | null>(null);
   const [resumingId, setResumingId] = useState<string | null>(null);
 
-  usePageTitle('Schedules', project?.name);
+  usePageTitle(t('milestonesTemplatesSchedules:schedulesPage.pageTitle'), project?.name);
 
-  if (!hasAddon('RECURRING_SCHEDULING')) return <UpgradeCard featureName="Recurring Scheduling" />;
+  if (!hasAddon('RECURRING_SCHEDULING')) return <UpgradeCard featureName={t('milestonesTemplatesSchedules:schedulesPage.upgradeFeatureName')} />;
 
   if (isLoading) {
     return (
@@ -170,25 +174,25 @@ export default function SchedulesPage() {
   }
 
   if (isError) {
-    return <PageError message="Failed to load schedules." onRetry={() => void refetch()} />;
+    return <PageError message={t('milestonesTemplatesSchedules:schedulesPage.loadFailedMessage')} onRetry={() => void refetch()} />;
   }
 
   return (
     <>
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Schedules</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('milestonesTemplatesSchedules:schedulesPage.pageTitle')}</h1>
           <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
-            + New Schedule
+            {t('milestonesTemplatesSchedules:schedulesPage.newButton')}
           </Button>
         </div>
 
         {schedules.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              No schedules yet. Create a recurring schedule to automatically create jobs from templates.
+              {t('milestonesTemplatesSchedules:schedulesPage.emptyText')}
             </p>
-            <Button onClick={() => setShowCreate(true)}>Create first schedule</Button>
+            <Button onClick={() => setShowCreate(true)}>{t('milestonesTemplatesSchedules:schedulesPage.createFirstButton')}</Button>
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
@@ -248,9 +252,9 @@ export default function SchedulesPage() {
           if (!deleting) return;
           deleteSchedule.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
         }}
-        title="Delete Schedule"
-        message={`Delete "${deleting?.name}"? Jobs already created by this schedule will not be deleted.`}
-        confirmLabel="Delete"
+        title={t('milestonesTemplatesSchedules:schedulesPage.deleteModalTitle')}
+        message={t('milestonesTemplatesSchedules:schedulesPage.deleteModalMessage', { name: deleting?.name })}
+        confirmLabel={t('common:delete')}
         variant="danger"
         isPending={deleteSchedule.isPending}
       />

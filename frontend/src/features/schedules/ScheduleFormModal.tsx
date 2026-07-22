@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/Button';
 import { useCreateSchedule, useUpdateSchedule, useSchedulePreview } from './useSchedules';
 import { useTemplates } from '../templates/useTemplates';
@@ -6,15 +7,8 @@ import { useProjectMembers } from '../projects/useProjects';
 import { toReadable, buildCron, detectPreset, parseCronParams } from '../../utils/cron';
 import type { RecurringScheduleResponse, ProjectMemberResponse } from '../../types';
 
-const DAYS_OF_WEEK = [
-  { value: 'MON', label: 'Monday' },
-  { value: 'TUE', label: 'Tuesday' },
-  { value: 'WED', label: 'Wednesday' },
-  { value: 'THU', label: 'Thursday' },
-  { value: 'FRI', label: 'Friday' },
-  { value: 'SAT', label: 'Saturday' },
-  { value: 'SUN', label: 'Sunday' },
-];
+const DAY_VALUES = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+const DAY_LABEL_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
 type Preset = 'daily' | 'weekly' | 'monthly' | 'advanced';
 
@@ -39,6 +33,7 @@ function AssigneeRow({
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
 }>) {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   return (
     <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2">
       <div
@@ -54,7 +49,7 @@ function AssigneeRow({
         onClick={() => onMove(-1)}
         disabled={index === 0}
         className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-        title="Move up"
+        title={t('milestonesTemplatesSchedules:scheduleModal.moveUpTitle')}
       >
         ▲
       </button>
@@ -63,7 +58,7 @@ function AssigneeRow({
         onClick={() => onMove(1)}
         disabled={index === total - 1}
         className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-        title="Move down"
+        title={t('milestonesTemplatesSchedules:scheduleModal.moveDownTitle')}
       >
         ▼
       </button>
@@ -71,7 +66,7 @@ function AssigneeRow({
         type="button"
         onClick={onRemove}
         className="p-1 text-red-400 hover:text-red-600 cursor-pointer"
-        title="Remove"
+        title={t('common:remove')}
       >
         ×
       </button>
@@ -80,8 +75,21 @@ function AssigneeRow({
 }
 
 export default function ScheduleFormModal({ open, onClose, projectId, schedule, initialTemplateId }: Readonly<Props>) {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common', 'errors']);
   const isEdit = !!schedule;
   const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const DAYS_OF_WEEK = DAY_VALUES.map((value, i) => ({
+    value,
+    label: t(`milestonesTemplatesSchedules:scheduleModal.${DAY_LABEL_KEYS[i]}`),
+  }));
+
+  const PRESET_LABELS: Record<Preset, string> = {
+    daily: t('milestonesTemplatesSchedules:scheduleModal.presetDaily'),
+    weekly: t('milestonesTemplatesSchedules:scheduleModal.presetWeekly'),
+    monthly: t('milestonesTemplatesSchedules:scheduleModal.presetMonthly'),
+    advanced: t('milestonesTemplatesSchedules:scheduleModal.presetAdvanced'),
+  };
 
   const { data: templates = [] } = useTemplates(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
@@ -221,7 +229,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-            {isEdit ? 'Edit Schedule' : 'New Schedule'}
+            {isEdit ? t('milestonesTemplatesSchedules:scheduleModal.editTitle') : t('milestonesTemplatesSchedules:scheduleModal.newTitle')}
           </h2>
           <button
             type="button"
@@ -238,29 +246,29 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
           <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
             {/* Name */}
             <div>
-              <label className={labelCls}>Name</label>
+              <label className={labelCls}>{t('milestonesTemplatesSchedules:scheduleModal.nameLabel')}</label>
               <input
                 className={inputCls}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Weekly deploy checklist"
+                placeholder={t('milestonesTemplatesSchedules:scheduleModal.namePlaceholder')}
                 required
               />
             </div>
 
             {/* Template */}
             <div>
-              <label className={labelCls}>Template</label>
+              <label className={labelCls}>{t('milestonesTemplatesSchedules:scheduleModal.templateLabel')}</label>
               <select
                 className={inputCls}
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
                 required
               >
-                <option value="">Select a template…</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
+                <option value="">{t('milestonesTemplatesSchedules:scheduleModal.templateSelectPlaceholder')}</option>
+                {templates.map((tpl) => (
+                  <option key={tpl.id} value={tpl.id}>
+                    {tpl.name}
                   </option>
                 ))}
               </select>
@@ -268,20 +276,20 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
 
             {/* Cron */}
             <div>
-              <label className={labelCls}>Schedule</label>
+              <label className={labelCls}>{t('milestonesTemplatesSchedules:scheduleModal.scheduleLabel')}</label>
 
               {/* Preset tabs */}
               <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 mb-3">
                 {(['daily', 'weekly', 'monthly', 'advanced'] as Preset[]).map((p) => (
                   <button key={p} type="button" className={tabCls(preset === p)} onClick={() => setPreset(p)}>
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                    {PRESET_LABELS[p]}
                   </button>
                 ))}
               </div>
 
               {preset === 'daily' && (
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Every day at</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.everyDayAt')}</span>
                   <input
                     type="time"
                     value={time}
@@ -293,7 +301,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
 
               {preset === 'weekly' && (
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Every</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.everyLabel')}</span>
                   <select
                     value={dow}
                     onChange={(e) => setDow(e.target.value)}
@@ -305,7 +313,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
                       </option>
                     ))}
                   </select>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">at</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.atLabel')}</span>
                   <input
                     type="time"
                     value={time}
@@ -317,7 +325,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
 
               {preset === 'monthly' && (
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Day</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.dayLabel')}</span>
                   <input
                     type="number"
                     min={1}
@@ -326,7 +334,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
                     onChange={(e) => setDom(e.target.value)}
                     className={`${inputCls} w-20`}
                   />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">of every month at</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.ofEveryMonthAt')}</span>
                   <input
                     type="time"
                     value={time}
@@ -346,7 +354,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
                     spellCheck={false}
                   />
                   <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                    6-field Spring cron: sec min hour dom month dow
+                    {t('milestonesTemplatesSchedules:scheduleModal.advancedCronHelp')}
                   </p>
                 </div>
               )}
@@ -357,7 +365,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
               {/* Next occurrences preview */}
               {preview && preview.nextRuns.length > 0 && (
                 <div className="mt-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2 space-y-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Next occurrences</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.nextOccurrencesLabel')}</p>
                   {preview.nextRuns.map((occ) => (
                     <p key={occ} className="text-xs text-gray-700 dark:text-gray-300">
                       {new Date(occ).toLocaleString(undefined, {
@@ -376,7 +384,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
 
             {/* Timezone */}
             <div>
-              <label className={labelCls}>Timezone</label>
+              <label className={labelCls}>{t('milestonesTemplatesSchedules:scheduleModal.timezoneLabel')}</label>
               <input
                 className={inputCls}
                 value={timezone}
@@ -389,8 +397,8 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
             {/* Assignee rotation */}
             <div>
               <label className={labelCls}>
-                Assignee rotation{' '}
-                <span className="font-normal text-gray-400">(optional, round-robin)</span>
+                {t('milestonesTemplatesSchedules:scheduleModal.assigneeRotationLabel')}{' '}
+                <span className="font-normal text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.optionalRoundRobin')}</span>
               </label>
 
               {assigneeMembers.length > 0 && (
@@ -417,7 +425,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
                     setDropdownOpen(true);
                   }}
                   onFocus={() => setDropdownOpen(true)}
-                  placeholder="Add member to rotation…"
+                  placeholder={t('milestonesTemplatesSchedules:scheduleModal.addMemberPlaceholder')}
                 />
                 {dropdownOpen && availableMembers.length > 0 && (
                   <div className="absolute z-10 top-full mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">
@@ -441,7 +449,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>
-                  Pause until <span className="font-normal text-gray-400">(optional)</span>
+                  {t('milestonesTemplatesSchedules:scheduleModal.pauseUntilLabel')} <span className="font-normal text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.optionalLabel')}</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -452,7 +460,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
               </div>
               <div>
                 <label className={labelCls}>
-                  Expires at <span className="font-normal text-gray-400">(optional)</span>
+                  {t('milestonesTemplatesSchedules:scheduleModal.expiresAtLabel')} <span className="font-normal text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.optionalLabel')}</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -465,7 +473,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
 
             {isError && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {(create.error as Error)?.message ?? (update.error as Error)?.message ?? 'Something went wrong.'}
+                {(create.error as Error)?.message ?? (update.error as Error)?.message ?? t('errors:somethingWentWrong')}
               </p>
             )}
           </div>
@@ -473,10 +481,10 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
           {/* Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700 shrink-0">
             <Button type="button" variant="secondary" onClick={handleClose} disabled={isPending}>
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button type="submit" variant="primary" loading={isPending}>
-              {isEdit ? 'Save changes' : 'Create schedule'}
+              {isEdit ? t('milestonesTemplatesSchedules:scheduleModal.saveChangesButton') : t('milestonesTemplatesSchedules:scheduleModal.createScheduleButton')}
             </Button>
           </div>
         </form>

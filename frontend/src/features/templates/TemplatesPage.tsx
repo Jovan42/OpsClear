@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { useTemplates, useDeleteTemplate } from './useTemplates';
@@ -38,6 +39,7 @@ interface TemplateRowProps {
 }
 
 function TemplateRow({ template, onEdit, onDelete, onSchedule }: Readonly<TemplateRowProps>) {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   return (
     <div className="flex items-start justify-between gap-4 p-5">
       <div className="min-w-0 space-y-1 flex-1">
@@ -53,26 +55,28 @@ function TemplateRow({ template, onEdit, onDelete, onSchedule }: Readonly<Templa
         )}
         <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
           {template.milestoneName && <span>📍 {template.milestoneName}</span>}
-          {template.deadlineOffsetDays != null && <span>+{template.deadlineOffsetDays}d deadline</span>}
+          {template.deadlineOffsetDays != null && (
+            <span>{t('milestonesTemplatesSchedules:templatesPage.deadlineOffsetBadge', { days: template.deadlineOffsetDays })}</span>
+          )}
           {template.occurrenceCount > 0 && (
-            <span>Used {template.occurrenceCount}×</span>
+            <span>{t('milestonesTemplatesSchedules:templatesPage.usedCount', { count: template.occurrenceCount })}</span>
           )}
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {onSchedule && (
           <Button variant="ghost" size="sm" onClick={() => onSchedule(template)}>
-            Schedule
+            {t('milestonesTemplatesSchedules:templatesPage.scheduleButton')}
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={() => onEdit(template)}>Edit</Button>
+        <Button variant="ghost" size="sm" onClick={() => onEdit(template)}>{t('common:edit')}</Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onDelete(template)}
           className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
         >
-          Delete
+          {t('common:delete')}
         </Button>
       </div>
     </div>
@@ -80,6 +84,7 @@ function TemplateRow({ template, onEdit, onDelete, onSchedule }: Readonly<Templa
 }
 
 export default function TemplatesPage() {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   const { data: templates = [], isLoading, isError, refetch } = useTemplates(projectId);
@@ -95,9 +100,9 @@ export default function TemplatesPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [scheduling, setScheduling] = useState<JobTemplateResponse | null>(null);
 
-  usePageTitle('Templates', project?.name);
+  usePageTitle(t('milestonesTemplatesSchedules:templatesPage.browserTitle'), project?.name);
 
-  if (!hasAddon('JOB_TEMPLATES')) return <UpgradeCard featureName="Job Templates" />;
+  if (!hasAddon('JOB_TEMPLATES')) return <UpgradeCard featureName={t('milestonesTemplatesSchedules:templatesPage.pageHeading')} />;
 
   if (isLoading) {
     return (
@@ -108,16 +113,16 @@ export default function TemplatesPage() {
   }
 
   if (isError) {
-    return <PageError message="Failed to load templates." onRetry={() => void refetch()} />;
+    return <PageError message={t('milestonesTemplatesSchedules:templatesPage.loadFailedMessage')} onRetry={() => void refetch()} />;
   }
 
   return (
     <>
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Job Templates</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('milestonesTemplatesSchedules:templatesPage.pageHeading')}</h1>
           <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
-            + New Template
+            {t('milestonesTemplatesSchedules:templatesPage.newButton')}
           </Button>
         </div>
 
@@ -128,14 +133,14 @@ export default function TemplatesPage() {
               <code className="font-mono text-blue-600 dark:text-blue-400">{'{{date}}'}</code> and{' '}
               <code className="font-mono text-blue-600 dark:text-blue-400">{'{{project}}'}</code>.
             </p>
-            <Button onClick={() => setShowCreate(true)}>Create first template</Button>
+            <Button onClick={() => setShowCreate(true)}>{t('milestonesTemplatesSchedules:templatesPage.createFirstButton')}</Button>
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-            {templates.map((t) => (
+            {templates.map((tpl) => (
               <TemplateRow
-                key={t.id}
-                template={t}
+                key={tpl.id}
+                template={tpl}
                 onEdit={setEditing}
                 onDelete={(tmpl) => { setDeleting(tmpl); setDeleteError(null); }}
                 onSchedule={canSchedule ? setScheduling : undefined}
@@ -182,9 +187,9 @@ export default function TemplatesPage() {
             },
           });
         }}
-        title="Delete Template"
-        message={`Delete "${deleting?.name}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('milestonesTemplatesSchedules:templatesPage.deleteModalTitle')}
+        message={t('milestonesTemplatesSchedules:templatesPage.deleteModalMessage', { name: deleting?.name })}
+        confirmLabel={t('common:delete')}
         variant="danger"
         isPending={deleteTemplate.isPending}
         errorMessage={deleteError}

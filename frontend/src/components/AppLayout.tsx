@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
 import { useProject } from '../features/projects/useProjects';
 import { useMyOrg } from '../features/org/useOrganisation';
@@ -44,6 +45,7 @@ function NavDrawer({
   onClose,
 }: Readonly<{ projectId: string; navData: ProjectNavData; open: boolean; onClose: () => void }>) {
   const { items, links, canManageLinks } = navData;
+  const { t } = useTranslation('shared1');
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
@@ -64,7 +66,7 @@ function NavDrawer({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200 dark:border-gray-700">
-          <span className="font-semibold text-gray-900 dark:text-gray-100">Menu</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{t('menu')}</span>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors text-xl leading-none cursor-pointer"
@@ -129,6 +131,7 @@ export default function AppLayout() {
   const { name } = useAuth();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { t } = useTranslation('shared1');
 
   const segments = location.pathname.split('/');
   const projectId =
@@ -154,7 +157,7 @@ export default function AppLayout() {
               <button
                 onClick={() => setDrawerOpen(true)}
                 className="relative md:hidden -ml-1 p-1.5 text-white/80 hover:text-white transition-colors cursor-pointer"
-                aria-label="Open navigation menu"
+                aria-label={t('openNavMenu')}
                 aria-expanded={drawerOpen}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

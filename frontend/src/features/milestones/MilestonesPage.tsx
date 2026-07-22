@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useMilestones, useDeleteMilestone } from '../jobs/useMilestones';
 import { useJobList } from '../jobs/useJobs';
@@ -52,6 +53,7 @@ interface MilestoneRowProps {
 }
 
 function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete }: Readonly<MilestoneRowProps>) {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const overdue = milestone.deadline ? isOverdue(milestone.deadline) : false;
   const { prefs } = usePreferences();
 
@@ -72,7 +74,9 @@ function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete
                 : 'text-gray-400 dark:text-gray-500'
             }`}
           >
-            {overdue ? '⚠ Overdue · ' : ''}Due {formatDeadline(milestone.deadline)}
+            {overdue
+              ? t('milestonesTemplatesSchedules:milestonesPage.overdueDate', { date: formatDeadline(milestone.deadline) })
+              : t('milestonesTemplatesSchedules:milestonesPage.dueDate', { date: formatDeadline(milestone.deadline) })}
           </p>
         )}
         <ProgressBar completed={completed} total={total} format={prefs.milestoneProgressFormat} />
@@ -82,10 +86,10 @@ function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete
           to={`/projects/${projectId}/jobs?milestone=${milestone.id}`}
           className="text-xs text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
         >
-          View jobs →
+          {t('milestonesTemplatesSchedules:milestonesPage.viewJobsLink')}
         </Link>
         <Button variant="ghost" size="sm" onClick={() => onEdit(milestone)}>
-          Edit
+          {t('common:edit')}
         </Button>
         <Button
           variant="ghost"
@@ -93,7 +97,7 @@ function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete
           onClick={() => onDelete(milestone)}
           className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
         >
-          Delete
+          {t('common:delete')}
         </Button>
       </div>
     </div>
@@ -101,6 +105,7 @@ function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete
 }
 
 export default function MilestonesPage() {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   const { data: milestones = [], isLoading, isError, refetch } = useMilestones(projectId);
@@ -111,9 +116,9 @@ export default function MilestonesPage() {
   const [editing, setEditing] = useState<MilestoneResponse | null>(null);
   const [deleting, setDeleting] = useState<MilestoneResponse | null>(null);
 
-  usePageTitle('Milestones', project?.name);
+  usePageTitle(t('milestonesTemplatesSchedules:milestonesPage.pageTitle'), project?.name);
 
-  if (!hasAddon('MILESTONES')) return <UpgradeCard featureName="Milestones" />;
+  if (!hasAddon('MILESTONES')) return <UpgradeCard featureName={t('milestonesTemplatesSchedules:milestonesPage.pageTitle')} />;
 
   if (isLoading) {
     return (
@@ -124,25 +129,25 @@ export default function MilestonesPage() {
   }
 
   if (isError) {
-    return <PageError message="Failed to load milestones." onRetry={() => void refetch()} />;
+    return <PageError message={t('milestonesTemplatesSchedules:milestonesPage.loadFailedMessage')} onRetry={() => void refetch()} />;
   }
 
   return (
     <>
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Milestones</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('milestonesTemplatesSchedules:milestonesPage.pageTitle')}</h1>
           <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
-            + New Milestone
+            {t('milestonesTemplatesSchedules:milestonesPage.newButton')}
           </Button>
         </div>
 
         {milestones.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              No milestones yet.
+              {t('milestonesTemplatesSchedules:milestonesPage.emptyText')}
             </p>
-            <Button onClick={() => setShowCreate(true)}>Create first milestone</Button>
+            <Button onClick={() => setShowCreate(true)}>{t('milestonesTemplatesSchedules:milestonesPage.createFirstButton')}</Button>
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
@@ -187,9 +192,9 @@ export default function MilestonesPage() {
           if (!deleting) return;
           deleteMilestone.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
         }}
-        title="Delete Milestone"
-        message={`Delete "${deleting?.name}"? Jobs in this milestone will become ungrouped.`}
-        confirmLabel="Delete"
+        title={t('milestonesTemplatesSchedules:milestonesPage.deleteModalTitle')}
+        message={t('milestonesTemplatesSchedules:milestonesPage.deleteModalMessage', { name: deleting?.name })}
+        confirmLabel={t('common:delete')}
         variant="danger"
         isPending={deleteMilestone.isPending}
       />

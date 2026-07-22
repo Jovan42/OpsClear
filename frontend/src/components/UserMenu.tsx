@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import keycloak from '../auth/keycloak';
 import { useCurrentOrg } from '../features/org/OrgContext';
 
@@ -12,6 +13,7 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { org } = useCurrentOrg();
+  const { t } = useTranslation('shared1');
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -50,21 +52,21 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
               onClick={() => { setOpen(false); navigate('/org/settings'); }}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
             >
-              Organisation
+              {t('organisation')}
             </button>
           )}
           <button
             onClick={() => { setOpen(false); navigate('/settings'); }}
             className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
           >
-            Settings
+            {t('settings')}
           </button>
           <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
           <button
             onClick={() => keycloak.logout()}
             className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
           >
-            Sign out
+            {t('signOut')}
           </button>
         </div>
       )}

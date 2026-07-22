@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useScheduleMissedRuns, useMaterializeMissedRun, useDismissMissedRun, useDismissAllMissedRuns } from './useSchedules';
 import Button from '../../components/Button';
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Props>) {
+  const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const [open, setOpen] = useState(false);
   const [createdJob, setCreatedJob] = useState<JobResponse | null>(null);
 
@@ -33,7 +35,7 @@ export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Prop
         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold shrink-0">
           {count}
         </span>
-        {count === 1 ? '1 missed run' : `${count} missed runs`}
+        {t('milestonesTemplatesSchedules:missedRuns.missedRunsCount', { count })}
         <span className="ml-auto">{open ? '▲' : '▼'}</span>
       </button>
 
@@ -48,26 +50,26 @@ export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Prop
                 loading={dismissAll.isPending}
                 className="text-xs text-gray-500 dark:text-gray-400"
               >
-                Dismiss all
+                {t('milestonesTemplatesSchedules:missedRuns.dismissAll')}
               </Button>
             </div>
           )}
 
           {createdJob && (
             <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-3 py-2 text-xs text-green-700 dark:text-green-400">
-              <span>Job created: <strong>{createdJob.friendlyId}</strong> — {createdJob.title}</span>
+              <span>{t('milestonesTemplatesSchedules:missedRuns.jobCreatedPrefix')} <strong>{createdJob.friendlyId}</strong> — {createdJob.title}</span>
               <button
                 type="button"
                 onClick={() => navigate(`/projects/${projectId}/jobs/${createdJob.friendlyId}`)}
                 className="underline hover:no-underline ml-1"
               >
-                View
+                {t('milestonesTemplatesSchedules:missedRuns.viewButton')}
               </button>
               <button
                 type="button"
                 onClick={() => setCreatedJob(null)}
                 className="ml-auto text-green-500 hover:text-green-700"
-                aria-label="Dismiss"
+                aria-label={t('milestonesTemplatesSchedules:missedRuns.dismiss')}
               >
                 ✕
               </button>
@@ -75,7 +77,7 @@ export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Prop
           )}
 
           {isLoading ? (
-            <p className="text-xs text-gray-400 py-2">Loading…</p>
+            <p className="text-xs text-gray-400 py-2">{t('common:loading')}</p>
           ) : (
             <ul className="space-y-1">
               {missedRuns.map((run) => (
@@ -105,7 +107,7 @@ export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Prop
                       loading={materialize.isPending && materialize.variables === run.id}
                       className="text-xs"
                     >
-                      Create job
+                      {t('milestonesTemplatesSchedules:missedRuns.createJobButton')}
                     </Button>
                     <Button
                       variant="ghost"
@@ -114,7 +116,7 @@ export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Prop
                       loading={dismiss.isPending && dismiss.variables === run.id}
                       className="text-xs text-gray-400 hover:text-red-500"
                     >
-                      Dismiss
+                      {t('milestonesTemplatesSchedules:missedRuns.dismiss')}
                     </Button>
                   </div>
                 </li>

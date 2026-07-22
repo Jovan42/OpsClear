@@ -1,19 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCatalog } from '../org/useSubscription';
 import type { SubscriptionTierResponse } from '../../types';
-
-const ADDON_TAGLINES: Record<string, string> = {
-  DASHBOARD:            'Single-screen ops overview',
-  APPROVALS:            'Sign-off workflows with logged decisions',
-  NOTES:                'Immutable audit trail on any job',
-  JOB_STATUS_HISTORY:   'Full chronological status log',
-  MILESTONES:           'Group jobs into phases (max 5 per project)',
-  JOB_RELATIONSHIPS:    'Blocks / depends on / related to links',
-  API_KEYS:             'Programmatic access & integrations',
-  JOB_TEMPLATES:        'Reusable job presets',
-  RECURRING_SCHEDULING: 'Auto-create jobs on a schedule (requires Templates)',
-};
 
 function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
@@ -24,7 +13,20 @@ function tierPrice(tier: SubscriptionTierResponse, annual: boolean) {
 }
 
 export default function ProductAndPricing() {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const { data: catalog } = useCatalog();
+
+  const ADDON_TAGLINES: Record<string, string> = {
+    DASHBOARD: t('productPricing.addonTaglines.DASHBOARD'),
+    APPROVALS: t('productPricing.addonTaglines.APPROVALS'),
+    NOTES: t('productPricing.addonTaglines.NOTES'),
+    JOB_STATUS_HISTORY: t('productPricing.addonTaglines.JOB_STATUS_HISTORY'),
+    MILESTONES: t('productPricing.addonTaglines.MILESTONES'),
+    JOB_RELATIONSHIPS: t('productPricing.addonTaglines.JOB_RELATIONSHIPS'),
+    API_KEYS: t('productPricing.addonTaglines.API_KEYS'),
+    JOB_TEMPLATES: t('productPricing.addonTaglines.JOB_TEMPLATES'),
+    RECURRING_SCHEDULING: t('productPricing.addonTaglines.RECURRING_SCHEDULING'),
+  };
 
   const [memberIdx,  setMemberIdx]  = useState(0);
   const [projectIdx, setProjectIdx] = useState(0);
@@ -68,25 +70,25 @@ export default function ProductAndPricing() {
       <div className="max-w-3xl mx-auto space-y-8">
 
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">See what's included. Know what it costs.</h2>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Start with the base plan and add only what your team needs.</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('productPricing.heading')}</h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('productPricing.subheading')}</p>
           <Link
             to="/features"
             className="inline-block mt-3 text-sm font-medium hover:underline"
             style={{ color: 'var(--brand)' }}
           >
-            See all features in detail
+            {t('productPricing.seeAllFeatures')}
           </Link>
         </div>
 
         {/* Sliders */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-6">
-          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Base plan</p>
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('productPricing.basePlanLabel')}</p>
 
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-700 dark:text-gray-300">Team members</span>
-              <span className="font-medium text-gray-900 dark:text-white">Up to {memberBands[memberIdx]}</span>
+              <span className="text-gray-700 dark:text-gray-300">{t('productPricing.teamMembersLabel')}</span>
+              <span className="font-medium text-gray-900 dark:text-white">{t('productPricing.upTo', { count: memberBands[memberIdx] })}</span>
             </div>
             <input type="range" min={0} max={memberBands.length - 1} step={1} value={memberIdx}
               onChange={(e) => setMemberIdx(Number(e.target.value))}
@@ -98,26 +100,26 @@ export default function ProductAndPricing() {
 
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-700 dark:text-gray-300">Active projects</span>
+              <span className="text-gray-700 dark:text-gray-300">{t('productPricing.activeProjectsLabel')}</span>
               <span className="font-medium text-gray-900 dark:text-white">
-                {projectBands[projectIdx] === null ? 'Unlimited' : `Up to ${projectBands[projectIdx]}`}
+                {projectBands[projectIdx] === null ? t('productPricing.unlimited') : t('productPricing.upTo', { count: projectBands[projectIdx] })}
               </span>
             </div>
             <input type="range" min={0} max={projectBands.length - 1} step={1} value={projectIdx}
               onChange={(e) => setProjectIdx(Number(e.target.value))}
               className="w-full" style={{ accentColor: 'var(--brand)' }} />
-            <div className="flex justify-between text-xs text-gray-400"><span>{projectBands[0]}</span><span>Unlimited</span></div>
+            <div className="flex justify-between text-xs text-gray-400"><span>{projectBands[0]}</span><span>{t('productPricing.unlimited')}</span></div>
           </div>
 
           <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
-            <span className="text-sm text-gray-500">Base price</span>
-            <span className="font-semibold text-gray-900 dark:text-white">{fmt(base)} {currency}/mo</span>
+            <span className="text-sm text-gray-500">{t('productPricing.basePriceLabel')}</span>
+            <span className="font-semibold text-gray-900 dark:text-white">{t('productPricing.perMonth', { amount: fmt(base), currency })}</span>
           </div>
         </div>
 
         {/* Add-on cards */}
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Add-ons — click to include</p>
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('productPricing.addonsHeading')}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {availableAddons.map((a) => {
               const active = selected.has(a.id);
@@ -148,7 +150,7 @@ export default function ProductAndPricing() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{a.name}</p>
-                  <span className="text-xs text-gray-400 shrink-0">Soon</span>
+                  <span className="text-xs text-gray-400 shrink-0">{t('productPricing.comingSoon')}</span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{ADDON_TAGLINES[a.key] ?? ''}</p>
               </div>
@@ -159,7 +161,7 @@ export default function ProductAndPricing() {
         {/* Annual toggle + total */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-700 dark:text-gray-300">Annual billing</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">{t('productPricing.annualBillingLabel')}</span>
             <button
               role="switch" aria-checked={annual} onClick={() => setAnnual((a) => !a)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${annual ? 'bg-[var(--brand)]' : 'bg-gray-300 dark:bg-gray-600'}`}
@@ -170,17 +172,17 @@ export default function ProductAndPricing() {
 
           {annual && (
             <p className="text-sm text-green-600 dark:text-green-400">
-              Save {fmt(saving)} {currency}/yr compared to monthly billing.
+              {t('productPricing.saveAnnual', { amount: fmt(saving), currency })}
             </p>
           )}
 
           <div className="flex justify-between items-baseline pt-2 border-t border-gray-200 dark:border-gray-700">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {annual ? 'Monthly total (annual)' : 'Monthly total'}
+              {annual ? t('productPricing.monthlyTotalAnnual') : t('productPricing.monthlyTotal')}
             </span>
             <div className="text-right">
               <span className="text-2xl font-bold text-gray-900 dark:text-white">{fmt(displayed)}</span>
-              <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">{currency}/mo</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">{t('productPricing.perMonthSuffix', { currency })}</span>
             </div>
           </div>
         </div>

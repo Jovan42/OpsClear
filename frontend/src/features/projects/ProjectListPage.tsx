@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
@@ -17,12 +18,6 @@ const TAB_COLORS: Record<FilterTab, { text: string; badge: string }> = {
   ALL:       { text: 'text-gray-600 dark:text-gray-300',  badge: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'     },
 };
 
-const TABS: { value: FilterTab; label: string }[] = [
-  { value: 'ACTIVE',    label: 'Active'     },
-  { value: 'COMPLETED', label: 'Completed'  },
-  { value: 'ALL',       label: 'All'        },
-];
-
 function ProjectListSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -38,11 +33,18 @@ function ProjectListSkeleton() {
 }
 
 export default function ProjectListPage() {
+  const { t } = useTranslation(['projects', 'common']);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<FilterTab>('ACTIVE');
   const { userId } = useAuth();
   const navigate = useNavigate();
-  usePageTitle('Projects');
+  usePageTitle(t('projects:projectListPage.pageTitle'));
+
+  const TABS: { value: FilterTab; label: string }[] = [
+    { value: 'ACTIVE',    label: t('projects:projectListPage.tabActive')    },
+    { value: 'COMPLETED', label: t('projects:projectListPage.tabCompleted') },
+    { value: 'ALL',       label: t('projects:projectListPage.tabAll')       },
+  ];
 
   // Always load all projects and filter client-side so counts stay accurate across tabs
   const { data: allProjects = [], isLoading, isError, refetch } = useProjectList('ALL');
@@ -70,14 +72,14 @@ export default function ProjectListPage() {
   }
 
   if (isError) {
-    return <PageError message="Failed to load projects." onRetry={() => void refetch()} />;
+    return <PageError message={t('projects:projectListPage.loadError')} onRetry={() => void refetch()} />;
   }
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Projects</h1>
-        <Button onClick={() => setModalOpen(true)}>+ New Project</Button>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('projects:projectListPage.heading')}</h1>
+        <Button onClick={() => setModalOpen(true)}>{t('projects:projectListPage.newProjectButton')}</Button>
       </div>
 
       {/* Status filter tabs */}
@@ -106,10 +108,12 @@ export default function ProjectListPage() {
       {projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-            {allProjects.length === 0 ? 'No projects yet.' : 'No projects match this filter.'}
+            {allProjects.length === 0
+              ? t('projects:projectListPage.emptyNoProjects')
+              : t('projects:projectListPage.emptyNoMatch')}
           </p>
           {allProjects.length === 0 && (
-            <Button onClick={() => setModalOpen(true)}>Create your first project</Button>
+            <Button onClick={() => setModalOpen(true)}>{t('projects:projectListPage.createFirstProjectButton')}</Button>
           )}
         </div>
       ) : (
@@ -137,12 +141,12 @@ export default function ProjectListPage() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       {isCompleted && (
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                          Completed
+                          {t('projects:projectListPage.statusCompletedBadge')}
                         </span>
                       )}
                       {isOwner && !isCompleted && (
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-light text-brand dark:bg-green-900/40 dark:text-green-300">
-                          Owner
+                          {t('projects:projectListPage.ownerBadge')}
                         </span>
                       )}
                     </div>
@@ -151,7 +155,7 @@ export default function ProjectListPage() {
                 <button
                   onClick={() => navigate(`/projects/${project.friendlyId}/settings`)}
                   className="absolute bottom-3 right-3 p-1 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors cursor-pointer"
-                  title="Project settings"
+                  title={t('projects:projectListPage.projectSettingsTooltip')}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="3" />

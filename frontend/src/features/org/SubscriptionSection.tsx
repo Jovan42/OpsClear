@@ -1,21 +1,10 @@
 import { useEffect, useState } from 'react';
 import { isAxiosError } from 'axios';
+import { useTranslation } from 'react-i18next';
 import type { SubscriptionTierResponse } from '../../types';
 import Skeleton from '../../components/Skeleton';
 import Button from '../../components/Button';
 import { useCatalog, useOrgSubscription, useUpsertOrgSubscription } from './useSubscription';
-
-const ADDON_TAGLINES: Record<string, string> = {
-  DASHBOARD:             'Single-screen ops overview',
-  APPROVALS:             'Sign-off workflows with logged decisions',
-  NOTES:                 'Immutable audit trail on any job',
-  JOB_STATUS_HISTORY:   'Full chronological status log',
-  MILESTONES:            'Group jobs into phases (max 5 per project)',
-  JOB_RELATIONSHIPS:     'Blocks / depends on / related to links',
-  API_KEYS:              'Programmatic access & integrations',
-  JOB_TEMPLATES:         'Reusable job presets',
-  RECURRING_SCHEDULING:  'Auto-create jobs on a schedule',
-};
 
 function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
@@ -30,6 +19,7 @@ interface Props {
 }
 
 export default function SubscriptionSection({ orgId }: Props) {
+  const { t } = useTranslation('org');
   const { data: catalog, isLoading: catalogLoading } = useCatalog();
   const { data: currentSub, isLoading: subLoading } = useOrgSubscription(orgId);
   const { mutate: upsert, isPending: saving } = useUpsertOrgSubscription(orgId);
@@ -79,8 +69,8 @@ export default function SubscriptionSection({ orgId }: Props) {
   if (currentSub?.internal) {
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-5">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Internal account</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">All features are unlocked. Billing does not apply to this account.</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('internalAccountTitle')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('internalAccountDesc')}</p>
       </div>
     );
   }
@@ -121,25 +111,25 @@ export default function SubscriptionSection({ orgId }: Props) {
           if (isAxiosError(err) && err.response?.data?.message) {
             setSaveError(err.response.data.message as string);
           } else {
-            setSaveError('Something went wrong. Please try again.');
+            setSaveError(t('somethingWentWrongTryAgain'));
           }
         },
       },
     );
   }
 
-  const projectLabel = (p: number | null) => p === null ? 'Unlimited' : `Up to ${p}`;
+  const projectLabel = (p: number | null) => p === null ? t('unlimited') : t('upTo', { count: p });
 
   return (
     <div className="space-y-4">
       {/* Base plan sliders */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-5">
-        <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Base plan</p>
+        <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('basePlanLabel')}</p>
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-700 dark:text-gray-300">Team members</span>
-            <span className="font-medium text-gray-900 dark:text-white">Up to {memberBands[memberIdx]}</span>
+            <span className="text-gray-700 dark:text-gray-300">{t('teamMembersLabel')}</span>
+            <span className="font-medium text-gray-900 dark:text-white">{t('upTo', { count: memberBands[memberIdx] })}</span>
           </div>
           <input
             type="range" min={0} max={memberBands.length - 1} step={1} value={memberIdx}
@@ -153,7 +143,7 @@ export default function SubscriptionSection({ orgId }: Props) {
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-700 dark:text-gray-300">Active projects</span>
+            <span className="text-gray-700 dark:text-gray-300">{t('activeProjectsLabel')}</span>
             <span className="font-medium text-gray-900 dark:text-white">{projectLabel(projectBands[projectIdx])}</span>
           </div>
           <input
@@ -162,21 +152,21 @@ export default function SubscriptionSection({ orgId }: Props) {
             className="w-full" style={{ accentColor: 'var(--brand)' }}
           />
           <div className="flex justify-between text-xs text-gray-400">
-            <span>{projectBands[0]}</span><span>Unlimited</span>
+            <span>{projectBands[0]}</span><span>{t('unlimited')}</span>
           </div>
         </div>
 
         <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Base price</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{t('basePriceLabel')}</span>
           <span className="font-semibold text-gray-900 dark:text-white">
-            {selectedTier ? `${fmt(basePrice)} ${selectedTier.currency}/mo` : '—'}
+            {selectedTier ? t('priceLine', { price: fmt(basePrice), currency: selectedTier.currency }) : '—'}
           </span>
         </div>
       </div>
 
       {/* Add-on cards */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Add-ons</p>
+        <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('addOnsLabel')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {availableAddons.map((addon) => {
             const active = selectedAddons.has(addon.id);
@@ -200,7 +190,7 @@ export default function SubscriptionSection({ orgId }: Props) {
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {ADDON_TAGLINES[addon.key] ?? ''}
+                  {t(`addonTaglines.${addon.key}`, { defaultValue: '' })}
                 </p>
               </button>
             );
@@ -219,10 +209,10 @@ export default function SubscriptionSection({ orgId }: Props) {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{addon.name}</p>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">Preview</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{t('preview')}</span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {ADDON_TAGLINES[addon.key] ?? ''}
+                  {t(`addonTaglines.${addon.key}`, { defaultValue: '' })}
                 </p>
               </button>
             );
@@ -233,7 +223,7 @@ export default function SubscriptionSection({ orgId }: Props) {
       {/* Billing cycle toggle + total + save */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-700 dark:text-gray-300">Annual billing</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">{t('annualBillingLabel')}</span>
           <button
             role="switch"
             aria-checked={annual}
@@ -252,29 +242,29 @@ export default function SubscriptionSection({ orgId }: Props) {
 
         {annual && selectedTier && (
           <p className="text-sm text-green-600 dark:text-green-400">
-            Save {fmt((selectedTier.priceMonthly - selectedTier.priceAnnual) * 12)} {selectedTier.currency}/yr compared to monthly.
+            {t('saveVsMonthly', { amount: fmt((selectedTier.priceMonthly - selectedTier.priceAnnual) * 12), currency: selectedTier.currency })}
           </p>
         )}
 
         <div className="flex justify-between items-baseline pt-2 border-t border-gray-200 dark:border-gray-700">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {annual ? 'Monthly total (annual)' : 'Monthly total'}
+            {annual ? t('monthlyTotalAnnual') : t('monthlyTotal')}
           </span>
           <div className="text-right">
             <span className="text-2xl font-bold text-gray-900 dark:text-white">{fmt(total)}</span>
             <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">
-              {catalog.tiers[0]?.currency ?? 'RSD'}/mo
+              {catalog.tiers[0]?.currency ?? 'RSD'}{t('perMonth')}
             </span>
           </div>
         </div>
 
         <div className="pt-2 space-y-2">
           <Button onClick={handleSave} loading={saving} disabled={!selectedTier}>
-            Save subscription
+            {t('saveSubscriptionButton')}
           </Button>
 
           {saveSuccess && (
-            <p className="text-sm text-green-600 dark:text-green-400">Subscription saved.</p>
+            <p className="text-sm text-green-600 dark:text-green-400">{t('subscriptionSaved')}</p>
           )}
           {saveError && (
             <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>

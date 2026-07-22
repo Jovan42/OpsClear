@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import Button from './Button';
 
@@ -19,11 +20,13 @@ export default function ConfirmModal({
   onConfirm,
   title,
   message,
-  confirmLabel = 'Confirm',
+  confirmLabel,
   variant = 'primary',
   isPending = false,
   errorMessage,
 }: Props) {
+  const { t } = useTranslation('common');
+
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <div className="space-y-4">
@@ -35,10 +38,10 @@ export default function ConfirmModal({
         )}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button variant={variant} onClick={onConfirm} loading={isPending}>
-            {confirmLabel}
+            {confirmLabel ?? t('confirm')}
           </Button>
         </div>
       </div>

@@ -1,1 +1,72 @@
-{}
+{
+  "roleLabel": {
+    "MEMBER": "Član",
+    "ADMIN": "Administrator",
+    "OWNER": "Vlasnik"
+  },
+  "validation": {
+    "nameRequired": "Naziv je obavezan",
+    "nameMaxLength": "Maksimalno 80 karaktera",
+    "descriptionMaxLength": "Maksimalno 10000 karaktera"
+  },
+  "addMemberForm": {
+    "searchPlaceholder": "Pretraga po emailu…",
+    "alreadyMember": "(već je član)"
+  },
+  "newProjectModal": {
+    "title": "Novi projekat",
+    "nameLabel": "Naziv",
+    "namePlaceholder": "npr. Redizajn sajta",
+    "descriptionLabel": "Opis",
+    "descriptionPlaceholder": "Opciono — o čemu se radi u ovom projektu?",
+    "blockReasonsHeading": "Razlozi blokiranja",
+    "blockReasonsHelp": "Opciono — unapred definišite razloge koje članovi tima mogu izabrati prilikom blokiranja posla.",
+    "reasonPlaceholder": "npr. Čeka se klijent",
+    "createButton": "Kreiraj projekat"
+  },
+  "projectListPage": {
+    "pageTitle": "Projekti",
+    "heading": "Projekti",
+    "newProjectButton": "+ Novi projekat",
+    "loadError": "Neuspešno učitavanje projekata.",
+    "emptyNoProjects": "Još uvek nema projekata.",
+    "emptyNoMatch": "Nijedan projekat ne odgovara ovom filteru.",
+    "createFirstProjectButton": "Kreiraj svoj prvi projekat",
+    "tabActive": "Aktivni",
+    "tabCompleted": "Završeni",
+    "tabAll": "Svi",
+    "statusCompletedBadge": "Završen",
+    "ownerBadge": "Vlasnik",
+    "projectSettingsTooltip": "Podešavanja projekta"
+  },
+  "projectSettingsPage": {
+    "pageTitle": "Podešavanja",
+    "heading": "Podešavanja projekta",
+    "completedBanner": "Ovaj projekat je završen i više ne prihvata izmene.",
+    "detailsHeading": "Detalji",
+    "nameLabel": "Naziv",
+    "descriptionLabel": "Opis",
+    "saveChanges": "Sačuvaj izmene",
+    "membersHeading": "Članovi",
+    "memberColumnHeader": "Član",
+    "roleColumnHeader": "Uloga",
+    "blockReasonsHeading": "Razlozi blokiranja",
+    "blockReasonsHelp": "Unapred definisani razlozi koje članovi tima mogu izabrati prilikom blokiranja posla.",
+    "noBlockReasons": "Nema definisanih razloga blokiranja. Podesite ih prilikom kreiranja projekta.",
+    "dangerZoneHeading": "Opasna zona",
+    "reactivateProjectTitle": "Ponovo aktiviraj ovaj projekat",
+    "completeProjectTitle": "Završi ovaj projekat",
+    "reactivateProjectDesc": "Označite projekat kao ponovo aktivan kako biste dozvolili nove izmene.",
+    "completeProjectDesc": "Označite projekat kao završen. Svi poslovi prethodno moraju biti zatvoreni.",
+    "reactivateButton": "Ponovo aktiviraj",
+    "completeProjectButton": "Završi projekat",
+    "deleteProjectTitle": "Obriši ovaj projekat",
+    "deleteProjectDesc": "Trajno uklanja projekat i sve njegove poslove. Ovo se ne može poništiti.",
+    "deleteProjectButton": "Obriši projekat",
+    "deleteModalTitle": "Obrisati projekat?",
+    "deleteModalPrefix": "Ovo će trajno obrisati",
+    "deleteModalSuffix": "i sve njegove poslove, beleške i odobrenja.",
+    "cannotBeUndone": "Ovo se ne može poništiti.",
+    "confirmTypeName": "Za potvrdu, unesite naziv projekta:"
+  }
+}

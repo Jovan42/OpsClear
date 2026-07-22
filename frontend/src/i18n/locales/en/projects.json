@@ -1,1 +1,72 @@
-{}
+{
+  "roleLabel": {
+    "MEMBER": "Member",
+    "ADMIN": "Admin",
+    "OWNER": "Owner"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "nameMaxLength": "Max 80 characters",
+    "descriptionMaxLength": "Max 10000 characters"
+  },
+  "addMemberForm": {
+    "searchPlaceholder": "Search by email…",
+    "alreadyMember": "(already a member)"
+  },
+  "newProjectModal": {
+    "title": "New Project",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Website Redesign",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Optional — what is this project about?",
+    "blockReasonsHeading": "Block reasons",
+    "blockReasonsHelp": "Optional — pre-populate reasons team members can select when blocking a job.",
+    "reasonPlaceholder": "e.g. Waiting on client",
+    "createButton": "Create project"
+  },
+  "projectListPage": {
+    "pageTitle": "Projects",
+    "heading": "Projects",
+    "newProjectButton": "+ New Project",
+    "loadError": "Failed to load projects.",
+    "emptyNoProjects": "No projects yet.",
+    "emptyNoMatch": "No projects match this filter.",
+    "createFirstProjectButton": "Create your first project",
+    "tabActive": "Active",
+    "tabCompleted": "Completed",
+    "tabAll": "All",
+    "statusCompletedBadge": "Completed",
+    "ownerBadge": "Owner",
+    "projectSettingsTooltip": "Project settings"
+  },
+  "projectSettingsPage": {
+    "pageTitle": "Settings",
+    "heading": "Project Settings",
+    "completedBanner": "This project is completed and no longer accepts changes.",
+    "detailsHeading": "Details",
+    "nameLabel": "Name",
+    "descriptionLabel": "Description",
+    "saveChanges": "Save changes",
+    "membersHeading": "Members",
+    "memberColumnHeader": "Member",
+    "roleColumnHeader": "Role",
+    "blockReasonsHeading": "Block Reasons",
+    "blockReasonsHelp": "Pre-configured reasons team members can select when blocking a job.",
+    "noBlockReasons": "No block reasons configured. Set them when creating the project.",
+    "dangerZoneHeading": "Danger zone",
+    "reactivateProjectTitle": "Reactivate this project",
+    "completeProjectTitle": "Complete this project",
+    "reactivateProjectDesc": "Mark the project as active again to allow new changes.",
+    "completeProjectDesc": "Mark the project as completed. All jobs must be closed first.",
+    "reactivateButton": "Reactivate",
+    "completeProjectButton": "Complete project",
+    "deleteProjectTitle": "Delete this project",
+    "deleteProjectDesc": "Permanently removes the project and all its jobs. This cannot be undone.",
+    "deleteProjectButton": "Delete project",
+    "deleteModalTitle": "Delete project?",
+    "deleteModalPrefix": "This will permanently delete",
+    "deleteModalSuffix": "and all its jobs, notes, and approvals.",
+    "cannotBeUndone": "This cannot be undone.",
+    "confirmTypeName": "To confirm, type the project name:"
+  }
+}

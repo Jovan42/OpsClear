@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import { useJobList, useCreateRelationship } from '../useJobs';
@@ -11,13 +12,13 @@ interface Props {
   jobId: string;
 }
 
-const RELATIONSHIP_TYPES: { value: JobRelationshipType; label: string; description: string }[] = [
-  { value: 'BLOCKED_BY', label: 'Blocked by', description: 'This job is blocked by the selected job' },
-  { value: 'RELATED_TO', label: 'Related to', description: 'These jobs are related' },
-  { value: 'DUPLICATES', label: 'Duplicates', description: 'This job duplicates the selected job' },
-];
-
 export default function AddRelationshipModal({ open, onClose, projectId, jobId }: Props) {
+  const { t } = useTranslation(['jobsComponents', 'common']);
+  const RELATIONSHIP_TYPES: { value: JobRelationshipType; label: string; description: string }[] = [
+    { value: 'BLOCKED_BY', label: t('jobsComponents:addRelationshipModal.types.blockedBy.label'), description: t('jobsComponents:addRelationshipModal.types.blockedBy.description') },
+    { value: 'RELATED_TO', label: t('jobsComponents:addRelationshipModal.types.relatedTo.label'), description: t('jobsComponents:addRelationshipModal.types.relatedTo.description') },
+    { value: 'DUPLICATES', label: t('jobsComponents:addRelationshipModal.types.duplicates.label'), description: t('jobsComponents:addRelationshipModal.types.duplicates.description') },
+  ];
   const [selectedJobId, setSelectedJobId] = useState('');
   const [type, setType] = useState<JobRelationshipType>('RELATED_TO');
   const [search, setSearch] = useState('');
@@ -44,12 +45,12 @@ export default function AddRelationshipModal({ open, onClose, projectId, jobId }
   }
 
   return (
-    <Modal open={open} onClose={handleClose} title="Add Relationship">
+    <Modal open={open} onClose={handleClose} title={t('jobsComponents:addRelationshipModal.title')}>
       <div className="space-y-4">
         {/* Relationship type */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Type <span className="text-red-500">*</span>
+            {t('jobsComponents:addRelationshipModal.typeLabel')} <span className="text-red-500">*</span>
           </label>
           <div className="space-y-1.5">
             {RELATIONSHIP_TYPES.map((rt) => (
@@ -74,18 +75,18 @@ export default function AddRelationshipModal({ open, onClose, projectId, jobId }
         {/* Job search */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Job <span className="text-red-500">*</span>
+            {t('jobsComponents:addRelationshipModal.jobLabel')} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            placeholder="Search jobs…"
+            placeholder={t('jobsComponents:addRelationshipModal.searchPlaceholder')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setSelectedJobId(''); }}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent mb-1.5"
           />
           <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg divide-y divide-gray-100 dark:divide-gray-700">
             {filtered.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">No jobs found.</p>
+              <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">{t('jobsComponents:addRelationshipModal.noJobsFound')}</p>
             ) : (
               filtered.map((j) => (
                 <button
@@ -107,7 +108,7 @@ export default function AddRelationshipModal({ open, onClose, projectId, jobId }
 
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={handleClose}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button
             variant="primary"
@@ -115,7 +116,7 @@ export default function AddRelationshipModal({ open, onClose, projectId, jobId }
             disabled={!selectedJobId}
             loading={isPending}
           >
-            Add
+            {t('common:add')}
           </Button>
         </div>
       </div>

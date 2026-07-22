@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
@@ -7,6 +8,7 @@ import ApprovalDecisionModal from '../jobs/components/ApprovalDecisionModal';
 import { useApprovalQueue } from './useApprovalQueue';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import i18n from '../../i18n';
 import type { PendingApprovalResponse, ProjectMemberResponse } from '../../types';
 
 function formatDateTime(dateStr: string) {
@@ -20,7 +22,7 @@ function formatDateTime(dateStr: string) {
 }
 
 function memberName(members: ProjectMemberResponse[], userId: string): string {
-  return members.find((m) => m.userId === userId)?.userName ?? 'Unknown user';
+  return members.find((m) => m.userId === userId)?.userName ?? i18n.t('approvalsDashboardSettingsLanding:approvals.unknownUser');
 }
 
 type DecisionState = {
@@ -37,11 +39,15 @@ interface ApprovalCardProps {
 }
 
 function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalCardProps) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{approval.description}</p>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-        Requested by {memberName(members, approval.requesterId)} · {formatDateTime(approval.requestedAt)}
+        {t('approvals.requestedBy', {
+          name: memberName(members, approval.requesterId),
+          date: formatDateTime(approval.requestedAt),
+        })}
       </p>
       {isOwnerOrAdmin && (
         <div className="flex gap-2">
@@ -51,13 +57,13 @@ function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalC
             onClick={() => onDecide(approval.id, approval.jobId, 'REJECTED')}
             style={{ color: '#dc2626' }}
           >
-            Reject
+            {t('approvals.reject')}
           </Button>
           <Button
             size="sm"
             onClick={() => onDecide(approval.id, approval.jobId, 'APPROVED')}
           >
-            Approve
+            {t('approvals.approve')}
           </Button>
         </div>
       )}
@@ -66,13 +72,14 @@ function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalC
 }
 
 export default function ApprovalQueuePage() {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const { projectFriendlyId: projectId = '' } = useParams();
   const navigate = useNavigate();
   const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);
   const { data: approvals = [], isLoading, isError, refetch } = useApprovalQueue(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
-  usePageTitle('Approvals', project?.name);
+  usePageTitle(t('approvals.pageTitle'), project?.name);
   const [decision, setDecision] = useState<DecisionState>(null);
 
   if (role === 'MEMBER') {
@@ -101,7 +108,7 @@ export default function ApprovalQueuePage() {
   }
 
   if (isError) {
-    return <PageError message="Failed to load approvals." onRetry={() => void refetch()} />;
+    return <PageError message={t('approvals.loadError')} onRetry={() => void refetch()} />;
   }
 
   const groupMap = new Map<string, { jobTitle: string; approvals: PendingApprovalResponse[] }>();
@@ -131,10 +138,10 @@ export default function ApprovalQueuePage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Approvals
+          {t('approvals.pageTitle')}
           {totalPending > 0 && (
             <span className="ml-2 text-sm font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-              {totalPending} pending
+              {t('approvals.pendingBadge', { count: totalPending })}
             </span>
           )}
         </h1>
@@ -142,7 +149,7 @@ export default function ApprovalQueuePage() {
 
       {groups.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">All caught up — no pending approvals.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('approvals.emptyState')}</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -154,7 +161,7 @@ export default function ApprovalQueuePage() {
                   onClick={() => navigate(`/projects/${projectId}/jobs/${jobId}`)}
                   className="text-xs text-brand hover:underline cursor-pointer"
                 >
-                  → Job
+                  {t('approvals.jobLink')}
                 </button>
               </div>
               <div className="space-y-3">

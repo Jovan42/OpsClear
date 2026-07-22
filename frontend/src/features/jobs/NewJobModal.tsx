@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import MarkdownEditor from '../../components/MarkdownEditor';
@@ -12,24 +13,19 @@ import { useAuth } from '../../auth/AuthContext';
 import { useTemplates } from '../templates/useTemplates';
 import { templatesApi } from '../../api/templates';
 import { resolveWildcards } from '../../utils/resolveWildcards';
-import type { JobPriority, JobResponse, MilestoneResponse, ProjectMemberResponse } from '../../types';
+import type { JobResponse, MilestoneResponse, ProjectMemberResponse } from '../../types';
 
-const PRIORITIES: { value: JobPriority; label: string }[] = [
-  { value: 'LOW',      label: 'Low' },
-  { value: 'MEDIUM',   label: 'Medium' },
-  { value: 'HIGH',     label: 'High' },
-  { value: 'CRITICAL', label: 'Critical' },
-];
-
-const schema = z.object({
-  title: z.string().min(1, 'Title is required').max(255, 'Max 255 characters'),
-  description: z.string().max(10000, 'Max 10000 characters').optional(),
-  client: z.string().max(255, 'Max 255 characters').optional(),
-  deadline: z.string().optional(),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
-  milestoneId: z.string().optional(),
-});
-type FormValues = z.infer<typeof schema>;
+function buildSchema(t: ReturnType<typeof useTranslation>['t']) {
+  return z.object({
+    title: z.string().min(1, t('newJobModal.titleRequired')).max(255, t('newJobModal.max255Characters')),
+    description: z.string().max(10000, t('newJobModal.max10000Characters')).optional(),
+    client: z.string().max(255, t('newJobModal.max255Characters')).optional(),
+    deadline: z.string().optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+    milestoneId: z.string().optional(),
+  });
+}
+type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface Props {
   open: boolean;
@@ -40,7 +36,15 @@ interface Props {
 }
 
 export default function NewJobModal({ open, onClose, projectId, job, milestones = [] }: Props) {
+  const { t } = useTranslation(['jobsPages', 'common']);
   const isEdit = Boolean(job);
+  const schema = useMemo(() => buildSchema(t), [t]);
+  const PRIORITIES = useMemo(() => ([
+    { value: 'LOW' as const, label: t('priorityLow') },
+    { value: 'MEDIUM' as const, label: t('priorityMedium') },
+    { value: 'HIGH' as const, label: t('priorityHigh') },
+    { value: 'CRITICAL' as const, label: t('priorityCritical') },
+  ]), [t]);
   const { mutate: createJob, isPending: isCreating } = useCreateJob(projectId);
   const { mutate: updateJob, isPending: isUpdating } = useUpdateJob(projectId);
   const isPending = isCreating || isUpdating;
@@ -184,20 +188,20 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
   const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
   return (
-    <Modal open={open} onClose={handleClose} title={isEdit ? 'Edit Job' : 'New Job'}>
+    <Modal open={open} onClose={handleClose} title={isEdit ? t('newJobModal.editTitle') : t('newJobModal.newTitle')}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {showTemplates && (
           <div>
-            <label className={labelClass}>Start from template</label>
+            <label className={labelClass}>{t('newJobModal.startFromTemplateLabel')}</label>
             <select
               className={inputClass}
               defaultValue=""
               onChange={(e) => handleTemplateSelect(e.target.value)}
             >
-              <option value="">— optional —</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.scope === 'ORG' ? `[Org] ${t.name}` : t.name}
+              <option value="">{t('newJobModal.optionalPlaceholder')}</option>
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.scope === 'ORG' ? t('newJobModal.orgTemplateName', { name: tpl.name }) : tpl.name}
                 </option>
               ))}
             </select>
@@ -206,19 +210,19 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
 
         <div>
           <label className={labelClass}>
-            Title <span className="text-red-500">*</span>
+            {t('titleLabel')} <span className="text-red-500">*</span>
           </label>
           <input
             {...register('title')}
             className={inputClass}
-            placeholder="e.g. Fix login bug"
+            placeholder={t('newJobModal.titlePlaceholder')}
             autoFocus
           />
           {errors.title && <p className="mt-1 text-xs text-red-600">{errors.title.message}</p>}
         </div>
 
         <div>
-          <label className={labelClass}>Description</label>
+          <label className={labelClass}>{t('descriptionLabel')}</label>
           <Controller
             name="description"
             control={control}
@@ -226,7 +230,7 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
               <MarkdownEditor
                 value={field.value ?? ''}
                 onChange={field.onChange}
-                placeholder="Optional details… (markdown supported)"
+                placeholder={t('newJobModal.descriptionPlaceholder')}
                 rows={8}
               />
             )}
@@ -238,11 +242,11 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Client</label>
+            <label className={labelClass}>{t('clientLabel')}</label>
             <input
               {...register('client')}
               className={inputClass}
-              placeholder="Client name"
+              placeholder={t('newJobModal.clientPlaceholder')}
             />
             {errors.client && (
               <p className="mt-1 text-xs text-red-600">{errors.client.message}</p>
@@ -250,7 +254,7 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
           </div>
 
           <div>
-            <label className={labelClass}>Deadline</label>
+            <label className={labelClass}>{t('deadlineLabel')}</label>
             <input
               type="date"
               {...register('deadline')}
@@ -260,7 +264,7 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
         </div>
 
         <div>
-          <label className={labelClass}>Priority</label>
+          <label className={labelClass}>{t('priorityLabel')}</label>
           <select {...register('priority')} className={inputClass}>
             {PRIORITIES.map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
@@ -270,9 +274,9 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
 
         {milestones.length > 0 && (
           <div>
-            <label className={labelClass}>Milestone</label>
+            <label className={labelClass}>{t('newJobModal.milestoneLabel')}</label>
             <select {...register('milestoneId')} className={inputClass}>
-              <option value="">No milestone</option>
+              <option value="">{t('newJobModal.noMilestoneOption')}</option>
               {milestones.map((ms) => (
                 <option key={ms.id} value={ms.id}>{ms.name}</option>
               ))}
@@ -281,12 +285,12 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
         )}
 
         <div>
-          <label className={labelClass}>Assign to</label>
+          <label className={labelClass}>{t('newJobModal.assignToLabel')}</label>
           <div className="relative" ref={containerRef}>
             <input
               ref={assigneeInputRef}
               className={inputClass}
-              placeholder="Search member…"
+              placeholder={t('newJobModal.searchMemberPlaceholder')}
               value={assignedTo ? assignedTo.userName : memberSearch}
               onChange={(e) => {
                 setMemberSearch(e.target.value);
@@ -330,10 +334,10 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
 
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" type="button" onClick={handleClose}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button type="submit" loading={isPending}>
-            {isEdit ? 'Save changes' : 'Create job'}
+            {isEdit ? t('newJobModal.saveChanges') : t('newJobModal.createJob')}
           </Button>
         </div>
       </form>
