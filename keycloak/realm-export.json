@@ -1,6 +1,11 @@
 {
   "realm": "opsclear",
   "enabled": true,
+  "displayName": "OpsClear",
+  "loginTheme": "opsclear",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en"],
+  "defaultLocale": "en",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "rememberMe": true,
