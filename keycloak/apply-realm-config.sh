@@ -12,9 +12,16 @@ COMPOSE_FILE="${1:-docker-compose.yml}"
 ENV_FILE="$2"
 
 if [ -n "$ENV_FILE" ]; then
+  # POSIX `sh` (e.g. dash, /bin/sh on Debian/Ubuntu) only searches $PATH for bare
+  # filenames passed to `.` — it won't check the current directory unless the path
+  # has a "/" in it, unlike bash's more lenient `source`. Force an explicit path.
+  case "$ENV_FILE" in
+    /*) ENV_FILE_PATH="$ENV_FILE" ;;
+    *) ENV_FILE_PATH="./$ENV_FILE" ;;
+  esac
   set -a
   # shellcheck disable=SC1090
-  . "$ENV_FILE"
+  . "$ENV_FILE_PATH"
   set +a
 fi
 
