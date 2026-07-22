@@ -81,21 +81,21 @@ class SubscriptionCatalogIntegrationTest {
     }
 
     @Test
-    @DisplayName("getCatalog_shouldMarkRecurringSchedulingAsUnavailable")
-    void getCatalog_shouldMarkRecurringSchedulingAsUnavailable() throws Exception {
+    @DisplayName("getCatalog_shouldReturnRecurringSchedulingAsAvailable")
+    void getCatalog_shouldReturnRecurringSchedulingAsAvailable() throws Exception {
         mockMvc.perform(get(ApiPaths.SUBSCRIPTION_CATALOG))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.addons[8].key").value("RECURRING_SCHEDULING"))
-                .andExpect(jsonPath("$.addons[8].available").value(false));
+                .andExpect(jsonPath("$.addons[8].available").value(true));
     }
 
     @Test
-    @DisplayName("getCatalog_shouldMarkJobLinksAsUnavailable")
-    void getCatalog_shouldMarkJobLinksAsUnavailable() throws Exception {
+    @DisplayName("getCatalog_shouldReturnJobLinksAsAvailable")
+    void getCatalog_shouldReturnJobLinksAsAvailable() throws Exception {
         mockMvc.perform(get(ApiPaths.SUBSCRIPTION_CATALOG))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.addons[9].key").value("JOB_LINKS"))
-                .andExpect(jsonPath("$.addons[9].available").value(false));
+                .andExpect(jsonPath("$.addons[9].available").value(true));
     }
 
     @Test
