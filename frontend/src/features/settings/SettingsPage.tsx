@@ -4,7 +4,7 @@ import UpgradeCard from '../../components/UpgradeCard';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useCurrentOrg } from '../org/OrgContext';
 import type {
-  Theme, ViewMode, AccordionState, StatusTab,
+  Theme, Locale, ViewMode, AccordionState, StatusTab,
   SortOrder, DeadlineFormat, ProjectPage, ProgressFormat,
 } from '../../hooks/usePreferences';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -83,6 +83,11 @@ const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: 'system', label: 'System' },
 ];
 
+const LOCALE_OPTIONS: { value: Locale; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'sr', label: 'Srpski' },
+];
+
 const VIEW_MODE_OPTIONS: { value: ViewMode; label: string }[] = [
   { value: 'GROUPED', label: 'Grouped' },
   { value: 'FLAT', label: 'Flat' },
@@ -153,6 +158,9 @@ export default function SettingsPage() {
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
           <SettingRow label="Theme" description="Choose how OpsClear looks on this device.">
             <SegmentedControl value={prefs.theme} options={THEME_OPTIONS} onChange={(v) => update({ theme: v })} />
+          </SettingRow>
+          <SettingRow label="Language" description="Choose the language used across OpsClear.">
+            <SegmentedControl value={prefs.locale} options={LOCALE_OPTIONS} onChange={(v) => update({ locale: v })} />
           </SettingRow>
           <SettingRow label="Deadline format" description="How deadlines are displayed across the app.">
             <SegmentedControl value={prefs.deadlineFormat} options={DEADLINE_FORMAT_OPTIONS} onChange={(v) => update({ deadlineFormat: v })} />

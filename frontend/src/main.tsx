@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import PreferencesProvider from './hooks/PreferencesProvider';
 import { OrgProvider } from './features/org/OrgContext';
 import { router } from './router';
+import './i18n';
 import './index.css';
 
 const queryClient = new QueryClient({

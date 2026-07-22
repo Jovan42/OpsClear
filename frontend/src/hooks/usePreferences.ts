@@ -3,6 +3,7 @@ import { createContext, useContext } from 'react';
 const STORAGE_KEY = 'opsclear:preferences';
 
 export type Theme = 'light' | 'dark' | 'system';
+export type Locale = 'en' | 'sr';
 export type ViewMode = 'GROUPED' | 'FLAT';
 export type AccordionState = 'EXPANDED' | 'COLLAPSED';
 export type StatusTab = 'ALL' | 'NEW' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED';
@@ -13,6 +14,7 @@ export type ProgressFormat = 'FRACTION' | 'PERCENTAGE';
 
 export interface Preferences {
   theme: Theme;
+  locale: Locale;
   defaultViewMode: ViewMode;
   milestoneAccordionState: AccordionState;
   defaultStatusTab: StatusTab;
@@ -28,6 +30,7 @@ export interface Preferences {
 
 export const defaults: Preferences = {
   theme: 'system',
+  locale: 'en',
   defaultViewMode: 'GROUPED',
   milestoneAccordionState: 'EXPANDED',
   defaultStatusTab: 'ALL',

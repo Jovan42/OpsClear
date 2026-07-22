@@ -1,0 +1,10 @@
+{
+  "notFound": "Nije pronađeno",
+  "conflict": "Konflikt",
+  "badRequest": "Neispravan zahtev",
+  "validationError": "Greška u validaciji",
+  "forbidden": "Zabranjeno",
+  "internalServerError": "Greška na serveru",
+  "somethingWentWrong": "Nešto je pošlo naopako.",
+  "networkError": "Greška u mreži — proverite konekciju."
+}
