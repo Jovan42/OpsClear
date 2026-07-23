@@ -222,6 +222,18 @@
       "addon": "Add-on",
       "comingSoon": "Coming soon"
     },
+    "demo": {
+      "tryLive": "▶ Try it live",
+      "loading": "Loading demo…",
+      "badge": "Demo — sample data, nothing here is saved",
+      "close": "Close demo",
+      "prevSlide": "Previous example",
+      "nextSlide": "Next example",
+      "slideLabels": {
+        "pendingApprovals": "Pending approvals",
+        "approvalHistory": "Approval history on a job"
+      }
+    },
     "cards": {
       "job-tracking": {
         "name": "Job tracking",

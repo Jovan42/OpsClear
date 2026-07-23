@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import keycloak from '../../auth/keycloak';
 import { useCatalog } from '../org/useSubscription';
+import DemoTrigger from '../../demo/DemoTrigger';
+import type { DemoSlide } from '../../demo/ApprovalsDemo';
 import type { AddonCode, SubscriptionAddonResponse } from '../../types';
 
 interface FeatureCard {
@@ -12,6 +14,9 @@ interface FeatureCard {
   screenshot?: string;
   // Omitted for base features that aren't gated by any subscription add-on.
   addonKey?: AddonCode;
+  // Live interactive demo (ADR-0040), incrementally added card by card — most cards
+  // still fall back to the static `screenshot` until their own job wires this up.
+  loadSlides?: () => Promise<{ default: DemoSlide[] }>;
 }
 
 function buildCards(t: TFunction): FeatureCard[] {
@@ -41,6 +46,7 @@ function buildCards(t: TFunction): FeatureCard[] {
       description: t('featuresPage.cards.approvals.description'),
       screenshot: '/screenshots/approvals.png',
       addonKey: 'APPROVALS',
+      loadSlides: () => import('../../demo/ApprovalsDemo'),
     },
     {
       id: 'notes',
@@ -110,21 +116,23 @@ function Card({ card, badge }: { card: FeatureCard; badge: Badge }) {
   const comingSoon = badge === 'coming-soon';
   const badgeLabel = badge === 'base' ? t('featuresPage.badges.base') : badge === 'addon' ? t('featuresPage.badges.addon') : t('featuresPage.badges.comingSoon');
 
+  const preview = card.screenshot ? (
+    <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <img
+        src={card.screenshot}
+        alt={card.name}
+        className="w-full object-contain object-top max-h-56"
+      />
+    </div>
+  ) : (
+    <div className="h-40 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-center">
+      <span className="text-gray-300 dark:text-gray-600 text-sm">{t('featuresPage.noPreview')}</span>
+    </div>
+  );
+
   return (
     <div className={`bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${comingSoon ? 'opacity-60' : ''}`}>
-      {card.screenshot ? (
-        <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <img
-            src={card.screenshot}
-            alt={card.name}
-            className="w-full object-contain object-top max-h-56"
-          />
-        </div>
-      ) : (
-        <div className="h-40 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-center">
-          <span className="text-gray-300 dark:text-gray-600 text-sm">{t('featuresPage.noPreview')}</span>
-        </div>
-      )}
+      {card.loadSlides ? <DemoTrigger loadSlides={card.loadSlides} fallback={preview} /> : preview}
       <div className="p-6 flex flex-col gap-3 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="font-semibold text-gray-900 dark:text-white">{card.name}</h3>

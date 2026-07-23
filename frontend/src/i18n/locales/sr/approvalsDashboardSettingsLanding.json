@@ -222,6 +222,18 @@
       "addon": "Dodatak",
       "comingSoon": "Uskoro"
     },
+    "demo": {
+      "tryLive": "▶ Isprobaj uživo",
+      "loading": "Učitavanje demonstracije…",
+      "badge": "Demo — primer podataka",
+      "close": "Zatvori demo",
+      "prevSlide": "Prethodni primer",
+      "nextSlide": "Sledeći primer",
+      "slideLabels": {
+        "pendingApprovals": "Odobrenja na čekanju",
+        "approvalHistory": "Istorija odobrenja na poslu"
+      }
+    },
     "cards": {
       "job-tracking": {
         "name": "Praćenje poslova",

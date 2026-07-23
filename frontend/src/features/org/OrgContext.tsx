@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AddonCode, OrgSubscriptionResponse, OrganisationResponse } from '../../types';
 
-interface OrgState {
+export interface OrgState {
   org: OrganisationResponse | null;
   subscription: OrgSubscriptionResponse | null;
   hasAddon: (key: AddonCode) => boolean;
@@ -11,7 +11,12 @@ interface OrgState {
   clearOrg: () => void;
 }
 
-const OrgContext = createContext<OrgState>({
+// Exported (not just useCurrentOrg()) so the /features interactive-demo infrastructure
+// can locally override it within a demo's subtree — the demo simulates a fully-featured
+// subscription (every addon unlocked) so prospects can explore the whole product before
+// paying, regardless of what's actually purchased. See src/demo/mockOrgState.ts.
+// eslint-disable-next-line react-refresh/only-export-components
+export const OrgContext = createContext<OrgState>({
   org: null,
   subscription: null,
   hasAddon: () => false,

@@ -1,0 +1,74 @@
+import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import DemoRouteWrapper from './DemoRouteWrapper';
+import DemoQueryScope from './DemoQueryScope';
+import { DEMO_PROJECT_ID, demoStore } from './mockData';
+import ApprovalQueuePage from '../features/approvals/ApprovalQueuePage';
+import ApprovalList from '../features/jobs/components/ApprovalList';
+
+export interface DemoSlide {
+  /** A key into the approvalsDashboardSettingsLanding:featuresPage.demo.slideLabels
+   *  namespace — translated at render time by DemoOverlay/DemoTrigger, not baked in
+   *  here (this array is built at module scope, outside any component). */
+  labelKey: string;
+  render: () => ReactNode;
+}
+
+const HISTORY_JOB_ID = 'demo-job-04';
+
+// Same "Approvals" accordion card look as JobDetailPage's own Approvals section
+// (jobsPages:jobDetailPage.approvalsSection / pendingCount) — just always expanded,
+// since this slide's whole point is showing decided history without extra clicks.
+// eslint-disable-next-line react-refresh/only-export-components
+function ApprovalHistorySlide() {
+  const { t } = useTranslation(['jobsPages', 'approvalsDashboardSettingsLanding']);
+  const job = demoStore.jobs.find((j) => j.id === HISTORY_JOB_ID);
+  const approvals = demoStore.approvalsByJobId[HISTORY_JOB_ID] ?? [];
+  const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
+
+  return (
+    <DemoQueryScope>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-1.5">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{job?.title}</p>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+            <span>{t('jobsPages:jobDetailPage.approvalsSection')}</span>
+            {pendingCount > 0 && (
+              <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                {t('jobsPages:jobDetailPage.pendingCount', { count: pendingCount })}
+              </span>
+            )}
+          </div>
+          <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
+            <ApprovalList projectId={DEMO_PROJECT_ID} jobId={HISTORY_JOB_ID} role="OWNER" members={demoStore.members} />
+          </div>
+        </div>
+      </div>
+    </DemoQueryScope>
+  );
+}
+
+/**
+ * The Approvals card's demo slides (ADR-0040 / JOB-143): the pending-approvals queue,
+ * plus just the ApprovalList component showing decided history (one approved, one
+ * rejected) for a completed job — DemoOverlay's prev/next arrows page between them.
+ */
+export const slides: DemoSlide[] = [
+  {
+    labelKey: 'featuresPage.demo.slideLabels.pendingApprovals',
+    render: () => (
+      <DemoRouteWrapper
+        path="/projects/:projectFriendlyId/approvals"
+        initialEntry={`/projects/${DEMO_PROJECT_ID}/approvals`}
+      >
+        <ApprovalQueuePage />
+      </DemoRouteWrapper>
+    ),
+  },
+  {
+    labelKey: 'featuresPage.demo.slideLabels.approvalHistory',
+    render: () => <ApprovalHistorySlide />,
+  },
+];
+
+export default slides;
