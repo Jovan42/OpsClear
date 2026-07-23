@@ -82,12 +82,22 @@ export default function DemoTrigger({
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [{ acquireDemoWorker }, mod] = await Promise.all([loadDemoWorkerModule(), loadSlides()]);
-      if (cancelled) return;
-      resetDemoData();
-      await acquireDemoWorker();
-      if (cancelled) return;
-      setSlides(mod.default);
+      try {
+        const [{ acquireDemoWorker }, mod] = await Promise.all([loadDemoWorkerModule(), loadSlides()]);
+        if (cancelled) return;
+        resetDemoData();
+        await acquireDemoWorker();
+        if (cancelled) return;
+        setSlides(mod.default);
+      } catch (error) {
+        // Service Worker registration can fail for reasons outside this component's
+        // control — most notably, it requires a properly-trusted HTTPS certificate;
+        // a self-signed one (e.g. serving straight off a bare IP with no real domain)
+        // fails registration outright. Fall back to the static `fallback` prop (slides
+        // stays null) rather than leaving the card in permanent limbo with an
+        // unhandled rejection and no visible content.
+        if (!cancelled) console.warn('[demo] failed to start interactive preview:', error);
+      }
     })();
 
     return () => {
