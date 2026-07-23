@@ -237,7 +237,11 @@
         "blockage": "Blokiran posao",
         "notes": "Beleške na poslu",
         "history": "Istorija statusa posla",
-        "relationships": "Povezanost poslova"
+        "relationships": "Povezanost poslova",
+        "dashboard": "Kontrolna tabla",
+        "templates": "Šabloni poslova",
+        "recurring": "Ponavljajući rasporedi",
+        "apiKeys": "API ključevi"
       }
     },
     "cards": {
