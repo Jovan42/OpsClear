@@ -237,7 +237,11 @@
         "blockage": "Blocked job",
         "notes": "Notes on a job",
         "history": "Job status history",
-        "relationships": "Job relationships"
+        "relationships": "Job relationships",
+        "dashboard": "Dashboard",
+        "templates": "Job templates",
+        "recurring": "Recurring schedules",
+        "apiKeys": "API keys"
       }
     },
     "cards": {

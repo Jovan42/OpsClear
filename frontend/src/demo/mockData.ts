@@ -1,11 +1,15 @@
 import type {
+  ApiKeyResponse,
   JobHistoryEntry,
   JobResponse,
+  JobTemplateResponse,
   LinkResponse,
   MilestoneResponse,
   NoteResponse,
   ProjectMemberResponse,
   ProjectResponse,
+  RecurringScheduleResponse,
+  ScheduleMissedRunResponse,
 } from '../types';
 
 /**
@@ -129,6 +133,10 @@ interface DemoJobSeed {
   blockedReason?: string;
   blockedHoursAgo?: number;
   links?: LinkResponse[];
+  /** Days from now for the deadline — defaults to 7. Negative makes it overdue
+   *  (dashboard's overdue count/section needs at least one non-completed job with
+   *  a past deadline to demonstrate). Ignored for COMPLETED jobs (deadline is null). */
+  deadlineDaysFromNow?: number;
 }
 
 const JOB_SEEDS: DemoJobSeed[] = [
@@ -218,6 +226,61 @@ const JOB_SEEDS: DemoJobSeed[] = [
     milestoneId: null,
     milestoneName: null,
   },
+  // The dashboard demo card (JOB-145) reads off this same shared dataset — these four
+  // exist to give it a fuller spread (more per status, one genuinely overdue) rather
+  // than a near-empty summary. Appended at the end so demo-job-01..07's existing
+  // index-based relationship wiring above is untouched.
+  {
+    id: 'demo-job-08',
+    friendlyId: 'DEMO-108',
+    title: 'Set up CDN caching rules',
+    description: 'Configure edge caching for static assets ahead of launch.',
+    status: 'NEW',
+    priority: 'MEDIUM',
+    assignedTo: null,
+    assignedToName: null,
+    milestoneId: 'demo-milestone-ga',
+    milestoneName: 'Public launch',
+  },
+  {
+    id: 'demo-job-09',
+    friendlyId: 'DEMO-109',
+    title: 'Renew SSL certificate for staging',
+    description: 'Staging cert expired last week — blocking QA from testing over HTTPS.',
+    status: 'IN_PROGRESS',
+    priority: 'HIGH',
+    assignedTo: DEMO_USERS.marko.id,
+    assignedToName: DEMO_USERS.marko.name,
+    milestoneId: null,
+    milestoneName: null,
+    deadlineDaysFromNow: -2,
+  },
+  {
+    id: 'demo-job-10',
+    friendlyId: 'DEMO-110',
+    title: 'Waiting on legal review of new terms page',
+    description: 'Updated terms of service copy is ready, pending sign-off.',
+    status: 'BLOCKED',
+    priority: 'MEDIUM',
+    assignedTo: DEMO_USERS.ana.id,
+    assignedToName: DEMO_USERS.ana.name,
+    milestoneId: 'demo-milestone-ga',
+    milestoneName: 'Public launch',
+    blockedReason: 'Legal needs another week to review the updated terms of service',
+    blockedHoursAgo: 48,
+  },
+  {
+    id: 'demo-job-11',
+    friendlyId: 'DEMO-111',
+    title: 'Archive old marketing site',
+    description: 'Old static site is fully replaced — move it to cold storage.',
+    status: 'COMPLETED',
+    priority: 'LOW',
+    assignedTo: DEMO_USERS.iva.id,
+    assignedToName: DEMO_USERS.iva.name,
+    milestoneId: null,
+    milestoneName: null,
+  },
 ];
 
 function buildJob(seed: DemoJobSeed): JobResponse {
@@ -230,7 +293,7 @@ function buildJob(seed: DemoJobSeed): JobResponse {
     client: null,
     assignedTo: seed.assignedTo,
     assignedToName: seed.assignedToName,
-    deadline: seed.status === 'COMPLETED' ? null : daysFromNow(7),
+    deadline: seed.status === 'COMPLETED' ? null : daysFromNow(seed.deadlineDaysFromNow ?? 7),
     status: seed.status,
     priority: seed.priority,
     createdBy: DEMO_USERS.ana.id,
@@ -501,6 +564,175 @@ const BASE_APPROVALS: DemoApproval[] = [
   },
 ];
 
+// ---- Templates, recurring schedules, API keys (JOB-145) ----
+// Each of these is its own small, self-contained mock slice per ADR-0040's
+// implementation order — unlike the cards above, these standalone management
+// screens don't share data with the job-tracking dataset, only the same project/
+// member/milestone scaffolding already set up for it.
+
+const BASE_TEMPLATES: JobTemplateResponse[] = [
+  {
+    id: 'demo-template-01',
+    friendlyId: 'TPL-D1',
+    projectId: DEMO_PROJECT_ID,
+    orgId: null,
+    scope: 'PROJECT',
+    name: 'Weekly QA sweep',
+    title: 'QA pass on {{project}} — {{date}}',
+    description: 'Run through the regression checklist and log any bugs found.',
+    client: null,
+    priority: 'MEDIUM',
+    assigneeMode: 'FIXED',
+    assigneeId: DEMO_USERS.iva.id,
+    assigneeName: DEMO_USERS.iva.name,
+    milestoneId: 'demo-milestone-beta',
+    milestoneName: 'Beta launch',
+    deadlineOffsetDays: 2,
+    occurrenceCount: 6,
+    createdBy: DEMO_USERS.ana.id,
+    createdAt: hoursAgo(24 * 60),
+    updatedAt: hoursAgo(24 * 10),
+  },
+  {
+    id: 'demo-template-02',
+    friendlyId: 'TPL-D2',
+    projectId: DEMO_PROJECT_ID,
+    orgId: null,
+    scope: 'PROJECT',
+    name: 'Client status update',
+    title: 'Send status update — {{date}}',
+    description: 'Summarize progress and blockers for the client.',
+    client: null,
+    priority: 'LOW',
+    assigneeMode: 'ASK',
+    assigneeId: null,
+    assigneeName: null,
+    milestoneId: null,
+    milestoneName: null,
+    deadlineOffsetDays: 0,
+    occurrenceCount: 12,
+    createdBy: DEMO_USERS.ana.id,
+    createdAt: hoursAgo(24 * 90),
+    updatedAt: hoursAgo(24),
+  },
+  {
+    id: 'demo-template-03',
+    friendlyId: 'TPL-D3',
+    projectId: DEMO_PROJECT_ID,
+    orgId: null,
+    scope: 'PROJECT',
+    name: 'New feature scaffold',
+    title: '{{project}} — new feature setup',
+    description: 'Standard checklist for kicking off a new feature: ticket, branch, design review.',
+    client: null,
+    priority: 'HIGH',
+    assigneeMode: 'NONE',
+    assigneeId: null,
+    assigneeName: null,
+    milestoneId: 'demo-milestone-ga',
+    milestoneName: 'Public launch',
+    deadlineOffsetDays: 5,
+    occurrenceCount: 0,
+    createdBy: DEMO_USERS.ana.id,
+    createdAt: hoursAgo(24 * 15),
+    updatedAt: hoursAgo(24 * 15),
+  },
+];
+
+const BASE_SCHEDULES: RecurringScheduleResponse[] = [
+  {
+    id: 'demo-schedule-01',
+    projectId: DEMO_PROJECT_ID,
+    templateId: 'demo-template-01',
+    templateName: 'Weekly QA sweep',
+    name: 'Weekly QA sweep — Mondays',
+    cronExpression: '0 0 9 * * MON',
+    timezone: 'Europe/Belgrade',
+    pausedUntil: null,
+    expiresAt: null,
+    currentRotationIndex: 0,
+    nextRunAt: daysFromNow(3),
+    lastRunAt: hoursAgo(24 * 4),
+    assignees: [
+      { userId: DEMO_USERS.iva.id, userName: DEMO_USERS.iva.name, order: 0 },
+      { userId: DEMO_USERS.marko.id, userName: DEMO_USERS.marko.name, order: 1 },
+    ],
+    status: 'ACTIVE',
+    createdAt: hoursAgo(24 * 60),
+    updatedAt: hoursAgo(24 * 4),
+  },
+  {
+    id: 'demo-schedule-02',
+    projectId: DEMO_PROJECT_ID,
+    templateId: 'demo-template-02',
+    templateName: 'Client status update',
+    name: 'Client status update — daily',
+    cronExpression: '0 0 17 * * *',
+    timezone: 'Europe/Belgrade',
+    pausedUntil: null,
+    expiresAt: null,
+    currentRotationIndex: 0,
+    nextRunAt: daysFromNow(1),
+    lastRunAt: hoursAgo(24),
+    assignees: [{ userId: DEMO_USERS.ana.id, userName: DEMO_USERS.ana.name, order: 0 }],
+    status: 'ACTIVE',
+    createdAt: hoursAgo(24 * 30),
+    updatedAt: hoursAgo(24),
+  },
+  {
+    id: 'demo-schedule-03',
+    projectId: DEMO_PROJECT_ID,
+    templateId: 'demo-template-03',
+    templateName: 'New feature scaffold',
+    name: 'Monthly planning retro',
+    cronExpression: '0 0 10 1 * *',
+    timezone: 'Europe/Belgrade',
+    // Manually paused (not PAUSED_NO_ASSIGNEES) with real assignees still attached —
+    // clicking Resume should actually reactivate it. PAUSED_NO_ASSIGNEES + an empty
+    // assignee list is a dead end by design (resume just re-derives the same
+    // no-assignees state), which isn't what this slide is meant to demonstrate.
+    pausedUntil: null,
+    expiresAt: null,
+    currentRotationIndex: 0,
+    nextRunAt: daysFromNow(20),
+    lastRunAt: hoursAgo(24 * 35),
+    assignees: [{ userId: DEMO_USERS.ana.id, userName: DEMO_USERS.ana.name, order: 0 }],
+    status: 'PAUSED',
+    createdAt: hoursAgo(24 * 100),
+    updatedAt: hoursAgo(24 * 35),
+  },
+];
+
+const BASE_MISSED_RUNS: Record<string, ScheduleMissedRunResponse[]> = {
+  'demo-schedule-01': [
+    { id: 'demo-missed-01-1', scheduleId: 'demo-schedule-01', expectedAt: hoursAgo(24 * 10), recordedAt: hoursAgo(24 * 10) },
+    { id: 'demo-missed-01-2', scheduleId: 'demo-schedule-01', expectedAt: hoursAgo(24 * 3), recordedAt: hoursAgo(24 * 3) },
+  ],
+};
+
+const BASE_API_KEYS: ApiKeyResponse[] = [
+  {
+    id: 'demo-apikey-01',
+    name: 'CI deploy script',
+    keyPrefix: 'opck_7f3a9c',
+    createdAt: hoursAgo(24 * 45),
+    lastUsedAt: hoursAgo(6),
+    expiresAt: null,
+    revokedAt: null,
+  },
+  {
+    id: 'demo-apikey-02',
+    name: 'Monitoring bot',
+    keyPrefix: 'opck_2b88e1',
+    createdAt: hoursAgo(24 * 120),
+    // Deliberately >90 days since last use — this is what the "Unused 90+ days" badge
+    // demonstrates on the api-keys card's slide.
+    lastUsedAt: hoursAgo(24 * 95),
+    expiresAt: null,
+    revokedAt: null,
+  },
+];
+
 // ---- mutable in-memory store, reset per demo-overlay open ----
 
 export interface DemoStore {
@@ -511,6 +743,10 @@ export interface DemoStore {
   notesByJobId: Record<string, NoteResponse[]>;
   historyByJobId: Record<string, JobHistoryEntry[]>;
   approvals: DemoApproval[];
+  templates: JobTemplateResponse[];
+  schedules: RecurringScheduleResponse[];
+  missedRunsByScheduleId: Record<string, ScheduleMissedRunResponse[]>;
+  apiKeys: ApiKeyResponse[];
 }
 
 function freshStore(): DemoStore {
@@ -522,6 +758,10 @@ function freshStore(): DemoStore {
     notesByJobId: structuredClone(BASE_NOTES),
     historyByJobId: structuredClone(BASE_HISTORY),
     approvals: structuredClone(BASE_APPROVALS),
+    templates: structuredClone(BASE_TEMPLATES),
+    schedules: structuredClone(BASE_SCHEDULES),
+    missedRunsByScheduleId: structuredClone(BASE_MISSED_RUNS),
+    apiKeys: structuredClone(BASE_API_KEYS),
   };
 }
 

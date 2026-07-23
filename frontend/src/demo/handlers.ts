@@ -1,17 +1,26 @@
 import { http, HttpResponse } from 'msw';
 import { DEMO_CURRENT_USER, DEMO_PROJECT_ID, demoStore, type DemoApproval } from './mockData';
+import { detectPreset, parseCronParams } from '../utils/cron';
 import type {
+  ApiKeyResponse,
   ApprovalResponse,
   ApprovalStatus,
+  AssigneeMode,
+  CreateApiKeyResponse,
+  CronPreviewResponse,
+  DashboardResponse,
   JobHistoryEntry,
   JobPriority,
   JobRelationshipType,
   JobRelationshipView,
   JobResponse,
   JobStatus,
+  JobTemplateResponse,
   MilestoneResponse,
   NoteResponse,
   PendingApprovalResponse,
+  RecurringScheduleResponse,
+  ScheduleStatus,
 } from '../types';
 
 /**
@@ -43,6 +52,50 @@ let idCounter = 0;
 function uniqueId(prefix: string): string {
   idCounter += 1;
   return `${prefix}-${Date.now()}-${idCounter}`;
+}
+
+const DOW_INDEX: Record<string, number> = { SUN: 0, MON: 1, TUE: 2, WED: 3, THU: 4, FRI: 5, SAT: 6 };
+
+/**
+ * Best-effort mock cron preview — the real backend uses a proper cron engine, which
+ * isn't worth pulling into the browser bundle just for this demo's preview panel.
+ * Good enough to show plausible upcoming dates for the daily/weekly/monthly presets
+ * ScheduleFormModal actually offers; 'advanced' free-form cron falls back to a daily
+ * cadence at the parsed time, which is a reasonable approximation for a mock.
+ */
+function computeNextRuns(cronExpression: string, count = 5): string[] {
+  const preset = detectPreset(cronExpression);
+  const { time, dow, dom } = parseCronParams(cronExpression);
+  const [hh, mm] = time.split(':').map((n) => parseInt(n, 10));
+  const runs: string[] = [];
+
+  if (preset === 'weekly') {
+    const targetDow = DOW_INDEX[dow] ?? 1;
+    const cursor = new Date();
+    cursor.setHours(hh, mm, 0, 0);
+    while (runs.length < count) {
+      cursor.setDate(cursor.getDate() + 1);
+      if (cursor.getDay() === targetDow) runs.push(cursor.toISOString());
+    }
+  } else if (preset === 'monthly') {
+    const cursor = new Date();
+    cursor.setDate(dom);
+    cursor.setHours(hh, mm, 0, 0);
+    if (cursor.getTime() <= Date.now()) cursor.setMonth(cursor.getMonth() + 1);
+    for (let i = 0; i < count; i += 1) {
+      runs.push(cursor.toISOString());
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+  } else {
+    const cursor = new Date();
+    cursor.setHours(hh, mm, 0, 0);
+    if (cursor.getTime() <= Date.now()) cursor.setDate(cursor.getDate() + 1);
+    for (let i = 0; i < count; i += 1) {
+      runs.push(cursor.toISOString());
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+  return runs;
 }
 
 /** Drops the internal-only `jobTitle` field to match the real ApprovalResponse shape. */
@@ -113,11 +166,357 @@ export const demoHandlers = [
     return new HttpResponse(null, { status: 204 });
   }),
 
-  // Not part of the mock dataset yet (templates/recurring get their own smaller slice
-  // in a later job per ADR-0040) — an empty list is enough to satisfy any real
-  // component that happens to fetch it (e.g. a "create from template" dropdown)
-  // without an unhandled-request error.
-  http.get(`${base}/templates`, () => HttpResponse.json([])),
+  http.get(`${base}/dashboard`, () => {
+    const now = Date.now();
+    const isOverdue = (j: JobResponse) => j.status !== 'COMPLETED' && !!j.deadline && new Date(j.deadline).getTime() < now;
+    const toSummary = (j: JobResponse) => ({
+      id: j.id,
+      title: j.title,
+      client: j.client,
+      assignedTo: j.assignedTo,
+      assignedToName: j.assignedToName,
+      deadline: j.deadline,
+      status: j.status,
+      blockedReason: j.blockedReason,
+      blockedAt: j.blockedAt,
+      blockedBy: j.blockedBy,
+    });
+
+    const jobs = demoStore.jobs;
+    const pendingApprovals = demoStore.approvals.filter((a) => a.status === 'PENDING');
+
+    const response: DashboardResponse = {
+      summary: {
+        total: jobs.length,
+        newCount: jobs.filter((j) => j.status === 'NEW').length,
+        inProgressCount: jobs.filter((j) => j.status === 'IN_PROGRESS').length,
+        blockedCount: jobs.filter((j) => j.status === 'BLOCKED').length,
+        completedCount: jobs.filter((j) => j.status === 'COMPLETED').length,
+        overdueCount: jobs.filter(isOverdue).length,
+        pendingApprovalsCount: pendingApprovals.length,
+      },
+      blockedJobs: jobs.filter((j) => j.status === 'BLOCKED').map(toSummary),
+      overdueJobs: jobs.filter(isOverdue).map(toSummary),
+      pendingApprovals: pendingApprovals.map(({ id, jobId, jobTitle, requesterId, description, requestedAt }) => ({
+        id,
+        jobId,
+        jobTitle,
+        requesterId,
+        description,
+        requestedAt,
+      })),
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  http.get(`${base}/templates`, () => HttpResponse.json(demoStore.templates)),
+
+  http.post(`${base}/templates`, async ({ request }) => {
+    const body = (await request.json()) as {
+      name: string;
+      title?: string;
+      description?: string;
+      client?: string;
+      priority?: JobPriority;
+      assigneeMode?: AssigneeMode;
+      assigneeId?: string;
+      milestoneId?: string;
+      deadlineOffsetDays?: number;
+    };
+    const assignee = body.assigneeId ? demoStore.members.find((m) => m.userId === body.assigneeId) : undefined;
+    const milestone = body.milestoneId ? demoStore.milestones.find((m) => m.id === body.milestoneId) : undefined;
+    const now = new Date().toISOString();
+
+    const template: JobTemplateResponse = {
+      id: uniqueId('demo-template'),
+      friendlyId: `TPL-D${demoStore.templates.length + 1}`,
+      projectId: DEMO_PROJECT_ID,
+      orgId: null,
+      scope: 'PROJECT',
+      name: body.name,
+      title: body.title ?? null,
+      description: body.description ?? null,
+      client: body.client ?? null,
+      priority: body.priority ?? null,
+      assigneeMode: body.assigneeMode ?? 'NONE',
+      assigneeId: assignee?.userId ?? null,
+      assigneeName: assignee?.userName ?? null,
+      milestoneId: milestone?.id ?? null,
+      milestoneName: milestone?.name ?? null,
+      deadlineOffsetDays: body.deadlineOffsetDays ?? null,
+      occurrenceCount: 0,
+      createdBy: DEMO_CURRENT_USER.id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    demoStore.templates.push(template);
+
+    return HttpResponse.json(template, { status: 201 });
+  }),
+
+  http.put(`${base}/templates/:templateId`, async ({ params, request }) => {
+    const template = demoStore.templates.find((t) => t.id === params.templateId);
+    if (!template) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as Partial<{
+      name: string;
+      title: string;
+      description: string;
+      client: string;
+      priority: JobPriority;
+      assigneeMode: AssigneeMode;
+      assigneeId: string;
+      milestoneId: string;
+      deadlineOffsetDays: number;
+    }>;
+
+    if (body.name !== undefined) template.name = body.name;
+    if (body.title !== undefined) template.title = body.title ?? null;
+    if (body.description !== undefined) template.description = body.description ?? null;
+    if (body.client !== undefined) template.client = body.client ?? null;
+    if (body.priority !== undefined) template.priority = body.priority ?? null;
+    if (body.assigneeMode !== undefined) template.assigneeMode = body.assigneeMode;
+    if (body.assigneeId !== undefined) {
+      const assignee = demoStore.members.find((m) => m.userId === body.assigneeId);
+      template.assigneeId = assignee?.userId ?? null;
+      template.assigneeName = assignee?.userName ?? null;
+    }
+    if (body.milestoneId !== undefined) {
+      const milestone = demoStore.milestones.find((m) => m.id === body.milestoneId);
+      template.milestoneId = milestone?.id ?? null;
+      template.milestoneName = milestone?.name ?? null;
+    }
+    if (body.deadlineOffsetDays !== undefined) template.deadlineOffsetDays = body.deadlineOffsetDays ?? null;
+    template.updatedAt = new Date().toISOString();
+
+    return HttpResponse.json(template);
+  }),
+
+  http.delete(`${base}/templates/:templateId`, ({ params }) => {
+    const index = demoStore.templates.findIndex((t) => t.id === params.templateId);
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    demoStore.templates.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get(`${base}/schedules`, () => HttpResponse.json(demoStore.schedules)),
+
+  http.get(`${base}/schedules/:scheduleId`, ({ params }) => {
+    const schedule = demoStore.schedules.find((s) => s.id === params.scheduleId);
+    if (!schedule) return new HttpResponse(null, { status: 404 });
+    return HttpResponse.json(schedule);
+  }),
+
+  http.post(`${base}/schedules`, async ({ request }) => {
+    const body = (await request.json()) as {
+      name: string;
+      templateId: string;
+      cronExpression: string;
+      timezone: string;
+      pausedUntil?: string | null;
+      expiresAt?: string | null;
+      assigneeIds: string[];
+    };
+    const template = demoStore.templates.find((t) => t.id === body.templateId);
+    const assignees = body.assigneeIds
+      .map((userId, order) => {
+        const member = demoStore.members.find((m) => m.userId === userId);
+        return member ? { userId: member.userId, userName: member.userName, order } : null;
+      })
+      .filter((a): a is { userId: string; userName: string; order: number } => a !== null);
+    const now = new Date().toISOString();
+
+    const schedule: RecurringScheduleResponse = {
+      id: uniqueId('demo-schedule'),
+      projectId: DEMO_PROJECT_ID,
+      templateId: body.templateId,
+      templateName: template?.name ?? null,
+      name: body.name,
+      cronExpression: body.cronExpression,
+      timezone: body.timezone,
+      pausedUntil: body.pausedUntil ?? null,
+      expiresAt: body.expiresAt ?? null,
+      currentRotationIndex: 0,
+      nextRunAt: computeNextRuns(body.cronExpression, 1)[0],
+      lastRunAt: null,
+      assignees,
+      status: assignees.length > 0 ? 'ACTIVE' : 'PAUSED_NO_ASSIGNEES',
+      createdAt: now,
+      updatedAt: now,
+    };
+    demoStore.schedules.push(schedule);
+    demoStore.missedRunsByScheduleId[schedule.id] = [];
+
+    return HttpResponse.json(schedule, { status: 201 });
+  }),
+
+  http.put(`${base}/schedules/:scheduleId`, async ({ params, request }) => {
+    const schedule = demoStore.schedules.find((s) => s.id === params.scheduleId);
+    if (!schedule) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as {
+      name: string;
+      templateId: string;
+      cronExpression: string;
+      timezone: string;
+      pausedUntil?: string | null;
+      expiresAt?: string | null;
+      assigneeIds: string[];
+    };
+    const template = demoStore.templates.find((t) => t.id === body.templateId);
+    const assignees = body.assigneeIds
+      .map((userId, order) => {
+        const member = demoStore.members.find((m) => m.userId === userId);
+        return member ? { userId: member.userId, userName: member.userName, order } : null;
+      })
+      .filter((a): a is { userId: string; userName: string; order: number } => a !== null);
+
+    schedule.name = body.name;
+    schedule.templateId = body.templateId;
+    schedule.templateName = template?.name ?? null;
+    schedule.cronExpression = body.cronExpression;
+    schedule.timezone = body.timezone;
+    schedule.pausedUntil = body.pausedUntil ?? null;
+    schedule.expiresAt = body.expiresAt ?? null;
+    schedule.nextRunAt = computeNextRuns(body.cronExpression, 1)[0];
+    schedule.assignees = assignees;
+    if (schedule.status !== 'PAUSED') {
+      schedule.status = assignees.length > 0 ? 'ACTIVE' : 'PAUSED_NO_ASSIGNEES';
+    }
+    schedule.updatedAt = new Date().toISOString();
+
+    return HttpResponse.json(schedule);
+  }),
+
+  http.delete(`${base}/schedules/:scheduleId`, ({ params }) => {
+    const index = demoStore.schedules.findIndex((s) => s.id === params.scheduleId);
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    demoStore.schedules.splice(index, 1);
+    delete demoStore.missedRunsByScheduleId[params.scheduleId as string];
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.post(`${base}/schedules/:scheduleId/pause`, async ({ params, request }) => {
+    const schedule = demoStore.schedules.find((s) => s.id === params.scheduleId);
+    if (!schedule) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as { until?: string | null };
+
+    schedule.status = 'PAUSED' as ScheduleStatus;
+    schedule.pausedUntil = body.until ?? null;
+    schedule.updatedAt = new Date().toISOString();
+
+    return HttpResponse.json(schedule);
+  }),
+
+  http.post(`${base}/schedules/:scheduleId/resume`, ({ params }) => {
+    const schedule = demoStore.schedules.find((s) => s.id === params.scheduleId);
+    if (!schedule) return new HttpResponse(null, { status: 404 });
+
+    schedule.pausedUntil = null;
+    schedule.status = schedule.assignees.length > 0 ? 'ACTIVE' : 'PAUSED_NO_ASSIGNEES';
+    schedule.updatedAt = new Date().toISOString();
+
+    return HttpResponse.json(schedule);
+  }),
+
+  http.get(`${base}/schedules/:scheduleId/missed-runs`, ({ params }) => {
+    const runs = demoStore.missedRunsByScheduleId[params.scheduleId as string] ?? [];
+    return HttpResponse.json(runs);
+  }),
+
+  http.post(`${base}/schedules/:scheduleId/missed-runs/:missedRunId/materialize`, ({ params }) => {
+    const { scheduleId, missedRunId } = params as { scheduleId: string; missedRunId: string };
+    const schedule = demoStore.schedules.find((s) => s.id === scheduleId);
+    const runs = demoStore.missedRunsByScheduleId[scheduleId] ?? [];
+    const runIndex = runs.findIndex((r) => r.id === missedRunId);
+    if (!schedule || runIndex === -1) return new HttpResponse(null, { status: 404 });
+    runs.splice(runIndex, 1);
+
+    const template = demoStore.templates.find((t) => t.id === schedule.templateId);
+    const now = new Date().toISOString();
+    const job: JobResponse = {
+      id: uniqueId('demo-job'),
+      friendlyId: `DEMO-${100 + demoStore.jobs.length + 1}`,
+      projectId: DEMO_PROJECT_ID,
+      title: template?.title ?? template?.name ?? schedule.name,
+      description: template?.description ?? null,
+      client: template?.client ?? null,
+      assignedTo: schedule.assignees[0]?.userId ?? null,
+      assignedToName: schedule.assignees[0]?.userName ?? null,
+      deadline: null,
+      status: 'NEW',
+      priority: template?.priority ?? 'MEDIUM',
+      createdBy: DEMO_CURRENT_USER.id,
+      createdAt: now,
+      updatedAt: now,
+      blockedBy: null,
+      blockedReason: null,
+      blockedAt: null,
+      milestoneId: template?.milestoneId ?? null,
+      milestoneName: template?.milestoneName ?? null,
+      relationships: [],
+      links: [],
+      sourceScheduleId: schedule.id,
+    };
+    demoStore.jobs.push(job);
+
+    return HttpResponse.json(job, { status: 201 });
+  }),
+
+  http.delete(`${base}/schedules/:scheduleId/missed-runs/:missedRunId`, ({ params }) => {
+    const { scheduleId, missedRunId } = params as { scheduleId: string; missedRunId: string };
+    const runs = demoStore.missedRunsByScheduleId[scheduleId] ?? [];
+    const index = runs.findIndex((r) => r.id === missedRunId);
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    runs.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.delete(`${base}/schedules/:scheduleId/missed-runs`, ({ params }) => {
+    demoStore.missedRunsByScheduleId[params.scheduleId as string] = [];
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.post('*/api/schedules/preview', async ({ request }) => {
+    const body = (await request.json()) as { cronExpression: string; timezone: string };
+    const response: CronPreviewResponse = { nextRuns: computeNextRuns(body.cronExpression, 5) };
+    return HttpResponse.json(response);
+  }),
+
+  http.get('*/api/user/api-keys', () => HttpResponse.json(demoStore.apiKeys)),
+
+  http.post('*/api/user/api-keys', async ({ request }) => {
+    const body = (await request.json()) as { name: string };
+    const now = new Date().toISOString();
+    const keyPrefix = uniqueId('opck_demo').slice(0, 16);
+
+    const key: ApiKeyResponse = {
+      id: uniqueId('demo-apikey'),
+      name: body.name,
+      keyPrefix,
+      createdAt: now,
+      lastUsedAt: null,
+      expiresAt: null,
+      revokedAt: null,
+    };
+    demoStore.apiKeys.push(key);
+
+    const response: CreateApiKeyResponse = {
+      id: key.id,
+      name: key.name,
+      key: `${keyPrefix}_${Math.random().toString(36).slice(2, 26)}`,
+      keyPrefix,
+      createdAt: key.createdAt,
+      expiresAt: null,
+    };
+    return HttpResponse.json(response, { status: 201 });
+  }),
+
+  http.delete('*/api/user/api-keys/:keyId', ({ params }) => {
+    const index = demoStore.apiKeys.findIndex((k) => k.id === params.keyId);
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    demoStore.apiKeys.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
 
   http.get(`${base}/jobs`, ({ request }) => {
     const url = new URL(request.url);
