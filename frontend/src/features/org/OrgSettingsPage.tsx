@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -312,9 +312,14 @@ export default function OrgSettingsPage() {
       {/* ── Subscription ── */}
       {isOwner && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
-            {t('org:subscriptionHeading')}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+              {t('org:subscriptionHeading')}
+            </h2>
+            <Link to="/features" className="text-sm font-medium hover:underline" style={{ color: 'var(--brand)' }}>
+              {t('org:seeAllFeatures')}
+            </Link>
+          </div>
           <SubscriptionSection orgId={org.id} />
         </section>
       )}

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import DemoAccordion from './DemoAccordion';
 import DemoRouteWrapper from './DemoRouteWrapper';
 import DemoQueryScope from './DemoQueryScope';
 import { DEMO_PROJECT_ID, demoStore } from './mockData';
@@ -9,9 +10,9 @@ import JobDetailPage from '../features/jobs/JobDetailPage';
 
 const HISTORY_JOB_ID = 'demo-job-04';
 
-// Same "Approvals" accordion card look as JobDetailPage's own Approvals section
-// (jobsPages:jobDetailPage.approvalsSection / pendingCount) — just always expanded,
-// since this slide's whole point is showing decided history without extra clicks.
+// Same accordion chrome as JobDetailPage's own Approvals section (JOB-146 polish) —
+// defaults expanded since this slide's whole point is showing decided history
+// without an extra click.
 // eslint-disable-next-line react-refresh/only-export-components
 function ApprovalHistorySlide() {
   const { t } = useTranslation(['jobsPages', 'approvalsDashboardSettingsLanding']);
@@ -23,19 +24,18 @@ function ApprovalHistorySlide() {
     <DemoQueryScope>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-1.5">
         <p className="text-sm text-gray-500 dark:text-gray-400">{job?.title}</p>
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-          <div className="flex items-center gap-2 px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-            <span>{t('jobsPages:jobDetailPage.approvalsSection')}</span>
-            {pendingCount > 0 && (
+        <DemoAccordion
+          title={t('jobsPages:jobDetailPage.approvalsSection')}
+          badge={
+            pendingCount > 0 && (
               <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs font-medium px-1.5 py-0.5 rounded-full">
                 {t('jobsPages:jobDetailPage.pendingCount', { count: pendingCount })}
               </span>
-            )}
-          </div>
-          <div className="px-6 pt-4 pb-4 border-t border-gray-100 dark:border-gray-700">
-            <ApprovalList projectId={DEMO_PROJECT_ID} jobId={HISTORY_JOB_ID} role="OWNER" members={demoStore.members} />
-          </div>
-        </div>
+            )
+          }
+        >
+          <ApprovalList projectId={DEMO_PROJECT_ID} jobId={HISTORY_JOB_ID} role="OWNER" members={demoStore.members} />
+        </DemoAccordion>
       </div>
     </DemoQueryScope>
   );

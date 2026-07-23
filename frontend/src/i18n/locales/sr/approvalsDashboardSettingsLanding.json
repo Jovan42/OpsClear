@@ -165,6 +165,7 @@
   },
   "landing": {
     "logIn": "Prijava",
+    "goToApp": "Idi na moje projekte →",
     "hero": {
       "headlineLine1": "Šta se zaista dešava",
       "headlineLine2": "sa vašim poslom danas?",
@@ -234,24 +235,21 @@
         "approvalHistory": "Istorija odobrenja na poslu",
         "jobTracking": "Lista poslova",
         "milestones": "Etape",
-        "blockage": "Blokiran posao",
+        "milestoneGrouping": "Poslovi grupisani po etapi",
         "notes": "Beleške na poslu",
         "history": "Istorija statusa posla",
         "relationships": "Povezanost poslova",
         "dashboard": "Kontrolna tabla",
         "templates": "Šabloni poslova",
         "recurring": "Ponavljajući rasporedi",
-        "apiKeys": "API ključevi"
+        "apiKeys": "API ključevi",
+        "links": "Veze na poslu"
       }
     },
     "cards": {
       "job-tracking": {
         "name": "Praćenje poslova",
-        "description": "Vidite sve svoje poslove kroz etape na jednom mestu. Filtrirajte po statusu, prioritetu ili izvršiocu. Grupišite po etapi da biste pratili napredak na prvi pogled — bez tabela, bez jurenja."
-      },
-      "blockage": {
-        "name": "Vidljivost blokade",
-        "description": "Kada je posao blokiran, vidite tačno zašto, ko je to prijavio i od kada. Nema više pretraživanja poruka da biste saznali šta je zaglavljeno."
+        "description": "Vidite sve svoje poslove na jednom mestu. Filtrirajte po statusu, prioritetu ili izvršiocu, i vidite tačno kada je nešto blokirano i zašto — bez tabela, bez jurenja."
       },
       "dashboard": {
         "name": "Kontrolna tabla",
@@ -288,6 +286,10 @@
       "api-keys": {
         "name": "API ključevi",
         "description": "Generišite API ključeve ograničenog obima za integracije i automatizaciju — preuzmite podatke o poslovima u sopstvene alate ili skripte bez korišćenja interfejsa."
+      },
+      "links": {
+        "name": "Veze na poslu",
+        "description": "Prikačite GitHub PR-ove, Figma fajlove, dokumente ili bilo koji drugi URL direktno na posao — prepoznati servisi dobijaju sopstvenu ikonicu, ostalo koristi favicon."
       }
     }
   }

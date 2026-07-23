@@ -1,5 +1,5 @@
-import { http, HttpResponse } from 'msw';
-import { DEMO_CURRENT_USER, DEMO_PROJECT_ID, demoStore, type DemoApproval } from './mockData';
+import { http, HttpResponse, passthrough } from 'msw';
+import { DEMO_BASE_PROJECT_ID, DEMO_CURRENT_USER, DEMO_PROJECT_ID, demoStore, type DemoApproval } from './mockData';
 import { detectPreset, parseCronParams } from '../utils/cron';
 import type {
   ApiKeyResponse,
@@ -16,6 +16,7 @@ import type {
   JobResponse,
   JobStatus,
   JobTemplateResponse,
+  LinkResponse,
   MilestoneResponse,
   NoteResponse,
   PendingApprovalResponse,
@@ -32,6 +33,13 @@ import type {
 const base = `*/api/projects/${DEMO_PROJECT_ID}`;
 
 /**
+ * The Job tracking card's dedicated, deliberately milestone-free project (JOB-146
+ * polish) — see DEMO_BASE_PROJECT_ID in mockData.ts for why it's separate from the
+ * shared dataset every other card uses.
+ */
+const trackingBase = `*/api/projects/${DEMO_BASE_PROJECT_ID}`;
+
+/**
  * The real backend resolves job URLs by either raw id or friendlyId interchangeably
  * (FriendlyIdResolver) — job list/detail links use friendlyId (e.g. "DEMO-101"), so
  * every job-scoped handler needs to resolve the URL param the same way, not just
@@ -39,6 +47,11 @@ const base = `*/api/projects/${DEMO_PROJECT_ID}`;
  */
 function resolveJobId(idOrFriendlyId: string): string | null {
   const job = demoStore.jobs.find((j) => j.id === idOrFriendlyId || j.friendlyId === idOrFriendlyId);
+  return job?.id ?? null;
+}
+
+function resolveTrackingJobId(idOrFriendlyId: string): string | null {
+  const job = demoStore.trackingJobs.find((j) => j.id === idOrFriendlyId || j.friendlyId === idOrFriendlyId);
   return job?.id ?? null;
 }
 
@@ -114,6 +127,15 @@ function toApprovalResponse(a: DemoApproval): ApprovalResponse {
 }
 
 export const demoHandlers = [
+  // The demo worker runs with `onUnhandledRequest: 'error'` (see browser.ts) so a
+  // genuine mock-data gap fails loudly rather than silently hitting a real backend —
+  // but that also blocks legitimate external requests that aren't OpsClear API calls,
+  // like LinkIcon's <img> favicon fetch for a link whose host isn't one of the
+  // hardcoded known services (e.g. youtube.com, google.com fall through to Google's
+  // favicon service). Explicitly pass those through to the real network instead of
+  // tightening the global setting.
+  http.get('https://www.google.com/s2/favicons*', () => passthrough()),
+
   http.get(base, () => HttpResponse.json(demoStore.project)),
 
   http.get(`${base}/members`, () => HttpResponse.json(demoStore.members)),
@@ -719,6 +741,51 @@ export const demoHandlers = [
     return new HttpResponse(null, { status: 204 });
   }),
 
+  http.post(`${base}/jobs/:jobId/links`, async ({ params, request }) => {
+    const jobId = resolveJobId(params.jobId as string);
+    const job = demoStore.jobs.find((j) => j.id === jobId);
+    if (!job) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as { url: string; label?: string };
+    const now = new Date().toISOString();
+
+    const link: LinkResponse = {
+      id: uniqueId('demo-link'),
+      url: body.url,
+      label: body.label ?? null,
+      createdBy: DEMO_CURRENT_USER.id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    job.links = [...job.links, link];
+
+    return HttpResponse.json(link, { status: 201 });
+  }),
+
+  http.put(`${base}/jobs/:jobId/links/:linkId`, async ({ params, request }) => {
+    const jobId = resolveJobId(params.jobId as string);
+    const job = demoStore.jobs.find((j) => j.id === jobId);
+    if (!job) return new HttpResponse(null, { status: 404 });
+    const link = job.links.find((l) => l.id === params.linkId);
+    if (!link) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as { url: string; label?: string };
+
+    link.url = body.url;
+    link.label = body.label ?? null;
+    link.updatedAt = new Date().toISOString();
+
+    return HttpResponse.json(link);
+  }),
+
+  http.delete(`${base}/jobs/:jobId/links/:linkId`, ({ params }) => {
+    const jobId = resolveJobId(params.jobId as string);
+    const job = demoStore.jobs.find((j) => j.id === jobId);
+    if (!job) return new HttpResponse(null, { status: 404 });
+    const index = job.links.findIndex((l) => l.id === params.linkId);
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    job.links.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   http.get(`${base}/jobs/:jobId/history`, ({ params }) => {
     const jobId = resolveJobId(params.jobId as string);
     const history = jobId ? demoStore.historyByJobId[jobId] ?? [] : [];
@@ -789,4 +856,103 @@ export const demoHandlers = [
 
     return HttpResponse.json(toApprovalResponse(approval));
   }),
+
+  // ---- Job tracking demo's dedicated project (JOB-146 polish) ----
+  // Deliberately no milestones endpoint returning real data — GET always returns []
+  // (see DEMO_BASE_PROJECT_ID in mockData.ts), and no notes/history/relationships/
+  // approvals/links handlers are needed here at all: this card runs under
+  // mockOrgStateNoAddons, so JobDetailPage never renders those sections and never
+  // fetches them — except useApprovals, which fires unconditionally regardless of
+  // the addon (only the accordion's *rendering* is gated), so that one still needs
+  // a handler to avoid an unhandled-request error.
+
+  http.get(trackingBase, () => HttpResponse.json(demoStore.trackingProject)),
+
+  http.get(`${trackingBase}/members`, () => HttpResponse.json(demoStore.members)),
+
+  http.get(`${trackingBase}/milestones`, () => HttpResponse.json([])),
+
+  http.get(`${trackingBase}/jobs`, ({ request }) => {
+    const url = new URL(request.url);
+    const q = url.searchParams.get('q')?.toLowerCase();
+    const priority = url.searchParams.get('priority');
+
+    let jobs = demoStore.trackingJobs;
+    if (q) jobs = jobs.filter((j) => j.title.toLowerCase().includes(q));
+    if (priority) jobs = jobs.filter((j) => j.priority === priority);
+
+    return HttpResponse.json(jobs);
+  }),
+
+  http.post(`${trackingBase}/jobs`, async ({ request }) => {
+    const body = (await request.json()) as {
+      title: string;
+      description?: string;
+      client?: string;
+      assignedTo?: string;
+      deadline?: string;
+      priority?: JobPriority;
+    };
+
+    const assignee = body.assignedTo ? demoStore.members.find((m) => m.userId === body.assignedTo) : undefined;
+    const now = new Date().toISOString();
+
+    const job: JobResponse = {
+      id: uniqueId('demo-basejob'),
+      friendlyId: `BASE-${200 + demoStore.trackingJobs.length + 1}`,
+      projectId: DEMO_BASE_PROJECT_ID,
+      title: body.title,
+      description: body.description ?? null,
+      client: body.client ?? null,
+      assignedTo: body.assignedTo ?? null,
+      assignedToName: assignee?.userName ?? null,
+      deadline: body.deadline ?? null,
+      status: 'NEW',
+      priority: body.priority ?? 'MEDIUM',
+      createdBy: DEMO_CURRENT_USER.id,
+      createdAt: now,
+      updatedAt: now,
+      blockedBy: null,
+      blockedReason: null,
+      blockedAt: null,
+      milestoneId: null,
+      milestoneName: null,
+      relationships: [],
+      links: [],
+      sourceScheduleId: null,
+    };
+    demoStore.trackingJobs.push(job);
+
+    return HttpResponse.json(job, { status: 201 });
+  }),
+
+  http.get(`${trackingBase}/jobs/:jobId`, ({ params }) => {
+    const jobId = resolveTrackingJobId(params.jobId as string);
+    const job = demoStore.trackingJobs.find((j) => j.id === jobId);
+    if (!job) return new HttpResponse(null, { status: 404 });
+    return HttpResponse.json(job);
+  }),
+
+  http.patch(`${trackingBase}/jobs/:jobId/status`, async ({ params, request }) => {
+    const jobId = resolveTrackingJobId(params.jobId as string);
+    const job = demoStore.trackingJobs.find((j) => j.id === jobId);
+    if (!job) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as { status: JobStatus; reason?: string };
+
+    job.status = body.status;
+    job.updatedAt = new Date().toISOString();
+    if (body.status === 'BLOCKED') {
+      job.blockedBy = DEMO_CURRENT_USER.id;
+      job.blockedReason = body.reason ?? null;
+      job.blockedAt = job.updatedAt;
+    } else {
+      job.blockedBy = null;
+      job.blockedReason = null;
+      job.blockedAt = null;
+    }
+
+    return HttpResponse.json(job);
+  }),
+
+  http.get(`${trackingBase}/jobs/:jobId/approvals`, () => HttpResponse.json([])),
 ];

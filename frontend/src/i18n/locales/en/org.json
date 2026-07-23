@@ -74,6 +74,7 @@
   "deadlineOffset": "+{{days}}d deadline",
   "usedCount": "Used {{count}}×",
   "subscriptionHeading": "Subscription",
+  "seeAllFeatures": "See all features →",
   "dangerZoneHeading": "Danger zone",
   "deleteOrgTitle": "Delete this organisation",
   "deleteOrgDesc": "Permanently removes the organisation. This cannot be undone.",

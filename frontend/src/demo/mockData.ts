@@ -30,6 +30,16 @@ const ORG_NAME = 'Nimbus Creative Studio';
 // unresolved (surfaced as "Unknown user" and missing Approve/Reject buttons).
 export const DEMO_PROJECT_ID = 'DEMO-1';
 
+// A second, deliberately minimal project used only by the Job tracking demo card
+// (JOB-146 polish) — that card shows the base/no-add-ons experience, and milestone
+// grouping in the job list is driven entirely by whether any milestones exist for
+// the project (JobListPage's `hasMilestones = milestones.length > 0`), not by an
+// addon check. Reusing DEMO_PROJECT_ID (which legitimately has milestones, needed by
+// the Milestones/Templates cards) would make the "no add-ons" job list show grouped
+// jobs anyway. A separate project that simply never has any milestones sidesteps
+// that without needing to fake per-request addon gating in the mock handlers.
+export const DEMO_BASE_PROJECT_ID = 'DEMO-2';
+
 export const DEMO_USERS = {
   ana: { id: 'demo-user-ana', name: 'John Doe', email: 'john.doe@example.com' },
   marko: { id: 'demo-user-marko', name: 'Jane Smith', email: 'jane.smith@example.com' },
@@ -151,6 +161,35 @@ const JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.marko.name,
     milestoneId: 'demo-milestone-beta',
     milestoneName: 'Beta launch',
+    // The links demo card (JOB-146) reads these — a spread of recognized services
+    // (GitHub, Figma, Notion) so LinkIcon's per-service icon detection shows up
+    // rather than every row falling back to a generic favicon.
+    links: [
+      {
+        id: 'demo-link-job01-pr',
+        url: 'https://github.com/nimbus-creative/website-redesign/pull/142',
+        label: 'PR #142: Hero section',
+        createdBy: DEMO_USERS.marko.id,
+        createdAt: hoursAgo(24 * 2),
+        updatedAt: hoursAgo(24 * 2),
+      },
+      {
+        id: 'demo-link-job01-figma',
+        url: 'https://figma.com/file/demo-hero-section',
+        label: 'Hero section mockup',
+        createdBy: DEMO_USERS.ana.id,
+        createdAt: hoursAgo(24 * 5),
+        updatedAt: hoursAgo(24 * 5),
+      },
+      {
+        id: 'demo-link-job01-brief',
+        url: 'https://notion.so/demo-hero-section-brief',
+        label: 'Design brief',
+        createdBy: DEMO_USERS.ana.id,
+        createdAt: hoursAgo(24 * 6),
+        updatedAt: hoursAgo(24 * 6),
+      },
+    ],
   },
   {
     id: 'demo-job-02',
@@ -283,11 +322,11 @@ const JOB_SEEDS: DemoJobSeed[] = [
   },
 ];
 
-function buildJob(seed: DemoJobSeed): JobResponse {
+function buildJob(seed: DemoJobSeed, projectId: string = DEMO_PROJECT_ID): JobResponse {
   return {
     id: seed.id,
     friendlyId: seed.friendlyId,
-    projectId: DEMO_PROJECT_ID,
+    projectId,
     title: seed.title,
     description: seed.description,
     client: null,
@@ -310,7 +349,89 @@ function buildJob(seed: DemoJobSeed): JobResponse {
   };
 }
 
-const BASE_JOBS: JobResponse[] = JOB_SEEDS.map(buildJob);
+const BASE_JOBS: JobResponse[] = JOB_SEEDS.map((seed) => buildJob(seed));
+
+// ---- Job tracking demo's dedicated project (JOB-146 polish) ----
+// See DEMO_BASE_PROJECT_ID above for why this is separate from BASE_PROJECT/BASE_JOBS.
+
+const BASE_TRACKING_PROJECT: ProjectResponse = {
+  id: DEMO_BASE_PROJECT_ID,
+  friendlyId: DEMO_BASE_PROJECT_ID,
+  name: 'Mobile App',
+  description: `${ORG_NAME}'s companion mobile app — early days, no milestones set up yet.`,
+  ownerId: DEMO_USERS.ana.id,
+  ownerName: DEMO_USERS.ana.name,
+  status: 'ACTIVE',
+  createdAt: hoursAgo(24 * 30),
+  links: [],
+};
+
+const TRACKING_JOB_SEEDS: DemoJobSeed[] = [
+  {
+    id: 'demo-basejob-01',
+    friendlyId: 'BASE-201',
+    title: 'Set up push notification service',
+    description: 'Wire up APNs/FCM for the first release.',
+    status: 'NEW',
+    priority: 'MEDIUM',
+    assignedTo: null,
+    assignedToName: null,
+    milestoneId: null,
+    milestoneName: null,
+  },
+  {
+    id: 'demo-basejob-02',
+    friendlyId: 'BASE-202',
+    title: 'Fix crash on login screen',
+    description: 'Crashes on some Android devices when rotating during login.',
+    status: 'IN_PROGRESS',
+    priority: 'CRITICAL',
+    assignedTo: DEMO_USERS.iva.id,
+    assignedToName: DEMO_USERS.iva.name,
+    milestoneId: null,
+    milestoneName: null,
+  },
+  {
+    id: 'demo-basejob-03',
+    friendlyId: 'BASE-203',
+    title: 'Waiting on App Store review',
+    description: 'Submitted build 1.0.2, waiting on Apple review before we can proceed.',
+    status: 'BLOCKED',
+    priority: 'HIGH',
+    assignedTo: DEMO_USERS.marko.id,
+    assignedToName: DEMO_USERS.marko.name,
+    milestoneId: null,
+    milestoneName: null,
+    blockedReason: 'Waiting on Apple App Store review',
+    blockedHoursAgo: 30,
+  },
+  {
+    id: 'demo-basejob-04',
+    friendlyId: 'BASE-204',
+    title: 'Add offline mode for job list',
+    description: 'Cache the last-loaded job list so it still shows something without a connection.',
+    status: 'IN_PROGRESS',
+    priority: 'MEDIUM',
+    assignedTo: DEMO_USERS.ana.id,
+    assignedToName: DEMO_USERS.ana.name,
+    milestoneId: null,
+    milestoneName: null,
+  },
+  {
+    id: 'demo-basejob-05',
+    friendlyId: 'BASE-205',
+    title: 'Set up crash reporting',
+    description: 'Wire up crash reporting so we hear about issues before users report them.',
+    status: 'COMPLETED',
+    priority: 'MEDIUM',
+    assignedTo: DEMO_USERS.iva.id,
+    assignedToName: DEMO_USERS.iva.name,
+    milestoneId: null,
+    milestoneName: null,
+  },
+];
+
+const BASE_TRACKING_JOBS: JobResponse[] = TRACKING_JOB_SEEDS.map((seed) => buildJob(seed, DEMO_BASE_PROJECT_ID));
 
 // job-05 blocks job-06 — a simple BLOCKED_BY pair, both still in progress.
 BASE_JOBS[4].relationships = [
@@ -747,6 +868,8 @@ export interface DemoStore {
   schedules: RecurringScheduleResponse[];
   missedRunsByScheduleId: Record<string, ScheduleMissedRunResponse[]>;
   apiKeys: ApiKeyResponse[];
+  trackingProject: ProjectResponse;
+  trackingJobs: JobResponse[];
 }
 
 function freshStore(): DemoStore {
@@ -762,6 +885,8 @@ function freshStore(): DemoStore {
     schedules: structuredClone(BASE_SCHEDULES),
     missedRunsByScheduleId: structuredClone(BASE_MISSED_RUNS),
     apiKeys: structuredClone(BASE_API_KEYS),
+    trackingProject: structuredClone(BASE_TRACKING_PROJECT),
+    trackingJobs: structuredClone(BASE_TRACKING_JOBS),
   };
 }
 
