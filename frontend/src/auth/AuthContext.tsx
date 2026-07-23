@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import keycloak from './keycloak';
 
-interface AuthState {
+export interface AuthState {
   ready: boolean;
   authenticated: boolean;
   initError: boolean;
@@ -12,7 +12,11 @@ interface AuthState {
   token: string | null;
 }
 
-const AuthContext = createContext<AuthState>({
+// Exported (not just useAuth()) so the /features interactive-demo infrastructure can
+// locally override it within a demo's subtree — the demo simulates a logged-in mock
+// user without touching real Keycloak auth. See src/demo/mockAuthState.ts.
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext<AuthState>({
   ready: false,
   authenticated: false,
   initError: false,
