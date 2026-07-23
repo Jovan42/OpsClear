@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import keycloak from '../../auth/keycloak';
+import PublicNav from '../../components/PublicNav';
 import { useCatalog } from '../org/useSubscription';
 import DemoTrigger from '../../demo/DemoTrigger';
 import type { DemoSlide } from '../../demo/types';
@@ -38,17 +39,6 @@ function buildCards(t: TFunction): FeatureCard[] {
       previewNaturalWidth: 900,
       previewNaturalHeight: 520,
       previewScale: 0.4,
-    },
-    {
-      id: 'blockage',
-      name: t('featuresPage.cards.blockage.name'),
-      description: t('featuresPage.cards.blockage.description'),
-      screenshot: '/screenshots/blockage.png',
-      loadSlides: () => import('../../demo/BlockageDemo'),
-      previewNaturalWidth: 480,
-      previewNaturalHeight: 125,
-      previewScale: 1.05,
-      previewBoxHeight: 'h-40',
     },
     {
       id: 'dashboard',
@@ -143,6 +133,16 @@ function buildCards(t: TFunction): FeatureCard[] {
       previewNaturalHeight: 400,
       previewScale: 0.48,
     },
+    {
+      id: 'links',
+      name: t('featuresPage.cards.links.name'),
+      description: t('featuresPage.cards.links.description'),
+      addonKey: 'JOB_LINKS',
+      loadSlides: () => import('../../demo/LinksDemo'),
+      previewNaturalWidth: 700,
+      previewNaturalHeight: 340,
+      previewScale: 0.5,
+    },
   ];
 }
 
@@ -217,19 +217,7 @@ export default function FeaturesPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
-      {/* Nav */}
-      <nav
-        className="px-6 h-14 flex items-center justify-between shrink-0"
-        style={{ backgroundColor: 'var(--brand)' }}
-      >
-        <Link to="/" className="font-semibold text-lg tracking-tight text-white">OpsClear</Link>
-        <button
-          onClick={() => keycloak.login()}
-          className="text-sm text-white/80 hover:text-white transition-colors"
-        >
-          {t('landing.logIn')}
-        </button>
-      </nav>
+      <PublicNav />
 
       <main className="flex-1 px-6 py-16">
         <div className="max-w-5xl mx-auto">

@@ -2,25 +2,8 @@ import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import keycloak from '../../auth/keycloak';
+import PublicNav from '../../components/PublicNav';
 import ProductAndPricing from './ProductAndPricing';
-
-function Navbar() {
-  const { t } = useTranslation('approvalsDashboardSettingsLanding');
-  return (
-    <nav
-      className="px-6 h-14 flex items-center justify-between shrink-0"
-      style={{ backgroundColor: 'var(--brand)' }}
-    >
-      <span className="font-semibold text-lg tracking-tight text-white">OpsClear</span>
-      <button
-        onClick={() => keycloak.login()}
-        className="text-sm text-white/80 hover:text-white transition-colors"
-      >
-        {t('landing.logIn')}
-      </button>
-    </nav>
-  );
-}
 
 function Hero() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
@@ -89,7 +72,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <PublicNav />
       <main className="flex-1 bg-white dark:bg-gray-900">
         <Hero />
         <ProblemStatement />

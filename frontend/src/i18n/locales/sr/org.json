@@ -74,6 +74,7 @@
   "deadlineOffset": "+{{days}}d rok",
   "usedCount": "Korišćeno {{count}}×",
   "subscriptionHeading": "Pretplata",
+  "seeAllFeatures": "Pogledajte sve funkcije →",
   "dangerZoneHeading": "Opasna zona",
   "deleteOrgTitle": "Obriši ovu organizaciju",
   "deleteOrgDesc": "Trajno uklanja organizaciju. Ovo se ne može poništiti.",

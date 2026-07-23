@@ -165,6 +165,7 @@
   },
   "landing": {
     "logIn": "Log in",
+    "goToApp": "Go to my projects →",
     "hero": {
       "headlineLine1": "What's actually happening",
       "headlineLine2": "with your work today?",
@@ -234,24 +235,21 @@
         "approvalHistory": "Approval history on a job",
         "jobTracking": "Job list",
         "milestones": "Milestones",
-        "blockage": "Blocked job",
+        "milestoneGrouping": "Jobs grouped by milestone",
         "notes": "Notes on a job",
         "history": "Job status history",
         "relationships": "Job relationships",
         "dashboard": "Dashboard",
         "templates": "Job templates",
         "recurring": "Recurring schedules",
-        "apiKeys": "API keys"
+        "apiKeys": "API keys",
+        "links": "Job links"
       }
     },
     "cards": {
       "job-tracking": {
         "name": "Job tracking",
-        "description": "See all your jobs across milestones in one place. Filter by status, priority, or assignee. Group by milestone to track progress at a glance — no spreadsheets, no chasing."
-      },
-      "blockage": {
-        "name": "Blockage visibility",
-        "description": "When a job is blocked, you see exactly why, who flagged it, and since when. No more hunting through messages to find out what's stuck."
+        "description": "See all your jobs in one place. Filter by status, priority, or assignee, and see exactly when something's blocked and why — no spreadsheets, no chasing."
       },
       "dashboard": {
         "name": "Dashboard",
@@ -288,6 +286,10 @@
       "api-keys": {
         "name": "API keys",
         "description": "Generate scoped API keys for integrations and automation — pull job data into your own tools or scripts without going through the UI."
+      },
+      "links": {
+        "name": "Job links",
+        "description": "Attach GitHub PRs, Figma files, docs, or any other URL directly to a job — recognized services get their own icon, everything else falls back to a favicon."
       }
     }
   }
