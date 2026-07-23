@@ -1,10 +1,11 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import keycloak from '../../auth/keycloak';
 import { useCatalog } from '../org/useSubscription';
 import DemoTrigger from '../../demo/DemoTrigger';
-import type { DemoSlide } from '../../demo/ApprovalsDemo';
+import type { DemoSlide } from '../../demo/types';
 import type { AddonCode, SubscriptionAddonResponse } from '../../types';
 
 interface FeatureCard {
@@ -17,6 +18,13 @@ interface FeatureCard {
   // Live interactive demo (ADR-0040), incrementally added card by card — most cards
   // still fall back to the static `screenshot` until their own job wires this up.
   loadSlides?: () => Promise<{ default: DemoSlide[] }>;
+  // Slide 0's approximate natural content size, passed through to DemoTrigger — every
+  // card's wrapped real page/component differs wildly in size, so these are tuned
+  // per card rather than sharing one global default.
+  previewNaturalWidth?: number;
+  previewNaturalHeight?: number;
+  previewScale?: number;
+  previewBoxHeight?: string;
 }
 
 function buildCards(t: TFunction): FeatureCard[] {
@@ -26,12 +34,21 @@ function buildCards(t: TFunction): FeatureCard[] {
       name: t('featuresPage.cards.job-tracking.name'),
       description: t('featuresPage.cards.job-tracking.description'),
       screenshot: '/screenshots/job-tracking.png',
+      loadSlides: () => import('../../demo/JobTrackingDemo'),
+      previewNaturalWidth: 900,
+      previewNaturalHeight: 520,
+      previewScale: 0.4,
     },
     {
       id: 'blockage',
       name: t('featuresPage.cards.blockage.name'),
       description: t('featuresPage.cards.blockage.description'),
       screenshot: '/screenshots/blockage.png',
+      loadSlides: () => import('../../demo/BlockageDemo'),
+      previewNaturalWidth: 480,
+      previewNaturalHeight: 125,
+      previewScale: 1.05,
+      previewBoxHeight: 'h-40',
     },
     {
       id: 'dashboard',
@@ -54,6 +71,10 @@ function buildCards(t: TFunction): FeatureCard[] {
       description: t('featuresPage.cards.notes.description'),
       screenshot: '/screenshots/notes.png',
       addonKey: 'NOTES',
+      loadSlides: () => import('../../demo/NotesDemo'),
+      previewNaturalWidth: 700,
+      previewNaturalHeight: 420,
+      previewScale: 0.5,
     },
     {
       id: 'history',
@@ -61,6 +82,10 @@ function buildCards(t: TFunction): FeatureCard[] {
       description: t('featuresPage.cards.history.description'),
       screenshot: '/screenshots/job-status-history.png',
       addonKey: 'JOB_STATUS_HISTORY',
+      loadSlides: () => import('../../demo/HistoryDemo'),
+      previewNaturalWidth: 700,
+      previewNaturalHeight: 520,
+      previewScale: 0.42,
     },
     {
       id: 'milestones',
@@ -68,6 +93,10 @@ function buildCards(t: TFunction): FeatureCard[] {
       description: t('featuresPage.cards.milestones.description'),
       screenshot: '/screenshots/milestones-overview.png',
       addonKey: 'MILESTONES',
+      loadSlides: () => import('../../demo/MilestonesDemo'),
+      previewNaturalWidth: 800,
+      previewNaturalHeight: 440,
+      previewScale: 0.45,
     },
     {
       id: 'relationships',
@@ -75,6 +104,10 @@ function buildCards(t: TFunction): FeatureCard[] {
       description: t('featuresPage.cards.relationships.description'),
       screenshot: '/screenshots/relationships.png',
       addonKey: 'JOB_RELATIONSHIPS',
+      loadSlides: () => import('../../demo/RelationshipsDemo'),
+      previewNaturalWidth: 700,
+      previewNaturalHeight: 360,
+      previewScale: 0.5,
     },
     {
       id: 'templates',
@@ -132,7 +165,15 @@ function Card({ card, badge }: { card: FeatureCard; badge: Badge }) {
 
   return (
     <div className={`bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${comingSoon ? 'opacity-60' : ''}`}>
-      {card.loadSlides ? <DemoTrigger loadSlides={card.loadSlides} fallback={preview} /> : preview}
+      {card.loadSlides ? (
+        <DemoTrigger
+          loadSlides={card.loadSlides}
+          fallback={preview}
+          previewNaturalWidth={card.previewNaturalWidth}
+          previewNaturalHeight={card.previewNaturalHeight}
+          previewScale={card.previewScale}
+        />
+      ) : preview}
       <div className="p-6 flex flex-col gap-3 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="font-semibold text-gray-900 dark:text-white">{card.name}</h3>
@@ -149,7 +190,14 @@ function Card({ card, badge }: { card: FeatureCard; badge: Badge }) {
 export default function FeaturesPage() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const { data: catalog } = useCatalog();
-  const CARDS = buildCards(t);
+  // Memoized so each card's `loadSlides` function keeps a stable identity across
+  // re-renders (e.g. useCatalog() resolving from loading to loaded triggers one).
+  // DemoTrigger's mount effect depends on `loadSlides`, and an unstable reference
+  // there caused its cleanup+re-run to fire on every FeaturesPage re-render — a burst
+  // of release-then-acquire calls across all 7 cards that could stop and restart the
+  // shared MSW worker mid-request, producing the "creating one record creates several,
+  // and the count is random" bug.
+  const CARDS = useMemo(() => buildCards(t), [t]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">

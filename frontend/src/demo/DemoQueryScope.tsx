@@ -10,7 +10,10 @@ import type { ReactNode } from 'react';
  */
 export default function DemoQueryScope({ children }: Readonly<{ children: ReactNode }>) {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, staleTime: 5 * 60 * 1000 } },
+    // Mutations need `retry: false` too, not just queries — a retried create/update
+    // request hits the mock handler again and creates another real record (this is
+    // what caused "creating one milestone/job/note creates several").
+    defaultOptions: { queries: { retry: false, staleTime: 5 * 60 * 1000 }, mutations: { retry: false } },
   });
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;

@@ -231,7 +231,13 @@
       "nextSlide": "Next example",
       "slideLabels": {
         "pendingApprovals": "Pending approvals",
-        "approvalHistory": "Approval history on a job"
+        "approvalHistory": "Approval history on a job",
+        "jobTracking": "Job list",
+        "milestones": "Milestones",
+        "blockage": "Blocked job",
+        "notes": "Notes on a job",
+        "history": "Job status history",
+        "relationships": "Job relationships"
       }
     },
     "cards": {

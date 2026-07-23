@@ -231,7 +231,13 @@
       "nextSlide": "Sledeći primer",
       "slideLabels": {
         "pendingApprovals": "Odobrenja na čekanju",
-        "approvalHistory": "Istorija odobrenja na poslu"
+        "approvalHistory": "Istorija odobrenja na poslu",
+        "jobTracking": "Lista poslova",
+        "milestones": "Etape",
+        "blockage": "Blokiran posao",
+        "notes": "Beleške na poslu",
+        "history": "Istorija statusa posla",
+        "relationships": "Povezanost poslova"
       }
     },
     "cards": {

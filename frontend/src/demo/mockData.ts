@@ -1,11 +1,9 @@
 import type {
-  ApprovalResponse,
   JobHistoryEntry,
   JobResponse,
   LinkResponse,
   MilestoneResponse,
   NoteResponse,
-  PendingApprovalResponse,
   ProjectMemberResponse,
   ProjectResponse,
 } from '../types';
@@ -208,6 +206,18 @@ const JOB_SEEDS: DemoJobSeed[] = [
     milestoneId: null,
     milestoneName: null,
   },
+  {
+    id: 'demo-job-07',
+    friendlyId: 'DEMO-107',
+    title: 'Fix broken image links in blog archive',
+    description: 'A handful of older blog posts point at images that no longer exist.',
+    status: 'COMPLETED',
+    priority: 'MEDIUM',
+    assignedTo: DEMO_USERS.marko.id,
+    assignedToName: DEMO_USERS.marko.name,
+    milestoneId: null,
+    milestoneName: null,
+  },
 ];
 
 function buildJob(seed: DemoJobSeed): JobResponse {
@@ -239,7 +249,7 @@ function buildJob(seed: DemoJobSeed): JobResponse {
 
 const BASE_JOBS: JobResponse[] = JOB_SEEDS.map(buildJob);
 
-// job-05 blocks job-06 (a RELATED_TO/BLOCKED_BY pair for the relationships demo card)
+// job-05 blocks job-06 — a simple BLOCKED_BY pair, both still in progress.
 BASE_JOBS[4].relationships = [
   {
     id: 'demo-rel-05-06',
@@ -248,12 +258,62 @@ BASE_JOBS[4].relationships = [
     job: { id: 'demo-job-06', friendlyId: 'DEMO-106', title: 'Rewrite checkout flow copy', status: 'IN_PROGRESS' },
   },
 ];
+
+// job-06 is the relationships demo card's subject — deliberately given every
+// direction/type/status combination in one job: blocked by a job that's already
+// completed (closed), blocking a not-yet-started job, related to an in-progress job,
+// plus the simple pair with job-05 above.
 BASE_JOBS[5].relationships = [
   {
     id: 'demo-rel-06-05',
     type: 'BLOCKED_BY',
     direction: 'INCOMING',
     job: { id: 'demo-job-05', friendlyId: 'DEMO-105', title: 'Migrate CMS content', status: 'IN_PROGRESS' },
+  },
+  {
+    id: 'demo-rel-06-04',
+    type: 'BLOCKED_BY',
+    direction: 'OUTGOING',
+    job: { id: 'demo-job-04', friendlyId: 'DEMO-104', title: 'Launch beta to internal team', status: 'COMPLETED' },
+  },
+  {
+    id: 'demo-rel-06-03',
+    type: 'BLOCKED_BY',
+    direction: 'INCOMING',
+    job: { id: 'demo-job-03', friendlyId: 'DEMO-103', title: 'Set up analytics tracking', status: 'NEW' },
+  },
+  {
+    id: 'demo-rel-06-01',
+    type: 'RELATED_TO',
+    direction: 'OUTGOING',
+    job: { id: 'demo-job-01', friendlyId: 'DEMO-101', title: 'Redesign homepage hero section', status: 'IN_PROGRESS' },
+  },
+];
+
+// Reciprocal entries on the other side of each job-06 relationship, for data
+// consistency (only job-06 itself is shown by the relationships demo card).
+BASE_JOBS[3].relationships = [
+  {
+    id: 'demo-rel-04-06',
+    type: 'BLOCKED_BY',
+    direction: 'INCOMING',
+    job: { id: 'demo-job-06', friendlyId: 'DEMO-106', title: 'Rewrite checkout flow copy', status: 'IN_PROGRESS' },
+  },
+];
+BASE_JOBS[2].relationships = [
+  {
+    id: 'demo-rel-03-06',
+    type: 'BLOCKED_BY',
+    direction: 'OUTGOING',
+    job: { id: 'demo-job-06', friendlyId: 'DEMO-106', title: 'Rewrite checkout flow copy', status: 'IN_PROGRESS' },
+  },
+];
+BASE_JOBS[0].relationships = [
+  {
+    id: 'demo-rel-01-06',
+    type: 'RELATED_TO',
+    direction: 'INCOMING',
+    job: { id: 'demo-job-06', friendlyId: 'DEMO-106', title: 'Rewrite checkout flow copy', status: 'IN_PROGRESS' },
   },
 ];
 
@@ -311,56 +371,135 @@ const BASE_HISTORY: Record<string, JobHistoryEntry[]> = {
       blockReason: 'Waiting on design review from John',
     },
   ],
+  // demo-job-07's whole point is walking through every status in one timeline
+  // (New → In Progress → Blocked → In Progress → Completed) for the history demo card.
+  'demo-job-07': [
+    {
+      id: 'demo-hist-07-1',
+      jobId: 'demo-job-07',
+      changedFrom: null,
+      changedTo: 'NEW',
+      changedBy: DEMO_USERS.ana.id,
+      changedByName: DEMO_USERS.ana.name,
+      changedAt: hoursAgo(24 * 6),
+      blockReason: null,
+    },
+    {
+      id: 'demo-hist-07-2',
+      jobId: 'demo-job-07',
+      changedFrom: 'NEW',
+      changedTo: 'IN_PROGRESS',
+      changedBy: DEMO_USERS.marko.id,
+      changedByName: DEMO_USERS.marko.name,
+      changedAt: hoursAgo(24 * 5),
+      blockReason: null,
+    },
+    {
+      id: 'demo-hist-07-3',
+      jobId: 'demo-job-07',
+      changedFrom: 'IN_PROGRESS',
+      changedTo: 'BLOCKED',
+      changedBy: DEMO_USERS.marko.id,
+      changedByName: DEMO_USERS.marko.name,
+      changedAt: hoursAgo(24 * 4),
+      blockReason: 'Waiting on the CDN migration to finish first',
+    },
+    {
+      id: 'demo-hist-07-4',
+      jobId: 'demo-job-07',
+      changedFrom: 'BLOCKED',
+      changedTo: 'IN_PROGRESS',
+      changedBy: DEMO_USERS.ana.id,
+      changedByName: DEMO_USERS.ana.name,
+      changedAt: hoursAgo(24 * 2),
+      blockReason: null,
+    },
+    {
+      id: 'demo-hist-07-5',
+      jobId: 'demo-job-07',
+      changedFrom: 'IN_PROGRESS',
+      changedTo: 'COMPLETED',
+      changedBy: DEMO_USERS.marko.id,
+      changedByName: DEMO_USERS.marko.name,
+      changedAt: hoursAgo(24),
+      blockReason: null,
+    },
+  ],
 };
 
-const BASE_PENDING_APPROVALS: PendingApprovalResponse[] = [
+/**
+ * A single canonical record per approval request — covers both the project-wide
+ * pending queue (GET /approvals/pending, shaped as PendingApprovalResponse) and a
+ * job's own approval list (GET /jobs/:jobId/approvals, shaped as ApprovalResponse).
+ * Requesting a new approval or deciding one just mutates this one array; both
+ * endpoints derive their response shape from it, so a newly requested approval shows
+ * up correctly in both places rather than needing to be kept in sync by hand.
+ */
+export interface DemoApproval {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  requesterId: string;
+  approverId: string | null;
+  description: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  comment: string | null;
+  requestedAt: string;
+  decidedAt: string | null;
+}
+
+const BASE_APPROVALS: DemoApproval[] = [
   {
     id: 'demo-approval-01',
     jobId: 'demo-job-05',
     jobTitle: 'Migrate CMS content',
     requesterId: DEMO_USERS.iva.id,
+    approverId: null,
     description: 'Ready to delete the old CMS export — confirming before I remove it.',
+    status: 'PENDING',
+    comment: null,
     requestedAt: hoursAgo(3),
+    decidedAt: null,
   },
   {
     id: 'demo-approval-02',
     jobId: 'demo-job-06',
     jobTitle: 'Rewrite checkout flow copy',
     requesterId: DEMO_USERS.iva.id,
+    approverId: null,
     description: 'New copy is drafted — OK to publish to the live checkout page?',
+    status: 'PENDING',
+    comment: null,
     requestedAt: hoursAgo(1),
+    decidedAt: null,
+  },
+  // Already-decided (one approved, one rejected) on the completed "Launch beta" job —
+  // used by the Approvals card's second slide to show decided history in context.
+  {
+    id: 'demo-approval-decided-01',
+    jobId: 'demo-job-04',
+    jobTitle: 'Launch beta to internal team',
+    requesterId: DEMO_USERS.iva.id,
+    approverId: DEMO_USERS.ana.id,
+    description: 'OK to send the beta invite to the full internal team (12 people)?',
+    status: 'APPROVED',
+    comment: 'Go ahead — make sure the walkthrough doc link works first.',
+    requestedAt: hoursAgo(30),
+    decidedAt: hoursAgo(28),
+  },
+  {
+    id: 'demo-approval-decided-02',
+    jobId: 'demo-job-04',
+    jobTitle: 'Launch beta to internal team',
+    requesterId: DEMO_USERS.iva.id,
+    approverId: DEMO_USERS.ana.id,
+    description: 'Can we skip the staging environment test and deploy straight to prod for this one?',
+    status: 'REJECTED',
+    comment: "No, let's not skip staging even for something this small.",
+    requestedAt: hoursAgo(26),
+    decidedAt: hoursAgo(25),
   },
 ];
-
-// Already-decided approvals (one approved, one rejected) on the completed "Launch
-// beta" job — used by the demo's second slide to show approval history in context on
-// a job page, not just the pending queue.
-const BASE_DECIDED_APPROVALS: Record<string, ApprovalResponse[]> = {
-  'demo-job-04': [
-    {
-      id: 'demo-approval-decided-01',
-      jobId: 'demo-job-04',
-      requesterId: DEMO_USERS.iva.id,
-      approverId: DEMO_USERS.ana.id,
-      description: 'OK to send the beta invite to the full internal team (12 people)?',
-      status: 'APPROVED',
-      comment: 'Go ahead — make sure the walkthrough doc link works first.',
-      requestedAt: hoursAgo(30),
-      decidedAt: hoursAgo(28),
-    },
-    {
-      id: 'demo-approval-decided-02',
-      jobId: 'demo-job-04',
-      requesterId: DEMO_USERS.iva.id,
-      approverId: DEMO_USERS.ana.id,
-      description: 'Can we skip the staging environment test and deploy straight to prod for this one?',
-      status: 'REJECTED',
-      comment: "No, let's not skip staging even for something this small.",
-      requestedAt: hoursAgo(26),
-      decidedAt: hoursAgo(25),
-    },
-  ],
-};
 
 // ---- mutable in-memory store, reset per demo-overlay open ----
 
@@ -371,8 +510,7 @@ export interface DemoStore {
   jobs: JobResponse[];
   notesByJobId: Record<string, NoteResponse[]>;
   historyByJobId: Record<string, JobHistoryEntry[]>;
-  pendingApprovals: PendingApprovalResponse[];
-  approvalsByJobId: Record<string, ApprovalResponse[]>;
+  approvals: DemoApproval[];
 }
 
 function freshStore(): DemoStore {
@@ -383,8 +521,7 @@ function freshStore(): DemoStore {
     jobs: structuredClone(BASE_JOBS),
     notesByJobId: structuredClone(BASE_NOTES),
     historyByJobId: structuredClone(BASE_HISTORY),
-    pendingApprovals: structuredClone(BASE_PENDING_APPROVALS),
-    approvalsByJobId: structuredClone(BASE_DECIDED_APPROVALS),
+    approvals: structuredClone(BASE_APPROVALS),
   };
 }
 

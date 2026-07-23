@@ -1,18 +1,11 @@
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import DemoRouteWrapper from './DemoRouteWrapper';
 import DemoQueryScope from './DemoQueryScope';
 import { DEMO_PROJECT_ID, demoStore } from './mockData';
+import type { DemoSlide } from './types';
 import ApprovalQueuePage from '../features/approvals/ApprovalQueuePage';
 import ApprovalList from '../features/jobs/components/ApprovalList';
-
-export interface DemoSlide {
-  /** A key into the approvalsDashboardSettingsLanding:featuresPage.demo.slideLabels
-   *  namespace — translated at render time by DemoOverlay/DemoTrigger, not baked in
-   *  here (this array is built at module scope, outside any component). */
-  labelKey: string;
-  render: () => ReactNode;
-}
+import JobDetailPage from '../features/jobs/JobDetailPage';
 
 const HISTORY_JOB_ID = 'demo-job-04';
 
@@ -23,7 +16,7 @@ const HISTORY_JOB_ID = 'demo-job-04';
 function ApprovalHistorySlide() {
   const { t } = useTranslation(['jobsPages', 'approvalsDashboardSettingsLanding']);
   const job = demoStore.jobs.find((j) => j.id === HISTORY_JOB_ID);
-  const approvals = demoStore.approvalsByJobId[HISTORY_JOB_ID] ?? [];
+  const approvals = demoStore.approvals.filter((a) => a.jobId === HISTORY_JOB_ID);
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
 
   return (
@@ -58,11 +51,16 @@ export const slides: DemoSlide[] = [
     labelKey: 'featuresPage.demo.slideLabels.pendingApprovals',
     render: () => (
       <DemoRouteWrapper
-        path="/projects/:projectFriendlyId/approvals"
+        routes={[
+          // The "→ Job" link on each pending group navigates to the job's detail
+          // page — registering that route too (rather than just the approvals one)
+          // means that in-app navigation actually goes somewhere, instead of landing
+          // on an unmatched route and rendering nothing.
+          { path: '/projects/:projectFriendlyId/approvals', element: <ApprovalQueuePage /> },
+          { path: '/projects/:projectFriendlyId/jobs/:jobFriendlyId', element: <JobDetailPage /> },
+        ]}
         initialEntry={`/projects/${DEMO_PROJECT_ID}/approvals`}
-      >
-        <ApprovalQueuePage />
-      </DemoRouteWrapper>
+      />
     ),
   },
   {

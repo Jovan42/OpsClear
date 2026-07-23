@@ -61,7 +61,12 @@ export default function DemoOverlay({
       <div className="absolute inset-0 bg-black/60" />
       <div
         className={`relative z-10 w-full max-w-5xl max-h-[88vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col
-          transition-all duration-300 ease-out ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0 scale-95'}`}
+        // No `scale-100`/transform once mounted — even `transform: scale(1)` creates a
+        // new containing block for `position: fixed` descendants, which broke any real
+        // <Modal> opened from inside a slide (e.g. AddRelationshipModal): its `fixed
+        // inset-0` was positioning itself against this panel's box instead of the true
+        // viewport. Only the brief pre-mount `scale-95` frame keeps a transform.
         onClick={(e) => e.stopPropagation()}
       >
         <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2 bg-amber-100 dark:bg-amber-900/40 border-b border-amber-200 dark:border-amber-800">
