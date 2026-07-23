@@ -37,11 +37,14 @@ function TransitionLabel({ entry, t }: { entry: JobHistoryEntry; t: TFunction })
 interface Props {
   projectId: string;
   jobId: string;
+  /** Starts expanded instead of collapsed — used by the /features interactive demo
+   *  (ADR-0040) so the preview shows real history immediately, no extra click needed. */
+  defaultExpanded?: boolean;
 }
 
-export default function StatusHistory({ projectId, jobId }: Props) {
+export default function StatusHistory({ projectId, jobId, defaultExpanded = false }: Props) {
   const { t } = useTranslation(['jobsComponents', 'common']);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const { data: entries = [], isLoading } = useJobHistory(projectId, jobId);
 
   return (
