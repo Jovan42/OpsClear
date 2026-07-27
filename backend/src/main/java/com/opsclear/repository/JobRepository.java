@@ -3,6 +3,7 @@ package com.opsclear.repository;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.JobTypeColor;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.JOBS;
+import static com.opsclear.generated.jooq.Tables.JOB_TYPES;
 import static com.opsclear.generated.jooq.Tables.MILESTONES;
 import static com.opsclear.generated.jooq.Tables.PROJECT_BLOCK_REASONS;
 import static com.opsclear.generated.jooq.Tables.USERS;
@@ -32,6 +34,9 @@ public class JobRepository {
     private static final Field<String> BLOCKED_REASON_TEXT =
             PROJECT_BLOCK_REASONS.REASON.as("blocked_reason_text");
     private static final Field<String> MILESTONE_NAME_TEXT = MILESTONES.NAME.as("milestone_name_text");
+    private static final Field<String> TYPE_NAME_TEXT = JOB_TYPES.NAME.as("type_name_text");
+    private static final Field<com.opsclear.generated.jooq.enums.JobTypeColor> TYPE_COLOR_VALUE =
+            JOB_TYPES.COLOR.as("type_color_value");
 
     private final DSLContext dsl;
 
@@ -57,6 +62,11 @@ public class JobRepository {
 
     public List<JobModel> findByFilters(UUID projectId, UUID assignedTo, String q,
                                         JobPriority priority, UUID milestoneId) {
+        return findByFilters(projectId, assignedTo, q, priority, milestoneId, null);
+    }
+
+    public List<JobModel> findByFilters(UUID projectId, UUID assignedTo, String q,
+                                        JobPriority priority, UUID milestoneId, UUID typeId) {
         String pattern = q != null ? "%" + q.toLowerCase() + "%" : null;
         return selectWithAssignee()
                 .where(JOBS.PROJECT_ID.eq(projectId))
@@ -64,6 +74,7 @@ public class JobRepository {
                 .and(assignedTo != null ? JOBS.ASSIGNED_TO.eq(assignedTo) : DSL.noCondition())
                 .and(priority != null ? JOBS.PRIORITY.eq(priority.name()) : DSL.noCondition())
                 .and(milestoneId != null ? JOBS.MILESTONE_ID.eq(milestoneId) : DSL.noCondition())
+                .and(typeId != null ? JOBS.TYPE_ID.eq(typeId) : DSL.noCondition())
                 .and(pattern != null ? DSL.or(
                         JOBS.TITLE.likeIgnoreCase(pattern),
                         JOBS.DESCRIPTION.likeIgnoreCase(pattern),
@@ -99,6 +110,7 @@ public class JobRepository {
                     .set(JOBS.STATUS, job.getStatus().name())
                     .set(JOBS.PRIORITY, job.getPriority().name())
                     .set(JOBS.MILESTONE_ID, job.getMilestoneId())
+                    .set(JOBS.TYPE_ID, job.getTypeId())
                     .set(JOBS.CREATED_BY, job.getCreatedBy())
                     .set(JOBS.SOURCE_SCHEDULE_ID, job.getSourceScheduleId())
                     .set(JOBS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
@@ -117,6 +129,7 @@ public class JobRepository {
                 .set(JOBS.STATUS, job.getStatus().name())
                 .set(JOBS.PRIORITY, job.getPriority().name())
                 .set(JOBS.MILESTONE_ID, job.getMilestoneId())
+                .set(JOBS.TYPE_ID, job.getTypeId())
                 .set(JOBS.BLOCKED_BY, job.getBlockedBy())
                 .set(JOBS.BLOCKED_REASON_ID, job.getBlockedReasonId())
                 .set(JOBS.BLOCKED_AT, toLocalDateTime(job.getBlockedAt()))
@@ -158,14 +171,18 @@ public class JobRepository {
                         JOBS.BLOCKED_REASON_ID,
                         JOBS.BLOCKED_AT,
                         JOBS.MILESTONE_ID,
+                        JOBS.TYPE_ID,
                         JOBS.SOURCE_SCHEDULE_ID,
                         ASSIGNED_TO_NAME,
                         BLOCKED_REASON_TEXT,
-                        MILESTONE_NAME_TEXT))
+                        MILESTONE_NAME_TEXT,
+                        TYPE_NAME_TEXT,
+                        TYPE_COLOR_VALUE))
                 .from(JOBS)
                 .leftJoin(USERS).on(JOBS.ASSIGNED_TO.eq(USERS.ID))
                 .leftJoin(PROJECT_BLOCK_REASONS).on(JOBS.BLOCKED_REASON_ID.eq(PROJECT_BLOCK_REASONS.ID))
-                .leftJoin(MILESTONES).on(JOBS.MILESTONE_ID.eq(MILESTONES.ID));
+                .leftJoin(MILESTONES).on(JOBS.MILESTONE_ID.eq(MILESTONES.ID))
+                .leftJoin(JOB_TYPES).on(JOBS.TYPE_ID.eq(JOB_TYPES.ID));
     }
 
     private JobModel toModel(Record r) {
@@ -187,6 +204,11 @@ public class JobRepository {
                 .deletedAt(toInstant(r.get(JOBS.DELETED_AT)))
                 .milestoneId(r.get(JOBS.MILESTONE_ID))
                 .milestoneName(r.get(MILESTONE_NAME_TEXT))
+                .typeId(r.get(JOBS.TYPE_ID))
+                .typeName(r.get(TYPE_NAME_TEXT))
+                .typeColor(r.get(TYPE_COLOR_VALUE) != null
+                        ? JobTypeColor.valueOf(r.get(TYPE_COLOR_VALUE).name())
+                        : null)
                 .sourceScheduleId(r.get(JOBS.SOURCE_SCHEDULE_ID))
                 .blockedBy(r.get(JOBS.BLOCKED_BY))
                 .blockedReasonId(r.get(JOBS.BLOCKED_REASON_ID))

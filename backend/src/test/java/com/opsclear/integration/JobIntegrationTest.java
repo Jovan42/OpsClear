@@ -3,6 +3,8 @@ package com.opsclear.integration;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.JobTypeColor;
+import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.MilestoneModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
@@ -14,6 +16,7 @@ import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
+import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.MilestoneRepository;
@@ -55,6 +58,7 @@ class JobIntegrationTest {
     @Autowired private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Autowired private BlockReasonRepository blockReasonRepository;
     @Autowired private MilestoneRepository milestoneRepository;
+    @Autowired private JobTypeRepository jobTypeRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private OrganisationRepository organisationRepository;
@@ -73,6 +77,7 @@ class JobIntegrationTest {
         blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         milestoneRepository.deleteAll();
+        jobTypeRepository.deleteAll();
         projectRepository.deleteAll();
         organisationRepository.deleteAll();
         userRepository.deleteAll();
@@ -230,6 +235,68 @@ class JobIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("Should create a job with a valid typeId and return 201")
+    void createJob_shouldReturn201_whenValidTypeId() throws Exception {
+        JobTypeModel type = jobTypeRepository.save(
+                JobTypeModel.builder().projectId(projectId).name("Bug").color(JobTypeColor.RED).displayOrder(0).build());
+
+        String body = String.format("""
+                {
+                  "title": "Typed task",
+                  "typeId": "%s"
+                }
+                """, type.getId());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.typeId").value(type.getId().toString()))
+                .andExpect(jsonPath("$.typeName").value("Bug"))
+                .andExpect(jsonPath("$.typeColor").value("RED"));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when typeId does not exist on create")
+    void createJob_shouldReturn404_whenTypeNotFound() throws Exception {
+        String body = String.format("""
+                {
+                  "title": "Task",
+                  "typeId": "%s"
+                }
+                """, UUID.randomUUID());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when typeId belongs to a different project on create")
+    void createJob_shouldReturn404_whenTypeInDifferentProject() throws Exception {
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).organisationId(orgId).build());
+        JobTypeModel otherType = jobTypeRepository.save(
+                JobTypeModel.builder().projectId(otherProject.getId()).name("Other").color(JobTypeColor.GRAY).displayOrder(0).build());
+
+        String body = String.format("""
+                {
+                  "title": "Task",
+                  "typeId": "%s"
+                }
+                """, otherType.getId());
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
+    }
+
     // --- GET /api/projects/{projectId}/jobs ---
 
     @Test
@@ -357,6 +424,52 @@ class JobIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("New title"))
                 .andExpect(jsonPath("$.description").value("Updated"));
+    }
+
+    @Test
+    @DisplayName("Should update job with a valid typeId")
+    void updateJob_shouldReturn200_withValidTypeId() throws Exception {
+        JobModel job = createTestJob("Task", null, JobStatus.NEW);
+        JobTypeModel type = jobTypeRepository.save(
+                JobTypeModel.builder().projectId(projectId).name("Bug").color(JobTypeColor.RED).displayOrder(0).build());
+
+        String body = String.format("""
+                {
+                  "title": "Task",
+                  "typeId": "%s"
+                }
+                """, type.getId());
+
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.typeId").value(type.getId().toString()))
+                .andExpect(jsonPath("$.typeName").value("Bug"));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when typeId belongs to a different project on update")
+    void updateJob_shouldReturn404_whenTypeInDifferentProject() throws Exception {
+        JobModel job = createTestJob("Task", null, JobStatus.NEW);
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(ownerId).organisationId(orgId).build());
+        JobTypeModel otherType = jobTypeRepository.save(
+                JobTypeModel.builder().projectId(otherProject.getId()).name("Other").color(JobTypeColor.GRAY).displayOrder(0).build());
+
+        String body = String.format("""
+                {
+                  "title": "Task",
+                  "typeId": "%s"
+                }
+                """, otherType.getId());
+
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -1058,6 +1171,26 @@ class JobIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(jobInMilestone.getId().toString()));
+    }
+
+    @Test
+    @DisplayName("listJobs_shouldReturnOnlyJobsOfType_whenTypeIdFilter")
+    void listJobs_shouldReturnOnlyJobsOfType_whenTypeIdFilter() throws Exception {
+        JobTypeModel type = jobTypeRepository.save(
+                JobTypeModel.builder().projectId(projectId).name("Bug").color(JobTypeColor.RED).displayOrder(0).build());
+
+        JobModel typedJob = jobRepository.save(JobModel.builder()
+                .projectId(projectId).title("Typed task").assignedTo(ownerId)
+                .status(JobStatus.NEW).createdBy(ownerId).typeId(type.getId()).build());
+        jobRepository.save(JobModel.builder()
+                .projectId(projectId).title("Untyped task").assignedTo(ownerId)
+                .status(JobStatus.NEW).createdBy(ownerId).build());
+
+        mockMvc.perform(get(ApiPaths.jobsByType(projectId, type.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(typedJob.getId().toString()));
     }
 
     // --- helpers ---

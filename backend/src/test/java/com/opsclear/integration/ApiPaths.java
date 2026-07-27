@@ -147,6 +147,24 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/milestones/" + milestoneId;
     }
 
+    // --- Job types ---
+
+    static String jobTypes(UUID projectId) {
+        return "/api/projects/" + projectId + "/job-types";
+    }
+
+    static String jobTypes(String projectId) {
+        return "/api/projects/" + projectId + "/job-types";
+    }
+
+    static String jobType(UUID projectId, UUID typeId) {
+        return "/api/projects/" + projectId + "/job-types/" + typeId;
+    }
+
+    static String jobsByType(UUID projectId, UUID typeId) {
+        return "/api/projects/" + projectId + "/jobs?typeId=" + typeId;
+    }
+
     // --- API keys ---
 
     static final String API_KEYS = "/api/user/api-keys";

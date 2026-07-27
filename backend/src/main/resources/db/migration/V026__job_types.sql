@@ -10,7 +10,7 @@ CREATE TYPE job_type_color AS ENUM (
 
 CREATE TABLE job_types (
     id            UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id    UUID           NOT NULL REFERENCES projects(id),
+    project_id    UUID           NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name          VARCHAR(100)   NOT NULL,
     color         job_type_color NOT NULL,
     display_order INT            NOT NULL,

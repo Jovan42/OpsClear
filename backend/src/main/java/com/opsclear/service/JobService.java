@@ -24,6 +24,7 @@ import com.opsclear.repository.JobLinkRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
+import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -53,6 +54,7 @@ public class JobService {
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
     private final MilestoneRepository milestoneRepository;
+    private final JobTypeRepository jobTypeRepository;
     private final BlockReasonService blockReasonService;
     private final OrganisationRepository organisationRepository;
     private final FriendlyIdService friendlyIdService;
@@ -65,6 +67,7 @@ public class JobService {
         requireMember(projectId, requesterId);
         requireAssignedUserExists(request.getAssignedTo());
         requireMilestoneInProject(request.getMilestoneId(), projectId);
+        requireTypeInProject(request.getTypeId(), projectId);
 
         String friendlyId = friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.JOB);
 
@@ -79,6 +82,7 @@ public class JobService {
                 .status(JobStatus.NEW)
                 .priority(request.getPriority() != null ? request.getPriority() : JobPriority.MEDIUM)
                 .milestoneId(request.getMilestoneId())
+                .typeId(request.getTypeId())
                 .createdBy(requesterId)
                 .build();
 
@@ -91,13 +95,20 @@ public class JobService {
     @Transactional(readOnly = true)
     public List<JobModel> list(UUID projectId, UUID requesterId, String q,
                                JobPriority priority, UUID milestoneId) {
+        return list(projectId, requesterId, q, priority, milestoneId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<JobModel> list(UUID projectId, UUID requesterId, String q,
+                               JobPriority priority, UUID milestoneId, UUID typeId) {
         requireOrgMembership(requesterId);
         requireProjectExistsById(projectId);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
         boolean isMember = requester.getRole() == ProjectMemberRole.MEMBER;
         UUID assignedTo = isMember ? requesterId : null;
         String trimmedQ = (q != null && !q.isBlank()) ? q.trim() : null;
-        List<JobModel> jobs = jobRepository.findByFilters(projectId, assignedTo, trimmedQ, priority, milestoneId);
+        List<JobModel> jobs = jobRepository.findByFilters(
+                projectId, assignedTo, trimmedQ, priority, milestoneId, typeId);
         attachLinks(jobs);
         return jobs;
     }
@@ -157,6 +168,7 @@ public class JobService {
         requireJobInProject(job, projectId);
         requireAssignedUserExists(request.getAssignedTo());
         requireMilestoneInProject(request.getMilestoneId(), projectId);
+        requireTypeInProject(request.getTypeId(), projectId);
 
         job.setTitle(request.getTitle());
         job.setDescription(request.getDescription());
@@ -167,6 +179,7 @@ public class JobService {
             job.setPriority(request.getPriority());
         }
         job.setMilestoneId(request.getMilestoneId());
+        job.setTypeId(request.getTypeId());
 
         JobModel updated = jobRepository.save(job);
         log.info("Updated job '{}' in project {}", jobId, projectId);
@@ -281,6 +294,15 @@ public class JobService {
         milestoneRepository.findByIdAndDeletedAtIsNull(milestoneId)
                 .filter(m -> m.getProjectId().equals(projectId))
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Milestone.NOT_FOUND));
+    }
+
+    private void requireTypeInProject(UUID typeId, UUID projectId) {
+        if (typeId == null) {
+            return;
+        }
+        jobTypeRepository.findById(typeId)
+                .filter(t -> t.getProjectId().equals(projectId))
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.JobType.NOT_FOUND));
     }
 
     private void requireAssignedUserExists(UUID userId) {

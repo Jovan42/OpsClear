@@ -4,6 +4,7 @@ import com.opsclear.dto.ApprovalResponse;
 import com.opsclear.dto.DashboardResponse;
 import com.opsclear.dto.DashboardSummary;
 import com.opsclear.dto.JobSummary;
+import com.opsclear.dto.JobTypeBreakdown;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberRole;
@@ -15,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -77,6 +80,8 @@ public class DashboardService {
                 .pendingApprovalsCount(pendingApprovals.size())
                 .build();
 
+        List<JobTypeBreakdown> typeBreakdown = buildTypeBreakdown(jobs);
+
         log.info("Dashboard loaded for project {} by user {}: {} jobs, {} blocked, {} overdue, {} pending approvals",
                 projectId, callerId, jobs.size(), blockedJobs.size(), overdueJobs.size(), pendingApprovals.size());
 
@@ -85,6 +90,36 @@ public class DashboardService {
                 .blockedJobs(blockedJobs)
                 .overdueJobs(overdueJobs)
                 .pendingApprovals(pendingApprovals)
+                .typeBreakdown(typeBreakdown)
                 .build();
+    }
+
+    // Derived from the already-fetched jobs list (no separate query) — naturally
+    // degrades to an empty list when the project has no types defined, or no jobs
+    // have one assigned, satisfying ADR-0042's "must degrade gracefully" requirement
+    // without extra branching.
+    private List<JobTypeBreakdown> buildTypeBreakdown(List<JobModel> jobs) {
+        Map<UUID, JobTypeBreakdown> counts = new LinkedHashMap<>();
+        for (JobModel job : jobs) {
+            if (job.getTypeId() == null) {
+                continue;
+            }
+            counts.merge(job.getTypeId(),
+                    JobTypeBreakdown.builder()
+                            .typeId(job.getTypeId())
+                            .typeName(job.getTypeName())
+                            .typeColor(job.getTypeColor())
+                            .count(1)
+                            .build(),
+                    (existing, added) -> JobTypeBreakdown.builder()
+                            .typeId(existing.getTypeId())
+                            .typeName(existing.getTypeName())
+                            .typeColor(existing.getTypeColor())
+                            .count(existing.getCount() + added.getCount())
+                            .build());
+        }
+        return counts.values().stream()
+                .sorted(Comparator.comparingInt(JobTypeBreakdown::getCount).reversed())
+                .toList();
     }
 }

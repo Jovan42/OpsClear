@@ -6,6 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpInputMessage;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,5 +27,16 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().message()).isEqualTo("An unexpected error occurred");
         assertThat(response.getBody().timestamp()).isNotBlank();
         assertThat(response.getBody().message()).doesNotContain("unexpected db failure");
+    }
+
+    @Test
+    @DisplayName("handleMalformedRequest_shouldReturn400_forUnreadableRequestBody")
+    void handleMalformedRequest_shouldReturn400_forUnreadableRequestBody() {
+        ResponseEntity<ErrorResponse> response = handler.handleMalformedRequest(
+                new HttpMessageNotReadableException("Cannot deserialize value of type `JobTypeColor`", (HttpInputMessage) null));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().error()).isEqualTo("Bad Request");
+        assertThat(response.getBody().message()).isEqualTo("Malformed request body");
     }
 }

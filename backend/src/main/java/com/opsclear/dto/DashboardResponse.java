@@ -17,4 +17,5 @@ public class DashboardResponse {
     private List<JobSummary> blockedJobs;
     private List<JobSummary> overdueJobs;
     private List<ApprovalResponse> pendingApprovals;
+    private List<JobTypeBreakdown> typeBreakdown;
 }

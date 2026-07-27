@@ -36,4 +36,6 @@ public class UpdateJobRequest {
     private JobPriority priority;
 
     private UUID milestoneId;
+
+    private UUID typeId;
 }

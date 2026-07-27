@@ -52,10 +52,11 @@ public class JobController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) JobPriority priority,
             @RequestParam(required = false) UUID milestoneId,
+            @RequestParam(required = false) UUID typeId,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
         UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
-        List<JobResponse> jobs = jobService.list(pid, userId, q, priority, milestoneId)
+        List<JobResponse> jobs = jobService.list(pid, userId, q, priority, milestoneId, typeId)
                 .stream()
                 .map(JobResponse::from)
                 .toList();
