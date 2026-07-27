@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { FolderKanban } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
 import NewProjectModal from './NewProjectModal';
@@ -106,16 +108,19 @@ export default function ProjectListPage() {
       </div>
 
       {projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-            {allProjects.length === 0
+        <EmptyState
+          icon={FolderKanban}
+          message={
+            allProjects.length === 0
               ? t('projects:projectListPage.emptyNoProjects')
-              : t('projects:projectListPage.emptyNoMatch')}
-          </p>
-          {allProjects.length === 0 && (
-            <Button onClick={() => setModalOpen(true)}>{t('projects:projectListPage.createFirstProjectButton')}</Button>
-          )}
-        </div>
+              : t('projects:projectListPage.emptyNoMatch')
+          }
+          action={
+            allProjects.length === 0
+              ? { label: t('projects:projectListPage.createFirstProjectButton'), onClick: () => setModalOpen(true) }
+              : undefined
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => {
