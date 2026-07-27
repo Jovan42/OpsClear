@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
+import { Milestone as MilestoneIcon } from 'lucide-react';
 import { useMilestones, useDeleteMilestone } from '../jobs/useMilestones';
 import { useJobList } from '../jobs/useJobs';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { useProject } from '../projects/useProjects';
+import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePreferences } from '../../hooks/usePreferences';
 import MilestoneFormModal from './MilestoneFormModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
 import ProgressBar from '../../components/ProgressBar';
 import UpgradeCard from '../../components/UpgradeCard';
@@ -112,6 +114,8 @@ export default function MilestonesPage() {
   const { data: allJobs = [] } = useJobList(projectId);
   const deleteMilestone = useDeleteMilestone(projectId);
   const { hasAddon } = useCurrentOrg();
+  const role = useProjectRole(projectId);
+  const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<MilestoneResponse | null>(null);
   const [deleting, setDeleting] = useState<MilestoneResponse | null>(null);
@@ -143,11 +147,16 @@ export default function MilestonesPage() {
         </div>
 
         {milestones.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {t('milestonesTemplatesSchedules:milestonesPage.emptyText')}
-            </p>
-            <Button onClick={() => setShowCreate(true)}>{t('milestonesTemplatesSchedules:milestonesPage.createFirstButton')}</Button>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+            <EmptyState
+              icon={MilestoneIcon}
+              message={t('milestonesTemplatesSchedules:milestonesPage.emptyText')}
+              action={{
+                label: t('milestonesTemplatesSchedules:milestonesPage.createFirstButton'),
+                onClick: () => setShowCreate(true),
+                canPerform: isOwnerOrAdmin,
+              }}
+            />
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">

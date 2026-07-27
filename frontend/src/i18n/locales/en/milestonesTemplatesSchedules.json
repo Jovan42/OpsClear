@@ -68,6 +68,7 @@
     "pageHeading": "Job Templates",
     "newButton": "+ New Template",
     "createFirstButton": "Create first template",
+    "emptyText": "No templates yet. Create reusable job presets with wildcards like <code>{{dateWildcard}}</code> and <code>{{projectWildcard}}</code>.",
     "scheduleButton": "Schedule",
     "usedCount": "Used {{count}}×",
     "deadlineOffsetBadge": "+{{days}}d deadline",

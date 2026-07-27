@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
+import { CalendarClock } from 'lucide-react';
 import { useSchedules, useDeleteSchedule, usePauseSchedule, useResumeSchedule } from './useSchedules';
-import { useProject } from '../projects/useProjects';
+import { useProject, useProjectRole } from '../projects/useProjects';
 import { useCurrentOrg } from '../org/OrgContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { toReadable } from '../../utils/cron';
@@ -11,6 +12,7 @@ import MissedRunsPanel from './MissedRunsPanel';
 import PauseDialog from './PauseDialog';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import UpgradeCard from '../../components/UpgradeCard';
 import PageError from '../../components/PageError';
 import type { RecurringScheduleResponse, ScheduleStatus } from '../../types';
@@ -154,6 +156,8 @@ export default function SchedulesPage() {
   const pauseSchedule = usePauseSchedule(projectId);
   const resumeSchedule = useResumeSchedule(projectId);
   const { hasAddon } = useCurrentOrg();
+  const role = useProjectRole(projectId);
+  const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<RecurringScheduleResponse | null>(null);
@@ -188,11 +192,16 @@ export default function SchedulesPage() {
         </div>
 
         {schedules.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {t('milestonesTemplatesSchedules:schedulesPage.emptyText')}
-            </p>
-            <Button onClick={() => setShowCreate(true)}>{t('milestonesTemplatesSchedules:schedulesPage.createFirstButton')}</Button>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+            <EmptyState
+              icon={CalendarClock}
+              message={t('milestonesTemplatesSchedules:schedulesPage.emptyText')}
+              action={{
+                label: t('milestonesTemplatesSchedules:schedulesPage.createFirstButton'),
+                onClick: () => setShowCreate(true),
+                canPerform: isOwnerOrAdmin,
+              }}
+            />
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
