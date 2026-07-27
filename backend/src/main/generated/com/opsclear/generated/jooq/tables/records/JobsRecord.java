@@ -320,6 +320,21 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         return (UUID) get(18);
     }
 
+    /**
+     * Setter for <code>public.jobs.type_id</code>.
+     */
+    public JobsRecord setTypeId(UUID value) {
+        set(19, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.jobs.type_id</code>.
+     */
+    public UUID getTypeId() {
+        return (UUID) get(19);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -343,7 +358,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
     /**
      * Create a detached, initialised JobsRecord
      */
-    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt, String priority, UUID milestoneId, String friendlyId, UUID sourceScheduleId) {
+    public JobsRecord(UUID id, UUID projectId, String title, String description, String client, UUID assignedTo, LocalDateTime deadline, String status, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID blockedBy, UUID blockedReasonId, LocalDateTime blockedAt, String priority, UUID milestoneId, String friendlyId, UUID sourceScheduleId, UUID typeId) {
         super(Jobs.JOBS);
 
         setId(id);
@@ -365,6 +380,7 @@ public class JobsRecord extends UpdatableRecordImpl<JobsRecord> {
         setMilestoneId(milestoneId);
         setFriendlyId(friendlyId);
         setSourceScheduleId(sourceScheduleId);
+        setTypeId(typeId);
         resetChangedOnNotNull();
     }
 }

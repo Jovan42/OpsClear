@@ -10,6 +10,7 @@ import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.JobTemplates;
+import com.opsclear.generated.jooq.tables.JobTypes;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
@@ -82,6 +83,12 @@ public class Public extends SchemaImpl {
      * placeholders
      */
     public final JobTemplates JOB_TEMPLATES = JobTemplates.JOB_TEMPLATES;
+
+    /**
+     * Per-project job classification labels (ADR-0042) — name + color, no
+     * behavior beyond display.
+     */
+    public final JobTypes JOB_TYPES = JobTypes.JOB_TYPES;
 
     /**
      * Jobs - central unit of work within a project
@@ -207,6 +214,7 @@ public class Public extends SchemaImpl {
             JobRelationships.JOB_RELATIONSHIPS,
             JobStatusHistory.JOB_STATUS_HISTORY,
             JobTemplates.JOB_TEMPLATES,
+            JobTypes.JOB_TYPES,
             Jobs.JOBS,
             Milestones.MILESTONES,
             Notes.NOTES,

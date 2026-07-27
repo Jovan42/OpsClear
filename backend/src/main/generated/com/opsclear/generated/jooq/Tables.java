@@ -10,6 +10,7 @@ import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.JobTemplates;
+import com.opsclear.generated.jooq.tables.JobTypes;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
@@ -68,6 +69,12 @@ public class Tables {
      * placeholders
      */
     public static final JobTemplates JOB_TEMPLATES = JobTemplates.JOB_TEMPLATES;
+
+    /**
+     * Per-project job classification labels (ADR-0042) — name + color, no
+     * behavior beyond display.
+     */
+    public static final JobTypes JOB_TYPES = JobTypes.JOB_TYPES;
 
     /**
      * Jobs - central unit of work within a project
