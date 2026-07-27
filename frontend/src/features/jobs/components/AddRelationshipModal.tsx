@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SearchX } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
+import EmptyState from '../../../components/EmptyState';
 import { useJobList, useCreateRelationship } from '../useJobs';
 import type { JobRelationshipType } from '../../../types';
 
@@ -86,7 +88,12 @@ export default function AddRelationshipModal({ open, onClose, projectId, jobId }
           />
           <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg divide-y divide-gray-100 dark:divide-gray-700">
             {filtered.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">{t('jobsComponents:addRelationshipModal.noJobsFound')}</p>
+              <EmptyState
+                icon={SearchX}
+                message={t('jobsComponents:addRelationshipModal.noJobsFound')}
+                className="py-4"
+                iconClassName="w-6 h-6 text-gray-300 dark:text-gray-600 mb-1.5"
+              />
             ) : (
               filtered.map((j) => (
                 <button

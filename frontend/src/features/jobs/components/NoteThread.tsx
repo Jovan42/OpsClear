@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MessageSquare } from 'lucide-react';
 import Button from '../../../components/Button';
 import ConfirmModal from '../../../components/ConfirmModal';
+import EmptyState from '../../../components/EmptyState';
 import Markdown from '../../../components/Markdown';
 import MarkdownEditor from '../../../components/MarkdownEditor';
 import { useNotes, useAddNote } from '../useNotes';
@@ -63,7 +65,12 @@ export default function NoteThread({ projectId, jobId, members, projectCompleted
   return (
     <div className="space-y-3">
       {notes.length === 0 && (
-        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{t('jobsComponents:noteThread.noNotes')}</p>
+        <EmptyState
+          icon={MessageSquare}
+          message={t('jobsComponents:noteThread.noNotes')}
+          className="py-4"
+          iconClassName="w-7 h-7 text-gray-300 dark:text-gray-600 mb-2"
+        />
       )}
 
       {notes.map((note) => (

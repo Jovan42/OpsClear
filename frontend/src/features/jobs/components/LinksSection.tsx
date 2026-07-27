@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { Link2 } from 'lucide-react';
 import Button from '../../../components/Button';
 import ConfirmModal from '../../../components/ConfirmModal';
+import EmptyState from '../../../components/EmptyState';
 import LinkIcon from '../../../components/LinkIcon';
 import { detectLinkIcon } from '../../../utils/linkIcon';
 import { useCreateJobLink, useDeleteJobLink, useUpdateJobLink } from '../useJobs';
@@ -87,7 +89,17 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
   return (
     <div className="space-y-2">
       {links.length === 0 && !adding && (
-        <p className="text-sm text-gray-400 dark:text-gray-500 py-2">{t('jobsComponents:linksSection.noLinks')}</p>
+        <EmptyState
+          icon={Link2}
+          message={t('jobsComponents:linksSection.noLinks')}
+          className="py-4"
+          iconClassName="w-7 h-7 text-gray-300 dark:text-gray-600 mb-2"
+          action={
+            !projectCompleted
+              ? { label: t('jobsComponents:linksSection.addLink'), onClick: () => setAdding(true), canPerform: canManage }
+              : undefined
+          }
+        />
       )}
 
       {links.map((link) =>
@@ -199,12 +211,14 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer mt-2"
-          >
-            {t('jobsComponents:linksSection.addLink')}
-          </button>
+          links.length > 0 && (
+            <button
+              onClick={() => setAdding(true)}
+              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer mt-2"
+            >
+              {t('jobsComponents:linksSection.addLink')}
+            </button>
+          )
         ))}
 
       <ConfirmModal

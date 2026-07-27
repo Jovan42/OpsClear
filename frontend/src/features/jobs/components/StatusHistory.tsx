@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { History } from 'lucide-react';
 import { useJobHistory } from '../useJobs';
 import { formatDuration } from '../utils/statusHistoryUtils';
+import EmptyState from '../../../components/EmptyState';
 import StatusBadge from '../../../components/StatusBadge';
 import type { JobHistoryEntry, JobStatus } from '../../../types';
 
@@ -70,7 +72,12 @@ export default function StatusHistory({ projectId, jobId, defaultExpanded = fals
             <p className="text-sm text-gray-500 dark:text-gray-400 py-2">{t('common:loading')}</p>
           )}
           {!isLoading && entries.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 py-2">{t('jobsComponents:statusHistory.noHistory')}</p>
+            <EmptyState
+              icon={History}
+              message={t('jobsComponents:statusHistory.noHistory')}
+              className="py-4"
+              iconClassName="w-7 h-7 text-gray-300 dark:text-gray-600 mb-2"
+            />
           )}
           {!isLoading && entries.length > 0 && (
             <ol className="space-y-0">
