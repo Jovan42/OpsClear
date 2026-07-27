@@ -59,6 +59,7 @@ class JobTypeIntegrationTest {
 
     private UUID ownerId;
     private UUID memberId;
+    private UUID outsiderId;
     private UUID projectId;
     private UUID orgId;
 
@@ -72,17 +73,20 @@ class JobTypeIntegrationTest {
         organisationRepository.deleteAll();
         userRepository.deleteAll();
 
-        ownerId  = UUID.randomUUID();
-        memberId = UUID.randomUUID();
+        ownerId    = UUID.randomUUID();
+        memberId   = UUID.randomUUID();
+        outsiderId = UUID.randomUUID();
 
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Outsider").build());
 
         OrganisationModel org = organisationRepository.save(
                 OrganisationModel.builder().name("Test Org").slug("TST").createdBy(ownerId).build());
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, outsiderId, OrganisationRole.OWNER);
         friendlyIdRepository.seedForOrg(orgId);
 
         ProjectModel project = projectRepository.save(
@@ -133,6 +137,19 @@ class JobTypeIntegrationTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.displayOrder").value(1));
+    }
+
+    @Test
+    @DisplayName("Should return 403 when requester belongs to the org but not the project")
+    void createType_shouldReturn403_whenNotMember() throws Exception {
+        mockMvc.perform(post(ApiPaths.jobTypes(projectId))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Bug", "color": "RED"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You are not a member of this project"));
     }
 
     @Test
@@ -230,12 +247,12 @@ class JobTypeIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 403 when requester is not a member on list")
+    @DisplayName("Should return 403 when requester belongs to the org but not the project on list")
     void listTypes_shouldReturn403_whenNotMember() throws Exception {
         mockMvc.perform(get(ApiPaths.jobTypes(projectId))
-                        .with(jwt().jwt(j -> j.subject(UUID.randomUUID().toString())
-                                .claim("email", "stranger@example.com"))))
-                .andExpect(status().isForbidden());
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString()).claim("email", "outsider@example.com"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You are not a member of this project"));
     }
 
     // --- PUT /api/projects/{projectId}/job-types/{typeId} ---

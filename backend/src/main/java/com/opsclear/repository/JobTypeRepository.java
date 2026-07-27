@@ -25,7 +25,7 @@ public class JobTypeRepository {
     private final DSLContext dsl;
 
     private static Instant toInstant(OffsetDateTime odt) {
-        return odt != null ? odt.toInstant() : null;
+        return odt.toInstant();
     }
 
     public List<JobTypeModel> findByProjectId(UUID projectId) {
