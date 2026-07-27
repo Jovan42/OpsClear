@@ -159,4 +159,13 @@ public final class ErrorMessages {
         private Link() {
         }
     }
+
+    public static final class JobType {
+        public static final String NOT_FOUND = "Job type not found";
+        public static final String STILL_REFERENCED_BY_JOBS =
+                "Cannot delete type: %d job(s) still use this type";
+
+        private JobType() {
+        }
+    }
 }

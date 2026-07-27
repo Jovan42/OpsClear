@@ -38,6 +38,10 @@ public class JobModel {
     private UUID milestoneId;
     private String milestoneName; // resolved via JOIN, not a DB column
 
+    private UUID typeId;
+    private String typeName; // resolved via JOIN, not a DB column
+    private JobTypeColor typeColor; // resolved via JOIN, not a DB column
+
     // Populated by JobService.getById — not stored in DB, empty on list responses
     @Builder.Default
     private List<JobRelationshipEntry> relationships = new ArrayList<>();

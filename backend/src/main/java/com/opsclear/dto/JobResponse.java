@@ -3,6 +3,7 @@ package com.opsclear.dto;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.JobTypeColor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,6 +39,10 @@ public class JobResponse {
     private UUID milestoneId;
     private String milestoneName;
 
+    private UUID typeId;
+    private String typeName;
+    private JobTypeColor typeColor;
+
     // Blocking metadata — null when not blocked
     private UUID blockedBy;
     private String blockedReason;
@@ -68,6 +73,9 @@ public class JobResponse {
                 .updatedAt(job.getUpdatedAt())
                 .milestoneId(job.getMilestoneId())
                 .milestoneName(job.getMilestoneName())
+                .typeId(job.getTypeId())
+                .typeName(job.getTypeName())
+                .typeColor(job.getTypeColor())
                 .blockedBy(job.getBlockedBy())
                 .blockedReason(job.getBlockedReason())
                 .blockedAt(job.getBlockedAt())

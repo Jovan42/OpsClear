@@ -36,4 +36,6 @@ public class CreateJobRequest {
     private JobPriority priority;
 
     private UUID milestoneId;
+
+    private UUID typeId;
 }

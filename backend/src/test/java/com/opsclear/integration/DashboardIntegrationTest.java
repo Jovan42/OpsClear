@@ -4,6 +4,8 @@ import com.opsclear.model.ApprovalModel;
 import com.opsclear.model.ApprovalStatus;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.JobTypeColor;
+import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
@@ -14,6 +16,7 @@ import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
+import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -54,6 +57,7 @@ class DashboardIntegrationTest {
     @Autowired private OrgSubscriptionRepository subscriptionRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private MilestoneRepository milestoneRepository;
+    @Autowired private JobTypeRepository jobTypeRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
@@ -74,6 +78,7 @@ class DashboardIntegrationTest {
         blockReasonRepository.deleteAll();
         projectMemberRepository.deleteAll();
         milestoneRepository.deleteAll();
+        jobTypeRepository.deleteAll();
         projectRepository.deleteAll();
         subscriptionRepository.deleteAll();
         organisationRepository.deleteAll();
@@ -315,5 +320,44 @@ class DashboardIntegrationTest {
                 .andExpect(jsonPath("$.summary.total").value(1))
                 .andExpect(jsonPath("$.summary.blockedCount").value(0))
                 .andExpect(jsonPath("$.summary.inProgressCount").value(1));
+    }
+
+    // --- Type breakdown ---
+
+    @Test
+    @DisplayName("Type breakdown should be empty when no jobs have a type")
+    void getDashboard_shouldReturnEmptyTypeBreakdown_whenNoJobsHaveType() throws Exception {
+        saveJob("Untyped Job", JobStatus.NEW, memberId);
+
+        mockMvc.perform(get(ApiPaths.dashboard(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.typeBreakdown").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Type breakdown should count jobs per type, sorted by count descending")
+    void getDashboard_shouldReturnTypeBreakdown_groupedAndSorted() throws Exception {
+        JobTypeModel bugType = jobTypeRepository.save(
+                JobTypeModel.builder().projectId(projectId).name("Bug").color(JobTypeColor.RED).displayOrder(0).build());
+        JobTypeModel featureType = jobTypeRepository.save(
+                JobTypeModel.builder().projectId(projectId).name("Feature").color(JobTypeColor.BLUE).displayOrder(1).build());
+
+        jobRepository.save(JobModel.builder().projectId(projectId).title("Bug 1").status(JobStatus.NEW)
+                .assignedTo(memberId).createdBy(ownerId).typeId(bugType.getId()).build());
+        jobRepository.save(JobModel.builder().projectId(projectId).title("Bug 2").status(JobStatus.NEW)
+                .assignedTo(memberId).createdBy(ownerId).typeId(bugType.getId()).build());
+        jobRepository.save(JobModel.builder().projectId(projectId).title("Feature 1").status(JobStatus.NEW)
+                .assignedTo(memberId).createdBy(ownerId).typeId(featureType.getId()).build());
+
+        mockMvc.perform(get(ApiPaths.dashboard(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.typeBreakdown.length()").value(2))
+                .andExpect(jsonPath("$.typeBreakdown[0].typeName").value("Bug"))
+                .andExpect(jsonPath("$.typeBreakdown[0].count").value(2))
+                .andExpect(jsonPath("$.typeBreakdown[0].typeColor").value("RED"))
+                .andExpect(jsonPath("$.typeBreakdown[1].typeName").value("Feature"))
+                .andExpect(jsonPath("$.typeBreakdown[1].count").value(1));
     }
 }

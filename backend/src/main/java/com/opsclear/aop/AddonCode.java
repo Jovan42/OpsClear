@@ -10,5 +10,6 @@ public enum AddonCode {
     API_KEYS,
     JOB_TEMPLATES,
     RECURRING_SCHEDULING,
-    JOB_LINKS
+    JOB_LINKS,
+    JOB_TYPES
 }

@@ -1,10 +1,12 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.DashboardResponse;
+import com.opsclear.dto.JobTypeBreakdown;
 import com.opsclear.model.ApprovalModel;
 import com.opsclear.model.ApprovalStatus;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.JobTypeColor;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -296,5 +298,82 @@ class DashboardServiceTest {
         assertThat(result.getBlockedJobs()).isEmpty();
         assertThat(result.getOverdueJobs()).isEmpty();
         assertThat(result.getPendingApprovals()).isEmpty();
+    }
+
+    // --- type breakdown ---
+
+    @Test
+    @DisplayName("get — returns empty type breakdown when no jobs have a type")
+    void get_shouldReturnEmptyTypeBreakdown_whenNoJobsHaveType() {
+        when(jobService.list(projectId, ownerId, null, null, null)).thenReturn(List.of(newJob, inProgressJob));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
+
+        DashboardResponse result = dashboardService.get(projectId, ownerId);
+
+        assertThat(result.getTypeBreakdown()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("get — groups jobs by type and counts each")
+    void get_shouldGroupJobsByType_andCountEach() {
+        UUID bugTypeId = UUID.randomUUID();
+        UUID featureTypeId = UUID.randomUUID();
+
+        JobModel bug1 = JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Bug 1")
+                .status(JobStatus.NEW).typeId(bugTypeId).typeName("Bug").typeColor(JobTypeColor.RED).build();
+        JobModel bug2 = JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Bug 2")
+                .status(JobStatus.NEW).typeId(bugTypeId).typeName("Bug").typeColor(JobTypeColor.RED).build();
+        JobModel feature = JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Feature")
+                .status(JobStatus.NEW).typeId(featureTypeId).typeName("Feature").typeColor(JobTypeColor.BLUE).build();
+
+        when(jobService.list(projectId, ownerId, null, null, null)).thenReturn(List.of(bug1, bug2, feature, newJob));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
+
+        DashboardResponse result = dashboardService.get(projectId, ownerId);
+
+        assertThat(result.getTypeBreakdown()).hasSize(2);
+        JobTypeBreakdown bugBreakdown = result.getTypeBreakdown().stream()
+                .filter(b -> b.getTypeId().equals(bugTypeId)).findFirst().orElseThrow();
+        assertThat(bugBreakdown.getTypeName()).isEqualTo("Bug");
+        assertThat(bugBreakdown.getTypeColor()).isEqualTo(JobTypeColor.RED);
+        assertThat(bugBreakdown.getCount()).isEqualTo(2);
+
+        JobTypeBreakdown featureBreakdown = result.getTypeBreakdown().stream()
+                .filter(b -> b.getTypeId().equals(featureTypeId)).findFirst().orElseThrow();
+        assertThat(featureBreakdown.getCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("get — sorts type breakdown by count descending")
+    void get_shouldSortTypeBreakdown_byCountDescending() {
+        UUID rareTypeId = UUID.randomUUID();
+        UUID commonTypeId = UUID.randomUUID();
+
+        JobModel rare = JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Rare")
+                .status(JobStatus.NEW).typeId(rareTypeId).typeName("Rare").typeColor(JobTypeColor.GRAY).build();
+        JobModel common1 = JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Common 1")
+                .status(JobStatus.NEW).typeId(commonTypeId).typeName("Common").typeColor(JobTypeColor.GREEN).build();
+        JobModel common2 = JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Common 2")
+                .status(JobStatus.NEW).typeId(commonTypeId).typeName("Common").typeColor(JobTypeColor.GREEN).build();
+        JobModel common3 = JobModel.builder().id(UUID.randomUUID()).projectId(projectId).title("Common 3")
+                .status(JobStatus.NEW).typeId(commonTypeId).typeName("Common").typeColor(JobTypeColor.GREEN).build();
+
+        when(jobService.list(projectId, ownerId, null, null, null))
+                .thenReturn(List.of(rare, common1, common2, common3));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
+
+        DashboardResponse result = dashboardService.get(projectId, ownerId);
+
+        assertThat(result.getTypeBreakdown()).hasSize(2);
+        assertThat(result.getTypeBreakdown().getFirst().getTypeName()).isEqualTo("Common");
+        assertThat(result.getTypeBreakdown().getFirst().getCount()).isEqualTo(3);
+        assertThat(result.getTypeBreakdown().get(1).getTypeName()).isEqualTo("Rare");
+        assertThat(result.getTypeBreakdown().get(1).getCount()).isEqualTo(1);
     }
 }
