@@ -163,6 +163,21 @@ class JobTypeServiceTest {
     }
 
     @Test
+    @DisplayName("create should throw ForbiddenException when caller is not a project member at all")
+    void create_shouldThrow_whenCallerNotMember() {
+        UUID strangerId = UUID.randomUUID();
+        CreateJobTypeRequest request = CreateJobTypeRequest.builder().name("Bug").color(JobTypeColor.RED).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, strangerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> jobTypeService.create(projectId, request, strangerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("You are not a member of this project");
+        verify(jobTypeRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("create should strip whitespace from the name")
     void create_shouldStripName() {
         CreateJobTypeRequest request = CreateJobTypeRequest.builder().name("  Bug  ").color(JobTypeColor.RED).build();
