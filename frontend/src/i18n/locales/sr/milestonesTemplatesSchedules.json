@@ -68,6 +68,7 @@
     "pageHeading": "Šabloni poslova",
     "newButton": "+ Novi šablon",
     "createFirstButton": "Kreiraj prvi šablon",
+    "emptyText": "Još nema šablona. Napravite obrasce poslova za ponovnu upotrebu sa džokerima poput <code>{{dateWildcard}}</code> i <code>{{projectWildcard}}</code>.",
     "scheduleButton": "Raspored",
     "usedCount": "Korišćeno {{count}}×",
     "deadlineOffsetBadge": "+{{days}}d rok",

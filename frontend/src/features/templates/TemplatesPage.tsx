@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
+import { FileText } from 'lucide-react';
 import { useTemplates, useDeleteTemplate } from './useTemplates';
 import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -10,6 +11,7 @@ import TemplateFormModal from './TemplateFormModal';
 import ScheduleFormModal from '../schedules/ScheduleFormModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
 import UpgradeCard from '../../components/UpgradeCard';
 import PriorityBadge from '../../components/PriorityBadge';
@@ -127,13 +129,23 @@ export default function TemplatesPage() {
         </div>
 
         {templates.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              No templates yet. Create reusable job presets with wildcards like{' '}
-              <code className="font-mono text-blue-600 dark:text-blue-400">{'{{date}}'}</code> and{' '}
-              <code className="font-mono text-blue-600 dark:text-blue-400">{'{{project}}'}</code>.
-            </p>
-            <Button onClick={() => setShowCreate(true)}>{t('milestonesTemplatesSchedules:templatesPage.createFirstButton')}</Button>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+            <EmptyState
+              icon={FileText}
+              message={
+                <Trans
+                  t={t}
+                  i18nKey="milestonesTemplatesSchedules:templatesPage.emptyText"
+                  values={{ dateWildcard: '{{date}}', projectWildcard: '{{project}}' }}
+                  components={{ code: <code className="font-mono text-blue-600 dark:text-blue-400" /> }}
+                />
+              }
+              action={{
+                label: t('milestonesTemplatesSchedules:templatesPage.createFirstButton'),
+                onClick: () => setShowCreate(true),
+                canPerform: isOwnerOrAdmin,
+              }}
+            />
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">

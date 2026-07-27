@@ -5,8 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
+import { FileText } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import Modal from '../../components/Modal';
 import Skeleton from '../../components/Skeleton';
 import { useCurrentOrg } from './OrgContext';
@@ -256,18 +258,16 @@ export default function OrgSettingsPage() {
               <Skeleton className="h-14 rounded-xl" />
             </div>
           ) : orgTemplates.length === 0 ? (
-            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {t('org:noOrgTemplates')}{' '}
-                {isOwnerOrAdmin && (
-                  <button
-                    onClick={() => setShowCreateTemplate(true)}
-                    className="text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    {t('org:createOne')}
-                  </button>
-                )}
-              </p>
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl">
+              <EmptyState
+                icon={FileText}
+                message={t('org:noOrgTemplates')}
+                action={{
+                  label: t('org:createOne'),
+                  onClick: () => setShowCreateTemplate(true),
+                  canPerform: isOwnerOrAdmin,
+                }}
+              />
             </div>
           ) : (
             <div className="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">

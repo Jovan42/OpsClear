@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import Button from './Button';
 
@@ -11,8 +12,11 @@ interface EmptyStateAction {
 
 interface EmptyStateProps {
   icon: LucideIcon;
-  message: string;
-  description?: string;
+  /** Usually a plain string, but ReactNode so call sites needing inline formatting
+   *  (e.g. TemplatesPage's wildcard example with <code> spans) aren't forced to
+   *  flatten it to plain text just to use this component. */
+  message: ReactNode;
+  description?: ReactNode;
   action?: EmptyStateAction;
   /** Override the default page-level padding — smaller inline sections (e.g. a
    *  card's own empty list) don't want the same py-16 a full page does. */
