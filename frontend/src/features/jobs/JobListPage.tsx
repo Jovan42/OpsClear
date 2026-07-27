@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { Inbox, ListTodo } from 'lucide-react';
 import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
 import ProgressBar from '../../components/ProgressBar';
 import PriorityBadge from '../../components/PriorityBadge';
@@ -300,9 +302,9 @@ function GroupSection({
       )}
 
       {!isCollapsed && jobs.length === 0 && (
-        <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500 italic bg-white dark:bg-gray-800">
-          {t('jobListPage.noJobsInGroup')}
-        </p>
+        <div className="bg-white dark:bg-gray-800">
+          <EmptyState icon={Inbox} message={t('jobListPage.noJobsInGroup')} className="py-6" />
+        </div>
       )}
     </div>
   );
@@ -506,18 +508,21 @@ export default function JobListPage() {
 
       {/* Jobs table / card list */}
       {sorted.length === 0 && effectiveViewMode === 'flat' ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-            {debouncedSearch
+        <EmptyState
+          icon={ListTodo}
+          message={
+            debouncedSearch
               ? t('jobListPage.noResultsFor', { query: debouncedSearch })
               : jobs.length === 0
                 ? t('jobListPage.noJobsYet')
-                : t('jobListPage.noJobsMatchFilter')}
-          </p>
-          {!debouncedSearch && jobs.length === 0 && (
-            <Button onClick={() => setModalOpen(true)}>{t('jobListPage.createFirstJob')}</Button>
-          )}
-        </div>
+                : t('jobListPage.noJobsMatchFilter')
+          }
+          action={
+            !debouncedSearch && jobs.length === 0
+              ? { label: t('jobListPage.createFirstJob'), onClick: () => setModalOpen(true) }
+              : undefined
+          }
+        />
       ) : effectiveViewMode === 'grouped' ? (
         <div className="space-y-3">
           {milestones.map((ms: MilestoneResponse) => {
@@ -575,18 +580,21 @@ export default function JobListPage() {
             );
           })()}
           {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-                {debouncedSearch
+            <EmptyState
+              icon={ListTodo}
+              message={
+                debouncedSearch
                   ? t('jobListPage.noResultsFor', { query: debouncedSearch })
                   : jobs.length === 0
                     ? t('jobListPage.noJobsYet')
-                    : t('jobListPage.noJobsMatchFilter')}
-              </p>
-              {!debouncedSearch && jobs.length === 0 && (
-                <Button onClick={() => setModalOpen(true)}>{t('jobListPage.createFirstJob')}</Button>
-              )}
-            </div>
+                    : t('jobListPage.noJobsMatchFilter')
+              }
+              action={
+                !debouncedSearch && jobs.length === 0
+                  ? { label: t('jobListPage.createFirstJob'), onClick: () => setModalOpen(true) }
+                  : undefined
+              }
+            />
           )}
         </div>
       ) : (

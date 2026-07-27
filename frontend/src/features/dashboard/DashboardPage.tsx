@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { CheckCircle2, ListTodo } from 'lucide-react';
+import EmptyState from '../../components/EmptyState';
 import Markdown from '../../components/Markdown';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
@@ -397,21 +399,15 @@ export default function DashboardPage() {
         (!prefs.showOverdueSection || overdueJobs.length === 0) &&
         (!prefs.showPendingApprovalsSection || !isOwnerOrAdmin || pendingApprovals.length === 0) &&
         summary.total > 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dashboard.allClear')}</p>
-        </div>
+        <EmptyState icon={CheckCircle2} message={t('dashboard.allClear')} />
       )}
 
       {summary.total === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dashboard.noJobs')}</p>
-          <button
-            onClick={() => navigate(`/projects/${projectId}/jobs`)}
-            className="mt-2 text-sm text-brand hover:underline cursor-pointer"
-          >
-            {t('dashboard.createFirstJob')}
-          </button>
-        </div>
+        <EmptyState
+          icon={ListTodo}
+          message={t('dashboard.noJobs')}
+          action={{ label: t('dashboard.createFirstJob'), onClick: () => navigate(`/projects/${projectId}/jobs`) }}
+        />
       )}
     </div>
   );
