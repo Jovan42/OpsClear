@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { CheckCircle2 } from 'lucide-react';
 import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
 import ApprovalDecisionModal from '../jobs/components/ApprovalDecisionModal';
@@ -148,9 +150,7 @@ export default function ApprovalQueuePage() {
       </div>
 
       {groups.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('approvals.emptyState')}</p>
-        </div>
+        <EmptyState icon={CheckCircle2} message={t('approvals.emptyState')} />
       ) : (
         <div className="space-y-8">
           {groups.map(([jobId, group]) => (

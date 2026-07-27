@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -18,7 +18,8 @@ import RelationshipsSection from './components/RelationshipsSection';
 import AddRelationshipModal from './components/AddRelationshipModal';
 import StatusHistory from './components/StatusHistory';
 import LinksSection from './components/LinksSection';
-import { useJob, useUpdateJobStatus, useDeleteJob } from './useJobs';
+import { useJob, useUpdateJobStatus, useDeleteJob, useJobHistory } from './useJobs';
+import { useNotes } from './useNotes';
 import { useSchedule } from '../schedules/useSchedules';
 import { useMilestones } from './useMilestones';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
@@ -49,7 +50,9 @@ export default function JobDetailPage() {
   const { data: job, isLoading, isError, refetch } = useJob(projectId, jobId);
   const { data: project } = useProject(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
-  const { data: approvals = [] } = useApprovals(projectId, jobId);
+  const { data: approvals = [], isLoading: approvalsLoading } = useApprovals(projectId, jobId);
+  const { data: notes = [], isLoading: notesLoading } = useNotes(projectId, jobId);
+  const { data: history = [], isLoading: historyLoading } = useJobHistory(projectId, jobId);
   const { data: milestones = [] } = useMilestones(projectId);
   const role = useProjectRole(projectId);
   usePageTitle(job?.title, project?.name);
@@ -61,9 +64,9 @@ export default function JobDetailPage() {
   const [blockOpen, setBlockOpen] = useState(false);
   const [approvalOpen, setApprovalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [notesExpanded, setNotesExpanded] = useState(true);
+  const [notesExpanded, setNotesExpanded] = useState(false);
   const [approvalsExpanded, setApprovalsExpanded] = useState(false);
-  const [linksExpanded, setLinksExpanded] = useState(true);
+  const [linksExpanded, setLinksExpanded] = useState(false);
   const [kebabOpen, setKebabOpen] = useState(false);
   const [addRelOpen, setAddRelOpen] = useState(false);
 
@@ -73,6 +76,31 @@ export default function JobDetailPage() {
   const { data: sourceSchedule } = useSchedule(projectId, job?.sourceScheduleId ?? null);
   const isProjectCompleted = project?.status === 'COMPLETED';
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
+
+  // Sections open by default once they already have content, stay collapsed when
+  // empty — can't be a useState initializer since notes/approvals/history each load
+  // independently of the job itself and of each other; this fires once each finishes
+  // loading rather than relying on data that may not exist yet at first render.
+  useEffect(() => {
+    if (!notesLoading) setNotesExpanded(notes.length > 0);
+    // Deliberately only depends on notesLoading, not notes.length — this should
+    // fire once when notes first finish loading, not every time the count changes
+    // (e.g. adding a note), which would override a manual collapse.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notesLoading]);
+  useEffect(() => {
+    if (!approvalsLoading) setApprovalsExpanded(approvals.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [approvalsLoading]);
+  useEffect(() => {
+    // Depends on the job's own isLoading flag (stable after the first successful
+    // load — TanStack Query v5 doesn't flip it back to true on background
+    // refetches), not the `job` object itself, which gets a new reference on every
+    // refetch — using `job` directly would silently re-collapse/re-expand this on
+    // every unrelated mutation, overriding a manual toggle.
+    if (!isLoading && job) setLinksExpanded(job.links.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
 
   const lockedSections = [
     !hasAddon('NOTES') && t('jobDetailPage.notesSection'),
@@ -99,7 +127,11 @@ export default function JobDetailPage() {
     });
   }
 
-  if (isLoading) {
+  // historyLoading is included here (not just isLoading/useJob) so StatusHistory
+  // mounts for the first time only once its data is ready — its defaultExpanded
+  // prop is only read on mount, so mounting it early with a not-yet-loaded history
+  // would permanently lock it collapsed even once entries arrive a moment later.
+  if (isLoading || historyLoading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="flex items-center gap-3">
@@ -260,6 +292,7 @@ export default function JobDetailPage() {
           canManage={isOwnerOrAdmin}
           onAdd={() => setAddRelOpen(true)}
           projectCompleted={isProjectCompleted}
+          defaultExpanded={job.relationships.length > 0}
         />
       )}
 
@@ -280,9 +313,6 @@ export default function JobDetailPage() {
           )}
         </div>
       )}
-
-      {/* Status history */}
-      {hasAddon('JOB_STATUS_HISTORY') && <StatusHistory projectId={projectId} jobId={jobId} />}
 
       {/* Approvals accordion */}
       {hasAddon('APPROVALS') && (
@@ -332,6 +362,11 @@ export default function JobDetailPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Status history — kept last: the least frequently acted-on section */}
+      {hasAddon('JOB_STATUS_HISTORY') && (
+        <StatusHistory projectId={projectId} jobId={jobId} defaultExpanded={history.length > 0} />
       )}
 
       {/* Collapsed locked sections row */}

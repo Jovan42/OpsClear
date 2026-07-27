@@ -24,6 +24,7 @@ function RelationshipsDemoContent() {
         canManage
         onAdd={() => setAddOpen(true)}
         projectCompleted={false}
+        defaultExpanded
       />
       <AddRelationshipModal
         open={addOpen}
