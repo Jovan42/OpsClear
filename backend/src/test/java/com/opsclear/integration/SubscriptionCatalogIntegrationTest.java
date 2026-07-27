@@ -36,11 +36,11 @@ class SubscriptionCatalogIntegrationTest {
     }
 
     @Test
-    @DisplayName("getCatalog_shouldReturn10Addons")
-    void getCatalog_shouldReturn10Addons() throws Exception {
+    @DisplayName("getCatalog_shouldReturn11Addons")
+    void getCatalog_shouldReturn11Addons() throws Exception {
         mockMvc.perform(get(ApiPaths.SUBSCRIPTION_CATALOG))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.addons.length()").value(10));
+                .andExpect(jsonPath("$.addons.length()").value(11));
     }
 
     @Test
@@ -96,6 +96,15 @@ class SubscriptionCatalogIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.addons[9].key").value("JOB_LINKS"))
                 .andExpect(jsonPath("$.addons[9].available").value(true));
+    }
+
+    @Test
+    @DisplayName("getCatalog_shouldReturnJobTypesAsComingSoon")
+    void getCatalog_shouldReturnJobTypesAsComingSoon() throws Exception {
+        mockMvc.perform(get(ApiPaths.SUBSCRIPTION_CATALOG))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.addons[10].key").value("JOB_TYPES"))
+                .andExpect(jsonPath("$.addons[10].available").value(false));
     }
 
     @Test
