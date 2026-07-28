@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { milestonesApi } from '../../api/milestones';
+import { useCurrentOrg } from '../org/OrgContext';
 
 export function useMilestones(projectId: string) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['milestones', projectId],
     queryFn: () => milestonesApi.list(projectId),
-    enabled: !!projectId,
+    enabled: !!projectId && hasAddon('MILESTONES'),
   });
 }
 

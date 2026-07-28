@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobTypesApi, type CreateJobTypeBody, type UpdateJobTypeBody } from '../../api/jobTypes';
+import { useCurrentOrg } from '../org/OrgContext';
 
 export function useJobTypes(projectId: string) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['job-types', projectId],
     queryFn: () => jobTypesApi.list(projectId),
-    enabled: !!projectId,
+    enabled: !!projectId && hasAddon('JOB_TYPES'),
   });
 }
 

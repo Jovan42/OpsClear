@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { schedulesApi, type ScheduleBody, type PauseBody } from '../../api/schedules';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useCurrentOrg } from '../org/OrgContext';
 
 export function useSchedules(projectId: string) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['schedules', projectId],
     queryFn: () => schedulesApi.list(projectId),
-    enabled: !!projectId,
+    enabled: !!projectId && hasAddon('RECURRING_SCHEDULING'),
   });
 }
 
@@ -53,10 +55,11 @@ export function useResumeSchedule(projectId: string) {
 }
 
 export function useScheduleMissedRuns(projectId: string, scheduleId: string) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['missed-runs', projectId, scheduleId],
     queryFn: () => schedulesApi.listMissedRuns(projectId, scheduleId),
-    enabled: !!projectId && !!scheduleId,
+    enabled: !!projectId && !!scheduleId && hasAddon('RECURRING_SCHEDULING'),
   });
 }
 
@@ -88,10 +91,11 @@ export function useDismissAllMissedRuns(projectId: string, scheduleId: string) {
 }
 
 export function useSchedule(projectId: string, scheduleId: string | null) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['schedule', projectId, scheduleId],
     queryFn: () => schedulesApi.get(projectId, scheduleId!),
-    enabled: !!projectId && !!scheduleId,
+    enabled: !!projectId && !!scheduleId && hasAddon('RECURRING_SCHEDULING'),
     retry: false,
   });
 }

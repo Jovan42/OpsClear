@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { approvalsApi } from '../../api/approvals';
+import { useCurrentOrg } from '../org/OrgContext';
 
 export function useApprovals(projectId: string, jobId: string) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['jobs', projectId, jobId, 'approvals'],
     queryFn: () => approvalsApi.listByJob(projectId, jobId),
+    enabled: !!projectId && !!jobId && hasAddon('APPROVALS'),
   });
 }
 

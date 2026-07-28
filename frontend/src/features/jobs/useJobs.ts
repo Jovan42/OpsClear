@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobsApi } from '../../api/jobs';
 import { jobLinksApi } from '../../api/links';
+import { useCurrentOrg } from '../org/OrgContext';
 import type { JobPriority, JobRelationshipType, JobStatus } from '../../types';
 
 export function useJobList(projectId: string, q?: string, priority?: JobPriority, milestoneId?: string, typeId?: string) {
@@ -153,8 +154,10 @@ export function useDeleteJobLink(projectId: string, jobId: string) {
 }
 
 export function useJobHistory(projectId: string, jobId: string) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['jobs', projectId, jobId, 'history'],
     queryFn: () => jobsApi.history(projectId, jobId),
+    enabled: !!projectId && !!jobId && hasAddon('JOB_STATUS_HISTORY'),
   });
 }
