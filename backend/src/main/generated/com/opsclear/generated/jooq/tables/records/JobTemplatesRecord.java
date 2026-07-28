@@ -300,6 +300,36 @@ public class JobTemplatesRecord extends UpdatableRecordImpl<JobTemplatesRecord> 
         return (UUID) get(17);
     }
 
+    /**
+     * Setter for <code>public.job_templates.default_type_id</code>.
+     */
+    public JobTemplatesRecord setDefaultTypeId(UUID value) {
+        set(18, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.job_templates.default_type_id</code>.
+     */
+    public UUID getDefaultTypeId() {
+        return (UUID) get(18);
+    }
+
+    /**
+     * Setter for <code>public.job_templates.default_type_name</code>.
+     */
+    public JobTemplatesRecord setDefaultTypeName(String value) {
+        set(19, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.job_templates.default_type_name</code>.
+     */
+    public String getDefaultTypeName() {
+        return (String) get(19);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -323,7 +353,7 @@ public class JobTemplatesRecord extends UpdatableRecordImpl<JobTemplatesRecord> 
     /**
      * Create a detached, initialised JobTemplatesRecord
      */
-    public JobTemplatesRecord(UUID id, String friendlyId, UUID projectId, String name, String title, String description, String client, String priority, String assigneeMode, UUID assigneeId, UUID milestoneId, Integer deadlineOffsetDays, Integer occurrenceCount, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID orgId) {
+    public JobTemplatesRecord(UUID id, String friendlyId, UUID projectId, String name, String title, String description, String client, String priority, String assigneeMode, UUID assigneeId, UUID milestoneId, Integer deadlineOffsetDays, Integer occurrenceCount, UUID createdBy, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, UUID orgId, UUID defaultTypeId, String defaultTypeName) {
         super(JobTemplates.JOB_TEMPLATES);
 
         setId(id);
@@ -344,6 +374,8 @@ public class JobTemplatesRecord extends UpdatableRecordImpl<JobTemplatesRecord> 
         setUpdatedAt(updatedAt);
         setDeletedAt(deletedAt);
         setOrgId(orgId);
+        setDefaultTypeId(defaultTypeId);
+        setDefaultTypeName(defaultTypeName);
         resetChangedOnNotNull();
     }
 }

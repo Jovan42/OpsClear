@@ -152,6 +152,16 @@ public class JobTemplates extends TableImpl<JobTemplatesRecord> {
      */
     public final TableField<JobTemplatesRecord, UUID> ORG_ID = createField(DSL.name("org_id"), SQLDataType.UUID, this, "");
 
+    /**
+     * The column <code>public.job_templates.default_type_id</code>.
+     */
+    public final TableField<JobTemplatesRecord, UUID> DEFAULT_TYPE_ID = createField(DSL.name("default_type_id"), SQLDataType.UUID, this, "");
+
+    /**
+     * The column <code>public.job_templates.default_type_name</code>.
+     */
+    public final TableField<JobTemplatesRecord, String> DEFAULT_TYPE_NAME = createField(DSL.name("default_type_name"), SQLDataType.VARCHAR(100), this, "");
+
     private JobTemplates(Name alias, Table<JobTemplatesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
