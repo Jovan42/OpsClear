@@ -284,6 +284,7 @@ export default function JobDetailPage() {
           onRequestApproval={() => setApprovalOpen(true)}
           isPending={isStatusPending}
           projectCompleted={isProjectCompleted}
+          canRequestApproval={hasAddon('APPROVALS')}
         />
       </div>
 

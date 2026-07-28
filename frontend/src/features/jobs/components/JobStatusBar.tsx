@@ -15,6 +15,7 @@ interface Props {
   onRequestApproval: () => void;
   isPending: boolean;
   projectCompleted?: boolean;
+  canRequestApproval: boolean;
 }
 
 export default function JobStatusBar({
@@ -26,6 +27,7 @@ export default function JobStatusBar({
   onRequestApproval,
   isPending,
   projectCompleted,
+  canRequestApproval,
 }: Props) {
   const { t } = useTranslation('jobsComponents');
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
@@ -75,7 +77,7 @@ export default function JobStatusBar({
           </Button>
         )}
 
-        {job.status !== 'COMPLETED' && canAct && (
+        {job.status !== 'COMPLETED' && canAct && canRequestApproval && (
           <Button variant="secondary" onClick={onRequestApproval} size="sm">
             {t('jobsComponents:jobStatusBar.requestApproval')}
           </Button>
