@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { templatesApi, type TemplateBody } from '../../api/templates';
+import { useCurrentOrg } from '../org/OrgContext';
 
 export function useTemplates(projectId: string) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['templates', projectId],
     queryFn: () => templatesApi.list(projectId),
-    enabled: !!projectId,
+    enabled: !!projectId && hasAddon('JOB_TEMPLATES'),
   });
 }
 
@@ -41,10 +43,11 @@ export function useDeleteTemplate(projectId: string) {
 }
 
 export function useOrgTemplates(orgId: string | null) {
+  const { hasAddon } = useCurrentOrg();
   return useQuery({
     queryKey: ['org-templates', orgId],
     queryFn: () => templatesApi.orgList(orgId!),
-    enabled: !!orgId,
+    enabled: !!orgId && hasAddon('JOB_TEMPLATES'),
   });
 }
 
