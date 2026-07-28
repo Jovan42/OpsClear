@@ -118,6 +118,8 @@
     "JOB_RELATIONSHIPS": "Blocks / depends on / related to links",
     "API_KEYS": "Programmatic access & integrations",
     "JOB_TEMPLATES": "Reusable job presets",
-    "RECURRING_SCHEDULING": "Auto-create jobs on a schedule"
+    "RECURRING_SCHEDULING": "Auto-create jobs on a schedule",
+    "JOB_LINKS": "Attach PRs, files, and docs to any job",
+    "JOB_TYPES": "Classify jobs with per-project types"
   }
 }

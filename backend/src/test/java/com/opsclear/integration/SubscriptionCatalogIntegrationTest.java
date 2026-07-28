@@ -99,12 +99,12 @@ class SubscriptionCatalogIntegrationTest {
     }
 
     @Test
-    @DisplayName("getCatalog_shouldReturnJobTypesAsComingSoon")
-    void getCatalog_shouldReturnJobTypesAsComingSoon() throws Exception {
+    @DisplayName("getCatalog_shouldReturnJobTypesAsAvailable")
+    void getCatalog_shouldReturnJobTypesAsAvailable() throws Exception {
         mockMvc.perform(get(ApiPaths.SUBSCRIPTION_CATALOG))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.addons[10].key").value("JOB_TYPES"))
-                .andExpect(jsonPath("$.addons[10].available").value(false));
+                .andExpect(jsonPath("$.addons[10].available").value(true));
     }
 
     @Test

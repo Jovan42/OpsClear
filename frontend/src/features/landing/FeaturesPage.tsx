@@ -143,6 +143,16 @@ function buildCards(t: TFunction): FeatureCard[] {
       previewNaturalHeight: 340,
       previewScale: 0.5,
     },
+    {
+      id: 'job-types',
+      name: t('featuresPage.cards.job-types.name'),
+      description: t('featuresPage.cards.job-types.description'),
+      addonKey: 'JOB_TYPES',
+      loadSlides: () => import('../../demo/JobTypesDemo'),
+      previewNaturalWidth: 700,
+      previewNaturalHeight: 460,
+      previewScale: 0.45,
+    },
   ];
 }
 
