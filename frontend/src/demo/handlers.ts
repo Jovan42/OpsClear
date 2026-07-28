@@ -267,6 +267,8 @@ export const demoHandlers = [
       assigneeName: assignee?.userName ?? null,
       milestoneId: milestone?.id ?? null,
       milestoneName: milestone?.name ?? null,
+      defaultTypeId: null,
+      defaultTypeName: null,
       deadlineOffsetDays: body.deadlineOffsetDays ?? null,
       occurrenceCount: 0,
       createdBy: DEMO_CURRENT_USER.id,
