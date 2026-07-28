@@ -13,6 +13,7 @@ import ApprovalQueuePage from './features/approvals/ApprovalQueuePage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import MilestonesPage from './features/milestones/MilestonesPage';
 import TemplatesPage from './features/templates/TemplatesPage';
+import JobTypesPage from './features/jobTypes/JobTypesPage';
 import SchedulesPage from './features/schedules/SchedulesPage';
 import SettingsPage from './features/settings/SettingsPage';
 import DesignPage from './dev/DesignPage';
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
               { path: 'projects/:projectFriendlyId/jobs/:jobFriendlyId', element: <JobDetailPage /> },
               { path: 'projects/:projectFriendlyId/milestones', element: <MilestonesPage /> },
               { path: 'projects/:projectFriendlyId/templates', element: <TemplatesPage /> },
+              { path: 'projects/:projectFriendlyId/types', element: <JobTypesPage /> },
               { path: 'projects/:projectFriendlyId/schedules', element: <SchedulesPage /> },
               { path: 'projects/:projectFriendlyId/approvals', element: <ApprovalQueuePage /> },
               { path: 'projects/:projectFriendlyId/settings', element: <ProjectSettingsPage /> },

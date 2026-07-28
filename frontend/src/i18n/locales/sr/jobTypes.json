@@ -1,0 +1,35 @@
+{
+  "typesPage": {
+    "browserTitle": "Tipovi poslova",
+    "pageHeading": "Tipovi poslova",
+    "newButton": "+ Novi tip",
+    "emptyText": "Još uvek nema tipova poslova. Kreirajte jedan da biste počeli sa klasifikacijom poslova.",
+    "createFirstButton": "Kreirajte svoj prvi tip",
+    "deleteModalTitle": "Obriši tip posla",
+    "deleteModalMessage": "Ukloniti \"{{name}}\"? Poslovi koji koriste ovaj tip će nastaviti da rade, ali će ga izgubiti.",
+    "loadFailedMessage": "Neuspešno učitavanje tipova poslova.",
+    "moveUp": "Pomeri gore",
+    "moveDown": "Pomeri dole"
+  },
+  "typeModal": {
+    "newTitle": "Novi tip posla",
+    "editTitle": "Izmeni tip posla",
+    "nameLabel": "Naziv",
+    "namePlaceholder": "npr. Greška, Funkcija, Održavanje",
+    "colorLabel": "Boja",
+    "errorCreate": "Neuspešno kreiranje tipa posla. Pokušajte ponovo.",
+    "errorUpdate": "Neuspešno ažuriranje tipa posla. Pokušajte ponovo."
+  },
+  "colorNames": {
+    "RED": "Crvena",
+    "ORANGE": "Narandžasta",
+    "AMBER": "Jantar",
+    "GREEN": "Zelena",
+    "TEAL": "Tirkizna",
+    "BLUE": "Plava",
+    "INDIGO": "Indigo",
+    "PURPLE": "Ljubičasta",
+    "PINK": "Roze",
+    "GRAY": "Siva"
+  }
+}

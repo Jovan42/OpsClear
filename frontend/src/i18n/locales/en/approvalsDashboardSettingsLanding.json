@@ -140,6 +140,7 @@
     "daysAgo": "{{count}} days ago",
     "statusDistribution": "Status distribution",
     "summaryHeading": "Summary",
+    "typeBreakdownHeading": "By type",
     "statusLabels": {
       "new": "New",
       "inProgress": "In Progress",

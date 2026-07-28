@@ -14,8 +14,9 @@ import { useDashboard } from './useDashboard';
 import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from '../org/OrgContext';
+import { JOB_TYPE_HEX } from '../../utils/jobTypeColors';
 import i18n from '../../i18n';
-import type { DashboardSummary, JobSummary, PendingApprovalResponse } from '../../types';
+import type { DashboardSummary, JobSummary, JobTypeBreakdown, PendingApprovalResponse } from '../../types';
 
 // ---- helpers ----
 
@@ -253,6 +254,34 @@ function PendingApprovalRow({
   );
 }
 
+// ---- Type breakdown ----
+
+function TypeBreakdownWidget({ breakdown }: Readonly<{ breakdown: JobTypeBreakdown[] }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  if (breakdown.length === 0) return null;
+  const maxCount = Math.max(...breakdown.map((b) => b.count));
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t('dashboard.typeBreakdownHeading')}</h2>
+      <div className="space-y-2.5">
+        {breakdown.map((b) => (
+          <div key={b.typeId} className="flex items-center gap-3">
+            <span className="text-xs text-gray-600 dark:text-gray-300 w-24 truncate shrink-0">{b.typeName}</span>
+            <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${(b.count / maxCount) * 100}%`, backgroundColor: JOB_TYPE_HEX[b.typeColor] }}
+              />
+            </div>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 w-6 text-right shrink-0">{b.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---- Section wrapper ----
 
 function Section({
@@ -325,7 +354,7 @@ export default function DashboardPage() {
     return <PageError message={t('dashboard.loadError')} onRetry={() => void refetch()} />;
   }
 
-  const { summary, blockedJobs, overdueJobs, pendingApprovals } = data;
+  const { summary, blockedJobs, overdueJobs, pendingApprovals, typeBreakdown } = data;
   const visibleApprovals = isOwnerOrAdmin ? pendingApprovals.slice(0, 5) : [];
 
   return (
@@ -353,6 +382,9 @@ export default function DashboardPage() {
         <StatusDonut summary={summary} />
         <SummaryCards summary={summary} projectId={projectId} isOwnerOrAdmin={isOwnerOrAdmin} />
       </div>
+
+      {/* Type breakdown — hidden entirely when the project has no types defined */}
+      <TypeBreakdownWidget breakdown={typeBreakdown} />
 
       {/* Blocked jobs */}
       {prefs.showBlockedSection && blockedJobs.length > 0 && (

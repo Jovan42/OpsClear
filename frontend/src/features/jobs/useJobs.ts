@@ -3,10 +3,10 @@ import { jobsApi } from '../../api/jobs';
 import { jobLinksApi } from '../../api/links';
 import type { JobPriority, JobRelationshipType, JobStatus } from '../../types';
 
-export function useJobList(projectId: string, q?: string, priority?: JobPriority, milestoneId?: string) {
+export function useJobList(projectId: string, q?: string, priority?: JobPriority, milestoneId?: string, typeId?: string) {
   return useQuery({
-    queryKey: ['jobs', projectId, q ?? '', priority ?? '', milestoneId ?? ''],
-    queryFn: () => jobsApi.list(projectId, q, priority, milestoneId),
+    queryKey: ['jobs', projectId, q ?? '', priority ?? '', milestoneId ?? '', typeId ?? ''],
+    queryFn: () => jobsApi.list(projectId, q, priority, milestoneId, typeId),
     placeholderData: keepPreviousData,
   });
 }
@@ -29,6 +29,7 @@ export function useCreateJob(projectId: string) {
       deadline?: string;
       priority?: JobPriority;
       milestoneId?: string;
+      typeId?: string;
     }) => jobsApi.create(projectId, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
@@ -53,6 +54,7 @@ export function useUpdateJob(projectId: string) {
         deadline?: string;
         priority?: JobPriority;
         milestoneId?: string;
+        typeId?: string;
       };
     }) => jobsApi.update(projectId, jobId, body),
     onSuccess: () => {

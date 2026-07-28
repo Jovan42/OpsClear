@@ -7,6 +7,7 @@ import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import MarkdownEditor from '../../components/MarkdownEditor';
 import { useCreateJob, useUpdateJob } from './useJobs';
+import { useJobTypes } from '../jobTypes/useJobTypes';
 import { useProjectMembers, useProject } from '../projects/useProjects';
 import { useCurrentOrg } from '../org/OrgContext';
 import { useAuth } from '../../auth/AuthContext';
@@ -23,6 +24,7 @@ function buildSchema(t: ReturnType<typeof useTranslation>['t']) {
     deadline: z.string().optional(),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
     milestoneId: z.string().optional(),
+    typeId: z.string().optional(),
   });
 }
 type FormValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -55,6 +57,8 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
   const { name: creatorName } = useAuth();
   const { data: templates = [] } = useTemplates(projectId);
   const showTemplates = !isEdit && hasAddon('JOB_TEMPLATES') && templates.length > 0;
+  const { data: jobTypes = [] } = useJobTypes(projectId);
+  const showTypes = hasAddon('JOB_TYPES') && jobTypes.length > 0;
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [assignedTo, setAssignedTo] = useState<ProjectMemberResponse | null>(null);
@@ -109,9 +113,10 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
         deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
         priority: job.priority,
         milestoneId: job.milestoneId ?? '',
+        typeId: job.typeId ?? '',
       });
     } else {
-      reset({ title: '', description: '', client: '', deadline: '', priority: 'MEDIUM', milestoneId: '' });
+      reset({ title: '', description: '', client: '', deadline: '', priority: 'MEDIUM', milestoneId: '', typeId: '' });
     }
   }, [open, job, reset]);
 
@@ -126,7 +131,7 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
   function handleTemplateSelect(templateId: string) {
     if (!templateId) {
       setSelectedTemplateId(null);
-      reset({ title: '', description: '', client: '', deadline: '', priority: 'MEDIUM', milestoneId: '' });
+      reset({ title: '', description: '', client: '', deadline: '', priority: 'MEDIUM', milestoneId: '', typeId: '' });
       setAssignedTo(null);
       setMemberSearch('');
       return;
@@ -146,6 +151,7 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
         client:      template.client ?? '',
         priority:    template.priority ?? 'MEDIUM',
         milestoneId: milestoneValid ? (template.milestoneId ?? '') : '',
+        typeId:      '',
         deadline,
       });
       if (template.assigneeMode === 'FIXED') {
@@ -168,6 +174,7 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
       deadline: values.deadline ? new Date(values.deadline).toISOString() : undefined,
       priority: values.priority,
       milestoneId: values.milestoneId || undefined,
+      typeId: values.typeId || undefined,
     };
 
     if (isEdit && job) {
@@ -279,6 +286,18 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
               <option value="">{t('newJobModal.noMilestoneOption')}</option>
               {milestones.map((ms) => (
                 <option key={ms.id} value={ms.id}>{ms.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {showTypes && (
+          <div>
+            <label className={labelClass}>{t('newJobModal.typeLabel')}</label>
+            <select {...register('typeId')} className={inputClass}>
+              <option value="">{t('newJobModal.noTypeOption')}</option>
+              {jobTypes.map((type) => (
+                <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </select>
           </div>

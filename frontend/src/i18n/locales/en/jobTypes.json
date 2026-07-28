@@ -1,0 +1,35 @@
+{
+  "typesPage": {
+    "browserTitle": "Job Types",
+    "pageHeading": "Job Types",
+    "newButton": "+ New Type",
+    "emptyText": "No job types yet. Create one to start classifying jobs.",
+    "createFirstButton": "Create your first type",
+    "deleteModalTitle": "Delete Job Type",
+    "deleteModalMessage": "Remove \"{{name}}\"? Jobs using this type will keep working, but will lose it.",
+    "loadFailedMessage": "Failed to load job types.",
+    "moveUp": "Move up",
+    "moveDown": "Move down"
+  },
+  "typeModal": {
+    "newTitle": "New Job Type",
+    "editTitle": "Edit Job Type",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Bug, Feature, Maintenance",
+    "colorLabel": "Color",
+    "errorCreate": "Failed to create job type. Please try again.",
+    "errorUpdate": "Failed to update job type. Please try again."
+  },
+  "colorNames": {
+    "RED": "Red",
+    "ORANGE": "Orange",
+    "AMBER": "Amber",
+    "GREEN": "Green",
+    "TEAL": "Teal",
+    "BLUE": "Blue",
+    "INDIGO": "Indigo",
+    "PURPLE": "Purple",
+    "PINK": "Pink",
+    "GRAY": "Gray"
+  }
+}
