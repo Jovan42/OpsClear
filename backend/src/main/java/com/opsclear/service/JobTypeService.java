@@ -10,6 +10,7 @@ import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
+import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class JobTypeService {
 
     private final JobTypeRepository jobTypeRepository;
+    private final JobTemplateRepository jobTemplateRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
 
@@ -72,7 +74,7 @@ public class JobTypeService {
         requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         requireTypeForProject(projectId, typeId);
-        requireNoJobsReference(typeId);
+        requireNotReferenced(typeId);
 
         jobTypeRepository.delete(typeId);
         log.info("Deleted job type {} from project {} by user {}", typeId, projectId, requesterId);
@@ -80,10 +82,19 @@ public class JobTypeService {
 
     // --- Guards ---
 
-    private void requireNoJobsReference(UUID typeId) {
-        int count = jobTypeRepository.countJobsReferencing(typeId);
-        if (count > 0) {
-            throw new ConflictException(String.format(ErrorMessages.JobType.STILL_REFERENCED_BY_JOBS, count));
+    private void requireNotReferenced(UUID typeId) {
+        int jobCount = jobTypeRepository.countJobsReferencing(typeId);
+        int templateCount = jobTemplateRepository.countTemplatesReferencing(typeId);
+        if (jobCount > 0 && templateCount > 0) {
+            throw new ConflictException(String.format(
+                    ErrorMessages.JobType.STILL_REFERENCED_BY_JOBS_AND_TEMPLATES, jobCount, templateCount));
+        }
+        if (jobCount > 0) {
+            throw new ConflictException(String.format(ErrorMessages.JobType.STILL_REFERENCED_BY_JOBS, jobCount));
+        }
+        if (templateCount > 0) {
+            throw new ConflictException(
+                    String.format(ErrorMessages.JobType.STILL_REFERENCED_BY_TEMPLATES, templateCount));
         }
     }
 

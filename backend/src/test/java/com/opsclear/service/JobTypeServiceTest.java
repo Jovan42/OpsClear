@@ -10,6 +10,7 @@ import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.when;
 class JobTypeServiceTest {
 
     @Mock private JobTypeRepository jobTypeRepository;
+    @Mock private JobTemplateRepository jobTemplateRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
 
@@ -53,7 +55,8 @@ class JobTypeServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobTypeService = new JobTypeService(jobTypeRepository, projectRepository, projectMemberRepository);
+        jobTypeService = new JobTypeService(
+                jobTypeRepository, jobTemplateRepository, projectRepository, projectMemberRepository);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -326,6 +329,42 @@ class JobTypeServiceTest {
         assertThatThrownBy(() -> jobTypeService.delete(projectId, typeId, ownerId))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Cannot delete type: 3 job(s) still use this type");
+        verify(jobTypeRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("delete should throw ConflictException when templates still reference the type")
+    void delete_shouldThrow_whenTemplatesStillReference() {
+        UUID typeId = UUID.randomUUID();
+        JobTypeModel existing = JobTypeModel.builder().id(typeId).projectId(projectId).name("Bug").color(JobTypeColor.RED).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobTypeRepository.findById(typeId)).thenReturn(Optional.of(existing));
+        when(jobTypeRepository.countJobsReferencing(typeId)).thenReturn(0);
+        when(jobTemplateRepository.countTemplatesReferencing(typeId)).thenReturn(2);
+
+        assertThatThrownBy(() -> jobTypeService.delete(projectId, typeId, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Cannot delete type: 2 template(s) still use this type");
+        verify(jobTypeRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("delete should throw ConflictException naming both jobs and templates when both reference the type")
+    void delete_shouldThrow_whenJobsAndTemplatesStillReference() {
+        UUID typeId = UUID.randomUUID();
+        JobTypeModel existing = JobTypeModel.builder().id(typeId).projectId(projectId).name("Bug").color(JobTypeColor.RED).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobTypeRepository.findById(typeId)).thenReturn(Optional.of(existing));
+        when(jobTypeRepository.countJobsReferencing(typeId)).thenReturn(3);
+        when(jobTemplateRepository.countTemplatesReferencing(typeId)).thenReturn(2);
+
+        assertThatThrownBy(() -> jobTypeService.delete(projectId, typeId, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Cannot delete type: 3 job(s) and 2 template(s) still use this type");
         verify(jobTypeRepository, never()).delete(any());
     }
 }

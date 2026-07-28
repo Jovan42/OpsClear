@@ -2,17 +2,21 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateJobTemplateRequest;
 import com.opsclear.dto.UpdateJobTemplateRequest;
+import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.JobTemplateModel;
+import com.opsclear.model.JobTemplateScope;
+import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.repository.JobTemplateRepository;
+import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -32,6 +36,7 @@ import java.util.UUID;
 public class JobTemplateService {
 
     private final JobTemplateRepository jobTemplateRepository;
+    private final JobTypeRepository jobTypeRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final OrganisationRepository organisationRepository;
@@ -54,6 +59,7 @@ public class JobTemplateService {
     public JobTemplateModel create(UUID projectId, CreateJobTemplateRequest request, UUID requesterId) {
         requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
+        requireNoDefaultTypeName(request.getDefaultTypeName());
 
         String friendlyId = organisationRepository.findByMember(requesterId)
                 .map(o -> friendlyIdService.nextFriendlyId(o.getId(), FriendlyIdEntityType.TEMPLATE))
@@ -70,6 +76,7 @@ public class JobTemplateService {
                 .assigneeMode(Objects.requireNonNullElse(request.getAssigneeMode(), "NONE"))
                 .assigneeId(request.getAssigneeId())
                 .milestoneId(request.getMilestoneId())
+                .defaultTypeId(request.getDefaultTypeId())
                 .deadlineOffsetDays(request.getDeadlineOffsetDays())
                 .createdBy(requesterId)
                 .build();
@@ -84,6 +91,7 @@ public class JobTemplateService {
                                    UpdateJobTemplateRequest request, UUID requesterId) {
         requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
+        requireNoDefaultTypeName(request.getDefaultTypeName());
         JobTemplateModel template = requireTemplateForProject(projectId, templateId);
         applyUpdate(template, request);
         JobTemplateModel updated = jobTemplateRepository.save(template);
@@ -102,12 +110,25 @@ public class JobTemplateService {
     }
 
     @Transactional
-    public void recordUsage(UUID projectId, UUID templateId, UUID requesterId) {
+    public UUID recordUsage(UUID projectId, UUID templateId, UUID requesterId) {
         requireProject(projectId);
         requireMember(projectId, requesterId);
-        requireTemplateForProjectOrOrg(projectId, templateId, requesterId);
+        JobTemplateModel template = requireTemplateForProjectOrOrg(projectId, templateId, requesterId);
         jobTemplateRepository.incrementOccurrenceCount(templateId);
         log.info("Recorded usage of job template {} by user {}", templateId, requesterId);
+        return resolveDefaultType(projectId, template);
+    }
+
+    private UUID resolveDefaultType(UUID projectId, JobTemplateModel template) {
+        if (template.getScope() == JobTemplateScope.PROJECT) {
+            return template.getDefaultTypeId();
+        }
+        if (template.getDefaultTypeName() == null) {
+            return null;
+        }
+        return jobTypeRepository.findByProjectIdAndNameIgnoreCase(projectId, template.getDefaultTypeName())
+                .map(JobTypeModel::getId)
+                .orElse(null);
     }
 
     // --- Org-scoped endpoints ---
@@ -123,6 +144,7 @@ public class JobTemplateService {
     public JobTemplateModel createOrgTemplate(UUID orgId, CreateJobTemplateRequest request, UUID requesterId) {
         requireOrg(orgId);
         requireOrgOwnerOrAdmin(orgId, requesterId);
+        requireNoDefaultTypeId(request.getDefaultTypeId());
 
         String friendlyId = friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.TEMPLATE);
 
@@ -135,6 +157,7 @@ public class JobTemplateService {
                 .client(request.getClient())
                 .priority(request.getPriority())
                 .assigneeMode(Objects.requireNonNullElse(request.getAssigneeMode(), "NONE"))
+                .defaultTypeName(request.getDefaultTypeName())
                 .deadlineOffsetDays(request.getDeadlineOffsetDays())
                 .createdBy(requesterId)
                 .build();
@@ -149,6 +172,7 @@ public class JobTemplateService {
                                               UpdateJobTemplateRequest request, UUID requesterId) {
         requireOrg(orgId);
         requireOrgOwnerOrAdmin(orgId, requesterId);
+        requireNoDefaultTypeId(request.getDefaultTypeId());
         JobTemplateModel template = requireTemplateForOrg(orgId, templateId);
         applyUpdate(template, request);
         JobTemplateModel updated = jobTemplateRepository.save(template);
@@ -178,10 +202,24 @@ public class JobTemplateService {
                 request.getAssigneeMode() != null ? request.getAssigneeMode() : template.getAssigneeMode());
         template.setAssigneeId(request.getAssigneeId());
         template.setMilestoneId(request.getMilestoneId());
+        template.setDefaultTypeId(request.getDefaultTypeId());
+        template.setDefaultTypeName(request.getDefaultTypeName());
         template.setDeadlineOffsetDays(request.getDeadlineOffsetDays());
     }
 
     // --- Guards ---
+
+    private void requireNoDefaultTypeName(String defaultTypeName) {
+        if (defaultTypeName != null) {
+            throw new BadRequestException(ErrorMessages.JobTemplate.DEFAULT_TYPE_NAME_ORG_SCOPE_ONLY);
+        }
+    }
+
+    private void requireNoDefaultTypeId(UUID defaultTypeId) {
+        if (defaultTypeId != null) {
+            throw new BadRequestException(ErrorMessages.JobTemplate.DEFAULT_TYPE_ID_PROJECT_SCOPE_ONLY);
+        }
+    }
 
     private void requireProject(UUID projectId) {
         projectRepository.findByIdAndDeletedAtIsNull(projectId)
@@ -232,11 +270,11 @@ public class JobTemplateService {
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND));
     }
 
-    private void requireTemplateForProjectOrOrg(UUID projectId, UUID templateId, UUID requesterId) {
+    private JobTemplateModel requireTemplateForProjectOrOrg(UUID projectId, UUID templateId, UUID requesterId) {
         JobTemplateModel template = jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND));
         if (projectId.equals(template.getProjectId())) {
-            return;
+            return template;
         }
         UUID orgId = organisationRepository.findByMember(requesterId)
                 .map(OrganisationModel::getId)
@@ -244,6 +282,7 @@ public class JobTemplateService {
         if (orgId == null || !orgId.equals(template.getOrgId())) {
             throw new NotFoundException(ErrorMessages.JobTemplate.NOT_FOUND);
         }
+        return template;
     }
 
     private void requireNoActiveSchedules(UUID templateId) {

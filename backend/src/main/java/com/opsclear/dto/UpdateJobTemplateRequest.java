@@ -37,6 +37,11 @@ public class UpdateJobTemplateRequest {
 
     private UUID milestoneId;
 
+    private UUID defaultTypeId;
+
+    @Size(max = 100)
+    private String defaultTypeName;
+
     @Positive
     private Integer deadlineOffsetDays;
 }

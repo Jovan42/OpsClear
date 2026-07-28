@@ -87,6 +87,10 @@ public final class ErrorMessages {
     public static final class JobTemplate {
         public static final String NOT_FOUND = "Job template not found";
         public static final String ACTIVE_SCHEDULES = "Template is used by active schedules: ";
+        public static final String DEFAULT_TYPE_ID_PROJECT_SCOPE_ONLY =
+                "defaultTypeId can only be set on project-scoped templates";
+        public static final String DEFAULT_TYPE_NAME_ORG_SCOPE_ONLY =
+                "defaultTypeName can only be set on org-scoped templates";
 
         private JobTemplate() {
         }
@@ -164,6 +168,10 @@ public final class ErrorMessages {
         public static final String NOT_FOUND = "Job type not found";
         public static final String STILL_REFERENCED_BY_JOBS =
                 "Cannot delete type: %d job(s) still use this type";
+        public static final String STILL_REFERENCED_BY_TEMPLATES =
+                "Cannot delete type: %d template(s) still use this type";
+        public static final String STILL_REFERENCED_BY_JOBS_AND_TEMPLATES =
+                "Cannot delete type: %d job(s) and %d template(s) still use this type";
 
         private JobType() {
         }

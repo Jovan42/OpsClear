@@ -89,6 +89,8 @@ public class JobTemplateRepository {
                     .set(JOB_TEMPLATES.ASSIGNEE_MODE, template.getAssigneeMode())
                     .set(JOB_TEMPLATES.ASSIGNEE_ID, template.getAssigneeId())
                     .set(JOB_TEMPLATES.MILESTONE_ID, template.getMilestoneId())
+                    .set(JOB_TEMPLATES.DEFAULT_TYPE_ID, template.getDefaultTypeId())
+                    .set(JOB_TEMPLATES.DEFAULT_TYPE_NAME, template.getDefaultTypeName())
                     .set(JOB_TEMPLATES.DEADLINE_OFFSET_DAYS, template.getDeadlineOffsetDays())
                     .set(JOB_TEMPLATES.CREATED_BY, template.getCreatedBy())
                     .set(JOB_TEMPLATES.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
@@ -107,6 +109,8 @@ public class JobTemplateRepository {
                 .set(JOB_TEMPLATES.ASSIGNEE_MODE, template.getAssigneeMode())
                 .set(JOB_TEMPLATES.ASSIGNEE_ID, template.getAssigneeId())
                 .set(JOB_TEMPLATES.MILESTONE_ID, template.getMilestoneId())
+                .set(JOB_TEMPLATES.DEFAULT_TYPE_ID, template.getDefaultTypeId())
+                .set(JOB_TEMPLATES.DEFAULT_TYPE_NAME, template.getDefaultTypeName())
                 .set(JOB_TEMPLATES.DEADLINE_OFFSET_DAYS, template.getDeadlineOffsetDays())
                 .set(JOB_TEMPLATES.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .where(JOB_TEMPLATES.ID.eq(template.getId()))
@@ -132,6 +136,13 @@ public class JobTemplateRepository {
         dsl.deleteFrom(JOB_TEMPLATES).execute();
     }
 
+    public int countTemplatesReferencing(UUID typeId) {
+        return dsl.fetchCount(
+                dsl.selectFrom(JOB_TEMPLATES)
+                        .where(JOB_TEMPLATES.DEFAULT_TYPE_ID.eq(typeId))
+                        .and(JOB_TEMPLATES.DELETED_AT.isNull()));
+    }
+
     private JobTemplateModel toModel(Record r) {
         UUID projectId = r.get(JOB_TEMPLATES.PROJECT_ID);
         return JobTemplateModel.builder()
@@ -150,6 +161,8 @@ public class JobTemplateRepository {
                 .assigneeName(r.get("assignee_name", String.class))
                 .milestoneId(r.get(JOB_TEMPLATES.MILESTONE_ID))
                 .milestoneName(r.get("milestone_name", String.class))
+                .defaultTypeId(r.get(JOB_TEMPLATES.DEFAULT_TYPE_ID))
+                .defaultTypeName(r.get(JOB_TEMPLATES.DEFAULT_TYPE_NAME))
                 .deadlineOffsetDays(r.get(JOB_TEMPLATES.DEADLINE_OFFSET_DAYS))
                 .occurrenceCount(r.get(JOB_TEMPLATES.OCCURRENCE_COUNT))
                 .createdBy(r.get(JOB_TEMPLATES.CREATED_BY))
