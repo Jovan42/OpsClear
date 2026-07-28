@@ -26,6 +26,8 @@ export default function ProductAndPricing() {
     API_KEYS: t('productPricing.addonTaglines.API_KEYS'),
     JOB_TEMPLATES: t('productPricing.addonTaglines.JOB_TEMPLATES'),
     RECURRING_SCHEDULING: t('productPricing.addonTaglines.RECURRING_SCHEDULING'),
+    JOB_LINKS: t('productPricing.addonTaglines.JOB_LINKS'),
+    JOB_TYPES: t('productPricing.addonTaglines.JOB_TYPES'),
   };
 
   const [memberIdx,  setMemberIdx]  = useState(0);

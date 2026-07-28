@@ -194,7 +194,9 @@
       "JOB_RELATIONSHIPS": "Blocks / depends on / related to links",
       "API_KEYS": "Programmatic access & integrations",
       "JOB_TEMPLATES": "Reusable job presets",
-      "RECURRING_SCHEDULING": "Auto-create jobs on a schedule (requires Templates)"
+      "RECURRING_SCHEDULING": "Auto-create jobs on a schedule (requires Templates)",
+      "JOB_LINKS": "Attach PRs, files, and docs to any job",
+      "JOB_TYPES": "Classify jobs with per-project types"
     },
     "heading": "See what's included. Know what it costs.",
     "subheading": "Start with the base plan and add only what your team needs.",
@@ -244,7 +246,9 @@
         "templates": "Job templates",
         "recurring": "Recurring schedules",
         "apiKeys": "API keys",
-        "links": "Job links"
+        "links": "Job links",
+        "jobTypes": "Job types",
+        "jobTypesInJobList": "Type badges & filter on the job list"
       }
     },
     "cards": {
@@ -291,6 +295,10 @@
       "links": {
         "name": "Job links",
         "description": "Attach GitHub PRs, Figma files, docs, or any other URL directly to a job — recognized services get their own icon, everything else falls back to a favicon."
+      },
+      "job-types": {
+        "name": "Job types",
+        "description": "Classify jobs with per-project types like Bug, Feature, or Maintenance — colored badges, a job list filter, and a dashboard breakdown by type."
       }
     }
   }

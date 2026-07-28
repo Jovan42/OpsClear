@@ -3,6 +3,8 @@ import type {
   JobHistoryEntry,
   JobResponse,
   JobTemplateResponse,
+  JobTypeColor,
+  JobTypeResponse,
   LinkResponse,
   MilestoneResponse,
   NoteResponse,
@@ -140,6 +142,9 @@ interface DemoJobSeed {
   assignedToName: string | null;
   milestoneId: string | null;
   milestoneName: string | null;
+  typeId?: string;
+  typeName?: string;
+  typeColor?: JobTypeColor;
   blockedReason?: string;
   blockedHoursAgo?: number;
   links?: LinkResponse[];
@@ -161,6 +166,9 @@ const JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.marko.name,
     milestoneId: 'demo-milestone-beta',
     milestoneName: 'Beta launch',
+    typeId: 'demo-job-type-02',
+    typeName: 'Feature',
+    typeColor: 'BLUE',
     // The links demo card (JOB-146) reads these — a spread of recognized services
     // (GitHub, Figma, Notion) so LinkIcon's per-service icon detection shows up
     // rather than every row falling back to a generic favicon.
@@ -202,6 +210,9 @@ const JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.iva.name,
     milestoneId: 'demo-milestone-beta',
     milestoneName: 'Beta launch',
+    typeId: 'demo-job-type-01',
+    typeName: 'Bug',
+    typeColor: 'RED',
     blockedReason: 'Waiting on design review from John',
     blockedHoursAgo: 6,
   },
@@ -216,6 +227,9 @@ const JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: null,
     milestoneId: 'demo-milestone-ga',
     milestoneName: 'Public launch',
+    typeId: 'demo-job-type-02',
+    typeName: 'Feature',
+    typeColor: 'BLUE',
   },
   {
     id: 'demo-job-04',
@@ -240,6 +254,9 @@ const JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.iva.name,
     milestoneId: 'demo-milestone-ga',
     milestoneName: 'Public launch',
+    typeId: 'demo-job-type-03',
+    typeName: 'Maintenance',
+    typeColor: 'GRAY',
   },
   {
     id: 'demo-job-06',
@@ -264,6 +281,9 @@ const JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.marko.name,
     milestoneId: null,
     milestoneName: null,
+    typeId: 'demo-job-type-01',
+    typeName: 'Bug',
+    typeColor: 'RED',
   },
   // The dashboard demo card (JOB-145) reads off this same shared dataset — these four
   // exist to give it a fuller spread (more per status, one genuinely overdue) rather
@@ -292,6 +312,9 @@ const JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.marko.name,
     milestoneId: null,
     milestoneName: null,
+    typeId: 'demo-job-type-03',
+    typeName: 'Maintenance',
+    typeColor: 'GRAY',
     deadlineDaysFromNow: -2,
   },
   {
@@ -319,6 +342,9 @@ const JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.iva.name,
     milestoneId: null,
     milestoneName: null,
+    typeId: 'demo-job-type-03',
+    typeName: 'Maintenance',
+    typeColor: 'GRAY',
   },
 ];
 
@@ -343,9 +369,9 @@ function buildJob(seed: DemoJobSeed, projectId: string = DEMO_PROJECT_ID): JobRe
     blockedAt: seed.blockedHoursAgo != null ? hoursAgo(seed.blockedHoursAgo) : null,
     milestoneId: seed.milestoneId,
     milestoneName: seed.milestoneName,
-    typeId: null,
-    typeName: null,
-    typeColor: null,
+    typeId: seed.typeId ?? null,
+    typeName: seed.typeName ?? null,
+    typeColor: seed.typeColor ?? null,
     relationships: [],
     links: seed.links ?? [],
     sourceScheduleId: null,
@@ -381,6 +407,9 @@ const TRACKING_JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: null,
     milestoneId: null,
     milestoneName: null,
+    typeId: 'demo-basejob-type-02',
+    typeName: 'Feature',
+    typeColor: 'BLUE',
   },
   {
     id: 'demo-basejob-02',
@@ -393,6 +422,9 @@ const TRACKING_JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.iva.name,
     milestoneId: null,
     milestoneName: null,
+    typeId: 'demo-basejob-type-01',
+    typeName: 'Bug',
+    typeColor: 'RED',
   },
   {
     id: 'demo-basejob-03',
@@ -431,6 +463,30 @@ const TRACKING_JOB_SEEDS: DemoJobSeed[] = [
     assignedToName: DEMO_USERS.iva.name,
     milestoneId: null,
     milestoneName: null,
+  },
+];
+
+// Job types for the job-types card's demo (JOB-158) — scoped to DEMO_BASE_PROJECT_ID
+// since both of that card's slides (types management + job list) deliberately run on
+// this milestone-free project rather than the shared DEMO_PROJECT_ID, so the slides
+// share one dataset (a type added on slide 1 shows up on slide 2) without every other
+// add-on's UI (milestones, etc.) cluttering the plain job list on slide 2.
+const BASE_TRACKING_JOB_TYPES: JobTypeResponse[] = [
+  {
+    id: 'demo-basejob-type-01',
+    projectId: DEMO_BASE_PROJECT_ID,
+    name: 'Bug',
+    color: 'RED',
+    displayOrder: 0,
+    createdAt: hoursAgo(24 * 30),
+  },
+  {
+    id: 'demo-basejob-type-02',
+    projectId: DEMO_BASE_PROJECT_ID,
+    name: 'Feature',
+    color: 'BLUE',
+    displayOrder: 1,
+    createdAt: hoursAgo(24 * 30),
   },
 ];
 
@@ -769,6 +825,35 @@ const BASE_TEMPLATES: JobTemplateResponse[] = [
   },
 ];
 
+// ---- Job types (JOB-158) ----
+
+const BASE_JOB_TYPES: JobTypeResponse[] = [
+  {
+    id: 'demo-job-type-01',
+    projectId: DEMO_PROJECT_ID,
+    name: 'Bug',
+    color: 'RED',
+    displayOrder: 0,
+    createdAt: hoursAgo(24 * 60),
+  },
+  {
+    id: 'demo-job-type-02',
+    projectId: DEMO_PROJECT_ID,
+    name: 'Feature',
+    color: 'BLUE',
+    displayOrder: 1,
+    createdAt: hoursAgo(24 * 60),
+  },
+  {
+    id: 'demo-job-type-03',
+    projectId: DEMO_PROJECT_ID,
+    name: 'Maintenance',
+    color: 'GRAY',
+    displayOrder: 2,
+    createdAt: hoursAgo(24 * 60),
+  },
+];
+
 const BASE_SCHEDULES: RecurringScheduleResponse[] = [
   {
     id: 'demo-schedule-01',
@@ -874,11 +959,13 @@ export interface DemoStore {
   historyByJobId: Record<string, JobHistoryEntry[]>;
   approvals: DemoApproval[];
   templates: JobTemplateResponse[];
+  jobTypes: JobTypeResponse[];
   schedules: RecurringScheduleResponse[];
   missedRunsByScheduleId: Record<string, ScheduleMissedRunResponse[]>;
   apiKeys: ApiKeyResponse[];
   trackingProject: ProjectResponse;
   trackingJobs: JobResponse[];
+  trackingJobTypes: JobTypeResponse[];
 }
 
 function freshStore(): DemoStore {
@@ -891,11 +978,13 @@ function freshStore(): DemoStore {
     historyByJobId: structuredClone(BASE_HISTORY),
     approvals: structuredClone(BASE_APPROVALS),
     templates: structuredClone(BASE_TEMPLATES),
+    jobTypes: structuredClone(BASE_JOB_TYPES),
     schedules: structuredClone(BASE_SCHEDULES),
     missedRunsByScheduleId: structuredClone(BASE_MISSED_RUNS),
     apiKeys: structuredClone(BASE_API_KEYS),
     trackingProject: structuredClone(BASE_TRACKING_PROJECT),
     trackingJobs: structuredClone(BASE_TRACKING_JOBS),
+    trackingJobTypes: structuredClone(BASE_TRACKING_JOB_TYPES),
   };
 }
 

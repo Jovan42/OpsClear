@@ -194,7 +194,9 @@
       "JOB_RELATIONSHIPS": "Veze blokira / zavisi od / povezano sa",
       "API_KEYS": "Programski pristup i integracije",
       "JOB_TEMPLATES": "Ponovo upotrebljivi šabloni poslova",
-      "RECURRING_SCHEDULING": "Automatsko kreiranje poslova po rasporedu (zahteva šablone)"
+      "RECURRING_SCHEDULING": "Automatsko kreiranje poslova po rasporedu (zahteva šablone)",
+      "JOB_LINKS": "Prikačite PR-ove, fajlove i dokumente na bilo koji posao",
+      "JOB_TYPES": "Klasifikujte poslove po tipovima na nivou projekta"
     },
     "heading": "Vidite šta je uključeno. Znajte koliko košta.",
     "subheading": "Počnite sa osnovnim planom i dodajte samo ono što vašem timu treba.",
@@ -244,7 +246,9 @@
         "templates": "Šabloni poslova",
         "recurring": "Ponavljajući rasporedi",
         "apiKeys": "API ključevi",
-        "links": "Veze na poslu"
+        "links": "Veze na poslu",
+        "jobTypes": "Tipovi poslova",
+        "jobTypesInJobList": "Oznake tipova i filter na listi poslova"
       }
     },
     "cards": {
@@ -291,6 +295,10 @@
       "links": {
         "name": "Veze na poslu",
         "description": "Prikačite GitHub PR-ove, Figma fajlove, dokumente ili bilo koji drugi URL direktno na posao — prepoznati servisi dobijaju sopstvenu ikonicu, ostalo koristi favicon."
+      },
+      "job-types": {
+        "name": "Tipovi poslova",
+        "description": "Klasifikujte poslove po tipovima na nivou projekta poput Greška, Funkcija ili Održavanje — obojene oznake, filter na listi poslova i pregled po tipu na kontrolnoj tabli."
       }
     }
   }

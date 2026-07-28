@@ -16,6 +16,8 @@ import type {
   JobResponse,
   JobStatus,
   JobTemplateResponse,
+  JobTypeColor,
+  JobTypeResponse,
   LinkResponse,
   MilestoneResponse,
   NoteResponse,
@@ -324,6 +326,45 @@ export const demoHandlers = [
     return new HttpResponse(null, { status: 204 });
   }),
 
+  http.get(`${base}/job-types`, () =>
+    HttpResponse.json(demoStore.jobTypes.slice().sort((a, b) => a.displayOrder - b.displayOrder))),
+
+  http.post(`${base}/job-types`, async ({ request }) => {
+    const body = (await request.json()) as { name: string; color: JobTypeColor };
+    const nextOrder = demoStore.jobTypes.length > 0
+      ? Math.max(...demoStore.jobTypes.map((t) => t.displayOrder)) + 1
+      : 0;
+    const type: JobTypeResponse = {
+      id: uniqueId('demo-job-type'),
+      projectId: DEMO_PROJECT_ID,
+      name: body.name,
+      color: body.color,
+      displayOrder: nextOrder,
+      createdAt: new Date().toISOString(),
+    };
+    demoStore.jobTypes.push(type);
+
+    return HttpResponse.json(type, { status: 201 });
+  }),
+
+  http.put(`${base}/job-types/:typeId`, async ({ params, request }) => {
+    const type = demoStore.jobTypes.find((t) => t.id === params.typeId);
+    if (!type) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as { name: string; color: JobTypeColor; displayOrder: number };
+    type.name = body.name;
+    type.color = body.color;
+    type.displayOrder = body.displayOrder;
+
+    return HttpResponse.json(type);
+  }),
+
+  http.delete(`${base}/job-types/:typeId`, ({ params }) => {
+    const index = demoStore.jobTypes.findIndex((t) => t.id === params.typeId);
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    demoStore.jobTypes.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   http.get(`${base}/schedules`, () => HttpResponse.json(demoStore.schedules)),
 
   http.get(`${base}/schedules/:scheduleId`, ({ params }) => {
@@ -551,11 +592,13 @@ export const demoHandlers = [
     const q = url.searchParams.get('q')?.toLowerCase();
     const priority = url.searchParams.get('priority');
     const milestoneId = url.searchParams.get('milestoneId');
+    const typeId = url.searchParams.get('typeId');
 
     let jobs = demoStore.jobs;
     if (q) jobs = jobs.filter((j) => j.title.toLowerCase().includes(q));
     if (priority) jobs = jobs.filter((j) => j.priority === priority);
     if (milestoneId) jobs = jobs.filter((j) => j.milestoneId === milestoneId);
+    if (typeId) jobs = jobs.filter((j) => j.typeId === typeId);
 
     return HttpResponse.json(jobs);
   }),
@@ -569,10 +612,12 @@ export const demoHandlers = [
       deadline?: string;
       priority?: JobPriority;
       milestoneId?: string;
+      typeId?: string;
     };
 
     const assignee = body.assignedTo ? demoStore.members.find((m) => m.userId === body.assignedTo) : undefined;
     const milestone = body.milestoneId ? demoStore.milestones.find((m) => m.id === body.milestoneId) : undefined;
+    const type = body.typeId ? demoStore.jobTypes.find((t) => t.id === body.typeId) : undefined;
     const now = new Date().toISOString();
 
     const job: JobResponse = {
@@ -595,9 +640,9 @@ export const demoHandlers = [
       blockedAt: null,
       milestoneId: milestone?.id ?? null,
       milestoneName: milestone?.name ?? null,
-      typeId: null,
-      typeName: null,
-      typeColor: null,
+      typeId: type?.id ?? null,
+      typeName: type?.name ?? null,
+      typeColor: type?.color ?? null,
       relationships: [],
       links: [],
       sourceScheduleId: null,
@@ -683,9 +728,26 @@ export const demoHandlers = [
       deadline: string;
       priority: JobPriority;
       milestoneId: string;
+      typeId: string;
     }>;
 
-    Object.assign(job, body);
+    // A PUT is a full replace (matches the real backend) — milestoneId/typeId are
+    // resolved to their derived name/color fields explicitly rather than via a blind
+    // Object.assign, which would set the *Id field but leave the old *Name/*Color
+    // stale (or wrongly keep them when the id was cleared).
+    const { milestoneId, typeId, ...rest } = body;
+    Object.assign(job, rest);
+    if ('milestoneId' in body) {
+      const milestone = milestoneId ? demoStore.milestones.find((m) => m.id === milestoneId) : undefined;
+      job.milestoneId = milestone?.id ?? null;
+      job.milestoneName = milestone?.name ?? null;
+    }
+    if ('typeId' in body) {
+      const type = typeId ? demoStore.jobTypes.find((t) => t.id === typeId) : undefined;
+      job.typeId = type?.id ?? null;
+      job.typeName = type?.name ?? null;
+      job.typeColor = type?.color ?? null;
+    }
     job.updatedAt = new Date().toISOString();
 
     return HttpResponse.json(job);
@@ -881,14 +943,55 @@ export const demoHandlers = [
 
   http.get(`${trackingBase}/milestones`, () => HttpResponse.json([])),
 
+  http.get(`${trackingBase}/job-types`, () =>
+    HttpResponse.json(demoStore.trackingJobTypes.slice().sort((a, b) => a.displayOrder - b.displayOrder))),
+
+  http.post(`${trackingBase}/job-types`, async ({ request }) => {
+    const body = (await request.json()) as { name: string; color: JobTypeColor };
+    const nextOrder = demoStore.trackingJobTypes.length > 0
+      ? Math.max(...demoStore.trackingJobTypes.map((t) => t.displayOrder)) + 1
+      : 0;
+    const type: JobTypeResponse = {
+      id: uniqueId('demo-basejob-type'),
+      projectId: DEMO_BASE_PROJECT_ID,
+      name: body.name,
+      color: body.color,
+      displayOrder: nextOrder,
+      createdAt: new Date().toISOString(),
+    };
+    demoStore.trackingJobTypes.push(type);
+
+    return HttpResponse.json(type, { status: 201 });
+  }),
+
+  http.put(`${trackingBase}/job-types/:typeId`, async ({ params, request }) => {
+    const type = demoStore.trackingJobTypes.find((t) => t.id === params.typeId);
+    if (!type) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as { name: string; color: JobTypeColor; displayOrder: number };
+    type.name = body.name;
+    type.color = body.color;
+    type.displayOrder = body.displayOrder;
+
+    return HttpResponse.json(type);
+  }),
+
+  http.delete(`${trackingBase}/job-types/:typeId`, ({ params }) => {
+    const index = demoStore.trackingJobTypes.findIndex((t) => t.id === params.typeId);
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    demoStore.trackingJobTypes.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   http.get(`${trackingBase}/jobs`, ({ request }) => {
     const url = new URL(request.url);
     const q = url.searchParams.get('q')?.toLowerCase();
     const priority = url.searchParams.get('priority');
+    const typeId = url.searchParams.get('typeId');
 
     let jobs = demoStore.trackingJobs;
     if (q) jobs = jobs.filter((j) => j.title.toLowerCase().includes(q));
     if (priority) jobs = jobs.filter((j) => j.priority === priority);
+    if (typeId) jobs = jobs.filter((j) => j.typeId === typeId);
 
     return HttpResponse.json(jobs);
   }),
@@ -901,9 +1004,11 @@ export const demoHandlers = [
       assignedTo?: string;
       deadline?: string;
       priority?: JobPriority;
+      typeId?: string;
     };
 
     const assignee = body.assignedTo ? demoStore.members.find((m) => m.userId === body.assignedTo) : undefined;
+    const type = body.typeId ? demoStore.trackingJobTypes.find((t) => t.id === body.typeId) : undefined;
     const now = new Date().toISOString();
 
     const job: JobResponse = {
@@ -926,9 +1031,9 @@ export const demoHandlers = [
       blockedAt: null,
       milestoneId: null,
       milestoneName: null,
-      typeId: null,
-      typeName: null,
-      typeColor: null,
+      typeId: type?.id ?? null,
+      typeName: type?.name ?? null,
+      typeColor: type?.color ?? null,
       relationships: [],
       links: [],
       sourceScheduleId: null,

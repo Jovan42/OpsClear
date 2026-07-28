@@ -118,6 +118,8 @@
     "JOB_RELATIONSHIPS": "Veze blokira / zavisi od / povezano sa",
     "API_KEYS": "Programski pristup i integracije",
     "JOB_TEMPLATES": "Šabloni poslova za ponovnu upotrebu",
-    "RECURRING_SCHEDULING": "Automatsko kreiranje poslova po rasporedu"
+    "RECURRING_SCHEDULING": "Automatsko kreiranje poslova po rasporedu",
+    "JOB_LINKS": "Prikačite PR-ove, fajlove i dokumente na bilo koji posao",
+    "JOB_TYPES": "Klasifikujte poslove po tipovima na nivou projekta"
   }
 }
