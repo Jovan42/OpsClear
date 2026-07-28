@@ -145,13 +145,22 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
         ? new Date(Date.now() + template.deadlineOffsetDays * 86_400_000).toISOString().split('T')[0]
         : '';
       const milestoneValid = milestones.some((ms) => ms.id === template.milestoneId);
+      // Project-scoped templates carry a defaultTypeId that already belongs to this
+      // project's type vocabulary; org-scoped templates only carry a defaultTypeName,
+      // matched case-insensitively against this project's types (mirrors the backend's
+      // own resolution used by the template "use" endpoint).
+      const resolvedTypeId = template.scope === 'PROJECT'
+        ? (template.defaultTypeId ?? '')
+        : (template.defaultTypeName
+            ? (jobTypes.find((jt) => jt.name.toLowerCase() === template.defaultTypeName!.toLowerCase())?.id ?? '')
+            : '');
       reset({
         title:       resolveWildcards(template.title ?? '', ctx),
         description: resolveWildcards(template.description ?? '', ctx),
         client:      template.client ?? '',
         priority:    template.priority ?? 'MEDIUM',
         milestoneId: milestoneValid ? (template.milestoneId ?? '') : '',
-        typeId:      '',
+        typeId:      resolvedTypeId,
         deadline,
       });
       if (template.assigneeMode === 'FIXED') {
