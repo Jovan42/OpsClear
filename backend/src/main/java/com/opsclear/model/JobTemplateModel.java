@@ -31,6 +31,8 @@ public class JobTemplateModel {
     private String assigneeName;
     private UUID milestoneId;
     private String milestoneName;
+    private UUID defaultTypeId;
+    private String defaultTypeName;
     private Integer deadlineOffsetDays;
     private int occurrenceCount;
     private UUID createdBy;

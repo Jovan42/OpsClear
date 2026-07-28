@@ -2,6 +2,7 @@ package com.opsclear.integration;
 
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.JobTypeColor;
 import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.OrganisationModel;
@@ -11,6 +12,7 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
@@ -47,6 +49,7 @@ class JobTypeIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JobTypeRepository jobTypeRepository;
+    @Autowired private JobTemplateRepository jobTemplateRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
@@ -66,6 +69,7 @@ class JobTypeIntegrationTest {
     @BeforeEach
     void setUp() {
         jobRepository.deleteAll();
+        jobTemplateRepository.deleteAll();
         jobTypeRepository.deleteAll();
         projectMemberRepository.deleteAll();
         projectRepository.deleteAll();
@@ -352,6 +356,39 @@ class JobTypeIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Cannot delete type: 1 job(s) still use this type"));
+    }
+
+    @Test
+    @DisplayName("Should return 409 when a template still references the type")
+    void deleteType_shouldReturn409_whenTemplateReferencesType() throws Exception {
+        JobTypeModel type = jobTypeRepository.save(JobTypeModel.builder()
+                .projectId(projectId).name("Bug").color(JobTypeColor.RED).displayOrder(0).build());
+        jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(projectId).name("Bug Report").assigneeMode("NONE")
+                .defaultTypeId(type.getId()).createdBy(ownerId).build());
+
+        mockMvc.perform(delete(ApiPaths.jobType(projectId, type.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cannot delete type: 1 template(s) still use this type"));
+    }
+
+    @Test
+    @DisplayName("Should return 409 naming both jobs and templates when both reference the type")
+    void deleteType_shouldReturn409_whenJobsAndTemplatesReferenceType() throws Exception {
+        JobTypeModel type = jobTypeRepository.save(JobTypeModel.builder()
+                .projectId(projectId).name("Bug").color(JobTypeColor.RED).displayOrder(0).build());
+        jobRepository.save(JobModel.builder()
+                .projectId(projectId).title("Fix login bug").status(JobStatus.NEW)
+                .typeId(type.getId()).createdBy(ownerId).build());
+        jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(projectId).name("Bug Report").assigneeMode("NONE")
+                .defaultTypeId(type.getId()).createdBy(ownerId).build());
+
+        mockMvc.perform(delete(ApiPaths.jobType(projectId, type.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cannot delete type: 1 job(s) and 1 template(s) still use this type"));
     }
 
     @Test

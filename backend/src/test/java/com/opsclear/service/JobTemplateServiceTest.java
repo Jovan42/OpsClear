@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateJobTemplateRequest;
 import com.opsclear.dto.UpdateJobTemplateRequest;
+import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
@@ -9,12 +10,14 @@ import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.JobTemplateScope;
+import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobTemplateRepository;
+import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -34,6 +37,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +46,7 @@ import static org.mockito.Mockito.when;
 class JobTemplateServiceTest {
 
     @Mock private JobTemplateRepository jobTemplateRepository;
+    @Mock private JobTypeRepository jobTypeRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private OrganisationRepository organisationRepository;
@@ -63,7 +68,7 @@ class JobTemplateServiceTest {
     @BeforeEach
     void setUp() {
         jobTemplateService = new JobTemplateService(
-                jobTemplateRepository, projectRepository, projectMemberRepository,
+                jobTemplateRepository, jobTypeRepository, projectRepository, projectMemberRepository,
                 organisationRepository, recurringScheduleRepository, friendlyIdService);
 
         projectId = UUID.randomUUID();
@@ -271,6 +276,48 @@ class JobTemplateServiceTest {
                 .hasMessage("You are not a member of this project");
     }
 
+    @Test
+    @DisplayName("create — sets defaultTypeId when provided on a project-scoped template")
+    void create_shouldSetDefaultTypeId_whenProvided() {
+        UUID typeId = UUID.randomUUID();
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("Bug Report");
+        request.setDefaultTypeId(typeId);
+
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel saved = JobTemplateModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).name("Bug Report").defaultTypeId(typeId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
+        when(friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.TEMPLATE)).thenReturn("TPL-001");
+        when(jobTemplateRepository.save(any())).thenReturn(saved);
+
+        JobTemplateModel result = jobTemplateService.create(projectId, request, ownerId);
+
+        assertThat(result.getDefaultTypeId()).isEqualTo(typeId);
+        ArgumentCaptor<JobTemplateModel> captor = ArgumentCaptor.forClass(JobTemplateModel.class);
+        verify(jobTemplateRepository).save(captor.capture());
+        assertThat(captor.getValue().getDefaultTypeId()).isEqualTo(typeId);
+    }
+
+    @Test
+    @DisplayName("create — throws BadRequestException when defaultTypeName is set on a project-scoped template")
+    void create_shouldThrow400_whenDefaultTypeNameProvided() {
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("Bug Report");
+        request.setDefaultTypeName("Bug");
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+
+        assertThatThrownBy(() -> jobTemplateService.create(projectId, request, ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("defaultTypeName can only be set on org-scoped templates");
+        verify(jobTemplateRepository, never()).save(any());
+    }
+
     // --- update ---
 
     @Test
@@ -366,6 +413,23 @@ class JobTemplateServiceTest {
         assertThatThrownBy(() -> jobTemplateService.update(projectId, templateId, request, memberId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
+    }
+
+    @Test
+    @DisplayName("update — throws BadRequestException when defaultTypeName is set on a project-scoped template")
+    void update_shouldThrow400_whenDefaultTypeNameProvided() {
+        UUID templateId = UUID.randomUUID();
+        UpdateJobTemplateRequest request = new UpdateJobTemplateRequest();
+        request.setName("X");
+        request.setDefaultTypeName("Bug");
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+
+        assertThatThrownBy(() -> jobTemplateService.update(projectId, templateId, request, ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("defaultTypeName can only be set on org-scoped templates");
+        verify(jobTemplateRepository, never()).save(any());
     }
 
     // --- softDelete ---
@@ -548,6 +612,86 @@ class JobTemplateServiceTest {
                 .hasMessage("Job template not found");
     }
 
+    @Test
+    @DisplayName("recordUsage — resolves defaultTypeId directly for a project-scoped template")
+    void recordUsage_shouldResolveDefaultTypeId_forProjectScopedTemplate() {
+        UUID templateId = UUID.randomUUID();
+        UUID typeId = UUID.randomUUID();
+        JobTemplateModel template = JobTemplateModel.builder()
+                .id(templateId).projectId(projectId).scope(JobTemplateScope.PROJECT)
+                .name("T1").defaultTypeId(typeId).build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+
+        UUID resolved = jobTemplateService.recordUsage(projectId, templateId, memberId);
+
+        assertThat(resolved).isEqualTo(typeId);
+        verify(jobTypeRepository, never()).findByProjectIdAndNameIgnoreCase(any(), any());
+    }
+
+    @Test
+    @DisplayName("recordUsage — resolves type by case-insensitive name match for an org-scoped template")
+    void recordUsage_shouldResolveTypeByName_forOrgScopedTemplate_whenMatchFound() {
+        UUID templateId = UUID.randomUUID();
+        UUID typeId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel template = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG)
+                .name("Onboarding").defaultTypeName("bug").build();
+        JobTypeModel matchedType = JobTypeModel.builder().id(typeId).projectId(projectId).name("Bug").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(organisationRepository.findByMember(memberId)).thenReturn(Optional.of(org));
+        when(jobTypeRepository.findByProjectIdAndNameIgnoreCase(projectId, "bug")).thenReturn(Optional.of(matchedType));
+
+        UUID resolved = jobTemplateService.recordUsage(projectId, templateId, memberId);
+
+        assertThat(resolved).isEqualTo(typeId);
+    }
+
+    @Test
+    @DisplayName("recordUsage — returns null when no job type matches the org-scoped template's defaultTypeName")
+    void recordUsage_shouldReturnNull_forOrgScopedTemplate_whenNoNameMatch() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel template = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG)
+                .name("Onboarding").defaultTypeName("Nonexistent").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(organisationRepository.findByMember(memberId)).thenReturn(Optional.of(org));
+        when(jobTypeRepository.findByProjectIdAndNameIgnoreCase(projectId, "Nonexistent")).thenReturn(Optional.empty());
+
+        UUID resolved = jobTemplateService.recordUsage(projectId, templateId, memberId);
+
+        assertThat(resolved).isNull();
+    }
+
+    @Test
+    @DisplayName("recordUsage — returns null for an org-scoped template with no defaultTypeName")
+    void recordUsage_shouldReturnNull_forOrgScopedTemplate_whenNoDefaultTypeName() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel template = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG).name("Onboarding").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId)).thenReturn(Optional.of(memberMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(organisationRepository.findByMember(memberId)).thenReturn(Optional.of(org));
+
+        UUID resolved = jobTemplateService.recordUsage(projectId, templateId, memberId);
+
+        assertThat(resolved).isNull();
+        verify(jobTypeRepository, never()).findByProjectIdAndNameIgnoreCase(any(), any());
+    }
+
     // --- listOrgTemplates ---
 
     @Test
@@ -639,6 +783,49 @@ class JobTemplateServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    @Test
+    @DisplayName("createOrgTemplate — sets defaultTypeName when provided")
+    void createOrgTemplate_shouldSetDefaultTypeName_whenProvided() {
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("Onboarding Call");
+        request.setDefaultTypeName("Onboarding");
+
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel saved = JobTemplateModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).scope(JobTemplateScope.ORG)
+                .name("Onboarding Call").defaultTypeName("Onboarding").build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(friendlyIdService.nextFriendlyId(orgId, FriendlyIdEntityType.TEMPLATE)).thenReturn("TPL-001");
+        when(jobTemplateRepository.save(any())).thenReturn(saved);
+
+        JobTemplateModel result = jobTemplateService.createOrgTemplate(orgId, request, ownerId);
+
+        assertThat(result.getDefaultTypeName()).isEqualTo("Onboarding");
+        ArgumentCaptor<JobTemplateModel> captor = ArgumentCaptor.forClass(JobTemplateModel.class);
+        verify(jobTemplateRepository).save(captor.capture());
+        assertThat(captor.getValue().getDefaultTypeName()).isEqualTo("Onboarding");
+    }
+
+    @Test
+    @DisplayName("createOrgTemplate — throws BadRequestException when defaultTypeId is set")
+    void createOrgTemplate_shouldThrow400_whenDefaultTypeIdProvided() {
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("Onboarding Call");
+        request.setDefaultTypeId(UUID.randomUUID());
+
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+
+        assertThatThrownBy(() -> jobTemplateService.createOrgTemplate(orgId, request, ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("defaultTypeId can only be set on project-scoped templates");
+        verify(jobTemplateRepository, never()).save(any());
+    }
+
     // --- updateOrgTemplate ---
 
     @Test
@@ -680,6 +867,24 @@ class JobTemplateServiceTest {
         assertThatThrownBy(() -> jobTemplateService.updateOrgTemplate(orgId, templateId, request, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Job template not found");
+    }
+
+    @Test
+    @DisplayName("updateOrgTemplate — throws BadRequestException when defaultTypeId is set")
+    void updateOrgTemplate_shouldThrow400_whenDefaultTypeIdProvided() {
+        UUID templateId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        UpdateJobTemplateRequest request = new UpdateJobTemplateRequest();
+        request.setName("X");
+        request.setDefaultTypeId(UUID.randomUUID());
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+
+        assertThatThrownBy(() -> jobTemplateService.updateOrgTemplate(orgId, templateId, request, ownerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("defaultTypeId can only be set on project-scoped templates");
+        verify(jobTemplateRepository, never()).save(any());
     }
 
     // --- deleteOrgTemplate ---

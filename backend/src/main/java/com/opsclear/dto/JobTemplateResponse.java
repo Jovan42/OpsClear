@@ -31,6 +31,8 @@ public class JobTemplateResponse {
     private String assigneeName;
     private UUID milestoneId;
     private String milestoneName;
+    private UUID defaultTypeId;
+    private String defaultTypeName;
     private Integer deadlineOffsetDays;
     private int occurrenceCount;
     private UUID createdBy;
@@ -54,6 +56,8 @@ public class JobTemplateResponse {
                 .assigneeName(m.getAssigneeName())
                 .milestoneId(m.getMilestoneId())
                 .milestoneName(m.getMilestoneName())
+                .defaultTypeId(m.getDefaultTypeId())
+                .defaultTypeName(m.getDefaultTypeName())
                 .deadlineOffsetDays(m.getDeadlineOffsetDays())
                 .occurrenceCount(m.getOccurrenceCount())
                 .createdBy(m.getCreatedBy())

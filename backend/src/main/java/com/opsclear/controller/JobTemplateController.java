@@ -4,6 +4,7 @@ import com.opsclear.aop.AddonCode;
 import com.opsclear.aop.RequiresAddon;
 import com.opsclear.dto.CreateJobTemplateRequest;
 import com.opsclear.dto.JobTemplateResponse;
+import com.opsclear.dto.TemplateUsageResponse;
 import com.opsclear.dto.UpdateJobTemplateRequest;
 import com.opsclear.security.SecurityUtils;
 import com.opsclear.service.FriendlyIdResolver;
@@ -88,14 +89,14 @@ public class JobTemplateController {
 
     @RequiresAddon(AddonCode.JOB_TEMPLATES)
     @PostMapping("/{templateId}/use")
-    public ResponseEntity<Void> recordUsage(
+    public ResponseEntity<TemplateUsageResponse> recordUsage(
             @PathVariable String projectId,
             @PathVariable String templateId,
             Authentication auth) {
         UUID userId = SecurityUtils.resolveUserId(auth);
         UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
         UUID tid = friendlyIdResolver.resolveTemplate(templateId, userId);
-        jobTemplateService.recordUsage(pid, tid, userId);
-        return ResponseEntity.ok().build();
+        UUID resolvedTypeId = jobTemplateService.recordUsage(pid, tid, userId);
+        return ResponseEntity.ok(TemplateUsageResponse.builder().resolvedTypeId(resolvedTypeId).build());
     }
 }

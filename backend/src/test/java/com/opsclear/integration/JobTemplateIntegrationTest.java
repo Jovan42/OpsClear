@@ -1,6 +1,8 @@
 package com.opsclear.integration;
 
 import com.opsclear.model.JobTemplateModel;
+import com.opsclear.model.JobTypeColor;
+import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
@@ -12,6 +14,7 @@ import com.opsclear.repository.FriendlyIdRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.JobTemplateRepository;
+import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
@@ -59,6 +62,7 @@ class JobTemplateIntegrationTest {
     @Autowired private JobRepository jobRepository;
     @Autowired private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Autowired private JobTemplateRepository jobTemplateRepository;
+    @Autowired private JobTypeRepository jobTypeRepository;
     @Autowired private MilestoneRepository milestoneRepository;
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
@@ -82,6 +86,7 @@ class JobTemplateIntegrationTest {
         jobStatusHistoryRepository.deleteAll();
         scheduleRepository.deleteAll();
         jobTemplateRepository.deleteAll();
+        jobTypeRepository.deleteAll();
         jobRepository.deleteAll();
         milestoneRepository.deleteAll();
         projectMemberRepository.deleteAll();
@@ -224,6 +229,35 @@ class JobTemplateIntegrationTest {
                                 {"name": "T1", "assigneeMode": "NONE"}
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("createTemplate — sets defaultTypeId and returns it in the response")
+    void createTemplate_shouldReturn201_withDefaultTypeId() throws Exception {
+        JobTypeModel type = jobTypeRepository.save(JobTypeModel.builder()
+                .projectId(projectId).name("Bug").color(JobTypeColor.RED).displayOrder(0).build());
+
+        mockMvc.perform(post(ApiPaths.templates(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Bug Report", "assigneeMode": "NONE", "defaultTypeId": "%s"}
+                                """.formatted(type.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.defaultTypeId").value(type.getId().toString()));
+    }
+
+    @Test
+    @DisplayName("createTemplate — 400 when defaultTypeName is set on a project-scoped template")
+    void createTemplate_shouldReturn400_whenDefaultTypeNameProvided() throws Exception {
+        mockMvc.perform(post(ApiPaths.templates(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Bug Report", "assigneeMode": "NONE", "defaultTypeName": "Bug"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("defaultTypeName can only be set on org-scoped templates"));
     }
 
     // --- GET /api/projects/{projectId}/templates ---
@@ -383,6 +417,22 @@ class JobTemplateIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("updateTemplate — 400 when defaultTypeName is set on a project-scoped template")
+    void updateTemplate_shouldReturn400_whenDefaultTypeNameProvided() throws Exception {
+        JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(projectId).name("T1").assigneeMode("NONE").createdBy(ownerId).build());
+
+        mockMvc.perform(put(ApiPaths.template(projectId, template.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Updated", "defaultTypeName": "Bug"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("defaultTypeName can only be set on org-scoped templates"));
+    }
+
     // --- DELETE /api/projects/{projectId}/templates/{templateId} ---
 
     @Test
@@ -523,6 +573,33 @@ class JobTemplateIntegrationTest {
         mockMvc.perform(post(ApiPaths.templateUse(projectId, otherTemplate.getId()))
                         .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("recordUsage — returns resolvedTypeId for a project-scoped template with defaultTypeId")
+    void recordUsage_shouldReturnResolvedTypeId_forProjectScopedTemplate() throws Exception {
+        JobTypeModel type = jobTypeRepository.save(JobTypeModel.builder()
+                .projectId(projectId).name("Bug").color(JobTypeColor.RED).displayOrder(0).build());
+        JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(projectId).name("Bug Report").assigneeMode("NONE")
+                .defaultTypeId(type.getId()).createdBy(ownerId).build());
+
+        mockMvc.perform(post(ApiPaths.templateUse(projectId, template.getId()))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resolvedTypeId").value(type.getId().toString()));
+    }
+
+    @Test
+    @DisplayName("recordUsage — returns null resolvedTypeId when template has no defaultTypeId")
+    void recordUsage_shouldReturnNullResolvedTypeId_whenNoDefaultTypeId() throws Exception {
+        JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(projectId).name("T1").assigneeMode("NONE").createdBy(ownerId).build());
+
+        mockMvc.perform(post(ApiPaths.templateUse(projectId, template.getId()))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resolvedTypeId").doesNotExist());
     }
 
     @Test

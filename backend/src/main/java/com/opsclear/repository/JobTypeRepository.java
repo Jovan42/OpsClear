@@ -43,6 +43,14 @@ public class JobTypeRepository {
                 .map(this::toModel);
     }
 
+    public Optional<JobTypeModel> findByProjectIdAndNameIgnoreCase(UUID projectId, String name) {
+        return dsl.selectFrom(JOB_TYPES)
+                .where(JOB_TYPES.PROJECT_ID.eq(projectId))
+                .and(DSL.upper(JOB_TYPES.NAME).eq(name.toUpperCase()))
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
     public int nextDisplayOrder(UUID projectId) {
         Integer max = dsl.select(DSL.max(JOB_TYPES.DISPLAY_ORDER))
                 .from(JOB_TYPES)
