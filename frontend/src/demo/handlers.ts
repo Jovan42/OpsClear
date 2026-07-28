@@ -227,6 +227,7 @@ export const demoHandlers = [
         description,
         requestedAt,
       })),
+      typeBreakdown: [],
     };
 
     return HttpResponse.json(response);
@@ -475,6 +476,9 @@ export const demoHandlers = [
       blockedAt: null,
       milestoneId: template?.milestoneId ?? null,
       milestoneName: template?.milestoneName ?? null,
+      typeId: null,
+      typeName: null,
+      typeColor: null,
       relationships: [],
       links: [],
       sourceScheduleId: schedule.id,
@@ -589,6 +593,9 @@ export const demoHandlers = [
       blockedAt: null,
       milestoneId: milestone?.id ?? null,
       milestoneName: milestone?.name ?? null,
+      typeId: null,
+      typeName: null,
+      typeColor: null,
       relationships: [],
       links: [],
       sourceScheduleId: null,
@@ -917,6 +924,9 @@ export const demoHandlers = [
       blockedAt: null,
       milestoneId: null,
       milestoneName: null,
+      typeId: null,
+      typeName: null,
+      typeColor: null,
       relationships: [],
       links: [],
       sourceScheduleId: null,

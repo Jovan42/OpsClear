@@ -48,6 +48,7 @@ export function useProjectNavItems(projectId: string): ProjectNavData {
   const dashboardLocked = !hasAddon('DASHBOARD');
   const milestonesLocked = !hasAddon('MILESTONES');
   const templatesLocked = !hasAddon('JOB_TEMPLATES');
+  const typesLocked = !hasAddon('JOB_TYPES');
   const schedulesLocked = !hasAddon('RECURRING_SCHEDULING');
   const linksLocked = !hasAddon('JOB_LINKS');
 
@@ -62,6 +63,9 @@ export function useProjectNavItems(projectId: string): ProjectNavData {
   }
   if (!templatesLocked) {
     items.push({ kind: 'link', key: 'templates', to: `/projects/${projectId}/templates`, label: t('nav.templates'), locked: false });
+  }
+  if (!typesLocked) {
+    items.push({ kind: 'link', key: 'types', to: `/projects/${projectId}/types`, label: t('nav.types'), locked: false });
   }
   if (!schedulesLocked) {
     items.push({ kind: 'link', key: 'schedules', to: `/projects/${projectId}/schedules`, label: t('nav.schedules'), locked: false });
@@ -88,6 +92,9 @@ export function useProjectNavItems(projectId: string): ProjectNavData {
   }
   if (templatesLocked) {
     items.push({ kind: 'link', key: 'templates-locked', to: `/projects/${projectId}/templates`, label: t('nav.templates'), locked: true });
+  }
+  if (typesLocked) {
+    items.push({ kind: 'link', key: 'types-locked', to: `/projects/${projectId}/types`, label: t('nav.types'), locked: true });
   }
   if (schedulesLocked) {
     items.push({ kind: 'link', key: 'schedules-locked', to: `/projects/${projectId}/schedules`, label: t('nav.schedules'), locked: true });

@@ -74,9 +74,27 @@ export interface JobResponse {
   blockedAt: string | null;
   milestoneId: string | null;
   milestoneName: string | null;
+  typeId: string | null;
+  typeName: string | null;
+  typeColor: JobTypeColor | null;
   relationships: JobRelationshipView[];
   links: LinkResponse[];
   sourceScheduleId: string | null;
+}
+
+// ---- Job Types ----
+
+export type JobTypeColor =
+  | 'RED' | 'ORANGE' | 'AMBER' | 'GREEN' | 'TEAL'
+  | 'BLUE' | 'INDIGO' | 'PURPLE' | 'PINK' | 'GRAY';
+
+export interface JobTypeResponse {
+  id: string;
+  projectId: string;
+  name: string;
+  color: JobTypeColor;
+  displayOrder: number;
+  createdAt: string;
 }
 
 // ---- Links ----
@@ -194,7 +212,8 @@ export type AddonCode =
   | 'API_KEYS'
   | 'JOB_TEMPLATES'
   | 'RECURRING_SCHEDULING'
-  | 'JOB_LINKS';
+  | 'JOB_LINKS'
+  | 'JOB_TYPES';
 
 
 export interface SubscriptionTierResponse {
@@ -345,9 +364,17 @@ export interface DashboardSummary {
   pendingApprovalsCount: number;
 }
 
+export interface JobTypeBreakdown {
+  typeId: string;
+  typeName: string;
+  typeColor: JobTypeColor;
+  count: number;
+}
+
 export interface DashboardResponse {
   summary: DashboardSummary;
   blockedJobs: JobSummary[];
   overdueJobs: JobSummary[];
   pendingApprovals: PendingApprovalResponse[];
+  typeBreakdown: JobTypeBreakdown[];
 }

@@ -140,6 +140,7 @@
     "daysAgo": "pre {{count}} dana",
     "statusDistribution": "Raspodela statusa",
     "summaryHeading": "Pregled",
+    "typeBreakdownHeading": "Po tipu",
     "statusLabels": {
       "new": "Novo",
       "inProgress": "U toku",

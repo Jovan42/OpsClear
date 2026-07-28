@@ -2,13 +2,14 @@ import apiClient from './client';
 import type { JobPriority, JobRelationshipType, JobRelationshipView, JobResponse, JobStatus } from '../types';
 
 export const jobsApi = {
-  list: (projectId: string, q?: string, priority?: JobPriority, milestoneId?: string) =>
+  list: (projectId: string, q?: string, priority?: JobPriority, milestoneId?: string, typeId?: string) =>
     apiClient
       .get<JobResponse[]>(`/api/projects/${projectId}/jobs`, {
         params: {
           ...(q ? { q } : {}),
           ...(priority ? { priority } : {}),
           ...(milestoneId ? { milestoneId } : {}),
+          ...(typeId ? { typeId } : {}),
         },
       })
       .then((r) => r.data),
@@ -20,7 +21,7 @@ export const jobsApi = {
 
   create: (
     projectId: string,
-    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string; priority?: JobPriority; milestoneId?: string },
+    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string; priority?: JobPriority; milestoneId?: string; typeId?: string },
   ) =>
     apiClient
       .post<JobResponse>(`/api/projects/${projectId}/jobs`, body)
@@ -29,7 +30,7 @@ export const jobsApi = {
   update: (
     projectId: string,
     jobId: string,
-    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string; priority?: JobPriority; milestoneId?: string },
+    body: { title: string; description?: string; client?: string; assignedTo?: string; deadline?: string; priority?: JobPriority; milestoneId?: string; typeId?: string },
   ) =>
     apiClient
       .put<JobResponse>(`/api/projects/${projectId}/jobs/${jobId}`, body)

@@ -7,6 +7,7 @@ import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
 import PriorityBadge from '../../components/PriorityBadge';
 import StatusBadge from '../../components/StatusBadge';
+import JobTypeBadge from '../../components/JobTypeBadge';
 import NewJobModal from './NewJobModal';
 import BlockedBanner from './components/BlockedBanner';
 import JobStatusBar from './components/JobStatusBar';
@@ -175,6 +176,9 @@ export default function JobDetailPage() {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{job.title}</h1>
+              {job.typeId && job.typeName && job.typeColor && (
+                <JobTypeBadge name={job.typeName} color={job.typeColor} />
+              )}
               <PriorityBadge priority={job.priority} />
               <StatusBadge status={job.status} />
             </div>

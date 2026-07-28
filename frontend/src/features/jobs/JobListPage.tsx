@@ -10,10 +10,13 @@ import ProgressBar from '../../components/ProgressBar';
 import PriorityBadge from '../../components/PriorityBadge';
 import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
+import JobTypeBadge from '../../components/JobTypeBadge';
 import NewJobModal from './NewJobModal';
 import { useJobList } from './useJobs';
 import { useMilestones } from './useMilestones';
+import { useJobTypes } from '../jobTypes/useJobTypes';
 import { useProject } from '../projects/useProjects';
+import { useCurrentOrg } from '../org/OrgContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { usePreferences, type SortOrder, type ProgressFormat } from '../../hooks/usePreferences';
@@ -40,7 +43,7 @@ function JobListSkeleton() {
 }
 
 type Filter = 'ALL' | JobStatus;
-type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status' | 'priority' | 'createdAt';
+type SortKey = 'title' | 'client' | 'assignedToName' | 'deadline' | 'status' | 'priority' | 'createdAt' | 'typeName';
 type SortDir = 'asc' | 'desc';
 type ViewMode = 'flat' | 'grouped';
 
@@ -131,6 +134,9 @@ function JobCard({ job, projectId, showMilestoneChip = false }: JobCardProps) {
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{job.title}</p>
         <div className="flex items-center gap-1.5 shrink-0">
+          {job.typeId && job.typeName && job.typeColor && (
+            <JobTypeBadge name={job.typeName} color={job.typeColor} />
+          )}
           <PriorityBadge priority={job.priority} />
           <StatusBadge status={job.status} />
         </div>
@@ -161,9 +167,10 @@ interface JobRowProps {
   job: JobResponse;
   projectId: string;
   showMilestoneChip?: boolean;
+  showType?: boolean;
 }
 
-function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
+function JobRow({ job, projectId, showMilestoneChip = false, showType = false }: JobRowProps) {
   const navigate = useNavigate();
   const formatDeadline = useFormatDeadline();
   const deadline = formatDeadline(job.deadline, job.status);
@@ -192,6 +199,13 @@ function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
       <td className="px-4 py-3">
         <PriorityBadge priority={job.priority} />
       </td>
+      {showType && (
+        <td className="px-4 py-3 whitespace-nowrap">
+          {job.typeId && job.typeName && job.typeColor ? (
+            <JobTypeBadge name={job.typeName} color={job.typeColor} />
+          ) : '—'}
+        </td>
+      )}
       <td className="px-4 py-3 whitespace-nowrap">
         <StatusBadge status={job.status} />
       </td>
@@ -199,13 +213,14 @@ function JobRow({ job, projectId, showMilestoneChip = false }: JobRowProps) {
   );
 }
 
-function getTableHeaders(t: TFunction): { key: SortKey; label: string }[] {
+function getTableHeaders(t: TFunction, showType: boolean): { key: SortKey; label: string }[] {
   return [
     { key: 'title',          label: t('titleLabel') },
     { key: 'client',         label: t('clientLabel') },
     { key: 'assignedToName', label: t('assignedToLabel') },
     { key: 'deadline',       label: t('deadlineLabel') },
     { key: 'priority',       label: t('priorityLabel') },
+    ...(showType ? [{ key: 'typeName' as SortKey, label: t('jobListPage.typeHeader') }] : []),
     { key: 'status',         label: t('jobListPage.statusHeader') },
   ];
 }
@@ -225,20 +240,21 @@ interface GroupSectionProps {
   completed: number;
   total: number;
   progressFormat: ProgressFormat;
+  showType: boolean;
 }
 
 function GroupSection({
   groupKey, title, deadline, jobs, projectId,
   sortKey, sortDir, toggleSort,
   collapsedGroups, toggleGroup,
-  completed, total, progressFormat,
+  completed, total, progressFormat, showType,
 }: GroupSectionProps) {
   const { t } = useTranslation(['jobsPages']);
   const isCollapsed = collapsedGroups.has(groupKey);
   const formatDeadline = useFormatDeadline();
   const formattedDeadline = formatDeadline(deadline);
   const showProgress = groupKey !== '__ungrouped__';
-  const tableHeaders = useMemo(() => getTableHeaders(t), [t]);
+  const tableHeaders = useMemo(() => getTableHeaders(t, showType), [t, showType]);
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -293,7 +309,7 @@ function GroupSection({
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {jobs.map((job) => (
-                  <JobRow key={job.id} job={job} projectId={projectId} showMilestoneChip={false} />
+                  <JobRow key={job.id} job={job} projectId={projectId} showMilestoneChip={false} showType={showType} />
                 ))}
               </tbody>
             </table>
@@ -319,7 +335,10 @@ export default function JobListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => getFilters(t), [t]);
   const priorityFilters = useMemo(() => getPriorityFilters(t), [t]);
-  const tableHeaders = useMemo(() => getTableHeaders(t), [t]);
+  const { hasAddon } = useCurrentOrg();
+  const { data: jobTypes = [] } = useJobTypes(projectId);
+  const hasTypes = hasAddon('JOB_TYPES') && jobTypes.length > 0;
+  const tableHeaders = useMemo(() => getTableHeaders(t, hasTypes), [t, hasTypes]);
   const statusParam = searchParams.get('status');
   const filter: Filter = statusParam && filters.some((f) => f.key === statusParam)
     ? (statusParam as Filter)
@@ -344,6 +363,7 @@ export default function JobListPage() {
   const [milestoneFilter, setMilestoneFilter] = useState<string | 'ALL'>(
     searchParams.get('milestone') ?? 'ALL',
   );
+  const [typeFilter, setTypeFilter] = useState<string | 'ALL'>('ALL');
   const { data: milestones = [] } = useMilestones(projectId);
 
   const hasMilestones = milestones.length > 0;
@@ -387,6 +407,7 @@ export default function JobListPage() {
     debouncedSearch || undefined,
     priorityFilter !== 'ALL' ? priorityFilter : undefined,
     milestoneFilterActive ? milestoneFilter : undefined,
+    typeFilter !== 'ALL' ? typeFilter : undefined,
   );
   const { data: allJobs = [] } = useJobList(projectId);
 
@@ -452,6 +473,18 @@ export default function JobListPage() {
             <option value="ALL">{t('jobListPage.allMilestonesOption')}</option>
             {milestones.map((ms: MilestoneResponse) => (
               <option key={ms.id} value={ms.id}>{ms.name}</option>
+            ))}
+          </select>
+        )}
+        {hasTypes && (
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+          >
+            <option value="ALL">{t('jobListPage.allTypesOption')}</option>
+            {jobTypes.map((type) => (
+              <option key={type.id} value={type.id}>{type.name}</option>
             ))}
           </select>
         )}
@@ -549,6 +582,7 @@ export default function JobListPage() {
                 completed={msAllJobs.filter((j) => j.status === 'COMPLETED').length}
                 total={msAllJobs.length}
                 progressFormat={prefs.milestoneProgressFormat}
+                showType={hasTypes}
               />
             );
           })}
@@ -576,6 +610,7 @@ export default function JobListPage() {
                 completed={0}
                 total={0}
                 progressFormat={prefs.milestoneProgressFormat}
+                showType={hasTypes}
               />
             );
           })()}
@@ -627,7 +662,7 @@ export default function JobListPage() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {sorted.map((job) => (
-                  <JobRow key={job.id} job={job} projectId={projectId} showMilestoneChip={hasMilestones} />
+                  <JobRow key={job.id} job={job} projectId={projectId} showMilestoneChip={hasMilestones} showType={hasTypes} />
                 ))}
               </tbody>
             </table>
