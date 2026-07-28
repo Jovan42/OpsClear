@@ -7,9 +7,11 @@ import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
 import Skeleton from '../../components/Skeleton';
 import ApprovalDecisionModal from '../jobs/components/ApprovalDecisionModal';
+import UpgradeCard from '../../components/UpgradeCard';
 import { useApprovalQueue } from './useApprovalQueue';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { useCurrentOrg } from '../org/OrgContext';
 import i18n from '../../i18n';
 import type { PendingApprovalResponse, ProjectMemberResponse } from '../../types';
 
@@ -79,10 +81,13 @@ export default function ApprovalQueuePage() {
   const navigate = useNavigate();
   const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);
+  const { hasAddon } = useCurrentOrg();
   const { data: approvals = [], isLoading, isError, refetch } = useApprovalQueue(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
   usePageTitle(t('approvals.pageTitle'), project?.name);
   const [decision, setDecision] = useState<DecisionState>(null);
+
+  if (!hasAddon('APPROVALS')) return <UpgradeCard featureName={t('approvals.pageTitle')} />;
 
   if (role === 'MEMBER') {
     navigate(`/projects/${projectId}/jobs`, { replace: true });
