@@ -10,6 +10,8 @@ export interface TemplateBody {
   assigneeMode?: AssigneeMode;
   assigneeId?: string;
   milestoneId?: string;
+  defaultTypeId?: string;
+  defaultTypeName?: string;
   deadlineOffsetDays?: number;
 }
 

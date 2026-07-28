@@ -6,6 +6,8 @@ import MarkdownEditor from '../../components/MarkdownEditor';
 import { useCreateTemplate, useUpdateTemplate, useCreateOrgTemplate, useUpdateOrgTemplate } from './useTemplates';
 import { useProjectMembers } from '../projects/useProjects';
 import { useMilestones } from '../jobs/useMilestones';
+import { useJobTypes } from '../jobTypes/useJobTypes';
+import { useCurrentOrg } from '../org/OrgContext';
 import type { AssigneeMode, JobPriority, JobTemplateResponse, ProjectMemberResponse } from '../../types';
 
 interface Props {
@@ -50,6 +52,8 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
   const [assigneeMode, setAssigneeMode]   = useState<AssigneeMode>(template?.assigneeMode ?? 'NONE');
   const [assigneeId, setAssigneeId]       = useState<string | null>(template?.assigneeId ?? null);
   const [milestoneId, setMilestoneId]     = useState<string>(template?.milestoneId ?? '');
+  const [defaultTypeId, setDefaultTypeId]     = useState<string>(template?.defaultTypeId ?? '');
+  const [defaultTypeName, setDefaultTypeName] = useState<string>(template?.defaultTypeName ?? '');
   const [deadlineOffset, setDeadlineOffset] = useState<string>(
     template?.deadlineOffsetDays != null ? String(template.deadlineOffsetDays) : '',
   );
@@ -61,6 +65,9 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
 
   const { data: members = [] } = useProjectMembers(projectId ?? '');
   const { data: milestones = [] } = useMilestones(projectId ?? '');
+  const { data: jobTypes = [] } = useJobTypes(projectId ?? '');
+  const { hasAddon } = useCurrentOrg();
+  const showTypeField = hasAddon('JOB_TYPES') && (isOrgMode || jobTypes.length > 0);
 
   const createProject = useCreateTemplate(projectId ?? '');
   const updateProject = useUpdateTemplate(projectId ?? '');
@@ -112,6 +119,8 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
       assigneeMode,
       assigneeId:         assigneeMode === 'FIXED' ? (assigneeId ?? undefined) : undefined,
       milestoneId:        milestoneId || undefined,
+      defaultTypeId:      !isOrgMode ? (defaultTypeId || undefined) : undefined,
+      defaultTypeName:    isOrgMode ? (defaultTypeName.trim() || undefined) : undefined,
       deadlineOffsetDays: offset && !isNaN(offset) ? offset : undefined,
     };
 
@@ -279,6 +288,39 @@ export default function TemplateFormModal({ open, onClose, projectId, orgId, tem
                 <option key={ms.id} value={ms.id}>{ms.name}</option>
               ))}
             </select>
+          </div>
+        )}
+
+        {showTypeField && !isOrgMode && (
+          <div>
+            <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.defaultTypeLabel')}</label>
+            <select
+              value={defaultTypeId}
+              onChange={(e) => setDefaultTypeId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">{t('milestonesTemplatesSchedules:templateModal.defaultTypeNoneOption')}</option>
+              {jobTypes.map((jt) => (
+                <option key={jt.id} value={jt.id}>{jt.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {showTypeField && isOrgMode && (
+          <div>
+            <label className={labelClass}>{t('milestonesTemplatesSchedules:templateModal.defaultTypeLabel')}</label>
+            <input
+              type="text"
+              value={defaultTypeName}
+              onChange={(e) => setDefaultTypeName(e.target.value)}
+              placeholder={t('milestonesTemplatesSchedules:templateModal.defaultTypeNamePlaceholder')}
+              maxLength={100}
+              className={inputClass}
+            />
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              {t('milestonesTemplatesSchedules:templateModal.defaultTypeNameHelp')}
+            </p>
           </div>
         )}
 

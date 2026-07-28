@@ -15,7 +15,9 @@ import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
 import UpgradeCard from '../../components/UpgradeCard';
 import PriorityBadge from '../../components/PriorityBadge';
-import type { JobTemplateResponse } from '../../types';
+import JobTypeBadge from '../../components/JobTypeBadge';
+import { useJobTypes } from '../jobTypes/useJobTypes';
+import type { JobTemplateResponse, JobTypeResponse } from '../../types';
 
 function LoadingSkeleton() {
   return (
@@ -35,13 +37,17 @@ function LoadingSkeleton() {
 
 interface TemplateRowProps {
   template: JobTemplateResponse;
+  jobTypes: JobTypeResponse[];
   onEdit: (t: JobTemplateResponse) => void;
   onDelete: (t: JobTemplateResponse) => void;
   onSchedule?: (t: JobTemplateResponse) => void;
 }
 
-function TemplateRow({ template, onEdit, onDelete, onSchedule }: Readonly<TemplateRowProps>) {
+function TemplateRow({ template, jobTypes, onEdit, onDelete, onSchedule }: Readonly<TemplateRowProps>) {
   const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
+  const matchedType = template.defaultTypeId
+    ? jobTypes.find((jt) => jt.id === template.defaultTypeId)
+    : undefined;
   return (
     <div className="flex items-start justify-between gap-4 p-5">
       <div className="min-w-0 space-y-1 flex-1">
@@ -49,6 +55,12 @@ function TemplateRow({ template, onEdit, onDelete, onSchedule }: Readonly<Templa
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{template.name}</p>
           {template.friendlyId && (
             <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">{template.friendlyId}</span>
+          )}
+          {matchedType && <JobTypeBadge name={matchedType.name} color={matchedType.color} />}
+          {!matchedType && template.defaultTypeName && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              {template.defaultTypeName}
+            </span>
           )}
           {template.priority && <PriorityBadge priority={template.priority} />}
         </div>
@@ -90,6 +102,7 @@ export default function TemplatesPage() {
   const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   const { data: templates = [], isLoading, isError, refetch } = useTemplates(projectId);
+  const { data: jobTypes = [] } = useJobTypes(projectId);
   const deleteTemplate = useDeleteTemplate(projectId);
   const { hasAddon } = useCurrentOrg();
   const role = useProjectRole(projectId);
@@ -153,6 +166,7 @@ export default function TemplatesPage() {
               <TemplateRow
                 key={tpl.id}
                 template={tpl}
+                jobTypes={jobTypes}
                 onEdit={setEditing}
                 onDelete={(tmpl) => { setDeleting(tmpl); setDeleteError(null); }}
                 onSchedule={canSchedule ? setScheduling : undefined}

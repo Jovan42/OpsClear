@@ -292,6 +292,8 @@ export interface JobTemplateResponse {
   assigneeName: string | null;
   milestoneId: string | null;
   milestoneName: string | null;
+  defaultTypeId: string | null;
+  defaultTypeName: string | null;
   deadlineOffsetDays: number | null;
   occurrenceCount: number;
   createdBy: string;
