@@ -21,4 +21,5 @@ public class UserModel {
     private String name;
     private Instant createdAt;
     private Instant lastLoginAt;
+    private boolean superUser;
 }

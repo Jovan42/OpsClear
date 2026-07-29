@@ -7,6 +7,7 @@ import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,6 +32,22 @@ public class SubscriptionAddonRepository {
                 .orderBy(SUBSCRIPTION_ADDONS.DISPLAY_ORDER.asc())
                 .fetch()
                 .map(this::toModel);
+    }
+
+    public Optional<SubscriptionAddonModel> findByKey(String key) {
+        return dsl.selectFrom(SUBSCRIPTION_ADDONS)
+                .where(SUBSCRIPTION_ADDONS.KEY.eq(key))
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
+    public SubscriptionAddonModel updatePrice(String key, int priceMonthly, int priceAnnual) {
+        dsl.update(SUBSCRIPTION_ADDONS)
+                .set(SUBSCRIPTION_ADDONS.PRICE_MONTHLY, priceMonthly)
+                .set(SUBSCRIPTION_ADDONS.PRICE_ANNUAL, priceAnnual)
+                .where(SUBSCRIPTION_ADDONS.KEY.eq(key))
+                .execute();
+        return findByKey(key).orElseThrow();
     }
 
     private SubscriptionAddonModel toModel(SubscriptionAddonsRecord r) {
