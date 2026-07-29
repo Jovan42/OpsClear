@@ -214,6 +214,19 @@ final class ApiPaths {
         return "/api/organisations/" + orgId + "/subscription";
     }
 
+    // --- Super admin pricing ---
+
+    static final String SUPER_ADMIN_PRICING_TIERS  = "/api/super-admin/pricing/tiers";
+    static final String SUPER_ADMIN_PRICING_ADDONS = "/api/super-admin/pricing/addons";
+
+    static String superAdminPricingTier(UUID tierId) {
+        return "/api/super-admin/pricing/tiers/" + tierId;
+    }
+
+    static String superAdminPricingAddon(String addonKey) {
+        return "/api/super-admin/pricing/addons/" + addonKey;
+    }
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {

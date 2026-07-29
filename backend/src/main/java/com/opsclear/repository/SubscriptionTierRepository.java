@@ -32,6 +32,15 @@ public class SubscriptionTierRepository {
                 .map(this::toModel);
     }
 
+    public SubscriptionTierModel updatePrice(UUID id, int priceMonthly, int priceAnnual) {
+        dsl.update(SUBSCRIPTION_TIERS)
+                .set(SUBSCRIPTION_TIERS.PRICE_MONTHLY, priceMonthly)
+                .set(SUBSCRIPTION_TIERS.PRICE_ANNUAL, priceAnnual)
+                .where(SUBSCRIPTION_TIERS.ID.eq(id))
+                .execute();
+        return findById(id).orElseThrow();
+    }
+
     private SubscriptionTierModel toModel(SubscriptionTiersRecord r) {
         return SubscriptionTierModel.builder()
                 .id(r.getId())

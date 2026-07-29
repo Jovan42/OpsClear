@@ -164,6 +164,20 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class SubscriptionTier {
+        public static final String NOT_FOUND = "Subscription tier not found";
+
+        private SubscriptionTier() {
+        }
+    }
+
+    public static final class SubscriptionAddon {
+        public static final String NOT_FOUND = "Subscription addon not found";
+
+        private SubscriptionAddon() {
+        }
+    }
+
     public static final class JobType {
         public static final String NOT_FOUND = "Job type not found";
         public static final String STILL_REFERENCED_BY_JOBS =

@@ -37,11 +37,12 @@ public class UserRepository {
                 .name(r.get(USERS.NAME))
                 .createdAt(toInstant(r.get(USERS.CREATED_AT)))
                 .lastLoginAt(toInstant(r.get(USERS.LAST_LOGIN_AT)))
+                .superUser(Boolean.TRUE.equals(r.get(USERS.SUPER_USER)))
                 .build();
     }
 
     public Optional<UserModel> findById(UUID id) {
-        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
+        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT, USERS.SUPER_USER)
                 .from(USERS)
                 .where(USERS.ID.eq(id))
                 .fetchOptional()
@@ -49,7 +50,7 @@ public class UserRepository {
     }
 
     public Optional<UserModel> findByEmail(String email) {
-        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
+        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT, USERS.SUPER_USER)
                 .from(USERS)
                 .where(USERS.EMAIL.equalIgnoreCase(email))
                 .fetchOptional()
@@ -57,7 +58,7 @@ public class UserRepository {
     }
 
     public List<UserModel> searchByEmailWithinOrg(String emailPrefix, UUID orgId, int limit) {
-        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT)
+        return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT, USERS.SUPER_USER)
                 .from(USERS)
                 .join(ORGANISATION_MEMBERS).on(ORGANISATION_MEMBERS.USER_ID.eq(USERS.ID))
                 .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(orgId))
