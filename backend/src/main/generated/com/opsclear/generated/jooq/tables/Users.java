@@ -103,6 +103,13 @@ public class Users extends TableImpl<UsersRecord> {
      */
     public final TableField<UsersRecord, UUID> ORGANISATION_ID = createField(DSL.name("organisation_id"), SQLDataType.UUID, this, "");
 
+    /**
+     * The column <code>public.users.super_user</code>. Gates the super-admin
+     * console (pricing config, feedback/credits) — not an org role, crosses org
+     * boundaries
+     */
+    public final TableField<UsersRecord, Boolean> SUPER_USER = createField(DSL.name("super_user"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "Gates the super-admin console (pricing config, feedback/credits) — not an org role, crosses org boundaries");
+
     private Users(Name alias, Table<UsersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
