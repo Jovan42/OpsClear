@@ -86,7 +86,15 @@ public class UserRepository {
         return findById(user.getId()).orElseThrow();
     }
 
+    // Every integration test class ends its own cleanup chain with this call, but
+    // users is referenced by ~20 other tables across the schema (organisation_members,
+    // project_members, jobs, etc.) — a naive DELETE only works if every one of those
+    // was already emptied in the exact right order first. TRUNCATE ... CASCADE
+    // follows the FK graph automatically regardless of what any other test class left
+    // behind, which is what actually stops the cross-class pollution FK violations
+    // (see the "known issue" pattern: SubscriptionIntegrationTest, JobLink/
+    // JobRelationship/JobTemplateIntegrationTest, SuperAdminPricingIntegrationTest).
     public void deleteAll() {
-        dsl.deleteFrom(USERS).execute();
+        dsl.truncate(USERS).cascade().execute();
     }
 }
