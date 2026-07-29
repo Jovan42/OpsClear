@@ -161,6 +161,25 @@ public class UsersRecord extends UpdatableRecordImpl<UsersRecord> {
         return (UUID) get(8);
     }
 
+    /**
+     * Setter for <code>public.users.super_user</code>. Gates the super-admin
+     * console (pricing config, feedback/credits) — not an org role, crosses org
+     * boundaries
+     */
+    public UsersRecord setSuperUser(Boolean value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.users.super_user</code>. Gates the super-admin
+     * console (pricing config, feedback/credits) — not an org role, crosses org
+     * boundaries
+     */
+    public Boolean getSuperUser() {
+        return (Boolean) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -184,7 +203,7 @@ public class UsersRecord extends UpdatableRecordImpl<UsersRecord> {
     /**
      * Create a detached, initialised UsersRecord
      */
-    public UsersRecord(UUID id, String email, String name, String avatarUrl, String timezone, JSONB preferences, LocalDateTime createdAt, LocalDateTime lastLoginAt, UUID organisationId) {
+    public UsersRecord(UUID id, String email, String name, String avatarUrl, String timezone, JSONB preferences, LocalDateTime createdAt, LocalDateTime lastLoginAt, UUID organisationId, Boolean superUser) {
         super(Users.USERS);
 
         setId(id);
@@ -196,6 +215,7 @@ public class UsersRecord extends UpdatableRecordImpl<UsersRecord> {
         setCreatedAt(createdAt);
         setLastLoginAt(lastLoginAt);
         setOrganisationId(organisationId);
+        setSuperUser(superUser);
         resetChangedOnNotNull();
     }
 }
