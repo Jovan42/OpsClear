@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.FeedbackSubmissions;
 import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
 import com.opsclear.generated.jooq.tables.JobTemplates;
@@ -13,6 +14,7 @@ import com.opsclear.generated.jooq.tables.JobTypes;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.OrgCredits;
 import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectLinks;
@@ -44,6 +46,9 @@ public class Indexes {
     public static final Index IDX_APPROVALS_JOB_ID = Internal.createIndex(DSL.name("idx_approvals_job_id"), Approvals.APPROVALS, new OrderField[] { Approvals.APPROVALS.JOB_ID }, false);
     public static final Index IDX_APPROVALS_STATUS = Internal.createIndex(DSL.name("idx_approvals_status"), Approvals.APPROVALS, new OrderField[] { Approvals.APPROVALS.STATUS }, false);
     public static final Index IDX_BLOCK_REASONS_PROJECT = Internal.createIndex(DSL.name("idx_block_reasons_project"), ProjectBlockReasons.PROJECT_BLOCK_REASONS, new OrderField[] { ProjectBlockReasons.PROJECT_BLOCK_REASONS.PROJECT_ID }, false);
+    public static final Index IDX_FEEDBACK_SUBMISSIONS_ORG = Internal.createIndex(DSL.name("idx_feedback_submissions_org"), FeedbackSubmissions.FEEDBACK_SUBMISSIONS, new OrderField[] { FeedbackSubmissions.FEEDBACK_SUBMISSIONS.ORG_ID }, false);
+    public static final Index IDX_FEEDBACK_SUBMISSIONS_STATUS = Internal.createIndex(DSL.name("idx_feedback_submissions_status"), FeedbackSubmissions.FEEDBACK_SUBMISSIONS, new OrderField[] { FeedbackSubmissions.FEEDBACK_SUBMISSIONS.STATUS }, false);
+    public static final Index IDX_FEEDBACK_SUBMISSIONS_SUBMITTED_BY = Internal.createIndex(DSL.name("idx_feedback_submissions_submitted_by"), FeedbackSubmissions.FEEDBACK_SUBMISSIONS, new OrderField[] { FeedbackSubmissions.FEEDBACK_SUBMISSIONS.SUBMITTED_BY }, false);
     public static final Index IDX_JOB_STATUS_HISTORY_JOB_ID = Internal.createIndex(DSL.name("idx_job_status_history_job_id"), JobStatusHistory.JOB_STATUS_HISTORY, new OrderField[] { JobStatusHistory.JOB_STATUS_HISTORY.JOB_ID }, false);
     public static final Index IDX_JOB_TYPES_PROJECT = Internal.createIndex(DSL.name("idx_job_types_project"), JobTypes.JOB_TYPES, new OrderField[] { JobTypes.JOB_TYPES.PROJECT_ID }, false);
     public static final Index IDX_JOBS_ASSIGNED = Internal.createIndex(DSL.name("idx_jobs_assigned"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.ASSIGNED_TO }, false);
@@ -52,6 +57,7 @@ public class Indexes {
     public static final Index IDX_JOBS_STATUS = Internal.createIndex(DSL.name("idx_jobs_status"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.PROJECT_ID, Jobs.JOBS.STATUS }, false);
     public static final Index IDX_MILESTONES_PROJECT = Internal.createIndex(DSL.name("idx_milestones_project"), Milestones.MILESTONES, new OrderField[] { Milestones.MILESTONES.PROJECT_ID }, false);
     public static final Index IDX_NOTES_JOB_ID = Internal.createIndex(DSL.name("idx_notes_job_id"), Notes.NOTES, new OrderField[] { Notes.NOTES.JOB_ID }, false);
+    public static final Index IDX_ORG_CREDITS_ORG = Internal.createIndex(DSL.name("idx_org_credits_org"), OrgCredits.ORG_CREDITS, new OrderField[] { OrgCredits.ORG_CREDITS.ORG_ID }, false);
     public static final Index IDX_ORGANISATION_INVITES_EMAIL = Internal.createIndex(DSL.name("idx_organisation_invites_email"), OrganisationInvites.ORGANISATION_INVITES, new OrderField[] { OrganisationInvites.ORGANISATION_INVITES.EMAIL }, false);
     public static final Index IDX_ORGANISATION_INVITES_TOKEN = Internal.createIndex(DSL.name("idx_organisation_invites_token"), OrganisationInvites.ORGANISATION_INVITES, new OrderField[] { OrganisationInvites.ORGANISATION_INVITES.TOKEN }, false);
     public static final Index IDX_PROJECT_MEMBERS_PROJECT = Internal.createIndex(DSL.name("idx_project_members_project"), ProjectMembers.PROJECT_MEMBERS, new OrderField[] { ProjectMembers.PROJECT_MEMBERS.PROJECT_ID }, false);

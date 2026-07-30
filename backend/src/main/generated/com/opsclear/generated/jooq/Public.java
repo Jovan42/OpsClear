@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.FeedbackSubmissions;
 import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
@@ -14,6 +15,7 @@ import com.opsclear.generated.jooq.tables.JobTypes;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.OrgCredits;
 import com.opsclear.generated.jooq.tables.OrgSequences;
 import com.opsclear.generated.jooq.tables.OrgSettings;
 import com.opsclear.generated.jooq.tables.OrgSubscriptionAddons;
@@ -64,6 +66,12 @@ public class Public extends SchemaImpl {
     public final Approvals APPROVALS = Approvals.APPROVALS;
 
     /**
+     * Customer bug/feature/other feedback (ADR-0043) — reviewed by super
+     * admins, optionally rewarded with a credit.
+     */
+    public final FeedbackSubmissions FEEDBACK_SUBMISSIONS = FeedbackSubmissions.FEEDBACK_SUBMISSIONS;
+
+    /**
      * External resource links attached to a job (ADR-0035)
      */
     public final JobLinks JOB_LINKS = JobLinks.JOB_LINKS;
@@ -104,6 +112,12 @@ public class Public extends SchemaImpl {
      * Immutable audit notes attached to jobs — no update or delete paths exist
      */
     public final Notes NOTES = Notes.NOTES;
+
+    /**
+     * Append-only per-org credit ledger (ADR-0043) — balance is the sum of all
+     * rows, never a mutable column.
+     */
+    public final OrgCredits ORG_CREDITS = OrgCredits.ORG_CREDITS;
 
     /**
      * The table <code>public.org_sequences</code>.
@@ -210,6 +224,7 @@ public class Public extends SchemaImpl {
         return Arrays.asList(
             ApiKeys.API_KEYS,
             Approvals.APPROVALS,
+            FeedbackSubmissions.FEEDBACK_SUBMISSIONS,
             JobLinks.JOB_LINKS,
             JobRelationships.JOB_RELATIONSHIPS,
             JobStatusHistory.JOB_STATUS_HISTORY,
@@ -218,6 +233,7 @@ public class Public extends SchemaImpl {
             Jobs.JOBS,
             Milestones.MILESTONES,
             Notes.NOTES,
+            OrgCredits.ORG_CREDITS,
             OrgSequences.ORG_SEQUENCES,
             OrgSettings.ORG_SETTINGS,
             OrgSubscriptionAddons.ORG_SUBSCRIPTION_ADDONS,

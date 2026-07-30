@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.FeedbackSubmissions;
 import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
@@ -14,6 +15,7 @@ import com.opsclear.generated.jooq.tables.JobTypes;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.OrgCredits;
 import com.opsclear.generated.jooq.tables.OrgSequences;
 import com.opsclear.generated.jooq.tables.OrgSettings;
 import com.opsclear.generated.jooq.tables.OrgSubscriptionAddons;
@@ -48,6 +50,12 @@ public class Tables {
      * The table <code>public.approvals</code>.
      */
     public static final Approvals APPROVALS = Approvals.APPROVALS;
+
+    /**
+     * Customer bug/feature/other feedback (ADR-0043) — reviewed by super
+     * admins, optionally rewarded with a credit.
+     */
+    public static final FeedbackSubmissions FEEDBACK_SUBMISSIONS = FeedbackSubmissions.FEEDBACK_SUBMISSIONS;
 
     /**
      * External resource links attached to a job (ADR-0035)
@@ -90,6 +98,12 @@ public class Tables {
      * Immutable audit notes attached to jobs — no update or delete paths exist
      */
     public static final Notes NOTES = Notes.NOTES;
+
+    /**
+     * Append-only per-org credit ledger (ADR-0043) — balance is the sum of all
+     * rows, never a mutable column.
+     */
+    public static final OrgCredits ORG_CREDITS = OrgCredits.ORG_CREDITS;
 
     /**
      * The table <code>public.org_sequences</code>.
