@@ -12,6 +12,7 @@ import enOrg from './locales/en/org.json';
 import enMilestonesTemplatesSchedules from './locales/en/milestonesTemplatesSchedules.json';
 import enApprovalsDashboardSettingsLanding from './locales/en/approvalsDashboardSettingsLanding.json';
 import enJobTypes from './locales/en/jobTypes.json';
+import enSuperAdmin from './locales/en/superAdmin.json';
 
 import srCommon from './locales/sr/common.json';
 import srErrors from './locales/sr/errors.json';
@@ -24,6 +25,7 @@ import srOrg from './locales/sr/org.json';
 import srMilestonesTemplatesSchedules from './locales/sr/milestonesTemplatesSchedules.json';
 import srJobTypes from './locales/sr/jobTypes.json';
 import srApprovalsDashboardSettingsLanding from './locales/sr/approvalsDashboardSettingsLanding.json';
+import srSuperAdmin from './locales/sr/superAdmin.json';
 
 export const NAMESPACES = [
   'common',
@@ -37,6 +39,7 @@ export const NAMESPACES = [
   'milestonesTemplatesSchedules',
   'approvalsDashboardSettingsLanding',
   'jobTypes',
+  'superAdmin',
 ] as const;
 
 void i18n.use(initReactI18next).init({
@@ -53,6 +56,7 @@ void i18n.use(initReactI18next).init({
       milestonesTemplatesSchedules: enMilestonesTemplatesSchedules,
       approvalsDashboardSettingsLanding: enApprovalsDashboardSettingsLanding,
       jobTypes: enJobTypes,
+      superAdmin: enSuperAdmin,
     },
     sr: {
       common: srCommon,
@@ -66,6 +70,7 @@ void i18n.use(initReactI18next).init({
       milestonesTemplatesSchedules: srMilestonesTemplatesSchedules,
       approvalsDashboardSettingsLanding: srApprovalsDashboardSettingsLanding,
       jobTypes: srJobTypes,
+      superAdmin: srSuperAdmin,
     },
   },
   lng: 'en',
