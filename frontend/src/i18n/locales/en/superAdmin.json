@@ -1,0 +1,17 @@
+{
+  "pageHeading": "Pricing Configuration",
+  "pageSubtitle": "Edit tier and add-on prices. Changes apply immediately to new subscriptions only.",
+  "tiersHeading": "Subscription Tiers",
+  "addonsHeading": "Add-ons",
+  "tierLabel": "Up to {{members}} members · {{projects}} projects",
+  "unlimited": "unlimited",
+  "yes": "Yes",
+  "comingSoon": "Coming soon",
+  "columns": {
+    "tier": "Tier",
+    "addon": "Add-on",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "available": "Available"
+  }
+}

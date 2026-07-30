@@ -38,10 +38,14 @@ apiClient.interceptors.response.use(
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const method = error.config?.method?.toLowerCase();
+      const url = error.config?.url ?? '';
       // 401 — keycloak handles auth redirects
       // 404 on GET — components handle missing state silently (e.g. deleted schedule)
+      // 403 on /super-admin/** — the route redirects as if it doesn't exist, so a
+      // toast revealing "Forbidden" would defeat that (see SuperAdminPricingPage)
       if (status === 401) return Promise.reject(error);
       if (status === 404 && method === 'get') return Promise.reject(error);
+      if (status === 403 && url.includes('/super-admin/')) return Promise.reject(error);
 
       const data = error.response?.data as { error?: string; message?: string } | undefined;
       const message: string = data?.message ?? error.message ?? i18n.t('errors:somethingWentWrong');

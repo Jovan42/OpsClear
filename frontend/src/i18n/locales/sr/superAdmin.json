@@ -1,0 +1,17 @@
+{
+  "pageHeading": "Podešavanje cena",
+  "pageSubtitle": "Izmenite cene paketa i dodataka. Izmene se odmah primenjuju samo na nove pretplate.",
+  "tiersHeading": "Paketi pretplate",
+  "addonsHeading": "Dodaci",
+  "tierLabel": "Do {{members}} članova · {{projects}} projekata",
+  "unlimited": "neograničeno",
+  "yes": "Da",
+  "comingSoon": "Uskoro",
+  "columns": {
+    "tier": "Paket",
+    "addon": "Dodatak",
+    "monthly": "Mesečno",
+    "annual": "Godišnje",
+    "available": "Dostupno"
+  }
+}
