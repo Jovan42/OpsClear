@@ -227,6 +227,17 @@ class FeedbackAndCreditsIntegrationTest {
     // ─── POST /api/super-admin/credits/grant ───────────────────────────────────
 
     @Test
+    @DisplayName("grantCredit_shouldReturn404_whenOrgDoesNotExist")
+    void grantCredit_shouldReturn404_whenOrgDoesNotExist() throws Exception {
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("orgId", UUID.randomUUID(), "amount", 500, "reason", "Nonexistent org"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("grantCredit_shouldReturn201_andCreateDiscretionaryLedgerEntry")
     void grantCredit_shouldReturn201_andCreateDiscretionaryLedgerEntry() throws Exception {
         mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
