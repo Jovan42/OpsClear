@@ -227,6 +227,26 @@ final class ApiPaths {
         return "/api/super-admin/pricing/addons/" + addonKey;
     }
 
+    // --- Feedback ---
+
+    static final String FEEDBACK      = "/api/feedback";
+    static final String FEEDBACK_MINE = "/api/feedback/mine";
+
+    // --- Credits ---
+
+    static String orgCreditsBalance(UUID orgId) {
+        return "/api/organisations/" + orgId + "/credits/balance";
+    }
+
+    // --- Super admin feedback + credits ---
+
+    static final String SUPER_ADMIN_FEEDBACK      = "/api/super-admin/feedback";
+    static final String SUPER_ADMIN_CREDITS_GRANT = "/api/super-admin/credits/grant";
+
+    static String superAdminOrgCredits(UUID orgId) {
+        return "/api/super-admin/organisations/" + orgId + "/credits";
+    }
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {

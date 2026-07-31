@@ -178,6 +178,13 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class Feedback {
+        public static final String NOT_FOUND = "Feedback submission not found";
+
+        private Feedback() {
+        }
+    }
+
     public static final class JobType {
         public static final String NOT_FOUND = "Job type not found";
         public static final String STILL_REFERENCED_BY_JOBS =
