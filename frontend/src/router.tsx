@@ -24,6 +24,7 @@ import OrgMembersPage from './features/org/OrgMembersPage';
 import OrgSettingsPage from './features/org/OrgSettingsPage';
 import AcceptInvitePage from './features/org/AcceptInvitePage';
 import SuperAdminPricingPage from './features/superAdmin/SuperAdminPricingPage';
+import FeedbackPage from './features/feedback/FeedbackPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage />, errorElement: <RouteErrorPage /> },
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
               { path: 'org/settings', element: <OrgSettingsPage /> },
               { path: 'org/members', element: <OrgMembersPage /> },
               { path: 'org/invites', element: <OrgInvitesPage /> },
+              { path: 'feedback', element: <FeedbackPage /> },
               { path: 'design', element: <DesignPage /> },
               { path: '*', element: <Navigate to="/projects" replace /> },
             ],

@@ -15,6 +15,7 @@ import { useCurrentOrg } from './OrgContext';
 import { useOrganisation, useUpdateOrganisation, useDeleteOrganisation, useOrgMembers } from './useOrganisation';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import SubscriptionSection from './SubscriptionSection';
+import { useOrgCreditBalance } from './useCredits';
 import { useOrgTemplates, useDeleteOrgTemplate } from '../templates/useTemplates';
 import TemplateFormModal from '../templates/TemplateFormModal';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -22,7 +23,7 @@ import PriorityBadge from '../../components/PriorityBadge';
 import type { JobTemplateResponse } from '../../types';
 
 export default function OrgSettingsPage() {
-  const { t } = useTranslation(['org', 'common']);
+  const { t } = useTranslation(['org', 'common', 'feedback']);
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { org: ctxOrg, setOrg, clearOrg, hasAddon } = useCurrentOrg();
@@ -34,6 +35,7 @@ export default function OrgSettingsPage() {
   const callerRole = members.find((m) => m.userId === userId)?.role ?? null;
   const isOwner = callerRole === 'OWNER';
   const isOwnerOrAdmin = callerRole === 'OWNER' || callerRole === 'ADMIN';
+  const { data: creditBalance } = useOrgCreditBalance(org?.id ?? null, isOwnerOrAdmin);
 
   const { mutate: updateOrg, isPending: saving } = useUpdateOrganisation(org?.id ?? '');
   const { mutate: deleteOrg, isPending: deleting } = useDeleteOrganisation();
@@ -306,6 +308,19 @@ export default function OrgSettingsPage() {
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {/* ── Credit balance ── */}
+      {isOwnerOrAdmin && creditBalance && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
+            {t('feedback:creditBalance.heading')}
+          </h2>
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-5 flex items-center justify-between">
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('feedback:creditBalance.description')}</p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{creditBalance.balance}</p>
+          </div>
         </section>
       )}
 

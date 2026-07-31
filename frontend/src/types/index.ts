@@ -272,6 +272,30 @@ export interface CreateApiKeyResponse {
   expiresAt: string | null;
 }
 
+// ---- Feedback + credits ----
+
+export type FeedbackType = 'BUG' | 'FEATURE' | 'OTHER';
+export type FeedbackStatus = 'PENDING' | 'REVIEWED';
+
+export interface FeedbackSubmissionResponse {
+  id: string;
+  orgId: string;
+  orgName: string;
+  submittedBy: string;
+  submitterName: string;
+  submitterEmail: string;
+  type: FeedbackType;
+  title: string;
+  description: string;
+  status: FeedbackStatus;
+  createdAt: string;
+}
+
+export interface CreditBalanceResponse {
+  orgId: string;
+  balance: number;
+}
+
 // ---- Job Templates ----
 
 export type AssigneeMode = 'NONE' | 'FIXED' | 'ASK';
