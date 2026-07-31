@@ -3,6 +3,7 @@ package com.opsclear.controller;
 import com.opsclear.aop.RequiresSuperUser;
 import com.opsclear.dto.CreditLedgerEntryResponse;
 import com.opsclear.dto.GrantCreditRequest;
+import com.opsclear.dto.OrganisationResponse;
 import com.opsclear.security.SecurityUtils;
 import com.opsclear.service.CreditService;
 import jakarta.validation.Valid;
@@ -46,5 +47,15 @@ public class SuperAdminCreditController {
                 .map(CreditLedgerEntryResponse::from)
                 .toList();
         return ResponseEntity.ok(ledger);
+    }
+
+    @RequiresSuperUser
+    @GetMapping("/organisations")
+    public ResponseEntity<List<OrganisationResponse>> listOrganisations() {
+        List<OrganisationResponse> orgs = creditService.listOrganisations()
+                .stream()
+                .map(OrganisationResponse::from)
+                .toList();
+        return ResponseEntity.ok(orgs);
     }
 }

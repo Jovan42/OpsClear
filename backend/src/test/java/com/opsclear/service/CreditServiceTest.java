@@ -152,4 +152,16 @@ class CreditServiceTest {
 
         assertThat(creditService.getLedger(orgId)).isEqualTo(ledger);
     }
+
+    // --- listOrganisations ---
+
+    @Test
+    @DisplayName("listOrganisations returns every active organisation from the repository")
+    void listOrganisations_shouldReturnAllActiveOrgs() {
+        List<OrganisationModel> orgs = List.of(
+                OrganisationModel.builder().id(UUID.randomUUID()).name("Acme Corp").build());
+        when(organisationRepository.findAllActive()).thenReturn(orgs);
+
+        assertThat(creditService.listOrganisations()).isEqualTo(orgs);
+    }
 }

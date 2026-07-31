@@ -296,6 +296,17 @@ export interface CreditBalanceResponse {
   balance: number;
 }
 
+export interface CreditLedgerEntryResponse {
+  id: string;
+  orgId: string;
+  amount: number;
+  reason: string;
+  submissionId: string | null;
+  grantedBy: string;
+  grantedByName: string | null;
+  createdAt: string;
+}
+
 // ---- Job Templates ----
 
 export type AssigneeMode = 'NONE' | 'FIXED' | 'ASK';

@@ -343,4 +343,23 @@ class FeedbackAndCreditsIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isForbidden());
     }
+
+    // ─── GET /api/super-admin/organisations ────────────────────────────────────
+
+    @Test
+    @DisplayName("listOrganisations_shouldReturn200_withBothOrgs_forSuperUser")
+    void listOrganisations_shouldReturn200_withBothOrgs_forSuperUser() throws Exception {
+        mockMvc.perform(get(ApiPaths.SUPER_ADMIN_ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("listOrganisations_shouldReturn403_forRegularUser")
+    void listOrganisations_shouldReturn403_forRegularUser() throws Exception {
+        mockMvc.perform(get(ApiPaths.SUPER_ADMIN_ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isForbidden());
+    }
 }

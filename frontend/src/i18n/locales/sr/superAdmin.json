@@ -13,5 +13,35 @@
     "monthly": "Mesečno",
     "annual": "Godišnje",
     "available": "Dostupno"
+  },
+  "nav": {
+    "pricing": "Cene",
+    "feedback": "Povratne informacije i krediti"
+  },
+  "feedbackPageHeading": "Povratne informacije i krediti",
+  "feedbackPageSubtitle": "Pregledajte prijave korisnika i upravljajte evidencijom kredita.",
+  "submissionsHeading": "Prijave",
+  "noSubmissions": "Još uvek nema prijava.",
+  "ledgerHeading": "Evidencija kredita",
+  "ledgerOrgPlaceholder": "Izaberite organizaciju…",
+  "noLedgerEntries": "Ovoj organizaciji još uvek nije odobren nijedan kredit.",
+  "ledgerColumns": {
+    "amount": "Iznos",
+    "reason": "Razlog",
+    "origin": "Poreklo",
+    "grantedBy": "Odobrio",
+    "date": "Datum",
+    "fromSubmission": "Iz prijave",
+    "discretionary": "Diskreciono"
+  },
+  "grantModal": {
+    "title": "Odobri kredit",
+    "openButton": "Odobri kredit",
+    "orgLabel": "Organizacija",
+    "orgPlaceholder": "Izaberite organizaciju…",
+    "amountLabel": "Iznos",
+    "reasonLabel": "Razlog",
+    "submitButton": "Odobri kredit",
+    "errorGeneric": "Nešto nije u redu. Pokušajte ponovo."
   }
 }

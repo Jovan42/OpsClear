@@ -96,6 +96,16 @@ public class OrganisationRepository {
                 .map(this::toModel);
     }
 
+    // Super-admin only — lets the credit-grant org picker resolve any org, not just
+    // ones the caller happens to belong to (see findByMember/getById's member check).
+    public List<OrganisationModel> findAllActive() {
+        return selectWithCreator()
+                .where(ORGANISATIONS.DELETED_AT.isNull())
+                .orderBy(ORGANISATIONS.NAME.asc())
+                .fetch()
+                .map(this::toModel);
+    }
+
     public boolean existsBySlugAndDeletedAtIsNull(String slug) {
         return dsl.fetchExists(
                 dsl.selectOne()

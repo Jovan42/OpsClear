@@ -13,5 +13,35 @@
     "monthly": "Monthly",
     "annual": "Annual",
     "available": "Available"
+  },
+  "nav": {
+    "pricing": "Pricing",
+    "feedback": "Feedback & Credits"
+  },
+  "feedbackPageHeading": "Feedback & Credits",
+  "feedbackPageSubtitle": "Review customer submissions and manage the credit ledger.",
+  "submissionsHeading": "Submissions",
+  "noSubmissions": "No submissions yet.",
+  "ledgerHeading": "Credit ledger",
+  "ledgerOrgPlaceholder": "Select an organisation…",
+  "noLedgerEntries": "No credits granted to this organisation yet.",
+  "ledgerColumns": {
+    "amount": "Amount",
+    "reason": "Reason",
+    "origin": "Origin",
+    "grantedBy": "Granted by",
+    "date": "Date",
+    "fromSubmission": "From submission",
+    "discretionary": "Discretionary"
+  },
+  "grantModal": {
+    "title": "Grant credit",
+    "openButton": "Grant credit",
+    "orgLabel": "Organisation",
+    "orgPlaceholder": "Select an organisation…",
+    "amountLabel": "Amount",
+    "reasonLabel": "Reason",
+    "submitButton": "Grant credit",
+    "errorGeneric": "Something went wrong. Please try again."
   }
 }

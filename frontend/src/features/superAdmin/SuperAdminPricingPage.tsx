@@ -3,6 +3,7 @@ import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import Skeleton from '../../components/Skeleton';
+import SuperAdminNav from './SuperAdminNav';
 import {
   useSuperAdminAddons,
   useSuperAdminTiers,
@@ -90,6 +91,7 @@ export default function SuperAdminPricingPage() {
   if (tiersLoading || addonsLoading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
+        <SuperAdminNav />
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-48 rounded-xl" />
         <Skeleton className="h-48 rounded-xl" />
@@ -101,6 +103,8 @@ export default function SuperAdminPricingPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      <SuperAdminNav />
+
       <div>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('pageHeading')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('pageSubtitle')}</p>
