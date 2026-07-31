@@ -1,0 +1,66 @@
+{
+  "pageTitle": "Feedback",
+  "tabs": {
+    "mine": "My submissions",
+    "new": "New submission"
+  },
+  "intro": "Got a bug to report or an idea for a feature? We read every submission — and if it helps us build a better product, we might send a credit your way toward a future payment.",
+  "emptyMine": "No submissions yet.",
+  "type": {
+    "BUG": "Bug",
+    "FEATURE": "Feature",
+    "OTHER": "Other"
+  },
+  "status": {
+    "pending": "Pending review",
+    "creditGranted": "Credit granted"
+  },
+  "creditBalance": {
+    "heading": "Credit balance",
+    "description": "Credits earned from feedback and discretionary grants."
+  },
+  "form": {
+    "typeLabel": "Type",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Markdown supported…",
+    "submitButton": "Submit feedback",
+    "guidanceHeading": "What to include",
+    "guidance": {
+      "BUG": {
+        "steps": {
+          "heading": "Steps to reproduce",
+          "description": "The exact sequence of actions that leads to the problem, numbered if possible."
+        },
+        "expected": {
+          "heading": "Expected behavior",
+          "description": "What you thought would happen."
+        },
+        "actual": {
+          "heading": "Actual behavior",
+          "description": "What actually happened instead — include any error messages you saw."
+        }
+      },
+      "FEATURE": {
+        "problem": {
+          "heading": "Problem",
+          "description": "What's missing or frustrating today that this would solve."
+        },
+        "solution": {
+          "heading": "Proposed solution",
+          "description": "Your idea for how this could work, even roughly."
+        },
+        "howItWorks": {
+          "heading": "How it should work",
+          "description": "Walk through it as if explaining to a teammate — what would you click, and what would happen?"
+        }
+      },
+      "OTHER": {
+        "anything": {
+          "heading": "Anything on your mind",
+          "description": "Feedback, ideas, or something else entirely — there's no wrong way to use this one."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "pageTitle": "Povratne informacije",
+  "tabs": {
+    "mine": "Moje prijave",
+    "new": "Nova prijava"
+  },
+  "intro": "Imate bag da prijavite ili ideju za novu funkciju? Čitamo svaku prijavu — i ako nam pomogne da napravimo bolji proizvod, možda vam pošaljemo kredit za buduće plaćanje.",
+  "emptyMine": "Još uvek nema prijava.",
+  "type": {
+    "BUG": "Bag",
+    "FEATURE": "Funkcija",
+    "OTHER": "Ostalo"
+  },
+  "status": {
+    "pending": "Na čekanju",
+    "creditGranted": "Kredit odobren"
+  },
+  "creditBalance": {
+    "heading": "Stanje kredita",
+    "description": "Krediti osvojeni kroz povratne informacije i posebna odobravanja."
+  },
+  "form": {
+    "typeLabel": "Tip",
+    "titleLabel": "Naslov",
+    "descriptionLabel": "Opis",
+    "descriptionPlaceholder": "Podržan je Markdown…",
+    "submitButton": "Pošalji prijavu",
+    "guidanceHeading": "Šta uključiti",
+    "guidance": {
+      "BUG": {
+        "steps": {
+          "heading": "Koraci za reprodukciju",
+          "description": "Tačan redosled radnji koji dovodi do problema, po mogućstvu numerisan."
+        },
+        "expected": {
+          "heading": "Očekivano ponašanje",
+          "description": "Šta ste mislili da će se desiti."
+        },
+        "actual": {
+          "heading": "Stvarno ponašanje",
+          "description": "Šta se zapravo desilo umesto toga — uključite i eventualne poruke o grešci."
+        }
+      },
+      "FEATURE": {
+        "problem": {
+          "heading": "Problem",
+          "description": "Šta danas nedostaje ili frustrira, a ovo bi rešilo."
+        },
+        "solution": {
+          "heading": "Predloženo rešenje",
+          "description": "Vaša ideja o tome kako bi ovo moglo da funkcioniše, makar okvirno."
+        },
+        "howItWorks": {
+          "heading": "Kako bi trebalo da funkcioniše",
+          "description": "Opišite kao da objašnjavate kolegi — šta biste kliknuli i šta bi se desilo?"
+        }
+      },
+      "OTHER": {
+        "anything": {
+          "heading": "Bilo šta što vam je na umu",
+          "description": "Povratne informacije, ideje ili nešto sasvim drugo — nema pogrešnog načina za ovo."
+        }
+      }
+    }
+  }
+}

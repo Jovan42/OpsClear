@@ -61,6 +61,12 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
           >
             {t('settings')}
           </button>
+          <button
+            onClick={() => { setOpen(false); navigate('/feedback'); }}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+          >
+            {t('feedback')}
+          </button>
           <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
           <button
             onClick={() => keycloak.logout()}
