@@ -65,6 +65,7 @@ export const router = createBrowserRouter([
           },
           // Not under OrgRequiredRoute — super_user access crosses org boundaries and
           // must not depend on the caller having an org/subscription at all.
+          { path: 'admin', element: <Navigate to="/admin/pricing" replace /> },
           { path: 'admin/pricing', element: <SuperAdminPricingPage /> },
           { path: 'admin/feedback', element: <SuperAdminFeedbackPage /> },
         ],

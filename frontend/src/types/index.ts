@@ -275,7 +275,7 @@ export interface CreateApiKeyResponse {
 // ---- Feedback + credits ----
 
 export type FeedbackType = 'BUG' | 'FEATURE' | 'OTHER';
-export type FeedbackStatus = 'PENDING' | 'REVIEWED';
+export type FeedbackStatus = 'PENDING' | 'DECLINED' | 'CREDITED';
 
 export interface FeedbackSubmissionResponse {
   id: string;

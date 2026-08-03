@@ -180,6 +180,7 @@ public final class ErrorMessages {
 
     public static final class Feedback {
         public static final String NOT_FOUND = "Feedback submission not found";
+        public static final String ALREADY_REVIEWED = "This submission has already been reviewed";
 
         private Feedback() {
         }

@@ -30,7 +30,7 @@ public class CreditService {
     public OrgCreditModel grant(UUID grantedBy, GrantCreditRequest request) {
         requireOrgExists(request.getOrgId());
         if (request.getSubmissionId() != null) {
-            feedbackService.markReviewedForOrg(request.getSubmissionId(), request.getOrgId());
+            feedbackService.markCreditedForOrg(request.getSubmissionId(), request.getOrgId());
         }
         OrgCreditModel credit = orgCreditRepository.insert(
                 request.getOrgId(), request.getAmount(), request.getReason().strip(),

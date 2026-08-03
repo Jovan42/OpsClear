@@ -73,9 +73,9 @@ public class FeedbackSubmissionRepository {
                 .map(this::toModel);
     }
 
-    public void markReviewed(UUID id) {
+    public void updateStatus(UUID id, FeedbackStatus status) {
         dsl.update(FEEDBACK_SUBMISSIONS)
-                .set(FEEDBACK_SUBMISSIONS.STATUS, FeedbackStatus.REVIEWED.name())
+                .set(FEEDBACK_SUBMISSIONS.STATUS, status.name())
                 .where(FEEDBACK_SUBMISSIONS.ID.eq(id))
                 .execute();
     }

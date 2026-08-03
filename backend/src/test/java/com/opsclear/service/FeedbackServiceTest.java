@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.SubmitFeedbackRequest;
+import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FeedbackStatus;
 import com.opsclear.model.FeedbackSubmissionModel;
@@ -108,31 +109,88 @@ class FeedbackServiceTest {
         assertThat(feedbackService.listAll()).isEqualTo(submissions);
     }
 
-    // --- markReviewedForOrg ---
+    // --- markCreditedForOrg ---
 
     @Test
-    @DisplayName("markReviewedForOrg marks the submission reviewed when it belongs to the org")
-    void markReviewedForOrg_shouldMarkReviewed_whenSubmissionBelongsToOrg() {
+    @DisplayName("markCreditedForOrg marks the submission CREDITED when it belongs to the org")
+    void markCreditedForOrg_shouldMarkCredited_whenSubmissionBelongsToOrg() {
         UUID orgId = UUID.randomUUID();
         UUID submissionId = UUID.randomUUID();
         when(feedbackSubmissionRepository.findByIdAndOrgId(submissionId, orgId))
-                .thenReturn(Optional.of(FeedbackSubmissionModel.builder().id(submissionId).orgId(orgId).build()));
+                .thenReturn(Optional.of(FeedbackSubmissionModel.builder()
+                        .id(submissionId).orgId(orgId).status(FeedbackStatus.PENDING).build()));
 
-        feedbackService.markReviewedForOrg(submissionId, orgId);
+        feedbackService.markCreditedForOrg(submissionId, orgId);
 
-        verify(feedbackSubmissionRepository).markReviewed(submissionId);
+        verify(feedbackSubmissionRepository).updateStatus(submissionId, FeedbackStatus.CREDITED);
     }
 
     @Test
-    @DisplayName("markReviewedForOrg throws NotFoundException when the submission belongs to a different org")
-    void markReviewedForOrg_shouldThrow_whenSubmissionBelongsToDifferentOrg() {
+    @DisplayName("markCreditedForOrg throws NotFoundException when the submission belongs to a different org")
+    void markCreditedForOrg_shouldThrow_whenSubmissionBelongsToDifferentOrg() {
         UUID orgId = UUID.randomUUID();
         UUID submissionId = UUID.randomUUID();
         when(feedbackSubmissionRepository.findByIdAndOrgId(submissionId, orgId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> feedbackService.markReviewedForOrg(submissionId, orgId))
+        assertThatThrownBy(() -> feedbackService.markCreditedForOrg(submissionId, orgId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Feedback submission not found");
-        verify(feedbackSubmissionRepository, never()).markReviewed(eq(submissionId));
+        verify(feedbackSubmissionRepository, never()).updateStatus(eq(submissionId), any());
+    }
+
+    @Test
+    @DisplayName("markCreditedForOrg throws ConflictException when the submission is already resolved")
+    void markCreditedForOrg_shouldThrow_whenAlreadyResolved() {
+        UUID orgId = UUID.randomUUID();
+        UUID submissionId = UUID.randomUUID();
+        when(feedbackSubmissionRepository.findByIdAndOrgId(submissionId, orgId))
+                .thenReturn(Optional.of(FeedbackSubmissionModel.builder()
+                        .id(submissionId).orgId(orgId).status(FeedbackStatus.DECLINED).build()));
+
+        assertThatThrownBy(() -> feedbackService.markCreditedForOrg(submissionId, orgId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This submission has already been reviewed");
+        verify(feedbackSubmissionRepository, never()).updateStatus(eq(submissionId), any());
+    }
+
+    // --- decline ---
+
+    @Test
+    @DisplayName("decline marks a pending submission DECLINED")
+    void decline_shouldMarkDeclined_whenPending() {
+        UUID submissionId = UUID.randomUUID();
+        when(feedbackSubmissionRepository.findById(submissionId))
+                .thenReturn(Optional.of(FeedbackSubmissionModel.builder()
+                        .id(submissionId).status(FeedbackStatus.PENDING).build()));
+
+        feedbackService.decline(submissionId);
+
+        verify(feedbackSubmissionRepository).updateStatus(submissionId, FeedbackStatus.DECLINED);
+    }
+
+    @Test
+    @DisplayName("decline throws NotFoundException when the submission does not exist")
+    void decline_shouldThrow_whenSubmissionNotFound() {
+        UUID submissionId = UUID.randomUUID();
+        when(feedbackSubmissionRepository.findById(submissionId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> feedbackService.decline(submissionId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Feedback submission not found");
+        verify(feedbackSubmissionRepository, never()).updateStatus(eq(submissionId), any());
+    }
+
+    @Test
+    @DisplayName("decline throws ConflictException when the submission is already resolved")
+    void decline_shouldThrow_whenAlreadyResolved() {
+        UUID submissionId = UUID.randomUUID();
+        when(feedbackSubmissionRepository.findById(submissionId))
+                .thenReturn(Optional.of(FeedbackSubmissionModel.builder()
+                        .id(submissionId).status(FeedbackStatus.CREDITED).build()));
+
+        assertThatThrownBy(() -> feedbackService.decline(submissionId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This submission has already been reviewed");
+        verify(feedbackSubmissionRepository, never()).updateStatus(eq(submissionId), any());
     }
 }

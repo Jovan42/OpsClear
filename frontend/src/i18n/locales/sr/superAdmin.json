@@ -34,6 +34,8 @@
     "fromSubmission": "Iz prijave",
     "discretionary": "Diskreciono"
   },
+  "hideResolvedLabel": "Sakrij pregledano",
+  "declineButton": "Odbij",
   "grantModal": {
     "title": "Odobri kredit",
     "openButton": "Odobri kredit",

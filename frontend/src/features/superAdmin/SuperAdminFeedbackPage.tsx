@@ -7,12 +7,29 @@ import Button from '../../components/Button';
 import Markdown from '../../components/Markdown';
 import SuperAdminNav from './SuperAdminNav';
 import GrantCreditModal from './GrantCreditModal';
-import { useFeedbackSubmissions, useOrgCreditLedger, useSuperAdminOrganisations } from './useSuperAdminFeedback';
-import type { FeedbackSubmissionResponse } from '../../types';
+import {
+  useDeclineFeedback,
+  useFeedbackSubmissions,
+  useOrgCreditLedger,
+  useSuperAdminOrganisations,
+} from './useSuperAdminFeedback';
+import type { FeedbackStatus, FeedbackSubmissionResponse } from '../../types';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
 }
+
+const STATUS_STYLES: Record<FeedbackStatus, string> = {
+  PENDING: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+  DECLINED: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+  CREDITED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+};
+
+const STATUS_LABEL_KEYS: Record<FeedbackStatus, string> = {
+  PENDING: 'feedback:status.pending',
+  DECLINED: 'feedback:status.reviewed',
+  CREDITED: 'feedback:status.creditGranted',
+};
 
 interface GrantContext {
   orgId?: string;
@@ -29,6 +46,8 @@ export default function SuperAdminFeedbackPage() {
   const { data: ledger, isLoading: ledgerLoading } = useOrgCreditLedger(ledgerOrgId || null);
 
   const [grantCtx, setGrantCtx] = useState<GrantContext | null>(null);
+  const [hideResolved, setHideResolved] = useState(true);
+  const { mutate: decline, isPending: declining, variables: decliningId } = useDeclineFeedback();
 
   const forbidden = isAxiosError(submissionsError) && submissionsError.response?.status === 403;
 
@@ -63,48 +82,69 @@ export default function SuperAdminFeedbackPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-          {t('submissionsHeading')}
-        </h2>
-        {submissions.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('noSubmissions')}</p>
-        ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            {submissions.map((s: FeedbackSubmissionResponse) => (
-              <div key={s.id} className="p-4 space-y-2">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                      {t(`feedback:type.${s.type}`)}
-                    </span>
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        s.status === 'REVIEWED'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                      }`}
-                    >
-                      {t(s.status === 'REVIEWED' ? 'feedback:status.creditGranted' : 'feedback:status.pending')}
-                    </span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{s.orgName}</span>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            {t('submissionsHeading')}
+          </h2>
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hideResolved}
+              onChange={(e) => setHideResolved(e.target.checked)}
+              className="rounded border-gray-300 dark:border-gray-600"
+            />
+            {t('hideResolvedLabel')}
+          </label>
+        </div>
+        {(() => {
+          const visible = hideResolved ? submissions.filter((s) => s.status === 'PENDING') : submissions;
+          if (visible.length === 0) {
+            return <p className="text-sm text-gray-500 dark:text-gray-400">{t('noSubmissions')}</p>;
+          }
+          return (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              {visible.map((s: FeedbackSubmissionResponse) => (
+                <div key={s.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        {t(`feedback:type.${s.type}`)}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[s.status]}`}>
+                        {t(STATUS_LABEL_KEYS[s.status])}
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{s.orgName}</span>
+                    </div>
+                    {s.status === 'PENDING' && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          loading={declining && decliningId === s.id}
+                          onClick={() => decline(s.id)}
+                        >
+                          {t('declineButton')}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setGrantCtx({ orgId: s.orgId, orgName: s.orgName, submissionId: s.id })}
+                        >
+                          {t('grantModal.openButton')}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setGrantCtx({ orgId: s.orgId, orgName: s.orgName, submissionId: s.id })}
-                  >
-                    {t('grantModal.openButton')}
-                  </Button>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.title}</p>
+                  <Markdown className="text-sm text-gray-600 dark:text-gray-300">{s.description}</Markdown>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    {s.submitterName} &middot; {new Date(s.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.title}</p>
-                <Markdown className="text-sm text-gray-600 dark:text-gray-300">{s.description}</Markdown>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {s.submitterName} &middot; {new Date(s.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          );
+        })()}
       </section>
 
       <section className="space-y-3">

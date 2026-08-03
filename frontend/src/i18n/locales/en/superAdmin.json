@@ -34,6 +34,8 @@
     "fromSubmission": "From submission",
     "discretionary": "Discretionary"
   },
+  "hideResolvedLabel": "Hide reviewed",
+  "declineButton": "Decline",
   "grantModal": {
     "title": "Grant credit",
     "openButton": "Grant credit",

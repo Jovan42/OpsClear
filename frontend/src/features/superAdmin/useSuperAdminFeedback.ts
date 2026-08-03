@@ -29,6 +29,14 @@ export function useOrgCreditLedger(orgId: string | null) {
   });
 }
 
+export function useDeclineFeedback() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => superAdminFeedbackApi.decline(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['superAdmin', 'feedback'] }),
+  });
+}
+
 export function useGrantCredit() {
   const queryClient = useQueryClient();
   return useMutation({
