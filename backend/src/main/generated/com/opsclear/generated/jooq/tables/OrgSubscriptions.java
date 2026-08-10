@@ -90,6 +90,23 @@ public class OrgSubscriptions extends TableImpl<OrgSubscriptionsRecord> {
      */
     public final TableField<OrgSubscriptionsRecord, LocalDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "");
 
+    /**
+     * The column <code>public.org_subscriptions.paddle_customer_id</code>.
+     */
+    public final TableField<OrgSubscriptionsRecord, String> PADDLE_CUSTOMER_ID = createField(DSL.name("paddle_customer_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.org_subscriptions.paddle_subscription_id</code>.
+     */
+    public final TableField<OrgSubscriptionsRecord, String> PADDLE_SUBSCRIPTION_ID = createField(DSL.name("paddle_subscription_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.org_subscriptions.subscription_status</code>.
+     * Synced from Paddle webhook events (JOB-174), never computed locally. Null
+     * until the org has a Paddle subscription.
+     */
+    public final TableField<OrgSubscriptionsRecord, String> SUBSCRIPTION_STATUS = createField(DSL.name("subscription_status"), SQLDataType.VARCHAR(10), this, "Synced from Paddle webhook events (JOB-174), never computed locally. Null until the org has a Paddle subscription.");
+
     private OrgSubscriptions(Name alias, Table<OrgSubscriptionsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -137,7 +154,8 @@ public class OrgSubscriptions extends TableImpl<OrgSubscriptionsRecord> {
     @Override
     public List<Check<OrgSubscriptionsRecord>> getChecks() {
         return Arrays.asList(
-            Internal.createCheck(this, DSL.name("org_subscriptions_billing_cycle_check"), "(((billing_cycle)::text = ANY ((ARRAY['MONTHLY'::character varying, 'ANNUAL'::character varying])::text[])))", true)
+            Internal.createCheck(this, DSL.name("org_subscriptions_billing_cycle_check"), "(((billing_cycle)::text = ANY ((ARRAY['MONTHLY'::character varying, 'ANNUAL'::character varying])::text[])))", true),
+            Internal.createCheck(this, DSL.name("org_subscriptions_subscription_status_check"), "(((subscription_status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'PAST_DUE'::character varying, 'CANCELED'::character varying])::text[])))", true)
         );
     }
 
