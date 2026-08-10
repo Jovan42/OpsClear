@@ -5,6 +5,7 @@ import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.OrgCreditModel;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.repository.OrgCreditRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -29,7 +30,7 @@ public class CreditService {
     public OrgCreditModel grant(UUID grantedBy, GrantCreditRequest request) {
         requireOrgExists(request.getOrgId());
         if (request.getSubmissionId() != null) {
-            feedbackService.markReviewedForOrg(request.getSubmissionId(), request.getOrgId());
+            feedbackService.markCreditedForOrg(request.getSubmissionId(), request.getOrgId());
         }
         OrgCreditModel credit = orgCreditRepository.insert(
                 request.getOrgId(), request.getAmount(), request.getReason().strip(),
@@ -49,6 +50,11 @@ public class CreditService {
     public List<OrgCreditModel> getLedger(UUID orgId) {
         requireOrgExists(orgId);
         return orgCreditRepository.findByOrgId(orgId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrganisationModel> listOrganisations() {
+        return organisationRepository.findAllActive();
     }
 
     private void requireOrgExists(UUID orgId) {

@@ -275,7 +275,7 @@ export interface CreateApiKeyResponse {
 // ---- Feedback + credits ----
 
 export type FeedbackType = 'BUG' | 'FEATURE' | 'OTHER';
-export type FeedbackStatus = 'PENDING' | 'REVIEWED';
+export type FeedbackStatus = 'PENDING' | 'DECLINED' | 'CREDITED';
 
 export interface FeedbackSubmissionResponse {
   id: string;
@@ -294,6 +294,17 @@ export interface FeedbackSubmissionResponse {
 export interface CreditBalanceResponse {
   orgId: string;
   balance: number;
+}
+
+export interface CreditLedgerEntryResponse {
+  id: string;
+  orgId: string;
+  amount: number;
+  reason: string;
+  submissionId: string | null;
+  grantedBy: string;
+  grantedByName: string | null;
+  createdAt: string;
 }
 
 // ---- Job Templates ----

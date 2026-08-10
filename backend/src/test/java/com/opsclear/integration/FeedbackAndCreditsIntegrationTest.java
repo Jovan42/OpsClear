@@ -23,6 +23,7 @@ import java.util.UUID;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -224,6 +225,72 @@ class FeedbackAndCreditsIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // ─── PATCH /api/super-admin/feedback/{id}/decline ──────────────────────────
+
+    @Test
+    @DisplayName("decline_shouldReturn204_andMarkSubmissionDeclined_forSuperUser")
+    void decline_shouldReturn204_andMarkSubmissionDeclined_forSuperUser() throws Exception {
+        UUID submissionId = submitFeedback(memberId, "member@example.com", "OTHER", "Not worth a credit", "Description");
+
+        mockMvc.perform(patch(ApiPaths.superAdminFeedbackDecline(submissionId))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get(ApiPaths.FEEDBACK_MINE)
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("DECLINED"));
+    }
+
+    @Test
+    @DisplayName("decline_shouldReturn409_whenAlreadyDeclined")
+    void decline_shouldReturn409_whenAlreadyDeclined() throws Exception {
+        UUID submissionId = submitFeedback(memberId, "member@example.com", "OTHER", "Not worth a credit", "Description");
+
+        mockMvc.perform(patch(ApiPaths.superAdminFeedbackDecline(submissionId))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(patch(ApiPaths.superAdminFeedbackDecline(submissionId))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("decline_shouldReturn409_whenAlreadyCredited")
+    void decline_shouldReturn409_whenAlreadyCredited() throws Exception {
+        UUID submissionId = submitFeedback(memberId, "member@example.com", "BUG", "Great catch", "Description");
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "orgId", orgId, "amount", 500, "reason", "Great bug report",
+                                "submissionId", submissionId))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(patch(ApiPaths.superAdminFeedbackDecline(submissionId))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("decline_shouldReturn404_whenSubmissionDoesNotExist")
+    void decline_shouldReturn404_whenSubmissionDoesNotExist() throws Exception {
+        mockMvc.perform(patch(ApiPaths.superAdminFeedbackDecline(UUID.randomUUID()))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("decline_shouldReturn403_forRegularUser")
+    void decline_shouldReturn403_forRegularUser() throws Exception {
+        UUID submissionId = submitFeedback(memberId, "member@example.com", "OTHER", "Not worth a credit", "Description");
+
+        mockMvc.perform(patch(ApiPaths.superAdminFeedbackDecline(submissionId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
     // ─── POST /api/super-admin/credits/grant ───────────────────────────────────
 
     @Test
@@ -257,8 +324,8 @@ class FeedbackAndCreditsIntegrationTest {
     }
 
     @Test
-    @DisplayName("grantCredit_shouldMarkSubmissionReviewed_whenSubmissionIdProvided")
-    void grantCredit_shouldMarkSubmissionReviewed_whenSubmissionIdProvided() throws Exception {
+    @DisplayName("grantCredit_shouldMarkSubmissionCredited_whenSubmissionIdProvided")
+    void grantCredit_shouldMarkSubmissionCredited_whenSubmissionIdProvided() throws Exception {
         UUID submissionId = submitFeedback(memberId, "member@example.com", "BUG", "Great catch", "Description");
 
         mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
@@ -273,7 +340,29 @@ class FeedbackAndCreditsIntegrationTest {
         mockMvc.perform(get(ApiPaths.FEEDBACK_MINE)
                         .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("REVIEWED"));
+                .andExpect(jsonPath("$[0].status").value("CREDITED"));
+    }
+
+    @Test
+    @DisplayName("grantCredit_shouldReturn409_whenSubmissionAlreadyReviewed")
+    void grantCredit_shouldReturn409_whenSubmissionAlreadyReviewed() throws Exception {
+        UUID submissionId = submitFeedback(memberId, "member@example.com", "BUG", "Great catch", "Description");
+
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "orgId", orgId, "amount", 1000, "reason", "First grant",
+                                "submissionId", submissionId))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "orgId", orgId, "amount", 500, "reason", "Second grant, same submission",
+                                "submissionId", submissionId))))
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -340,6 +429,25 @@ class FeedbackAndCreditsIntegrationTest {
     @DisplayName("getLedger_shouldReturn403_forRegularUser")
     void getLedger_shouldReturn403_forRegularUser() throws Exception {
         mockMvc.perform(get(ApiPaths.superAdminOrgCredits(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    // ─── GET /api/super-admin/organisations ────────────────────────────────────
+
+    @Test
+    @DisplayName("listOrganisations_shouldReturn200_withBothOrgs_forSuperUser")
+    void listOrganisations_shouldReturn200_withBothOrgs_forSuperUser() throws Exception {
+        mockMvc.perform(get(ApiPaths.SUPER_ADMIN_ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("listOrganisations_shouldReturn403_forRegularUser")
+    void listOrganisations_shouldReturn403_forRegularUser() throws Exception {
+        mockMvc.perform(get(ApiPaths.SUPER_ADMIN_ORGANISATIONS)
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isForbidden());
     }

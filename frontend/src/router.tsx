@@ -24,6 +24,7 @@ import OrgMembersPage from './features/org/OrgMembersPage';
 import OrgSettingsPage from './features/org/OrgSettingsPage';
 import AcceptInvitePage from './features/org/AcceptInvitePage';
 import SuperAdminPricingPage from './features/superAdmin/SuperAdminPricingPage';
+import SuperAdminFeedbackPage from './features/superAdmin/SuperAdminFeedbackPage';
 import FeedbackPage from './features/feedback/FeedbackPage';
 
 export const router = createBrowserRouter([
@@ -64,7 +65,9 @@ export const router = createBrowserRouter([
           },
           // Not under OrgRequiredRoute — super_user access crosses org boundaries and
           // must not depend on the caller having an org/subscription at all.
+          { path: 'admin', element: <Navigate to="/admin/pricing" replace /> },
           { path: 'admin/pricing', element: <SuperAdminPricingPage /> },
+          { path: 'admin/feedback', element: <SuperAdminFeedbackPage /> },
         ],
       },
     ],

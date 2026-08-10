@@ -61,7 +61,7 @@ class CreditServiceTest {
         OrgCreditModel result = creditService.grant(grantedBy, request);
 
         assertThat(result).isEqualTo(inserted);
-        verify(feedbackService, never()).markReviewedForOrg(any(), any());
+        verify(feedbackService, never()).markCreditedForOrg(any(), any());
     }
 
     @Test
@@ -80,7 +80,7 @@ class CreditServiceTest {
 
         creditService.grant(grantedBy, request);
 
-        verify(feedbackService).markReviewedForOrg(submissionId, orgId);
+        verify(feedbackService).markCreditedForOrg(submissionId, orgId);
     }
 
     @Test
@@ -151,5 +151,17 @@ class CreditServiceTest {
         when(orgCreditRepository.findByOrgId(orgId)).thenReturn(ledger);
 
         assertThat(creditService.getLedger(orgId)).isEqualTo(ledger);
+    }
+
+    // --- listOrganisations ---
+
+    @Test
+    @DisplayName("listOrganisations returns every active organisation from the repository")
+    void listOrganisations_shouldReturnAllActiveOrgs() {
+        List<OrganisationModel> orgs = List.of(
+                OrganisationModel.builder().id(UUID.randomUUID()).name("Acme Corp").build());
+        when(organisationRepository.findAllActive()).thenReturn(orgs);
+
+        assertThat(creditService.listOrganisations()).isEqualTo(orgs);
     }
 }

@@ -6,6 +6,7 @@ import { MessageSquare } from 'lucide-react';
 import Button from '../../components/Button';
 import Skeleton from '../../components/Skeleton';
 import EmptyState from '../../components/EmptyState';
+import FeedbackTypeBadge from '../../components/FeedbackTypeBadge';
 import Markdown from '../../components/Markdown';
 import MarkdownEditor from '../../components/MarkdownEditor';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -50,23 +51,23 @@ function TabButton({ active, onClick, children }: Readonly<{ active: boolean; on
   );
 }
 
+const STATUS_LABEL_KEYS: Record<FeedbackStatus, string> = {
+  PENDING: 'status.pending',
+  DECLINED: 'status.declined',
+  CREDITED: 'status.creditGranted',
+};
+
+const STATUS_STYLES: Record<FeedbackStatus, string> = {
+  PENDING: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+  DECLINED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  CREDITED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+};
+
 function StatusPill({ status }: Readonly<{ status: FeedbackStatus }>) {
   const { t } = useTranslation('feedback');
-  const cls = status === 'REVIEWED'
-    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
-      {t(status === 'REVIEWED' ? 'status.creditGranted' : 'status.pending')}
-    </span>
-  );
-}
-
-function TypePill({ type }: Readonly<{ type: FeedbackType }>) {
-  const { t } = useTranslation('feedback');
-  return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-      {t(`type.${type}`)}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status]}`}>
+      {t(STATUS_LABEL_KEYS[status])}
     </span>
   );
 }
@@ -140,7 +141,7 @@ export default function FeedbackPage() {
             {submissions.map((s) => (
               <div key={s.id} className="p-4 space-y-1">
                 <div className="flex items-center gap-2">
-                  <TypePill type={s.type} />
+                  <FeedbackTypeBadge type={s.type} />
                   <StatusPill status={s.status} />
                 </div>
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.title}</p>

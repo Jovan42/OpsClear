@@ -13,6 +13,7 @@
   },
   "status": {
     "pending": "Na čekanju",
+    "declined": "Odbijeno",
     "creditGranted": "Kredit odobren"
   },
   "creditBalance": {

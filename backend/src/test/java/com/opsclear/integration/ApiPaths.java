@@ -242,6 +242,11 @@ final class ApiPaths {
 
     static final String SUPER_ADMIN_FEEDBACK      = "/api/super-admin/feedback";
     static final String SUPER_ADMIN_CREDITS_GRANT = "/api/super-admin/credits/grant";
+    static final String SUPER_ADMIN_ORGANISATIONS = "/api/super-admin/organisations";
+
+    static String superAdminFeedbackDecline(UUID id) {
+        return "/api/super-admin/feedback/" + id + "/decline";
+    }
 
     static String superAdminOrgCredits(UUID orgId) {
         return "/api/super-admin/organisations/" + orgId + "/credits";
