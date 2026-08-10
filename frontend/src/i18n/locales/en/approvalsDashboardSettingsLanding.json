@@ -248,13 +248,18 @@
         "apiKeys": "API keys",
         "links": "Job links",
         "jobTypes": "Job types",
-        "jobTypesInJobList": "Type badges & filter on the job list"
+        "jobTypesInJobList": "Type badges & filter on the job list",
+        "feedbackCredits": "Feedback hub"
       }
     },
     "cards": {
       "job-tracking": {
         "name": "Job tracking",
         "description": "See all your jobs in one place. Filter by status, priority, or assignee, and see exactly when something's blocked and why — no spreadsheets, no chasing."
+      },
+      "feedback-credits": {
+        "name": "Feedback & Credits",
+        "description": "Spot a bug or have an idea? Submit it right from your account menu. We read every submission, and if it helps us build a better product, we may credit your account toward a future payment — a manual, case-by-case call, not an automatic reward."
       },
       "dashboard": {
         "name": "Dashboard",

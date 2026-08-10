@@ -248,13 +248,18 @@
         "apiKeys": "API ključevi",
         "links": "Veze na poslu",
         "jobTypes": "Tipovi poslova",
-        "jobTypesInJobList": "Oznake tipova i filter na listi poslova"
+        "jobTypesInJobList": "Oznake tipova i filter na listi poslova",
+        "feedbackCredits": "Centar za povratne informacije"
       }
     },
     "cards": {
       "job-tracking": {
         "name": "Praćenje poslova",
         "description": "Vidite sve svoje poslove na jednom mestu. Filtrirajte po statusu, prioritetu ili izvršiocu, i vidite tačno kada je nešto blokirano i zašto — bez tabela, bez jurenja."
+      },
+      "feedback-credits": {
+        "name": "Povratne informacije i krediti",
+        "description": "Primetili ste bag ili imate ideju? Pošaljite je direktno iz menija naloga. Čitamo svaku prijavu, i ako nam pomogne da napravimo bolji proizvod, možemo odobriti kredit na vašem nalogu za buduće plaćanje — ručna, individualna procena, ne automatska nagrada."
       },
       "dashboard": {
         "name": "Kontrolna tabla",
