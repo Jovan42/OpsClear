@@ -22,13 +22,13 @@ function fmt(n: number) {
 
 const STATUS_STYLES: Record<FeedbackStatus, string> = {
   PENDING: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
-  DECLINED: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+  DECLINED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   CREDITED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 };
 
 const STATUS_LABEL_KEYS: Record<FeedbackStatus, string> = {
   PENDING: 'feedback:status.pending',
-  DECLINED: 'feedback:status.reviewed',
+  DECLINED: 'feedback:status.declined',
   CREDITED: 'feedback:status.creditGranted',
 };
 

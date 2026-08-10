@@ -13,7 +13,7 @@
   },
   "status": {
     "pending": "Pending review",
-    "reviewed": "Reviewed",
+    "declined": "Declined",
     "creditGranted": "Credit granted"
   },
   "creditBalance": {

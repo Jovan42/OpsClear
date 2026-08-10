@@ -53,17 +53,20 @@ function TabButton({ active, onClick, children }: Readonly<{ active: boolean; on
 
 const STATUS_LABEL_KEYS: Record<FeedbackStatus, string> = {
   PENDING: 'status.pending',
-  DECLINED: 'status.reviewed',
+  DECLINED: 'status.declined',
   CREDITED: 'status.creditGranted',
+};
+
+const STATUS_STYLES: Record<FeedbackStatus, string> = {
+  PENDING: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+  DECLINED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  CREDITED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 };
 
 function StatusPill({ status }: Readonly<{ status: FeedbackStatus }>) {
   const { t } = useTranslation('feedback');
-  const cls = status === 'CREDITED'
-    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status]}`}>
       {t(STATUS_LABEL_KEYS[status])}
     </span>
   );
