@@ -256,6 +256,10 @@
         "name": "Praćenje poslova",
         "description": "Vidite sve svoje poslove na jednom mestu. Filtrirajte po statusu, prioritetu ili izvršiocu, i vidite tačno kada je nešto blokirano i zašto — bez tabela, bez jurenja."
       },
+      "feedback-credits": {
+        "name": "Povratne informacije i krediti",
+        "description": "Primetili ste bag ili imate ideju? Pošaljite je direktno iz menija naloga. Čitamo svaku prijavu, i ako nam pomogne da napravimo bolji proizvod, možemo odobriti kredit na vašem nalogu za buduće plaćanje — ručna, individualna procena, ne automatska nagrada."
+      },
       "dashboard": {
         "name": "Kontrolna tabla",
         "description": "Raspodela statusa, zakasneli poslovi i odobrenja na čekanju na jednom ekranu. Otvorite kontrolnu tablu i tačno znate gde je projekat."
