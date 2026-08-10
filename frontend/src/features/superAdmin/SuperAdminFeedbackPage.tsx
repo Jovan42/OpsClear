@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import Skeleton from '../../components/Skeleton';
 import Button from '../../components/Button';
+import FeedbackTypeBadge from '../../components/FeedbackTypeBadge';
 import Markdown from '../../components/Markdown';
 import SuperAdminNav from './SuperAdminNav';
 import GrantCreditModal from './GrantCreditModal';
@@ -107,9 +108,7 @@ export default function SuperAdminFeedbackPage() {
                 <div key={s.id} className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                        {t(`feedback:type.${s.type}`)}
-                      </span>
+                      <FeedbackTypeBadge type={s.type} />
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[s.status]}`}>
                         {t(STATUS_LABEL_KEYS[s.status])}
                       </span>

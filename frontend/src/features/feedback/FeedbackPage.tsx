@@ -6,6 +6,7 @@ import { MessageSquare } from 'lucide-react';
 import Button from '../../components/Button';
 import Skeleton from '../../components/Skeleton';
 import EmptyState from '../../components/EmptyState';
+import FeedbackTypeBadge from '../../components/FeedbackTypeBadge';
 import Markdown from '../../components/Markdown';
 import MarkdownEditor from '../../components/MarkdownEditor';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -64,15 +65,6 @@ function StatusPill({ status }: Readonly<{ status: FeedbackStatus }>) {
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
       {t(STATUS_LABEL_KEYS[status])}
-    </span>
-  );
-}
-
-function TypePill({ type }: Readonly<{ type: FeedbackType }>) {
-  const { t } = useTranslation('feedback');
-  return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-      {t(`type.${type}`)}
     </span>
   );
 }
@@ -146,7 +138,7 @@ export default function FeedbackPage() {
             {submissions.map((s) => (
               <div key={s.id} className="p-4 space-y-1">
                 <div className="flex items-center gap-2">
-                  <TypePill type={s.type} />
+                  <FeedbackTypeBadge type={s.type} />
                   <StatusPill status={s.status} />
                 </div>
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.title}</p>
