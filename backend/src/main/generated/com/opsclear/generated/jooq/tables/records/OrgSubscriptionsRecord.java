@@ -126,6 +126,55 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         return (LocalDateTime) get(6);
     }
 
+    /**
+     * Setter for <code>public.org_subscriptions.paddle_customer_id</code>.
+     */
+    public OrgSubscriptionsRecord setPaddleCustomerId(String value) {
+        set(7, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.org_subscriptions.paddle_customer_id</code>.
+     */
+    public String getPaddleCustomerId() {
+        return (String) get(7);
+    }
+
+    /**
+     * Setter for <code>public.org_subscriptions.paddle_subscription_id</code>.
+     */
+    public OrgSubscriptionsRecord setPaddleSubscriptionId(String value) {
+        set(8, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.org_subscriptions.paddle_subscription_id</code>.
+     */
+    public String getPaddleSubscriptionId() {
+        return (String) get(8);
+    }
+
+    /**
+     * Setter for <code>public.org_subscriptions.subscription_status</code>.
+     * Synced from Paddle webhook events (JOB-174), never computed locally. Null
+     * until the org has a Paddle subscription.
+     */
+    public OrgSubscriptionsRecord setSubscriptionStatus(String value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.org_subscriptions.subscription_status</code>.
+     * Synced from Paddle webhook events (JOB-174), never computed locally. Null
+     * until the org has a Paddle subscription.
+     */
+    public String getSubscriptionStatus() {
+        return (String) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -149,7 +198,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
     /**
      * Create a detached, initialised OrgSubscriptionsRecord
      */
-    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus) {
         super(OrgSubscriptions.ORG_SUBSCRIPTIONS);
 
         setId(id);
@@ -159,6 +208,9 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         setIsInternal(isInternal);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setPaddleCustomerId(paddleCustomerId);
+        setPaddleSubscriptionId(paddleSubscriptionId);
+        setSubscriptionStatus(subscriptionStatus);
         resetChangedOnNotNull();
     }
 }

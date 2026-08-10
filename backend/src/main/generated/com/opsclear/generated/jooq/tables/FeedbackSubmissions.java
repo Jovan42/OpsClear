@@ -147,7 +147,7 @@ public class FeedbackSubmissions extends TableImpl<FeedbackSubmissionsRecord> {
     @Override
     public List<Check<FeedbackSubmissionsRecord>> getChecks() {
         return Arrays.asList(
-            Internal.createCheck(this, DSL.name("feedback_submissions_status_check"), "(((status)::text = ANY ((ARRAY['PENDING'::character varying, 'REVIEWED'::character varying])::text[])))", true),
+            Internal.createCheck(this, DSL.name("feedback_submissions_status_check"), "(((status)::text = ANY ((ARRAY['PENDING'::character varying, 'DECLINED'::character varying, 'CREDITED'::character varying])::text[])))", true),
             Internal.createCheck(this, DSL.name("feedback_submissions_type_check"), "(((type)::text = ANY ((ARRAY['BUG'::character varying, 'FEATURE'::character varying, 'OTHER'::character varying])::text[])))", true)
         );
     }
