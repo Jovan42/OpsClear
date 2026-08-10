@@ -74,6 +74,8 @@ services:
       KEYCLOAK_ISSUER_URI: http://${APP_HOST:-localhost}:${KEYCLOAK_PORT:-8280}/realms/opsclear
       # Allow requests from the frontend origin (nginx HTTPS endpoint).
       CORS_ALLOWED_ORIGINS: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
+      PADDLE_API_KEY: ${PADDLE_API_KEY:-}
+      PADDLE_WEBHOOK_SECRET: ${PADDLE_WEBHOOK_SECRET:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -91,6 +93,7 @@ services:
         VITE_KEYCLOAK_URL: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-opsclear}
         VITE_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-opsclear-frontend}
+        VITE_PADDLE_CLIENT_TOKEN: ${PADDLE_CLIENT_TOKEN:-}
     ports:
       - "80:80"
       - "${APP_PORT:-8443}:443"
