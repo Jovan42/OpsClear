@@ -44,6 +44,10 @@ function buildCards(t: TFunction): FeatureCard[] {
       id: 'feedback-credits',
       name: t('featuresPage.cards.feedback-credits.name'),
       description: t('featuresPage.cards.feedback-credits.description'),
+      loadSlides: () => import('../../demo/FeedbackCreditsDemo'),
+      previewNaturalWidth: 1000,
+      previewNaturalHeight: 560,
+      previewScale: 0.36,
     },
     {
       id: 'dashboard',

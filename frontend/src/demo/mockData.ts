@@ -1,5 +1,6 @@
 import type {
   ApiKeyResponse,
+  FeedbackSubmissionResponse,
   JobHistoryEntry,
   JobResponse,
   JobTemplateResponse,
@@ -24,7 +25,11 @@ import type {
  * the demo overlay opens — per ADR-0040, there is no persistence between opens.
  */
 
-const ORG_NAME = 'Nimbus Creative Studio';
+export const ORG_NAME = 'Nimbus Creative Studio';
+
+// Org identity for the Feedback & Credits card's submissions — that feature isn't
+// project-scoped, so it needs its own fixed id rather than reusing DEMO_PROJECT_ID.
+export const DEMO_ORG_ID = 'demo-org-1';
 
 // Must match the app's PROJECT_ID_RE (either a raw UUID or a friendly `XX-123` id) —
 // useProject()/useProjectMembers() gate their queries on this shape and would
@@ -948,6 +953,55 @@ const BASE_API_KEYS: ApiKeyResponse[] = [
   },
 ];
 
+// One of each outcome (Pending, Declined, Credited) so a visitor sees the full
+// lifecycle in "My submissions" without needing the super-admin review flow
+// (JOB-169) — that flow is out of scope for this customer-facing card.
+const BASE_FEEDBACK_SUBMISSIONS: FeedbackSubmissionResponse[] = [
+  {
+    id: 'demo-feedback-01',
+    orgId: DEMO_ORG_ID,
+    orgName: ORG_NAME,
+    submittedBy: DEMO_CURRENT_USER.id,
+    submitterName: DEMO_CURRENT_USER.name,
+    submitterEmail: DEMO_CURRENT_USER.email,
+    type: 'BUG',
+    title: 'Deadline badge shows wrong color right after midnight',
+    description: '## Steps to reproduce\n1. Set a job\'s deadline to today.\n2. Wait until just after midnight.\n\n'
+      + '## Expected behavior\nThe badge should flip to "Overdue" immediately.\n\n'
+      + '## Actual behavior\nIt stays green until the page is refreshed.',
+    status: 'PENDING',
+    createdAt: hoursAgo(20),
+  },
+  {
+    id: 'demo-feedback-02',
+    orgId: DEMO_ORG_ID,
+    orgName: ORG_NAME,
+    submittedBy: DEMO_CURRENT_USER.id,
+    submitterName: DEMO_CURRENT_USER.name,
+    submitterEmail: DEMO_CURRENT_USER.email,
+    type: 'FEATURE',
+    title: 'Bulk-assign jobs from the list view',
+    description: '## Problem\nRe-assigning jobs one at a time when a teammate is out sick is slow.\n\n'
+      + '## Proposed solution\nA multi-select on the job list with a bulk "Reassign to…" action.\n\n'
+      + '## How it should work\nCheck a few jobs, pick a new assignee from a dropdown, confirm once.',
+    status: 'CREDITED',
+    createdAt: hoursAgo(24 * 9),
+  },
+  {
+    id: 'demo-feedback-03',
+    orgId: DEMO_ORG_ID,
+    orgName: ORG_NAME,
+    submittedBy: DEMO_CURRENT_USER.id,
+    submitterName: DEMO_CURRENT_USER.name,
+    submitterEmail: DEMO_CURRENT_USER.email,
+    type: 'OTHER',
+    title: 'Would love a print-friendly view for reports',
+    description: 'Not urgent, just an idea for later — mostly for handing a status summary to a client who isn\'t on OpsClear.',
+    status: 'DECLINED',
+    createdAt: hoursAgo(24 * 30),
+  },
+];
+
 // ---- mutable in-memory store, reset per demo-overlay open ----
 
 export interface DemoStore {
@@ -963,6 +1017,7 @@ export interface DemoStore {
   schedules: RecurringScheduleResponse[];
   missedRunsByScheduleId: Record<string, ScheduleMissedRunResponse[]>;
   apiKeys: ApiKeyResponse[];
+  feedbackSubmissions: FeedbackSubmissionResponse[];
   trackingProject: ProjectResponse;
   trackingJobs: JobResponse[];
   trackingJobTypes: JobTypeResponse[];
@@ -982,6 +1037,7 @@ function freshStore(): DemoStore {
     schedules: structuredClone(BASE_SCHEDULES),
     missedRunsByScheduleId: structuredClone(BASE_MISSED_RUNS),
     apiKeys: structuredClone(BASE_API_KEYS),
+    feedbackSubmissions: structuredClone(BASE_FEEDBACK_SUBMISSIONS),
     trackingProject: structuredClone(BASE_TRACKING_PROJECT),
     trackingJobs: structuredClone(BASE_TRACKING_JOBS),
     trackingJobTypes: structuredClone(BASE_TRACKING_JOB_TYPES),

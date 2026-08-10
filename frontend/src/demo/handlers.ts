@@ -1,5 +1,13 @@
 import { http, HttpResponse, passthrough } from 'msw';
-import { DEMO_BASE_PROJECT_ID, DEMO_CURRENT_USER, DEMO_PROJECT_ID, demoStore, type DemoApproval } from './mockData';
+import {
+  DEMO_BASE_PROJECT_ID,
+  DEMO_CURRENT_USER,
+  DEMO_ORG_ID,
+  DEMO_PROJECT_ID,
+  demoStore,
+  ORG_NAME,
+  type DemoApproval,
+} from './mockData';
 import { detectPreset, parseCronParams } from '../utils/cron';
 import type {
   ApiKeyResponse,
@@ -9,6 +17,8 @@ import type {
   CreateApiKeyResponse,
   CronPreviewResponse,
   DashboardResponse,
+  FeedbackSubmissionResponse,
+  FeedbackType,
   JobHistoryEntry,
   JobPriority,
   JobRelationshipType,
@@ -585,6 +595,28 @@ export const demoHandlers = [
     if (index === -1) return new HttpResponse(null, { status: 404 });
     demoStore.apiKeys.splice(index, 1);
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get('*/api/feedback/mine', () => HttpResponse.json(demoStore.feedbackSubmissions)),
+
+  http.post('*/api/feedback', async ({ request }) => {
+    const body = (await request.json()) as { type: FeedbackType; title: string; description: string };
+    const submission: FeedbackSubmissionResponse = {
+      id: uniqueId('demo-feedback'),
+      orgId: DEMO_ORG_ID,
+      orgName: ORG_NAME,
+      submittedBy: DEMO_CURRENT_USER.id,
+      submitterName: DEMO_CURRENT_USER.name,
+      submitterEmail: DEMO_CURRENT_USER.email,
+      type: body.type,
+      title: body.title,
+      description: body.description,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    // Newest first, matching the real backend's findBySubmittedBy ordering.
+    demoStore.feedbackSubmissions.unshift(submission);
+    return HttpResponse.json(submission, { status: 201 });
   }),
 
   http.get(`${base}/jobs`, ({ request }) => {

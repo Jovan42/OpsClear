@@ -248,7 +248,8 @@
         "apiKeys": "API keys",
         "links": "Job links",
         "jobTypes": "Job types",
-        "jobTypesInJobList": "Type badges & filter on the job list"
+        "jobTypesInJobList": "Type badges & filter on the job list",
+        "feedbackCredits": "Feedback hub"
       }
     },
     "cards": {

@@ -248,7 +248,8 @@
         "apiKeys": "API ključevi",
         "links": "Veze na poslu",
         "jobTypes": "Tipovi poslova",
-        "jobTypesInJobList": "Oznake tipova i filter na listi poslova"
+        "jobTypesInJobList": "Oznake tipova i filter na listi poslova",
+        "feedbackCredits": "Centar za povratne informacije"
       }
     },
     "cards": {
