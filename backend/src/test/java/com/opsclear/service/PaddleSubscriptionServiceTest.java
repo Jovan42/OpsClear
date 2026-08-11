@@ -245,6 +245,37 @@ class PaddleSubscriptionServiceTest {
     }
 
     @Test
+    @DisplayName("updateSubscriptionItems sends only the tier item when addonIds is null")
+    void updateSubscriptionItems_shouldSendTierOnly_whenAddonIdsIsNull() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID subscriptionId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(orgId).isInternal(false)
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId)).thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).build()));
+        when(priceResolver.resolveTierPriceId(tierId)).thenReturn("pri_tier");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123"));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<PaddleSubscriptionItem>> itemsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), itemsCaptor.capture(), eq("prorated_immediately"));
+        assertThat(itemsCaptor.getValue()).containsExactly(new PaddleSubscriptionItem("pri_tier", 1));
+
+        verify(orgSubscriptionRepository).update(subscriptionId, orgId, tierId, "MONTHLY", Set.of());
+    }
+
+    @Test
     @DisplayName("updateSubscriptionItems throws ConflictException when there's no Paddle subscription yet")
     void updateSubscriptionItems_shouldThrow_whenNoPaddleSubscriptionYet() {
         UUID orgId = UUID.randomUUID();
