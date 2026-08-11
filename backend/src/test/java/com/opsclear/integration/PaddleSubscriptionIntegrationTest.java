@@ -1,0 +1,266 @@
+package com.opsclear.integration;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.model.UserModel;
+import com.opsclear.repository.OrgSubscriptionRepository;
+import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
+import com.opsclear.repository.UserRepository;
+import org.jooq.DSLContext;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * Runs against Paddle's real sandbox API (not mocked) per this project's explicit
+ * choice for JOB-173 — sandbox, not live, so there's no real-money consequence.
+ * Requires PADDLE_API_KEY to be set in the environment running these tests; if it
+ * isn't, every test here fails with a connection/auth error against Paddle, not a
+ * silent skip — that's intentional, matching this project's "confirmed against a
+ * real API call" testing philosophy rather than a mocked stand-in.
+ *
+ * <p>The update-items endpoint's actual successful round-trip to Paddle's
+ * {@code PATCH /subscriptions/{id}} cannot be exercised here: Paddle does not support
+ * creating a Subscription via API at all (only real checkout completion creates one),
+ * and JOB-176 hasn't landed the real {@code PaddlePriceResolver} yet — so the
+ * reachable, correct behavior today is a 409 (either "no Paddle subscription yet" or,
+ * once one exists, "price sync not implemented"), which is exactly what's tested here.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@DisplayName("Paddle subscription endpoints")
+class PaddleSubscriptionIntegrationTest {
+
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private DSLContext dsl;
+    @Autowired private OrgSubscriptionRepository subscriptionRepository;
+    @Autowired private OrganisationRepository organisationRepository;
+    @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private UserRepository userRepository;
+
+    private UUID ownerId;
+    private UUID memberId;
+    private UUID orgId;
+    private UUID tierId;
+    // Unique per run: Paddle's sandbox customer data is NOT reset the way the
+    // local DB is (subscriptionRepository.deleteAll() etc. below), so a literal
+    // hardcoded email collides with a customer left over from a previous run
+    // (Paddle rejects a second POST /customers for the same email with 409
+    // customer_already_exists). Randomizing keeps this suite re-runnable.
+    private String ownerEmail;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        subscriptionRepository.deleteAll();
+        organisationRepository.deleteAll();
+        userRepository.deleteAll();
+
+        ownerId = UUID.randomUUID();
+        memberId = UUID.randomUUID();
+        ownerEmail = "owner-" + UUID.randomUUID() + "@example.com";
+
+        userRepository.save(UserModel.builder().id(ownerId).email(ownerEmail).name("Owner").build());
+        userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
+
+        String response = mockMvc.perform(post(ApiPaths.ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", ownerEmail).claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Acme Corp", "slug", "ACM"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        orgId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
+
+        mockMvc.perform(post(ApiPaths.orgMembers(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("userId", memberId, "role", "MEMBER"))))
+                .andExpect(status().isCreated());
+
+        tierId = tierRepository.findAll().getFirst().getId();
+    }
+
+    private void givenOrgHasSubscriptionRecord() throws Exception {
+        mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("tierId", tierId, "billingCycle", "MONTHLY", "addonIds", List.of()))))
+                .andExpect(status().isOk());
+    }
+
+    private void givenOrgHasFakePaddleSubscriptionId() {
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_SUBSCRIPTION_ID, "sub_test_placeholder")
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .execute();
+    }
+
+    private void givenOrgIsInternal() {
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.IS_INTERNAL, true)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .execute();
+    }
+
+    // ─── POST /api/organisations/{orgId}/subscription/paddle ──────────────────
+
+    @Test
+    @DisplayName("initiate_shouldReturn201_andCreateRealPaddleCustomer_forOwner")
+    void initiate_shouldReturn201_andCreateRealPaddleCustomer_forOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orgId").value(orgId.toString()))
+                .andExpect(jsonPath("$.paddleCustomerId").value(org.hamcrest.Matchers.startsWith("ctm_")));
+    }
+
+    @Test
+    @DisplayName("initiate_shouldBeIdempotent_returningTheSameCustomerId_onASecondCall")
+    void initiate_shouldBeIdempotent_returningTheSameCustomerId_onASecondCall() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        String first = mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String firstCustomerId = objectMapper.readTree(first).get("paddleCustomerId").asText();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paddleCustomerId").value(firstCustomerId));
+    }
+
+    @Test
+    @DisplayName("initiate_shouldReturn400_forInternalOrg")
+    void initiate_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("initiate_shouldReturn403_forNonOwner")
+    void initiate_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("initiate_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
+    void initiate_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isNotFound());
+    }
+
+    // ─── PUT /api/organisations/{orgId}/subscription/paddle ────────────────────
+
+    @Test
+    @DisplayName("update_shouldReturn409_whenNoPaddleSubscriptionYet")
+    void update_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("update_shouldReturn409_priceSyncNotImplemented_onceAPaddleSubscriptionExists")
+    void update_shouldReturn409_priceSyncNotImplemented_onceAPaddleSubscriptionExists() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "Paddle price sync is not yet implemented (JOB-176) — tier/add-on prices "
+                                + "aren't mirrored to Paddle Prices yet"));
+    }
+
+    @Test
+    @DisplayName("update_shouldReturn400_forInternalOrg")
+    void update_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("update_shouldReturn403_forNonOwner")
+    void update_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("update_shouldReturn404_whenTierDoesNotExist")
+    void update_shouldReturn404_whenTierDoesNotExist() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", UUID.randomUUID()))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("update_shouldReturn400_whenTierIdMissing")
+    void update_shouldReturn400_whenTierIdMissing() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+}

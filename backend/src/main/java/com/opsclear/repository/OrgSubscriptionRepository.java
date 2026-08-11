@@ -59,6 +59,15 @@ public class OrgSubscriptionRepository {
         return findByOrgId(orgId).orElseThrow();
     }
 
+    public OrgSubscriptionModel updatePaddleCustomerId(UUID subscriptionId, UUID orgId, String paddleCustomerId) {
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_CUSTOMER_ID, paddleCustomerId)
+                .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .where(ORG_SUBSCRIPTIONS.ID.eq(subscriptionId))
+                .execute();
+        return findByOrgId(orgId).orElseThrow();
+    }
+
     public boolean isInternal(UUID orgId) {
         return dsl.fetchExists(
                 dsl.selectOne()
@@ -114,6 +123,9 @@ public class OrgSubscriptionRepository {
                 .createdAt(toInstant(r.getCreatedAt()))
                 .updatedAt(toInstant(r.getUpdatedAt()))
                 .addonIds(addonIds)
+                .paddleCustomerId(r.getPaddleCustomerId())
+                .paddleSubscriptionId(r.getPaddleSubscriptionId())
+                .subscriptionStatus(r.getSubscriptionStatus())
                 .build();
     }
 
