@@ -176,6 +176,31 @@ class PaddleWebhookIntegrationTest {
     }
 
     @Test
+    @DisplayName("a signature header missing the ts component is rejected")
+    void webhook_shouldReject_whenHeaderMissingTimestamp() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String body = subscriptionEventBody("subscription.canceled", subscriptionId, "canceled");
+        String hash = hmacSha256Hex(TIMESTAMP + ":" + body, WEBHOOK_SECRET);
+
+        postWebhook(body, "h1=" + hash)
+                .andExpect(status().isForbidden());
+
+        assertPersistedStatus(subscriptionId, "ACTIVE");
+    }
+
+    @Test
+    @DisplayName("a signature header missing the h1 component is rejected")
+    void webhook_shouldReject_whenHeaderMissingHash() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String body = subscriptionEventBody("subscription.canceled", subscriptionId, "canceled");
+
+        postWebhook(body, "ts=" + TIMESTAMP)
+                .andExpect(status().isForbidden());
+
+        assertPersistedStatus(subscriptionId, "ACTIVE");
+    }
+
+    @Test
     @DisplayName("a request with a missing signature header is rejected")
     void webhook_shouldReject_whenSignatureHeaderMissing() throws Exception {
         String body = subscriptionEventBody("subscription.canceled", "sub_x", "canceled");
@@ -183,6 +208,55 @@ class PaddleWebhookIntegrationTest {
         mockMvc.perform(post(ApiPaths.WEBHOOKS_PADDLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("an event referencing an unknown customer id is accepted but does not error")
+    void webhook_shouldAcceptButNoOp_whenNoMatchingOrgForCustomerId() throws Exception {
+        String body = "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"subscription.created\","
+                + "\"data\":{\"id\":\"sub_orphan\",\"customer_id\":\"ctm_no_such_customer\",\"status\":\"active\"}}";
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        var record = dsl.selectFrom(ORG_SUBSCRIPTIONS)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .fetchSingle();
+        assertThat(record.getPaddleSubscriptionId()).isNull();
+    }
+
+    @Test
+    @DisplayName("an unrecognized subscription status is accepted but does not mutate state")
+    void webhook_shouldAcceptButIgnore_whenSubscriptionStatusUnrecognized() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String body = subscriptionEventBody("subscription.updated", subscriptionId, "some_future_status");
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertPersistedStatus(subscriptionId, "ACTIVE");
+    }
+
+    @Test
+    @DisplayName("a signature header with a malformed extra segment is still accepted")
+    void webhook_shouldAccept_whenSignatureHeaderHasMalformedSegment() throws Exception {
+        String subscriptionId = "sub_" + UUID.randomUUID();
+        String body = subscriptionEventBody("subscription.created", subscriptionId, "active");
+        String header = "not-a-key-value-pair;" + signatureHeader(body, WEBHOOK_SECRET);
+
+        postWebhook(body, header)
+                .andExpect(status().isOk());
+
+        assertPersistedStatus(subscriptionId, "ACTIVE");
+    }
+
+    @Test
+    @DisplayName("a body that isn't valid JSON is rejected even with a validly-computed signature")
+    void webhook_shouldReject_whenBodyIsNotValidJson() throws Exception {
+        String body = "not-json";
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
                 .andExpect(status().isForbidden());
     }
 

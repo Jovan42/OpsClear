@@ -95,6 +95,18 @@ class PaddleWebhookServiceTest {
     }
 
     @Test
+    @DisplayName("handle accepts a signature header containing a malformed extra segment")
+    void handle_shouldAccept_whenHeaderHasMalformedSegment() {
+        String body = subscriptionEventBody("subscription.created", "active");
+        String header = "not-a-key-value-pair;" + signatureHeader(body, SECRET);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE")).thenReturn(1);
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE");
+    }
+
+    @Test
     @DisplayName("handle rejects a body that isn't valid JSON, even with a valid signature")
     void handle_shouldReject_whenBodyNotValidJson() {
         String body = "not-json";
