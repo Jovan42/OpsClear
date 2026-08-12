@@ -198,4 +198,22 @@ public final class ErrorMessages {
         private JobType() {
         }
     }
+
+    public static final class Paddle {
+        public static final String INTERNAL_ORG_NOT_BILLED =
+                "Internal organisations are not billed and have no Paddle subscription";
+        public static final String NO_SUBSCRIPTION_RECORD =
+                "No subscription found for this organisation — select a tier first";
+        public static final String CUSTOMER_ALREADY_EXISTS =
+                "This organisation already has a Paddle customer";
+        public static final String NO_PADDLE_SUBSCRIPTION_YET =
+                "This organisation has not completed Paddle checkout yet — there is no "
+                        + "subscription to update";
+        public static final String PRICE_SYNC_NOT_IMPLEMENTED =
+                "Paddle price sync is not yet implemented (JOB-176) — tier/add-on prices "
+                        + "aren't mirrored to Paddle Prices yet";
+
+        private Paddle() {
+        }
+    }
 }
