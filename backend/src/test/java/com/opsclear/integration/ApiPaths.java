@@ -338,6 +338,10 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs/" + jobId + "/links/" + linkId;
     }
 
+    // --- Paddle webhooks ---
+
+    static final String WEBHOOKS_PADDLE = "/api/webhooks/paddle";
+
     // --- Project links ---
 
     static String projectLinks(UUID projectId) {

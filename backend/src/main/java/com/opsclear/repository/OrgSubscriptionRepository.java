@@ -68,6 +68,22 @@ public class OrgSubscriptionRepository {
         return findByOrgId(orgId).orElseThrow();
     }
 
+    // Keyed by paddle_customer_id (stable for the org's whole lifetime, set once by
+    // JOB-173's initiate) rather than paddle_subscription_id — the latter doesn't
+    // exist yet on the very first subscription.created event, which is exactly the
+    // event that sets it for the first time. Returns rows-affected so the caller can
+    // detect "no matching org" (0) without an exception — that's a legitimate,
+    // non-retriable outcome for a webhook (e.g. sandbox noise), not an error.
+    public int updateFromPaddleWebhook(
+            String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus) {
+        return dsl.update(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_SUBSCRIPTION_ID, paddleSubscriptionId)
+                .set(ORG_SUBSCRIPTIONS.SUBSCRIPTION_STATUS, subscriptionStatus)
+                .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .where(ORG_SUBSCRIPTIONS.PADDLE_CUSTOMER_ID.eq(paddleCustomerId))
+                .execute();
+    }
+
     public boolean isInternal(UUID orgId) {
         return dsl.fetchExists(
                 dsl.selectOne()
