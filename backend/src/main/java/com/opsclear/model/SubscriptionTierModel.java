@@ -20,4 +20,7 @@ public class SubscriptionTierModel {
     private int priceAnnual;
     private String currency;
     private int displayOrder;
+    private String paddleProductId;
+    private String paddlePriceIdMonthly;
+    private String paddlePriceIdAnnual;
 }

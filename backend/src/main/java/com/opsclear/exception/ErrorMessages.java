@@ -209,9 +209,10 @@ public final class ErrorMessages {
         public static final String NO_PADDLE_SUBSCRIPTION_YET =
                 "This organisation has not completed Paddle checkout yet — there is no "
                         + "subscription to update";
-        public static final String PRICE_SYNC_NOT_IMPLEMENTED =
-                "Paddle price sync is not yet implemented (JOB-176) — tier/add-on prices "
-                        + "aren't mirrored to Paddle Prices yet";
+        public static final String PRICE_NOT_SYNCED_TO_PADDLE =
+                "This tier/add-on has not been synced to Paddle yet — update its price via "
+                        + "the super admin console, or run the catalog sync, before it can be "
+                        + "selected on a Paddle subscription";
         public static final String INVALID_WEBHOOK_SIGNATURE = "Invalid Paddle webhook signature";
         public static final String SUBSCRIPTION_PAST_DUE =
                 "This organisation's subscription payment is past due — this action is "

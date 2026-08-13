@@ -125,6 +125,55 @@ public class SubscriptionAddonsRecord extends UpdatableRecordImpl<SubscriptionAd
         return (Integer) get(6);
     }
 
+    /**
+     * Setter for <code>public.subscription_addons.paddle_product_id</code>.
+     */
+    public SubscriptionAddonsRecord setPaddleProductId(String value) {
+        set(7, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.subscription_addons.paddle_product_id</code>.
+     */
+    public String getPaddleProductId() {
+        return (String) get(7);
+    }
+
+    /**
+     * Setter for
+     * <code>public.subscription_addons.paddle_price_id_monthly</code>.
+     */
+    public SubscriptionAddonsRecord setPaddlePriceIdMonthly(String value) {
+        set(8, value);
+        return this;
+    }
+
+    /**
+     * Getter for
+     * <code>public.subscription_addons.paddle_price_id_monthly</code>.
+     */
+    public String getPaddlePriceIdMonthly() {
+        return (String) get(8);
+    }
+
+    /**
+     * Setter for
+     * <code>public.subscription_addons.paddle_price_id_annual</code>.
+     */
+    public SubscriptionAddonsRecord setPaddlePriceIdAnnual(String value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for
+     * <code>public.subscription_addons.paddle_price_id_annual</code>.
+     */
+    public String getPaddlePriceIdAnnual() {
+        return (String) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -148,7 +197,7 @@ public class SubscriptionAddonsRecord extends UpdatableRecordImpl<SubscriptionAd
     /**
      * Create a detached, initialised SubscriptionAddonsRecord
      */
-    public SubscriptionAddonsRecord(UUID id, String key, String name, Integer priceMonthly, Integer priceAnnual, Boolean available, Integer displayOrder) {
+    public SubscriptionAddonsRecord(UUID id, String key, String name, Integer priceMonthly, Integer priceAnnual, Boolean available, Integer displayOrder, String paddleProductId, String paddlePriceIdMonthly, String paddlePriceIdAnnual) {
         super(SubscriptionAddons.SUBSCRIPTION_ADDONS);
 
         setId(id);
@@ -158,6 +207,9 @@ public class SubscriptionAddonsRecord extends UpdatableRecordImpl<SubscriptionAd
         setPriceAnnual(priceAnnual);
         setAvailable(available);
         setDisplayOrder(displayOrder);
+        setPaddleProductId(paddleProductId);
+        setPaddlePriceIdMonthly(paddlePriceIdMonthly);
+        setPaddlePriceIdAnnual(paddlePriceIdAnnual);
         resetChangedOnNotNull();
     }
 }

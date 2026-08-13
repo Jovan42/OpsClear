@@ -56,4 +56,37 @@ public class PaddleClient {
                 .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleSubscription>>() { });
         return response.data();
     }
+
+    public PaddleProduct createProduct(String name) {
+        Map<String, Object> body = Map.of("name", name, "tax_category", "saas");
+        PaddleEnvelope<PaddleProduct> response = restClient.post()
+                .uri("/products")
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleProduct>>() { });
+        return response.data();
+    }
+
+    public PaddlePrice createPrice(
+            String productId, String description, String interval, String amountMinorUnits, String currencyCode) {
+        Map<String, Object> body = Map.of(
+                "description", description,
+                "product_id", productId,
+                "billing_cycle", Map.of("interval", interval, "frequency", 1),
+                "unit_price", Map.of("amount", amountMinorUnits, "currency_code", currencyCode));
+        PaddleEnvelope<PaddlePrice> response = restClient.post()
+                .uri("/prices")
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddlePrice>>() { });
+        return response.data();
+    }
+
+    public void archivePrice(String priceId) {
+        restClient.patch()
+                .uri("/prices/{id}", priceId)
+                .body(Map.of("status", "archived"))
+                .retrieve()
+                .toBodilessEntity();
+    }
 }

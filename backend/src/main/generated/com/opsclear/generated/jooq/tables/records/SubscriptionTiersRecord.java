@@ -125,6 +125,53 @@ public class SubscriptionTiersRecord extends UpdatableRecordImpl<SubscriptionTie
         return (Integer) get(6);
     }
 
+    /**
+     * Setter for <code>public.subscription_tiers.paddle_product_id</code>.
+     */
+    public SubscriptionTiersRecord setPaddleProductId(String value) {
+        set(7, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.subscription_tiers.paddle_product_id</code>.
+     */
+    public String getPaddleProductId() {
+        return (String) get(7);
+    }
+
+    /**
+     * Setter for
+     * <code>public.subscription_tiers.paddle_price_id_monthly</code>.
+     */
+    public SubscriptionTiersRecord setPaddlePriceIdMonthly(String value) {
+        set(8, value);
+        return this;
+    }
+
+    /**
+     * Getter for
+     * <code>public.subscription_tiers.paddle_price_id_monthly</code>.
+     */
+    public String getPaddlePriceIdMonthly() {
+        return (String) get(8);
+    }
+
+    /**
+     * Setter for <code>public.subscription_tiers.paddle_price_id_annual</code>.
+     */
+    public SubscriptionTiersRecord setPaddlePriceIdAnnual(String value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.subscription_tiers.paddle_price_id_annual</code>.
+     */
+    public String getPaddlePriceIdAnnual() {
+        return (String) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -148,7 +195,7 @@ public class SubscriptionTiersRecord extends UpdatableRecordImpl<SubscriptionTie
     /**
      * Create a detached, initialised SubscriptionTiersRecord
      */
-    public SubscriptionTiersRecord(UUID id, Integer maxMembers, Integer maxProjects, Integer priceMonthly, Integer priceAnnual, String currency, Integer displayOrder) {
+    public SubscriptionTiersRecord(UUID id, Integer maxMembers, Integer maxProjects, Integer priceMonthly, Integer priceAnnual, String currency, Integer displayOrder, String paddleProductId, String paddlePriceIdMonthly, String paddlePriceIdAnnual) {
         super(SubscriptionTiers.SUBSCRIPTION_TIERS);
 
         setId(id);
@@ -158,6 +205,9 @@ public class SubscriptionTiersRecord extends UpdatableRecordImpl<SubscriptionTie
         setPriceAnnual(priceAnnual);
         setCurrency(currency);
         setDisplayOrder(displayOrder);
+        setPaddleProductId(paddleProductId);
+        setPaddlePriceIdMonthly(paddlePriceIdMonthly);
+        setPaddlePriceIdAnnual(paddlePriceIdAnnual);
         resetChangedOnNotNull();
     }
 }

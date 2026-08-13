@@ -51,9 +51,9 @@ class SubscriptionCatalogIntegrationTest {
                 .andExpect(jsonPath("$.tiers[0].id").isNotEmpty())
                 .andExpect(jsonPath("$.tiers[0].maxMembers").value(5))
                 .andExpect(jsonPath("$.tiers[0].maxProjects").value(3))
-                .andExpect(jsonPath("$.tiers[0].priceMonthly").value(2900))
-                .andExpect(jsonPath("$.tiers[0].priceAnnual").value(2417))
-                .andExpect(jsonPath("$.tiers[0].currency").value("RSD"))
+                .andExpect(jsonPath("$.tiers[0].priceMonthly").value(24))
+                .andExpect(jsonPath("$.tiers[0].priceAnnual").value(20))
+                .andExpect(jsonPath("$.tiers[0].currency").value("EUR"))
                 .andExpect(jsonPath("$.tiers[0].displayOrder").value(1));
     }
 
@@ -65,8 +65,8 @@ class SubscriptionCatalogIntegrationTest {
                 .andExpect(jsonPath("$.addons[0].id").isNotEmpty())
                 .andExpect(jsonPath("$.addons[0].key").value("DASHBOARD"))
                 .andExpect(jsonPath("$.addons[0].name").value("Dashboard"))
-                .andExpect(jsonPath("$.addons[0].priceMonthly").value(990))
-                .andExpect(jsonPath("$.addons[0].priceAnnual").value(825))
+                .andExpect(jsonPath("$.addons[0].priceMonthly").value(9))
+                .andExpect(jsonPath("$.addons[0].priceAnnual").value(8))
                 .andExpect(jsonPath("$.addons[0].available").value(true))
                 .andExpect(jsonPath("$.addons[0].displayOrder").value(1));
     }
