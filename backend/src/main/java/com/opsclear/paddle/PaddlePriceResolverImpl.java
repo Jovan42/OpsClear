@@ -21,6 +21,11 @@ public class PaddlePriceResolverImpl implements PaddlePriceResolver {
 
     @Override
     public String resolveTierPriceId(UUID tierId, String billingCycle) {
+        // Unlike resolveAddonPriceId below, this orElseThrow is unreachable through
+        // the real call path: PaddleSubscriptionService.requireTier already validates
+        // the tier exists via this same repository before ever calling here, so
+        // tierId is always present by the time we get to this line. Kept for safety
+        // against any other future caller of this class.
         SubscriptionTierModel tier = tierRepository.findById(tierId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.SubscriptionTier.NOT_FOUND));
         return requirePriceId(priceIdFor(tier.getPaddlePriceIdMonthly(), tier.getPaddlePriceIdAnnual(), billingCycle));

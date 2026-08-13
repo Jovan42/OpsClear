@@ -1,9 +1,11 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import com.opsclear.service.PaddleSubscriptionService;
@@ -61,6 +63,7 @@ class PaddleSubscriptionIntegrationTest {
     @Autowired private OrgSubscriptionRepository subscriptionRepository;
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
 
@@ -107,11 +110,15 @@ class PaddleSubscriptionIntegrationTest {
     }
 
     private void givenOrgHasSubscriptionRecord() throws Exception {
+        givenOrgHasSubscriptionRecord("MONTHLY");
+    }
+
+    private void givenOrgHasSubscriptionRecord(String billingCycle) throws Exception {
         mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("tierId", tierId, "billingCycle", "MONTHLY", "addonIds", List.of()))))
+                                Map.of("tierId", tierId, "billingCycle", billingCycle, "addonIds", List.of()))))
                 .andExpect(status().isOk());
     }
 
@@ -247,6 +254,59 @@ class PaddleSubscriptionIntegrationTest {
         // sub_test_placeholder isn't a real Paddle subscription; Paddle subscriptions
         // can only be created via real checkout (JOB-178), never faked in sandbox.
         // The important assertion is that this is no longer our own 409 conflict.
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("update_shouldReachPaddleApi_insteadOfFailingAtResolver_onceAddonSyncedToPaddle")
+    void update_shouldReachPaddleApi_insteadOfFailingAtResolver_onceAddonSyncedToPaddle() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+        SubscriptionAddonModel addon = addonRepository.findAll().getFirst();
+        paddleSubscriptionService.syncAddonPriceToPaddle(addon);
+
+        // Same reasoning as the tier-only test above: resolving the addon's real
+        // Paddle Price id now succeeds, so the request reaches Paddle's real API and
+        // fails there (sub_test_placeholder isn't a real subscription) instead of
+        // failing at our own resolver.
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("tierId", tierId, "addonIds", List.of(addon.getId())))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("update_shouldReturn404_whenRequestedAddonDoesNotExist")
+    void update_shouldReturn404_whenRequestedAddonDoesNotExist() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("tierId", tierId, "addonIds", List.of(UUID.randomUUID())))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("update_shouldReachPaddleApi_insteadOfFailingAtResolver_forAnAnnualSubscription")
+    void update_shouldReachPaddleApi_insteadOfFailingAtResolver_forAnAnnualSubscription() throws Exception {
+        givenOrgHasSubscriptionRecord("ANNUAL");
+        givenOrgHasFakePaddleSubscriptionId();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+
+        // Proves the resolver picks the tier's ANNUAL Paddle Price id (not just
+        // MONTHLY, already covered above) — the request reaches Paddle's real API
+        // instead of failing at our own resolver.
         mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
                         .contentType(MediaType.APPLICATION_JSON)
