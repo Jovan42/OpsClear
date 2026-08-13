@@ -319,4 +319,36 @@ class NoteIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Conflict"));
     }
+
+    // --- PAST_DUE subscription status (JOB-175) ---
+
+    @Test
+    @DisplayName("createNote should return 403 when org subscription is past due")
+    void createNote_shouldReturn403_whenSubscriptionPastDue() throws Exception {
+        markSubscriptionPastDue();
+
+        mockMvc.perform(post(ApiPaths.notes(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("content", "Some note"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("listByJob should still return 200 when org subscription is past due")
+    void listByJob_shouldReturn200_whenSubscriptionPastDue() throws Exception {
+        noteRepository.insert(jobId, ownerId, "Existing note");
+        markSubscriptionPastDue();
+
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    private void markSubscriptionPastDue() {
+        UUID subscriptionId = subscriptionRepository.findByOrgId(orgId).orElseThrow().getId();
+        subscriptionRepository.updatePaddleCustomerId(subscriptionId, orgId, "ctm_test_past_due");
+        subscriptionRepository.updateFromPaddleWebhook("ctm_test_past_due", "sub_test_past_due", "PAST_DUE");
+    }
 }

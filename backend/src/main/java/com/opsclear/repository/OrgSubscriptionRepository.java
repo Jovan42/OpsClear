@@ -84,6 +84,16 @@ public class OrgSubscriptionRepository {
                 .execute();
     }
 
+    // Empty when there's no subscription row at all, or when subscription_status is
+    // itself null (org hasn't completed its first Paddle checkout yet) — both cases
+    // are treated identically by callers as "no restriction applies".
+    public Optional<String> findSubscriptionStatus(UUID orgId) {
+        return dsl.select(ORG_SUBSCRIPTIONS.SUBSCRIPTION_STATUS)
+                .from(ORG_SUBSCRIPTIONS)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .fetchOptional(ORG_SUBSCRIPTIONS.SUBSCRIPTION_STATUS);
+    }
+
     public boolean isInternal(UUID orgId) {
         return dsl.fetchExists(
                 dsl.selectOne()

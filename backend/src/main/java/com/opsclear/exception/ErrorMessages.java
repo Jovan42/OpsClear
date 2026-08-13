@@ -213,6 +213,9 @@ public final class ErrorMessages {
                 "Paddle price sync is not yet implemented (JOB-176) — tier/add-on prices "
                         + "aren't mirrored to Paddle Prices yet";
         public static final String INVALID_WEBHOOK_SIGNATURE = "Invalid Paddle webhook signature";
+        public static final String SUBSCRIPTION_PAST_DUE =
+                "This organisation's subscription payment is past due — this action is "
+                        + "read-only until payment is resolved";
 
         private Paddle() {
         }
