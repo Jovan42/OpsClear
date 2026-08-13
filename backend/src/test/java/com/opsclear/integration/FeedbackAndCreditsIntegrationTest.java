@@ -5,7 +5,9 @@ import com.opsclear.model.UserModel;
 import com.opsclear.repository.FeedbackSubmissionRepository;
 import com.opsclear.repository.OrgCreditRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
+import com.opsclear.service.PaddleSubscriptionService;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,6 +28,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,6 +45,8 @@ class FeedbackAndCreditsIntegrationTest {
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private FeedbackSubmissionRepository feedbackSubmissionRepository;
     @Autowired private OrgCreditRepository orgCreditRepository;
+    @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private PaddleSubscriptionService paddleSubscriptionService;
 
     private UUID ownerId;
     private UUID adminId;
@@ -363,6 +369,44 @@ class FeedbackAndCreditsIntegrationTest {
                                 "orgId", orgId, "amount", 500, "reason", "Second grant, same submission",
                                 "submissionId", submissionId))))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("grantCredit_shouldReturn201_whenPaddleCustomerHasNoCompletedTransactionsYet")
+    void grantCredit_shouldReturn201_whenPaddleCustomerHasNoCompletedTransactionsYet() throws Exception {
+        // Real Paddle sandbox call (ADR-0044) — proves the "customer exists but has
+        // never billed anything" skip branch for real, not mocked. A genuinely
+        // completed Paddle transaction can't be produced in sandbox at all without
+        // real embedded checkout (JOB-178, not built yet — same constraint
+        // JOB-176's PaddleSubscriptionIntegrationTest already documents), so the
+        // "adjustment actually created" branch is covered at the unit level only
+        // (CreditServiceTest), not here.
+        //
+        // Paddle's sandbox customer data is not reset between runs the way the local
+        // DB is, so a literal hardcoded email collides with a customer left over from
+        // a previous run (409 customer_already_exists) — a dedicated randomized-email
+        // owner is used here instead of this file's shared fixed-email owner.
+        UUID paddleOwnerId = UUID.randomUUID();
+        String paddleOwnerEmail = "paddle-owner-" + UUID.randomUUID() + "@example.com";
+        userRepository.save(UserModel.builder().id(paddleOwnerId).email(paddleOwnerEmail).name("Paddle Owner").build());
+        UUID paddleOrgId = createOrg(paddleOwnerId, paddleOwnerEmail, "Paddle Org", "PDL");
+
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        mockMvc.perform(put(ApiPaths.orgSubscription(paddleOrgId))
+                        .with(jwt().jwt(j -> j.subject(paddleOwnerId.toString()).claim("email", paddleOwnerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("tierId", tierId, "billingCycle", "MONTHLY", "addonIds", List.of()))))
+                .andExpect(status().isOk());
+        paddleSubscriptionService.initiate(paddleOrgId, paddleOwnerId);
+
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("orgId", paddleOrgId, "amount", 500, "reason", "No transactions yet"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.amount").value(500));
     }
 
     @Test

@@ -7,6 +7,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Thin wrapper over Paddle's REST API (ADR-0044). Deliberately minimal — only the
@@ -88,5 +89,35 @@ public class PaddleClient {
                 .body(Map.of("status", "archived"))
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    public Optional<PaddleTransaction> findLatestCompletedTransaction(String customerId) {
+        PaddleEnvelope<List<PaddleTransaction>> response = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/transactions")
+                        .queryParam("customer_id", customerId)
+                        .queryParam("status", "completed")
+                        .queryParam("order_by", "billed_at[DESC]")
+                        .queryParam("per_page", 1)
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<List<PaddleTransaction>>>() { });
+        return response.data().stream().findFirst();
+    }
+
+    public PaddleAdjustment createCreditAdjustment(
+            String transactionId, String itemId, String amountMinorUnits, String reason) {
+        Map<String, Object> body = Map.of(
+                "action", "credit",
+                "type", "partial",
+                "transaction_id", transactionId,
+                "reason", reason,
+                "items", List.of(Map.of("item_id", itemId, "type", "partial", "amount", amountMinorUnits)));
+        PaddleEnvelope<PaddleAdjustment> response = restClient.post()
+                .uri("/adjustments")
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleAdjustment>>() { });
+        return response.data();
     }
 }
