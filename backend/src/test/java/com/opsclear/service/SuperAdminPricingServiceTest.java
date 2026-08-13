@@ -3,6 +3,7 @@ package com.opsclear.service;
 import com.opsclear.dto.UpdateAddonPriceRequest;
 import com.opsclear.dto.UpdateTierPriceRequest;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.PaddleCatalogSyncResult;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -29,12 +30,13 @@ class SuperAdminPricingServiceTest {
 
     @Mock private SubscriptionTierRepository tierRepository;
     @Mock private SubscriptionAddonRepository addonRepository;
+    @Mock private PaddleSubscriptionService paddleSubscriptionService;
 
     private SuperAdminPricingService pricingService;
 
     @BeforeEach
     void setUp() {
-        pricingService = new SuperAdminPricingService(tierRepository, addonRepository);
+        pricingService = new SuperAdminPricingService(tierRepository, addonRepository, paddleSubscriptionService);
     }
 
     // --- listTiers ---
@@ -54,23 +56,26 @@ class SuperAdminPricingServiceTest {
     // --- updateTierPrice ---
 
     @Test
-    @DisplayName("updateTierPrice updates and returns the tier")
+    @DisplayName("updateTierPrice updates the tier and syncs the new price to Paddle")
     void updateTierPrice_shouldUpdateAndReturnTier() {
         UUID tierId = UUID.randomUUID();
         SubscriptionTierModel existing = SubscriptionTierModel.builder().id(tierId).maxMembers(5).priceMonthly(2900).build();
         SubscriptionTierModel updated = SubscriptionTierModel.builder().id(tierId).maxMembers(5).priceMonthly(3900).priceAnnual(3250).build();
+        SubscriptionTierModel synced = SubscriptionTierModel.builder()
+                .id(tierId).maxMembers(5).priceMonthly(3900).priceAnnual(3250).paddleProductId("pro_1").build();
         UpdateTierPriceRequest request = new UpdateTierPriceRequest();
         request.setPriceMonthly(3900);
         request.setPriceAnnual(3250);
 
         when(tierRepository.findById(tierId)).thenReturn(Optional.of(existing));
         when(tierRepository.updatePrice(tierId, 3900, 3250)).thenReturn(updated);
+        when(paddleSubscriptionService.syncTierPriceToPaddle(updated)).thenReturn(synced);
 
         SubscriptionTierModel result = pricingService.updateTierPrice(tierId, request);
 
-        assertThat(result.getPriceMonthly()).isEqualTo(3900);
-        assertThat(result.getPriceAnnual()).isEqualTo(3250);
+        assertThat(result.getPaddleProductId()).isEqualTo("pro_1");
         verify(tierRepository).updatePrice(tierId, 3900, 3250);
+        verify(paddleSubscriptionService).syncTierPriceToPaddle(updated);
     }
 
     @Test
@@ -105,24 +110,28 @@ class SuperAdminPricingServiceTest {
     // --- updateAddonPrice ---
 
     @Test
-    @DisplayName("updateAddonPrice updates and returns the addon")
+    @DisplayName("updateAddonPrice updates the addon and syncs the new price to Paddle")
     void updateAddonPrice_shouldUpdateAndReturnAddon() {
         SubscriptionAddonModel existing = SubscriptionAddonModel.builder()
                 .id(UUID.randomUUID()).key("DASHBOARD").name("Dashboard").priceMonthly(990).build();
         SubscriptionAddonModel updated = SubscriptionAddonModel.builder()
                 .id(UUID.randomUUID()).key("DASHBOARD").name("Dashboard").priceMonthly(1490).priceAnnual(1242).build();
+        SubscriptionAddonModel synced = SubscriptionAddonModel.builder()
+                .id(UUID.randomUUID()).key("DASHBOARD").name("Dashboard").priceMonthly(1490).priceAnnual(1242)
+                .paddleProductId("pro_1").build();
         UpdateAddonPriceRequest request = new UpdateAddonPriceRequest();
         request.setPriceMonthly(1490);
         request.setPriceAnnual(1242);
 
         when(addonRepository.findByKey("DASHBOARD")).thenReturn(Optional.of(existing));
         when(addonRepository.updatePrice("DASHBOARD", 1490, 1242)).thenReturn(updated);
+        when(paddleSubscriptionService.syncAddonPriceToPaddle(updated)).thenReturn(synced);
 
         SubscriptionAddonModel result = pricingService.updateAddonPrice("DASHBOARD", request);
 
-        assertThat(result.getPriceMonthly()).isEqualTo(1490);
-        assertThat(result.getPriceAnnual()).isEqualTo(1242);
+        assertThat(result.getPaddleProductId()).isEqualTo("pro_1");
         verify(addonRepository).updatePrice("DASHBOARD", 1490, 1242);
+        verify(paddleSubscriptionService).syncAddonPriceToPaddle(updated);
     }
 
     @Test
@@ -137,5 +146,18 @@ class SuperAdminPricingServiceTest {
         assertThatThrownBy(() -> pricingService.updateAddonPrice("UNKNOWN", request))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Subscription addon not found");
+    }
+
+    // --- syncCatalogToPaddle ---
+
+    @Test
+    @DisplayName("syncCatalogToPaddle delegates to PaddleSubscriptionService and returns its result")
+    void syncCatalogToPaddle_shouldDelegateToPaddleSubscriptionService() {
+        PaddleCatalogSyncResult syncResult = new PaddleCatalogSyncResult(2, 3);
+        when(paddleSubscriptionService.syncCatalogToPaddle()).thenReturn(syncResult);
+
+        PaddleCatalogSyncResult result = pricingService.syncCatalogToPaddle();
+
+        assertThat(result).isEqualTo(syncResult);
     }
 }

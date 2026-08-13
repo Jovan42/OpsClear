@@ -9,15 +9,19 @@ import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.OrgSubscriptionModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
+import com.opsclear.model.PaddleCatalogSyncResult;
+import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleCustomer;
+import com.opsclear.paddle.PaddlePrice;
 import com.opsclear.paddle.PaddlePriceResolver;
 import com.opsclear.paddle.PaddleSubscription;
 import com.opsclear.paddle.PaddleSubscriptionItem;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -45,11 +49,15 @@ import java.util.UUID;
 public class PaddleSubscriptionService {
 
     private static final String PRORATION_BILLING_MODE = "prorated_immediately";
+    private static final String INTERVAL_MONTH = "month";
+    private static final String INTERVAL_YEAR = "year";
+    private static final String CURRENCY_EUR = "EUR";
 
     private final OrgSubscriptionRepository orgSubscriptionRepository;
     private final OrganisationRepository organisationRepository;
     private final UserRepository userRepository;
     private final SubscriptionTierRepository tierRepository;
+    private final SubscriptionAddonRepository addonRepository;
     private final PaddleClient paddleClient;
     private final PaddlePriceResolver priceResolver;
 
@@ -89,10 +97,11 @@ public class PaddleSubscriptionService {
 
         Set<UUID> addonIds = request.getAddonIds() != null ? new HashSet<>(request.getAddonIds()) : new HashSet<>();
 
+        String billingCycle = subscription.getBillingCycle();
         List<PaddleSubscriptionItem> items = new ArrayList<>();
-        items.add(new PaddleSubscriptionItem(priceResolver.resolveTierPriceId(tier.getId()), 1));
+        items.add(new PaddleSubscriptionItem(priceResolver.resolveTierPriceId(tier.getId(), billingCycle), 1));
         for (UUID addonId : addonIds) {
-            items.add(new PaddleSubscriptionItem(priceResolver.resolveAddonPriceId(addonId), 1));
+            items.add(new PaddleSubscriptionItem(priceResolver.resolveAddonPriceId(addonId, billingCycle), 1));
         }
 
         PaddleSubscription paddleSubscription = paddleClient.updateSubscriptionItems(
@@ -110,6 +119,88 @@ public class PaddleSubscriptionService {
         log.info("Paddle subscription {} updated for org {}: tier={}, status={}",
                 paddleSubscription.id(), orgId, tier.getId(), paddleSubscription.status());
         return paddleSubscription;
+    }
+
+    @Transactional
+    public SubscriptionTierModel syncTierPriceToPaddle(SubscriptionTierModel tier) {
+        String productId = tier.getPaddleProductId();
+        if (productId == null) {
+            productId = paddleClient.createProduct(tierProductName(tier)).id();
+        }
+
+        PaddlePrice newMonthly = paddleClient.createPrice(productId, tierProductName(tier) + " — Monthly",
+                INTERVAL_MONTH, toMinorUnits(tier.getPriceMonthly()), CURRENCY_EUR);
+        PaddlePrice newAnnual = paddleClient.createPrice(productId, tierProductName(tier) + " — Annual",
+                INTERVAL_YEAR, toMinorUnits(tier.getPriceAnnual()), CURRENCY_EUR);
+
+        archiveIfPresent(tier.getPaddlePriceIdMonthly());
+        archiveIfPresent(tier.getPaddlePriceIdAnnual());
+
+        SubscriptionTierModel updated =
+                tierRepository.updatePaddleIds(tier.getId(), productId, newMonthly.id(), newAnnual.id());
+        log.info("Synced Paddle prices for tier {}: product={}, monthly={}, annual={}",
+                tier.getId(), productId, newMonthly.id(), newAnnual.id());
+        return updated;
+    }
+
+    @Transactional
+    public SubscriptionAddonModel syncAddonPriceToPaddle(SubscriptionAddonModel addon) {
+        String productId = addon.getPaddleProductId();
+        if (productId == null) {
+            productId = paddleClient.createProduct(addon.getName()).id();
+        }
+
+        PaddlePrice newMonthly = paddleClient.createPrice(productId, addon.getName() + " — Monthly",
+                INTERVAL_MONTH, toMinorUnits(addon.getPriceMonthly()), CURRENCY_EUR);
+        PaddlePrice newAnnual = paddleClient.createPrice(productId, addon.getName() + " — Annual",
+                INTERVAL_YEAR, toMinorUnits(addon.getPriceAnnual()), CURRENCY_EUR);
+
+        archiveIfPresent(addon.getPaddlePriceIdMonthly());
+        archiveIfPresent(addon.getPaddlePriceIdAnnual());
+
+        SubscriptionAddonModel updated =
+                addonRepository.updatePaddleIds(addon.getId(), productId, newMonthly.id(), newAnnual.id());
+        log.info("Synced Paddle prices for addon {}: product={}, monthly={}, annual={}",
+                addon.getKey(), productId, newMonthly.id(), newAnnual.id());
+        return updated;
+    }
+
+    @Transactional
+    public PaddleCatalogSyncResult syncCatalogToPaddle() {
+        int tiersSynced = 0;
+        for (SubscriptionTierModel tier : tierRepository.findAll()) {
+            if (tier.getPaddleProductId() == null) {
+                syncTierPriceToPaddle(tier);
+                tiersSynced++;
+            }
+        }
+
+        int addonsSynced = 0;
+        for (SubscriptionAddonModel addon : addonRepository.findAll()) {
+            if (addon.getPaddleProductId() == null) {
+                syncAddonPriceToPaddle(addon);
+                addonsSynced++;
+            }
+        }
+
+        return new PaddleCatalogSyncResult(tiersSynced, addonsSynced);
+    }
+
+    // ─── Paddle price sync helpers ──────────────────────────────────────────────
+
+    private String tierProductName(SubscriptionTierModel tier) {
+        String projects = tier.getMaxProjects() != null ? tier.getMaxProjects() + " projects" : "unlimited projects";
+        return "Tier: " + tier.getMaxMembers() + " members, " + projects;
+    }
+
+    private void archiveIfPresent(String priceId) {
+        if (priceId != null) {
+            paddleClient.archivePrice(priceId);
+        }
+    }
+
+    private static String toMinorUnits(int wholeEuros) {
+        return String.valueOf(wholeEuros * 100);
     }
 
     // ─── Guards ───────────────────────────────────────────────────────────────

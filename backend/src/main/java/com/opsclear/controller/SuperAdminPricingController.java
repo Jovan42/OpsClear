@@ -1,6 +1,7 @@
 package com.opsclear.controller;
 
 import com.opsclear.aop.RequiresSuperUser;
+import com.opsclear.dto.CatalogSyncResponse;
 import com.opsclear.dto.SubscriptionAddonResponse;
 import com.opsclear.dto.SubscriptionTierResponse;
 import com.opsclear.dto.UpdateAddonPriceRequest;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,5 +62,11 @@ public class SuperAdminPricingController {
             @PathVariable String addonKey,
             @Valid @RequestBody UpdateAddonPriceRequest request) {
         return ResponseEntity.ok(SubscriptionAddonResponse.from(pricingService.updateAddonPrice(addonKey, request)));
+    }
+
+    @RequiresSuperUser
+    @PostMapping("/sync")
+    public ResponseEntity<CatalogSyncResponse> syncCatalog() {
+        return ResponseEntity.ok(CatalogSyncResponse.from(pricingService.syncCatalogToPaddle()));
     }
 }

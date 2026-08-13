@@ -1,5 +1,6 @@
 package com.opsclear.integration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
@@ -23,6 +24,7 @@ import static com.opsclear.generated.jooq.Tables.USERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SuperAdminPricingIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
     @Autowired private DSLContext dsl;
     @Autowired private UserRepository userRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
@@ -211,5 +214,102 @@ class SuperAdminPricingIntegrationTest {
                                 {"priceMonthly": 1490, "priceAnnual": -1}
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    // --- Paddle price sync (JOB-176) ---
+
+    @Test
+    @DisplayName("updateTierPrice — syncs a real Paddle Product and Prices to the sandbox on first update")
+    void updateTierPrice_shouldSyncRealPaddlePrices_onFirstUpdate() throws Exception {
+        mockMvc.perform(put(ApiPaths.superAdminPricingTier(tierId))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"priceMonthly": 44, "priceAnnual": 37}
+                                """))
+                .andExpect(status().isOk());
+
+        SubscriptionTierModel synced = tierRepository.findById(tierId).orElseThrow();
+        assertThat(synced.getPaddleProductId()).startsWith("pro_");
+        assertThat(synced.getPaddlePriceIdMonthly()).startsWith("pri_");
+        assertThat(synced.getPaddlePriceIdAnnual()).startsWith("pri_");
+    }
+
+    @Test
+    @DisplayName("updateTierPrice — a second update reuses the Product and replaces the Prices (archive-and-recreate)")
+    void updateTierPrice_shouldReplacePrices_onSecondUpdate() throws Exception {
+        mockMvc.perform(put(ApiPaths.superAdminPricingTier(tierId))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"priceMonthly": 44, "priceAnnual": 37}
+                                """))
+                .andExpect(status().isOk());
+        SubscriptionTierModel firstSync = tierRepository.findById(tierId).orElseThrow();
+
+        mockMvc.perform(put(ApiPaths.superAdminPricingTier(tierId))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"priceMonthly": 64, "priceAnnual": 53}
+                                """))
+                .andExpect(status().isOk());
+        SubscriptionTierModel secondSync = tierRepository.findById(tierId).orElseThrow();
+
+        assertThat(secondSync.getPaddleProductId()).isEqualTo(firstSync.getPaddleProductId());
+        assertThat(secondSync.getPaddlePriceIdMonthly()).isNotEqualTo(firstSync.getPaddlePriceIdMonthly());
+        assertThat(secondSync.getPaddlePriceIdAnnual()).isNotEqualTo(firstSync.getPaddlePriceIdAnnual());
+    }
+
+    @Test
+    @DisplayName("updateAddonPrice — syncs a real Paddle Product and Prices to the sandbox on first update")
+    void updateAddonPrice_shouldSyncRealPaddlePrices_onFirstUpdate() throws Exception {
+        mockMvc.perform(put(ApiPaths.superAdminPricingAddon("NOTES"))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"priceMonthly": 9, "priceAnnual": 8}
+                                """))
+                .andExpect(status().isOk());
+
+        SubscriptionAddonModel synced = addonRepository.findByKey("NOTES").orElseThrow();
+        assertThat(synced.getPaddleProductId()).startsWith("pro_");
+        assertThat(synced.getPaddlePriceIdMonthly()).startsWith("pri_");
+        assertThat(synced.getPaddlePriceIdAnnual()).startsWith("pri_");
+    }
+
+    // --- POST /api/super-admin/pricing/sync ---
+
+    @Test
+    @DisplayName("syncCatalog — regular user receives 403")
+    void syncCatalog_shouldReturn403_forRegularUser() throws Exception {
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_PRICING_SYNC)
+                        .with(jwt().jwt(j -> j.subject(regularUserId.toString()).claim("email", "regular@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("syncCatalog — second call is a no-op: nothing left unsynced, and a fresh row's Paddle ids don't change")
+    void syncCatalog_shouldBeIdempotent_onSecondCall() throws Exception {
+        UUID untouchedTierId = tierRepository.findAll().stream()
+                .filter(t -> t.getMaxMembers() == 50 && t.getMaxProjects() == null)
+                .findFirst().orElseThrow().getId();
+
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_PRICING_SYNC)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isOk());
+        SubscriptionTierModel afterFirstSync = tierRepository.findById(untouchedTierId).orElseThrow();
+        assertThat(afterFirstSync.getPaddleProductId()).isNotNull();
+
+        String response = mockMvc.perform(post(ApiPaths.SUPER_ADMIN_PRICING_SYNC)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com"))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(response).get("tiersSynced").asInt()).isZero();
+        assertThat(objectMapper.readTree(response).get("addonsSynced").asInt()).isZero();
+
+        SubscriptionTierModel afterSecondSync = tierRepository.findById(untouchedTierId).orElseThrow();
+        assertThat(afterSecondSync.getPaddleProductId()).isEqualTo(afterFirstSync.getPaddleProductId());
+        assertThat(afterSecondSync.getPaddlePriceIdMonthly()).isEqualTo(afterFirstSync.getPaddlePriceIdMonthly());
     }
 }

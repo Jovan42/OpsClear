@@ -4,6 +4,7 @@ import com.opsclear.dto.UpdateAddonPriceRequest;
 import com.opsclear.dto.UpdateTierPriceRequest;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.PaddleCatalogSyncResult;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -32,6 +33,7 @@ public class SuperAdminPricingService {
 
     private final SubscriptionTierRepository tierRepository;
     private final SubscriptionAddonRepository addonRepository;
+    private final PaddleSubscriptionService paddleSubscriptionService;
 
     @Transactional(readOnly = true)
     public List<SubscriptionTierModel> listTiers() {
@@ -45,7 +47,7 @@ public class SuperAdminPricingService {
                 tierId, request.getPriceMonthly(), request.getPriceAnnual());
         log.info("Updated subscription tier {} price to {}/{}",
                 tierId, request.getPriceMonthly(), request.getPriceAnnual());
-        return updated;
+        return paddleSubscriptionService.syncTierPriceToPaddle(updated);
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +62,12 @@ public class SuperAdminPricingService {
                 addonKey, request.getPriceMonthly(), request.getPriceAnnual());
         log.info("Updated subscription addon {} price to {}/{}",
                 addonKey, request.getPriceMonthly(), request.getPriceAnnual());
-        return updated;
+        return paddleSubscriptionService.syncAddonPriceToPaddle(updated);
+    }
+
+    @Transactional
+    public PaddleCatalogSyncResult syncCatalogToPaddle() {
+        return paddleSubscriptionService.syncCatalogToPaddle();
     }
 
     // --- Guards ---

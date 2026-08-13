@@ -87,6 +87,23 @@ public class SubscriptionAddons extends TableImpl<SubscriptionAddonsRecord> {
      */
     public final TableField<SubscriptionAddonsRecord, Integer> DISPLAY_ORDER = createField(DSL.name("display_order"), SQLDataType.INTEGER.nullable(false), this, "");
 
+    /**
+     * The column <code>public.subscription_addons.paddle_product_id</code>.
+     */
+    public final TableField<SubscriptionAddonsRecord, String> PADDLE_PRODUCT_ID = createField(DSL.name("paddle_product_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column
+     * <code>public.subscription_addons.paddle_price_id_monthly</code>.
+     */
+    public final TableField<SubscriptionAddonsRecord, String> PADDLE_PRICE_ID_MONTHLY = createField(DSL.name("paddle_price_id_monthly"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column
+     * <code>public.subscription_addons.paddle_price_id_annual</code>.
+     */
+    public final TableField<SubscriptionAddonsRecord, String> PADDLE_PRICE_ID_ANNUAL = createField(DSL.name("paddle_price_id_annual"), SQLDataType.CLOB, this, "");
+
     private SubscriptionAddons(Name alias, Table<SubscriptionAddonsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

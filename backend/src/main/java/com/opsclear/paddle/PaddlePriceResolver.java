@@ -3,16 +3,16 @@ package com.opsclear.paddle;
 import java.util.UUID;
 
 /**
- * Resolves a subscription tier or add-on to its Paddle Price ID. JOB-176 backs this
- * with a real {@code paddle_price_id} column on {@code subscription_tiers}/
- * {@code subscription_addons} — that column doesn't exist yet (it's explicitly
- * JOB-176's own DB change, not JOB-173's), so this is a seam: {@link PaddleSubscriptionService}
- * depends only on this interface, and JOB-176 swaps in a real implementation without
- * touching the service's logic. See {@link NotYetImplementedPaddlePriceResolver}.
+ * Resolves a subscription tier or add-on to its Paddle Price ID for a given billing
+ * cycle. Backed by the {@code paddle_price_id_monthly}/{@code paddle_price_id_annual}
+ * columns on {@code subscription_tiers}/{@code subscription_addons} (JOB-176) — a
+ * tier/addon has a distinct Paddle Price per cycle, so the cycle must be part of the
+ * lookup key. This is a seam: {@link com.opsclear.service.PaddleSubscriptionService}
+ * depends only on this interface.
  */
 public interface PaddlePriceResolver {
 
-    String resolveTierPriceId(UUID tierId);
+    String resolveTierPriceId(UUID tierId, String billingCycle);
 
-    String resolveAddonPriceId(UUID addonId);
+    String resolveAddonPriceId(UUID addonId, String billingCycle);
 }

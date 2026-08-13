@@ -78,12 +78,28 @@ public class SubscriptionTiers extends TableImpl<SubscriptionTiersRecord> {
     /**
      * The column <code>public.subscription_tiers.currency</code>.
      */
-    public final TableField<SubscriptionTiersRecord, String> CURRENCY = createField(DSL.name("currency"), SQLDataType.VARCHAR(3).nullable(false).defaultValue(DSL.field(DSL.raw("'RSD'::character varying"), SQLDataType.VARCHAR)), this, "");
+    public final TableField<SubscriptionTiersRecord, String> CURRENCY = createField(DSL.name("currency"), SQLDataType.VARCHAR(3).nullable(false).defaultValue(DSL.field(DSL.raw("'EUR'::character varying"), SQLDataType.VARCHAR)), this, "");
 
     /**
      * The column <code>public.subscription_tiers.display_order</code>.
      */
     public final TableField<SubscriptionTiersRecord, Integer> DISPLAY_ORDER = createField(DSL.name("display_order"), SQLDataType.INTEGER.nullable(false), this, "");
+
+    /**
+     * The column <code>public.subscription_tiers.paddle_product_id</code>.
+     */
+    public final TableField<SubscriptionTiersRecord, String> PADDLE_PRODUCT_ID = createField(DSL.name("paddle_product_id"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column
+     * <code>public.subscription_tiers.paddle_price_id_monthly</code>.
+     */
+    public final TableField<SubscriptionTiersRecord, String> PADDLE_PRICE_ID_MONTHLY = createField(DSL.name("paddle_price_id_monthly"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.subscription_tiers.paddle_price_id_annual</code>.
+     */
+    public final TableField<SubscriptionTiersRecord, String> PADDLE_PRICE_ID_ANNUAL = createField(DSL.name("paddle_price_id_annual"), SQLDataType.CLOB, this, "");
 
     private SubscriptionTiers(Name alias, Table<SubscriptionTiersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

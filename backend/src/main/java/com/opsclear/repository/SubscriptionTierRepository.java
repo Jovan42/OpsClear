@@ -41,6 +41,17 @@ public class SubscriptionTierRepository {
         return findById(id).orElseThrow();
     }
 
+    public SubscriptionTierModel updatePaddleIds(
+            UUID id, String paddleProductId, String paddlePriceIdMonthly, String paddlePriceIdAnnual) {
+        dsl.update(SUBSCRIPTION_TIERS)
+                .set(SUBSCRIPTION_TIERS.PADDLE_PRODUCT_ID, paddleProductId)
+                .set(SUBSCRIPTION_TIERS.PADDLE_PRICE_ID_MONTHLY, paddlePriceIdMonthly)
+                .set(SUBSCRIPTION_TIERS.PADDLE_PRICE_ID_ANNUAL, paddlePriceIdAnnual)
+                .where(SUBSCRIPTION_TIERS.ID.eq(id))
+                .execute();
+        return findById(id).orElseThrow();
+    }
+
     private SubscriptionTierModel toModel(SubscriptionTiersRecord r) {
         return SubscriptionTierModel.builder()
                 .id(r.getId())
@@ -50,6 +61,9 @@ public class SubscriptionTierRepository {
                 .priceAnnual(r.getPriceAnnual())
                 .currency(r.getCurrency())
                 .displayOrder(r.getDisplayOrder())
+                .paddleProductId(r.getPaddleProductId())
+                .paddlePriceIdMonthly(r.getPaddlePriceIdMonthly())
+                .paddlePriceIdAnnual(r.getPaddlePriceIdAnnual())
                 .build();
     }
 }

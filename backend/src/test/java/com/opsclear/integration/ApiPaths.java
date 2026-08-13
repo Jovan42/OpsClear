@@ -233,6 +233,8 @@ final class ApiPaths {
         return "/api/super-admin/pricing/addons/" + addonKey;
     }
 
+    static final String SUPER_ADMIN_PRICING_SYNC = "/api/super-admin/pricing/sync";
+
     // --- Feedback ---
 
     static final String FEEDBACK      = "/api/feedback";

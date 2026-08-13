@@ -20,4 +20,7 @@ public class SubscriptionAddonModel {
     private int priceAnnual;
     private boolean available;
     private int displayOrder;
+    private String paddleProductId;
+    private String paddlePriceIdMonthly;
+    private String paddlePriceIdAnnual;
 }
