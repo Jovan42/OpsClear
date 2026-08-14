@@ -104,6 +104,23 @@
   "saveSubscriptionButton": "Sačuvaj pretplatu",
   "subscriptionSaved": "Pretplata je sačuvana.",
 
+  "paddleNotSetUpTitle": "Podaci za plaćanje",
+  "paddleNotSetUpDesc": "Unesite podatke za plaćanje da biste aktivirali naplatu za plan iznad.",
+  "paddleCanceledDesc": "Naplata je otkazana. Unesite podatke za plaćanje da biste se ponovo pretplatili.",
+  "paddlePriceNotSyncedYet": "Ovaj plan još nije dostupan za plaćanje — proverite ponovo uskoro.",
+  "paddleEnterPaymentDetailsButton": "Unesite podatke za plaćanje",
+  "paddleProcessingTitle": "Obrada vašeg plaćanja",
+  "paddleProcessingDesc": "Ovo može potrajati nekoliko trenutaka — ova stranica će se automatski ažurirati.",
+  "paddleBillingTitle": "Naplata",
+  "paddleStatusActive": "Aktivno",
+  "paddleStatusPastDue": "Kasni plaćanje",
+  "paddlePastDueBanner": "Vaše poslednje plaćanje nije prošlo. Ažurirajte način plaćanja da biste zadržali aktivnu pretplatu — vaši podaci ostaju potpuno vidljivi u međuvremenu.",
+  "paddleUpdatePaymentMethodButton": "Ažuriraj način plaćanja",
+  "paddleCancelSubscriptionButton": "Otkaži pretplatu",
+  "paddleCancelModalTitle": "Otkazati pretplatu?",
+  "paddleCancelModalMessage": "Vaša pretplata će ostati aktivna do kraja tekućeg perioda naplate, nakon čega se neće obnoviti.",
+  "paddleCancelScheduledDesc": "Vaša pretplata je podešena da se otkaže na kraju tekućeg perioda naplate.",
+
   "roles": {
     "MEMBER": "Član",
     "ADMIN": "Administrator"
