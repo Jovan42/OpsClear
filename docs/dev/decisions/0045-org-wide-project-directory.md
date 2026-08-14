@@ -14,6 +14,8 @@ This was discovered investigating JOB-100, suspected as a billing bug: a subscri
 
 Add a read-only, reporting-only directory view (org settings, near member management) listing every project in the org — regardless of the viewing Owner/Admin's membership in it.
 
+> **Amended 2026-08-14, before implementation started (JOB-187/188 were still unstarted):** placement moved from "org settings, near member management" to a new dedicated **"Overview"** page, reachable via its own `UserMenu` entry, shared with the cross-project pending approval queue (ADR-0046) as a second section on the same page. Both features answer the same underlying question — "what's happening across my org that I might not otherwise see" — and adding two more sections to the already-growing Organisation settings page risked that page becoming a dumping ground. A dedicated page also keeps the `UserMenu` itself from accumulating unrelated entries: `Organisation`, `Feedback`, and now `Overview` are grouped together (visually separated from personal `Account settings` and `Sign out`) rather than nested indefinitely inside one settings page. See ADR-0046 for the full menu/page restructuring.
+
 ## Product decisions
 
 - Lists every project in the org: name, owner, status, and **project-level member count** — the count directly serves the "spot orphaned/under-staffed projects" motivation, cheap to compute alongside the existing query.
@@ -34,7 +36,7 @@ None — reads existing `projects`/`project_members` data.
 - New service method (or an addition to `ProjectService`): fetch all projects for an org without filtering by caller membership, with a `COUNT` on `project_members` per project, ordered by that count ascending.
 
 ### Frontend
-- New section in org settings, near member management: table of all projects (name, owner, status, member count), sorted with the lowest-member-count projects first.
+- Table of all projects (name, owner, status, member count), sorted with the lowest-member-count projects first — rendered as the "Project Directory" section on the new **Overview** page (see amendment above and ADR-0046), not inside the existing org settings page.
 
 ### Constraints & edge cases
 - Must not expose job/content data from projects the viewer isn't a member of — project name/owner/status/member-count only, nothing deeper.
@@ -77,3 +79,4 @@ Considered, since seeing a project you're not in naturally invites that action. 
 - JOB-100 (Maintenance): the investigation that surfaced this blind spot
 - JOB-137 (Future Consideration, promoted to PRJ-010/MIL-027): original scoping notes this ADR implements
 - JOB-148 (PRJ-010/MIL-029): quick project switcher — will consume this ADR's directory data for Owner/Admin roles once both ship
+- ADR-0046: Cross-Project Pending Approval Queue (`docs/dev/decisions/0046-cross-project-approval-queue.md`) — shares the "Overview" page introduced by this amendment
