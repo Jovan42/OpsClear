@@ -74,7 +74,11 @@ public class PaddleClient {
                 "description", description,
                 "product_id", productId,
                 "billing_cycle", Map.of("interval", interval, "frequency", 1),
-                "unit_price", Map.of("amount", amountMinorUnits, "currency_code", currencyCode));
+                "unit_price", Map.of("amount", amountMinorUnits, "currency_code", currencyCode),
+                // Paddle defaults to quantity 1-100 if omitted, which lets the checkout
+                // overlay show a stepper for buying multiple of the same tier/add-on —
+                // meaningless for a subscription plan, so lock it to exactly 1.
+                "quantity", Map.of("minimum", 1, "maximum", 1));
         PaddleEnvelope<PaddlePrice> response = restClient.post()
                 .uri("/prices")
                 .body(body)
