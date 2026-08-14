@@ -19,6 +19,7 @@ import com.opsclear.paddle.PaddlePriceResolver;
 import com.opsclear.paddle.PaddleProduct;
 import com.opsclear.paddle.PaddleSubscription;
 import com.opsclear.paddle.PaddleSubscriptionItem;
+import com.opsclear.paddle.PaddleTransaction;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -444,6 +445,99 @@ class PaddleSubscriptionServiceTest {
         when(organisationRepository.findMemberRole(orgId, callerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cancel(orgId, callerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    // --- getUpdatePaymentMethodTransactionId ---
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransactionId returns the transaction id Paddle provides")
+    void getUpdatePaymentMethodTransactionId_shouldReturnTransactionId() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123").build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(paddleClient.getUpdatePaymentMethodTransaction("sub_123"))
+                .thenReturn(new PaddleTransaction("txn_123", "draft", List.of()));
+
+        String result = service.getUpdatePaymentMethodTransactionId(orgId, ownerId);
+
+        assertThat(result).isEqualTo("txn_123");
+        verify(paddleClient).getUpdatePaymentMethodTransaction("sub_123");
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransactionId throws ConflictException when there's no Paddle subscription yet")
+    void getUpdatePaymentMethodTransactionId_shouldThrow_whenNoPaddleSubscriptionYet() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.getUpdatePaymentMethodTransactionId(orgId, ownerId))
+                .isInstanceOf(ConflictException.class);
+        verify(paddleClient, never()).getUpdatePaymentMethodTransaction(anyString());
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransactionId throws BadRequestException for an internal org")
+    void getUpdatePaymentMethodTransactionId_shouldThrow_whenOrgIsInternal() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(true).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.getUpdatePaymentMethodTransactionId(orgId, ownerId))
+                .isInstanceOf(BadRequestException.class);
+        verify(paddleClient, never()).getUpdatePaymentMethodTransaction(anyString());
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransactionId throws NotFoundException when the org has no subscription record yet")
+    void getUpdatePaymentMethodTransactionId_shouldThrow_whenNoSubscriptionRecord() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getUpdatePaymentMethodTransactionId(orgId, ownerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransactionId throws ForbiddenException for a non-owner")
+    void getUpdatePaymentMethodTransactionId_shouldThrow_forNonOwner() {
+        UUID orgId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> service.getUpdatePaymentMethodTransactionId(orgId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransactionId throws NotFoundException when the caller is not a member")
+    void getUpdatePaymentMethodTransactionId_shouldThrow_whenCallerNotAMember() {
+        UUID orgId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, callerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getUpdatePaymentMethodTransactionId(orgId, callerId))
                 .isInstanceOf(NotFoundException.class);
     }
 

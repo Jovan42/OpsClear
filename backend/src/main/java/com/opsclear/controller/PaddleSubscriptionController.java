@@ -3,6 +3,7 @@ package com.opsclear.controller;
 import com.opsclear.dto.InitiateSubscriptionResponse;
 import com.opsclear.dto.PaddleSubscriptionResponse;
 import com.opsclear.dto.UpdatePaddleSubscriptionRequest;
+import com.opsclear.dto.UpdatePaymentMethodTransactionResponse;
 import com.opsclear.paddle.PaddleSubscription;
 import com.opsclear.security.SecurityUtils;
 import com.opsclear.service.PaddleSubscriptionService;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -64,5 +66,16 @@ public class PaddleSubscriptionController {
                 .status(cancelled.status())
                 .build();
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/update-payment-method-transaction")
+    public ResponseEntity<UpdatePaymentMethodTransactionResponse> getUpdatePaymentMethodTransaction(
+            @PathVariable UUID orgId,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        String transactionId = paddleSubscriptionService.getUpdatePaymentMethodTransactionId(orgId, callerId);
+        return ResponseEntity.ok(UpdatePaymentMethodTransactionResponse.builder()
+                .transactionId(transactionId)
+                .build());
     }
 }

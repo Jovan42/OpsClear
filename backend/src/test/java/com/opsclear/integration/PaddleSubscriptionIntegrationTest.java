@@ -27,6 +27,7 @@ import java.util.UUID;
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static com.opsclear.generated.jooq.Tables.SUBSCRIPTION_TIERS;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -418,6 +419,63 @@ class PaddleSubscriptionIntegrationTest {
     @DisplayName("cancel_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
     void cancel_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
         mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isNotFound());
+    }
+
+    // ─── GET .../subscription/paddle/update-payment-method-transaction ────────
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransaction_shouldReachPaddleApi_insteadOfFailingAtGuard_onceSubscriptionExists")
+    void getUpdatePaymentMethodTransaction_shouldReachPaddleApi_insteadOfFailingAtGuard_onceSubscriptionExists()
+            throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        // Same reasoning as cancel/update above: sub_test_placeholder isn't a real
+        // Paddle subscription, so the request reaches Paddle's real API and fails
+        // there instead of failing at our own guard.
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionUpdatePaymentMethodTransaction(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransaction_shouldReturn409_whenNoPaddleSubscriptionYet")
+    void getUpdatePaymentMethodTransaction_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionUpdatePaymentMethodTransaction(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransaction_shouldReturn400_forInternalOrg")
+    void getUpdatePaymentMethodTransaction_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionUpdatePaymentMethodTransaction(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransaction_shouldReturn403_forNonOwner")
+    void getUpdatePaymentMethodTransaction_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionUpdatePaymentMethodTransaction(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("getUpdatePaymentMethodTransaction_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
+    void getUpdatePaymentMethodTransaction_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionUpdatePaymentMethodTransaction(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isNotFound());
     }
