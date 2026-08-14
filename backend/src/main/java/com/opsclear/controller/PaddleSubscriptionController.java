@@ -4,6 +4,7 @@ import com.opsclear.dto.InitiateSubscriptionResponse;
 import com.opsclear.dto.PaddleSubscriptionResponse;
 import com.opsclear.dto.UpdatePaddleSubscriptionRequest;
 import com.opsclear.dto.UpdatePaymentMethodTransactionResponse;
+import com.opsclear.model.OrgSubscriptionModel;
 import com.opsclear.paddle.PaddleSubscription;
 import com.opsclear.security.SecurityUtils;
 import com.opsclear.service.PaddleSubscriptionService;
@@ -64,6 +65,20 @@ public class PaddleSubscriptionController {
                 .orgId(orgId)
                 .paddleSubscriptionId(cancelled.id())
                 .status(cancelled.status())
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/resume")
+    public ResponseEntity<PaddleSubscriptionResponse> resume(
+            @PathVariable UUID orgId,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        OrgSubscriptionModel resumed = paddleSubscriptionService.resume(orgId, callerId);
+        PaddleSubscriptionResponse response = PaddleSubscriptionResponse.builder()
+                .orgId(orgId)
+                .paddleSubscriptionId(resumed.getPaddleSubscriptionId())
+                .status(resumed.getSubscriptionStatus())
                 .build();
         return ResponseEntity.ok(response);
     }

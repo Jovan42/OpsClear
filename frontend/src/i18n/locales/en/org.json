@@ -106,7 +106,7 @@
 
   "paddleNotSetUpTitle": "Payment details",
   "paddleNotSetUpDesc": "Enter your payment details to activate billing for the plan above.",
-  "paddleCanceledDesc": "Billing was canceled. Enter payment details to resubscribe.",
+  "paddleCanceledDesc": "Billing was canceled. Enter payment details to resubscribe — you'll be charged for a new billing period as soon as you complete checkout.",
   "paddlePriceNotSyncedYet": "This plan isn't available for checkout yet — please check back shortly.",
   "paddleEnterPaymentDetailsButton": "Enter payment details",
   "paddleProcessingTitle": "Processing your payment",
@@ -121,7 +121,9 @@
   "paddleCancelSubscriptionButton": "Cancel subscription",
   "paddleCancelModalTitle": "Cancel subscription?",
   "paddleCancelModalMessage": "Your subscription will remain active until the end of your current billing period, then it will not renew.",
-  "paddleCancelScheduledDesc": "Your subscription is set to cancel at the end of your current billing period.",
+  "paddleCancelScheduledDesc": "Your subscription is set to cancel on {{date}}. You can resume it for free at any time before then.",
+  "paddleResumeSubscriptionButton": "Resume subscription",
+  "paddleResumedToast": "Cancellation removed — your subscription will continue as normal.",
 
   "roles": {
     "MEMBER": "Member",

@@ -9,6 +9,7 @@ import com.opsclear.generated.jooq.Public;
 import com.opsclear.generated.jooq.tables.records.OrgSubscriptionsRecord;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -106,6 +107,14 @@ public class OrgSubscriptions extends TableImpl<OrgSubscriptionsRecord> {
      * until the org has a Paddle subscription.
      */
     public final TableField<OrgSubscriptionsRecord, String> SUBSCRIPTION_STATUS = createField(DSL.name("subscription_status"), SQLDataType.VARCHAR(10), this, "Synced from Paddle webhook events (JOB-174), never computed locally. Null until the org has a Paddle subscription.");
+
+    /**
+     * The column
+     * <code>public.org_subscriptions.paddle_scheduled_cancellation_at</code>.
+     * From Paddle's scheduled_change.effective_at when scheduled_change.action
+     * = cancel. Null when no cancellation is scheduled.
+     */
+    public final TableField<OrgSubscriptionsRecord, OffsetDateTime> PADDLE_SCHEDULED_CANCELLATION_AT = createField(DSL.name("paddle_scheduled_cancellation_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "From Paddle's scheduled_change.effective_at when scheduled_change.action = cancel. Null when no cancellation is scheduled.");
 
     private OrgSubscriptions(Name alias, Table<OrgSubscriptionsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

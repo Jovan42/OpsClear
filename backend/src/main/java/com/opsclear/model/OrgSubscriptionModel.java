@@ -26,4 +26,5 @@ public class OrgSubscriptionModel {
     private String paddleCustomerId;
     private String paddleSubscriptionId;
     private String subscriptionStatus;
+    private Instant paddleScheduledCancellationAt;
 }

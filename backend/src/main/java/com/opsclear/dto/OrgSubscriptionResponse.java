@@ -24,6 +24,7 @@ public class OrgSubscriptionResponse {
     private String paddleCustomerId;
     private String paddleSubscriptionId;
     private String subscriptionStatus;
+    private Instant paddleScheduledCancellationAt;
 
     public static OrgSubscriptionResponse from(
             OrgSubscriptionModel model,
@@ -47,6 +48,7 @@ public class OrgSubscriptionResponse {
                 .paddleCustomerId(model.getPaddleCustomerId())
                 .paddleSubscriptionId(model.getPaddleSubscriptionId())
                 .subscriptionStatus(model.getSubscriptionStatus())
+                .paddleScheduledCancellationAt(model.getPaddleScheduledCancellationAt())
                 .build();
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -147,6 +148,34 @@ class PaddleWebhookIntegrationTest {
                 .andExpect(status().isOk());
 
         assertPersistedStatus(subscriptionId, "CANCELED");
+    }
+
+    @Test
+    @DisplayName("subscription.updated with a scheduled cancel persists the scheduled cancellation date")
+    void webhook_shouldPersistScheduledCancellation_whenScheduledChangeIsCancel() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String body = subscriptionEventBodyWithScheduledChange(
+                "subscription.updated", subscriptionId, "active", "cancel", "2024-10-12T07:20:50.52Z");
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertPersistedScheduledCancellation(subscriptionId, Instant.parse("2024-10-12T07:20:50.52Z"));
+    }
+
+    @Test
+    @DisplayName("subscription.updated with no scheduled change clears a previously scheduled cancellation")
+    void webhook_shouldClearScheduledCancellation_whenScheduledChangeIsNull() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String scheduled = subscriptionEventBodyWithScheduledChange(
+                "subscription.updated", subscriptionId, "active", "cancel", "2024-10-12T07:20:50.52Z");
+        postWebhook(scheduled, signatureHeader(scheduled, WEBHOOK_SECRET)).andExpect(status().isOk());
+        assertPersistedScheduledCancellation(subscriptionId, Instant.parse("2024-10-12T07:20:50.52Z"));
+
+        String resumed = subscriptionEventBody("subscription.updated", subscriptionId, "active");
+        postWebhook(resumed, signatureHeader(resumed, WEBHOOK_SECRET)).andExpect(status().isOk());
+
+        assertPersistedScheduledCancellation(subscriptionId, null);
     }
 
     @Test
@@ -293,6 +322,18 @@ class PaddleWebhookIntegrationTest {
         assertThat(record.getSubscriptionStatus()).isEqualTo(expectedStatus);
     }
 
+    private void assertPersistedScheduledCancellation(String expectedSubscriptionId, Instant expectedEffectiveAt) {
+        var record = dsl.selectFrom(ORG_SUBSCRIPTIONS)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .fetchSingle();
+        assertThat(record.getPaddleSubscriptionId()).isEqualTo(expectedSubscriptionId);
+        if (expectedEffectiveAt == null) {
+            assertThat(record.getPaddleScheduledCancellationAt()).isNull();
+        } else {
+            assertThat(record.getPaddleScheduledCancellationAt().toInstant()).isEqualTo(expectedEffectiveAt);
+        }
+    }
+
     private org.springframework.test.web.servlet.ResultActions postWebhook(String body, String signatureHeader)
             throws Exception {
         return mockMvc.perform(post(ApiPaths.WEBHOOKS_PADDLE)
@@ -305,6 +346,14 @@ class PaddleWebhookIntegrationTest {
         return "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"" + eventType + "\","
                 + "\"data\":{\"id\":\"" + subscriptionId + "\",\"customer_id\":\"" + customerId + "\","
                 + "\"status\":\"" + status + "\"}}";
+    }
+
+    private String subscriptionEventBodyWithScheduledChange(
+            String eventType, String subscriptionId, String status, String scheduledAction, String effectiveAt) {
+        return "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"" + eventType + "\","
+                + "\"data\":{\"id\":\"" + subscriptionId + "\",\"customer_id\":\"" + customerId + "\","
+                + "\"status\":\"" + status + "\",\"scheduled_change\":{\"action\":\"" + scheduledAction
+                + "\",\"effective_at\":\"" + effectiveAt + "\",\"resume_at\":null}}}";
     }
 
     private static String signatureHeader(String body, String secret) {

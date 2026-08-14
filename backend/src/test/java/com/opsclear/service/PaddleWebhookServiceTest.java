@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.repository.OrgSubscriptionRepository;
@@ -15,10 +16,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HexFormat;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,7 +41,14 @@ class PaddleWebhookServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PaddleWebhookService(new ObjectMapper(), orgSubscriptionRepository, SECRET);
+        // A bare `new ObjectMapper()` doesn't match Spring Boot's autoconfigured bean
+        // in two ways this test needs: no jsr310 module (Instant deserialization would
+        // silently fail) and FAIL_ON_UNKNOWN_PROPERTIES left at Jackson's own default of
+        // true (Spring Boot turns it off) — a real payload's resume_at field, which this
+        // codebase deliberately doesn't map, would otherwise throw.
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        service = new PaddleWebhookService(objectMapper, orgSubscriptionRepository, SECRET);
     }
 
     // --- signature verification ---
@@ -49,7 +60,7 @@ class PaddleWebhookServiceTest {
 
         assertThatThrownBy(() -> service.handle(null, body))
                 .isInstanceOf(ForbiddenException.class);
-        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any());
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any());
     }
 
     @Test
@@ -61,7 +72,7 @@ class PaddleWebhookServiceTest {
 
         assertThatThrownBy(() -> service.handle(header, body))
                 .isInstanceOf(ForbiddenException.class);
-        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any());
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any());
     }
 
     @Test
@@ -72,7 +83,7 @@ class PaddleWebhookServiceTest {
 
         assertThatThrownBy(() -> service.handle(header, body))
                 .isInstanceOf(ForbiddenException.class);
-        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any());
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any());
     }
 
     @Test
@@ -99,11 +110,11 @@ class PaddleWebhookServiceTest {
     void handle_shouldAccept_whenHeaderHasMalformedSegment() {
         String body = subscriptionEventBody("subscription.created", "active");
         String header = "not-a-key-value-pair;" + signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE")).thenReturn(1);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null)).thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE");
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null);
     }
 
     @Test
@@ -130,11 +141,11 @@ class PaddleWebhookServiceTest {
     void handle_shouldMapPaddleStatus_toLocalStatus(String paddleStatus, String localStatus) {
         String body = subscriptionEventBody("subscription.updated", paddleStatus);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", localStatus)).thenReturn(1);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", localStatus, null)).thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", localStatus);
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", localStatus, null);
     }
 
     @Test
@@ -145,7 +156,7 @@ class PaddleWebhookServiceTest {
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any());
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any());
     }
 
     @Test
@@ -153,11 +164,11 @@ class PaddleWebhookServiceTest {
     void handle_shouldNoOp_whenNoMatchingOrg() {
         String body = subscriptionEventBody("subscription.created", "active");
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE")).thenReturn(0);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null)).thenReturn(0);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE");
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null);
     }
 
     @Test
@@ -165,13 +176,54 @@ class PaddleWebhookServiceTest {
     void handle_shouldBeIdempotent_onRedelivery() {
         String body = subscriptionEventBody("subscription.created", "active");
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE")).thenReturn(1);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null)).thenReturn(1);
 
         service.handle(header, body);
         service.handle(header, body);
 
         verify(orgSubscriptionRepository, times(2))
-                .updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE");
+                .updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null);
+    }
+
+    // --- scheduled cancellation (JOB-197) ---
+
+    @Test
+    @DisplayName("handle persists the scheduled cancellation date when scheduled_change.action is cancel")
+    void handle_shouldPersistScheduledCancellation_whenActionIsCancel() {
+        Instant effectiveAt = Instant.parse("2024-10-12T07:20:50.52Z");
+        String body = subscriptionEventBodyWithScheduledChange("subscription.updated", "active", "cancel", effectiveAt);
+        String header = signatureHeader(body, SECRET);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(eq("ctm_123"), eq("sub_123"), eq("ACTIVE"), eq(effectiveAt)))
+                .thenReturn(1);
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", effectiveAt);
+    }
+
+    @Test
+    @DisplayName("handle clears the scheduled cancellation date when scheduled_change is null")
+    void handle_shouldClearScheduledCancellation_whenScheduledChangeIsNull() {
+        String body = subscriptionEventBody("subscription.updated", "active");
+        String header = signatureHeader(body, SECRET);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null)).thenReturn(1);
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(eq("ctm_123"), eq("sub_123"), eq("ACTIVE"), isNull());
+    }
+
+    @Test
+    @DisplayName("handle ignores a scheduled_change whose action isn't cancel")
+    void handle_shouldIgnoreScheduledChange_whenActionIsNotCancel() {
+        Instant effectiveAt = Instant.parse("2024-10-12T07:20:50.52Z");
+        String body = subscriptionEventBodyWithScheduledChange("subscription.updated", "paused", "pause", effectiveAt);
+        String header = signatureHeader(body, SECRET);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "CANCELED", null)).thenReturn(1);
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(eq("ctm_123"), eq("sub_123"), eq("CANCELED"), isNull());
     }
 
     // --- non-subscription events ---
@@ -185,7 +237,7 @@ class PaddleWebhookServiceTest {
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any());
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any());
     }
 
     @Test
@@ -197,7 +249,7 @@ class PaddleWebhookServiceTest {
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any());
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any());
     }
 
     @Test
@@ -208,14 +260,23 @@ class PaddleWebhookServiceTest {
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any());
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any());
     }
 
     // --- helpers ---
 
     private static String subscriptionEventBody(String eventType, String status) {
         return "{\"event_id\":\"evt_1\",\"event_type\":\"" + eventType + "\","
-                + "\"data\":{\"id\":\"sub_123\",\"customer_id\":\"ctm_123\",\"status\":\"" + status + "\"}}";
+                + "\"data\":{\"id\":\"sub_123\",\"customer_id\":\"ctm_123\",\"status\":\"" + status
+                + "\",\"scheduled_change\":null}}";
+    }
+
+    private static String subscriptionEventBodyWithScheduledChange(
+            String eventType, String status, String scheduledAction, Instant effectiveAt) {
+        return "{\"event_id\":\"evt_1\",\"event_type\":\"" + eventType + "\","
+                + "\"data\":{\"id\":\"sub_123\",\"customer_id\":\"ctm_123\",\"status\":\"" + status + "\","
+                + "\"scheduled_change\":{\"action\":\"" + scheduledAction + "\",\"effective_at\":\""
+                + effectiveAt + "\",\"resume_at\":null}}}";
     }
 
     private static String signatureHeader(String body, String secret) {

@@ -217,6 +217,10 @@ public final class ErrorMessages {
         public static final String SUBSCRIPTION_PAST_DUE =
                 "This organisation's subscription payment is past due — this action is "
                         + "read-only until payment is resolved";
+        public static final String CANCELLATION_ALREADY_SCHEDULED =
+                "A cancellation is already scheduled for this subscription";
+        public static final String NO_CANCELLATION_SCHEDULED =
+                "There's no scheduled cancellation on this subscription to resume";
 
         private Paddle() {
         }

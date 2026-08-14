@@ -22,3 +22,13 @@ export function useCancelSubscription(orgId: string) {
     },
   });
 }
+
+export function useResumeSubscription(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => paddleSubscriptionApi.resume(orgId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'subscription'] });
+    },
+  });
+}
