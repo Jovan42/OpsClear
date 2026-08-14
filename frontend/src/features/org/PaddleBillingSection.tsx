@@ -34,7 +34,12 @@ export default function PaddleBillingSection({ orgId }: Props) {
   const { mutate: getUpdateTransaction, isPending: loadingUpdateTransaction } = useUpdatePaymentMethod(orgId);
   const { mutate: cancelSubscription, isPending: cancelling } = useCancelSubscription(orgId);
 
-  const processing = awaitingWebhook && !currentSub?.subscriptionStatus;
+  // Not just "status is null" — a resubscribe after cancellation starts from a
+  // real, non-null status ('CANCELED'), which would otherwise make this always
+  // false and skip straight back to the pre-checkout view instead of showing
+  // processing while genuinely waiting on the new payment's webhook.
+  const processing =
+    awaitingWebhook && currentSub?.subscriptionStatus !== 'ACTIVE' && currentSub?.subscriptionStatus !== 'PAST_DUE';
 
   useEffect(() => {
     if (!awaitingWebhook) return;
