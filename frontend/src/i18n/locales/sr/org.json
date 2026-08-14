@@ -112,6 +112,8 @@
   "paddleProcessingTitle": "Obrada vašeg plaćanja",
   "paddleProcessingDesc": "Ovo može potrajati nekoliko trenutaka — ova stranica će se automatski ažurirati.",
   "paddleBillingTitle": "Naplata",
+  "paddleCheckoutBackButton": "Nazad",
+  "paddleCheckoutTotalLabel": "Ukupno",
   "paddleStatusActive": "Aktivno",
   "paddleStatusPastDue": "Kasni plaćanje",
   "paddlePastDueBanner": "Vaše poslednje plaćanje nije prošlo. Ažurirajte način plaćanja da biste zadržali aktivnu pretplatu — vaši podaci ostaju potpuno vidljivi u međuvremenu.",

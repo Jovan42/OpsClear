@@ -20,11 +20,30 @@ function getPaddle(): Promise<Paddle | undefined> {
   return paddlePromise;
 }
 
+// Paddle's inline checkout renders into an existing DOM element identified by this
+// class name — the caller must mount a container with this class before opening.
+export const PADDLE_INLINE_FRAME_CLASS = 'paddle-checkout-frame';
+
 export async function openPaddleCheckout(
   options: CheckoutOpenOptions,
   onEvent?: (event: PaddleEventData) => void,
 ) {
   const paddle = await getPaddle();
   currentHandler = onEvent ?? null;
-  paddle?.Checkout.open(options);
+  paddle?.Checkout.open({
+    ...options,
+    settings: {
+      ...options.settings,
+      displayMode: 'inline',
+      frameTarget: PADDLE_INLINE_FRAME_CLASS,
+      frameInitialHeight: 450,
+      frameStyle: 'width: 100%; min-width: 312px; background-color: transparent; border: none;',
+    },
+  });
+}
+
+export async function closePaddleCheckout() {
+  const paddle = await getPaddle();
+  currentHandler = null;
+  paddle?.Checkout.close();
 }

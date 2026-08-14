@@ -4,15 +4,21 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CheckoutEventNames, type PaddleEventData } from '@paddle/paddle-js';
 import Button from '../../components/Button';
 import ConfirmModal from '../../components/ConfirmModal';
-import { openPaddleCheckout } from './paddleCheckout';
+import { PADDLE_INLINE_FRAME_CLASS, closePaddleCheckout, openPaddleCheckout } from './paddleCheckout';
 import { useOrgSubscription } from './useSubscription';
 import { useInitiatePaddleSubscription, useUpdatePaymentMethod, useCancelSubscription } from './usePaddleSubscription';
 
 const PROCESSING_POLL_MS = 2000;
 const PROCESSING_TIMEOUT_MS = 20000;
 
+type CheckoutMode = 'payment-details' | 'update-method' | null;
+
 interface Props {
   orgId: string;
+}
+
+function fmt(n: number) {
+  return new Intl.NumberFormat('sr-RS').format(n);
 }
 
 export default function PaddleBillingSection({ orgId }: Props) {
@@ -21,6 +27,7 @@ export default function PaddleBillingSection({ orgId }: Props) {
   const [awaitingWebhook, setAwaitingWebhook] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelledMessage, setCancelledMessage] = useState(false);
+  const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>(null);
 
   const { data: currentSub } = useOrgSubscription(orgId, awaitingWebhook ? PROCESSING_POLL_MS : false);
   const { mutate: initiate, isPending: initiating } = useInitiatePaddleSubscription(orgId);
@@ -39,14 +46,22 @@ export default function PaddleBillingSection({ orgId }: Props) {
 
   function handleCheckoutEvent(event: PaddleEventData) {
     if (event.name === CheckoutEventNames.CHECKOUT_COMPLETED) {
+      setCheckoutMode(null);
       setAwaitingWebhook(true);
     } else if (event.name === CheckoutEventNames.CHECKOUT_CLOSED) {
+      setCheckoutMode(null);
       queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'subscription'] });
     }
   }
 
+  function handleAbandonCheckout() {
+    closePaddleCheckout();
+    setCheckoutMode(null);
+  }
+
   function handleEnterPaymentDetails() {
     if (!currentSub) return;
+    setCheckoutMode('payment-details');
     initiate(undefined, {
       onSuccess: (data) => {
         const annual = currentSub.billingCycle === 'ANNUAL';
@@ -65,14 +80,17 @@ export default function PaddleBillingSection({ orgId }: Props) {
           handleCheckoutEvent,
         );
       },
+      onError: () => setCheckoutMode(null),
     });
   }
 
   function handleUpdatePaymentMethod() {
+    setCheckoutMode('update-method');
     getUpdateTransaction(undefined, {
       onSuccess: (data) => {
         openPaddleCheckout({ transactionId: data.transactionId }, handleCheckoutEvent);
       },
+      onError: () => setCheckoutMode(null),
     });
   }
 
@@ -92,12 +110,52 @@ export default function PaddleBillingSection({ orgId }: Props) {
 
   const status = currentSub.subscriptionStatus;
   const hasSubscription = !!currentSub.paddleSubscriptionId && status !== null;
+  const currency = currentSub.tier.currency;
 
   if (processing) {
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-5">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('paddleProcessingTitle')}</p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('paddleProcessingDesc')}</p>
+      </div>
+    );
+  }
+
+  if (checkoutMode) {
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('paddleBillingTitle')}</p>
+          <button
+            onClick={handleAbandonCheckout}
+            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            {t('paddleCheckoutBackButton')}
+          </button>
+        </div>
+
+        {checkoutMode === 'payment-details' && (
+          <div className="text-sm space-y-1 border-b border-gray-200 dark:border-gray-700 pb-3">
+            <div className="flex justify-between text-gray-700 dark:text-gray-300">
+              <span>{t('upTo', { count: currentSub.tier.maxMembers })}</span>
+              <span>
+                {fmt(annual ? currentSub.tier.priceAnnual : currentSub.tier.priceMonthly)} {currency}
+              </span>
+            </div>
+            {currentSub.addons.map((a) => (
+              <div key={a.id} className="flex justify-between text-gray-500 dark:text-gray-400">
+                <span>{a.name}</span>
+                <span>{fmt(annual ? a.priceAnnual : a.priceMonthly)} {currency}</span>
+              </div>
+            ))}
+            <div className="flex justify-between font-medium text-gray-900 dark:text-white pt-1">
+              <span>{t('paddleCheckoutTotalLabel')}</span>
+              <span>{fmt(currentSub.totalMonthly)} {currency}</span>
+            </div>
+          </div>
+        )}
+
+        <div className={PADDLE_INLINE_FRAME_CLASS} />
       </div>
     );
   }
