@@ -62,16 +62,21 @@
         "https://46.101.205.77:8443/*",
         "https://46.101.205.77:8443/*/*",
         "https://46.101.205.77:8443/*/*/*",
-        "https://46.101.205.77:8443/*/*/*/*"
+        "https://46.101.205.77:8443/*/*/*/*",
+        "https://46-101-205-77.sslip.io:8443/*",
+        "https://46-101-205-77.sslip.io:8443/*/*",
+        "https://46-101-205-77.sslip.io:8443/*/*/*",
+        "https://46-101-205-77.sslip.io:8443/*/*/*/*"
       ],
       "webOrigins": [
         "http://localhost:5173",
         "http://localhost:3000",
-        "https://46.101.205.77:8443"
+        "https://46.101.205.77:8443",
+        "https://46-101-205-77.sslip.io:8443"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5173/*##http://localhost:3000/*##https://46.101.205.77:8443/*##"
+        "post.logout.redirect.uris": "http://localhost:5173/*##http://localhost:3000/*##https://46.101.205.77:8443/*##https://46-101-205-77.sslip.io:8443/*##"
       },
       "fullScopeAllowed": true,
       "defaultClientScopes": [

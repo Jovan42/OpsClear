@@ -45,8 +45,12 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_HEALTH_ENABLED: "true"
-      # Controls the JWT iss claim — must match what the browser uses to reach Keycloak
-      KC_HOSTNAME_URL: http://${APP_HOST:-localhost}:${KEYCLOAK_PORT:-8280}
+      # Controls the JWT iss claim — must match what the browser uses to reach Keycloak.
+      # Routed through nginx's HTTPS port (not the raw :8280 HTTP port) — browsers force
+      # an HTTPS upgrade on some TLDs (e.g. .io, via legacy HSTS preload), so an http://
+      # link on a hostname like sslip.io gets silently upgraded and then fails outright
+      # against a plain-HTTP listener.
+      KC_HOSTNAME_URL: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
       KC_HOSTNAME_STRICT: "false"
     ports:
       - "${KEYCLOAK_PORT:-8280}:8080"
@@ -71,7 +75,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-opsclear}
       # Must equal KC_HOSTNAME_URL + /realms/opsclear so JWT iss validation passes.
       # extra_hosts lets the container resolve APP_HOST=host.docker.internal locally.
-      KEYCLOAK_ISSUER_URI: http://${APP_HOST:-localhost}:${KEYCLOAK_PORT:-8280}/realms/opsclear
+      KEYCLOAK_ISSUER_URI: https://${APP_HOST:-localhost}:${APP_PORT:-8443}/realms/opsclear
       # Allow requests from the frontend origin (nginx HTTPS endpoint).
       CORS_ALLOWED_ORIGINS: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
       PADDLE_API_KEY: ${PADDLE_API_KEY:-}
