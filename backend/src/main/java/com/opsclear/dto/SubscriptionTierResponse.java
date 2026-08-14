@@ -17,6 +17,8 @@ public class SubscriptionTierResponse {
     private int priceAnnual;
     private String currency;
     private int displayOrder;
+    private String paddlePriceIdMonthly;
+    private String paddlePriceIdAnnual;
 
     public static SubscriptionTierResponse from(SubscriptionTierModel model) {
         return SubscriptionTierResponse.builder()
@@ -27,6 +29,8 @@ public class SubscriptionTierResponse {
                 .priceAnnual(model.getPriceAnnual())
                 .currency(model.getCurrency())
                 .displayOrder(model.getDisplayOrder())
+                .paddlePriceIdMonthly(model.getPaddlePriceIdMonthly())
+                .paddlePriceIdAnnual(model.getPaddlePriceIdAnnual())
                 .build();
     }
 }
