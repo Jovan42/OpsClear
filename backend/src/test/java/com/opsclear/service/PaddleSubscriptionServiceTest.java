@@ -354,6 +354,99 @@ class PaddleSubscriptionServiceTest {
                 .isInstanceOf(ForbiddenException.class);
     }
 
+    // --- cancel ---
+
+    @Test
+    @DisplayName("cancel schedules an end-of-period cancellation via Paddle")
+    void cancel_shouldScheduleEndOfPeriodCancellation() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123").build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(paddleClient.cancelSubscription("sub_123"))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123"));
+
+        PaddleSubscription result = service.cancel(orgId, ownerId);
+
+        assertThat(result.status()).isEqualTo("active");
+        verify(paddleClient).cancelSubscription("sub_123");
+    }
+
+    @Test
+    @DisplayName("cancel throws ConflictException when there's no Paddle subscription yet")
+    void cancel_shouldThrow_whenNoPaddleSubscriptionYet() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.cancel(orgId, ownerId))
+                .isInstanceOf(ConflictException.class);
+        verify(paddleClient, never()).cancelSubscription(anyString());
+    }
+
+    @Test
+    @DisplayName("cancel throws BadRequestException for an internal org")
+    void cancel_shouldThrow_whenOrgIsInternal() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(true).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.cancel(orgId, ownerId))
+                .isInstanceOf(BadRequestException.class);
+        verify(paddleClient, never()).cancelSubscription(anyString());
+    }
+
+    @Test
+    @DisplayName("cancel throws NotFoundException when the org has no subscription record yet")
+    void cancel_shouldThrow_whenNoSubscriptionRecord() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cancel(orgId, ownerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("cancel throws ForbiddenException for a non-owner")
+    void cancel_shouldThrow_forNonOwner() {
+        UUID orgId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> service.cancel(orgId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("cancel throws NotFoundException when the caller is not a member")
+    void cancel_shouldThrow_whenCallerNotAMember() {
+        UUID orgId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, callerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cancel(orgId, callerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
     // --- syncTierPriceToPaddle ---
 
     @Test

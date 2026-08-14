@@ -122,6 +122,23 @@ public class PaddleSubscriptionService {
     }
 
     @Transactional
+    public PaddleSubscription cancel(UUID orgId, UUID requesterId) {
+        requireOwner(orgId, requesterId);
+        OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
+        requireNotInternal(subscription);
+        requirePaddleSubscriptionExists(subscription);
+
+        // subscription_status stays as-is here — Paddle keeps the subscription
+        // "active" until the current period actually ends, then sends a
+        // subscription.canceled webhook (JOB-174) that syncs the local status. This
+        // just schedules the cancellation; it doesn't cut off access immediately.
+        PaddleSubscription cancelled = paddleClient.cancelSubscription(subscription.getPaddleSubscriptionId());
+        log.info("Scheduled end-of-period cancellation for Paddle subscription {} (org {})",
+                cancelled.id(), orgId);
+        return cancelled;
+    }
+
+    @Transactional
     public SubscriptionTierModel syncTierPriceToPaddle(SubscriptionTierModel tier) {
         String productId = tier.getPaddleProductId();
         if (productId == null) {

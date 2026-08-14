@@ -365,4 +365,60 @@ class PaddleSubscriptionIntegrationTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest());
     }
+
+    // ─── POST /api/organisations/{orgId}/subscription/paddle/cancel ───────────
+
+    @Test
+    @DisplayName("cancel_shouldReachPaddleApi_insteadOfFailingAtGuard_onceSubscriptionExists")
+    void cancel_shouldReachPaddleApi_insteadOfFailingAtGuard_onceSubscriptionExists() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        // Same reasoning as the update-items tests above: sub_test_placeholder isn't
+        // a real Paddle subscription, so the request reaches Paddle's real API and
+        // fails there instead of failing at our own guard.
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("cancel_shouldReturn409_whenNoPaddleSubscriptionYet")
+    void cancel_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("cancel_shouldReturn400_forInternalOrg")
+    void cancel_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("cancel_shouldReturn403_forNonOwner")
+    void cancel_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("cancel_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
+    void cancel_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isNotFound());
+    }
 }
