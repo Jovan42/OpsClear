@@ -15,6 +15,7 @@ import { useCurrentOrg } from './OrgContext';
 import { useOrganisation, useUpdateOrganisation, useDeleteOrganisation, useOrgMembers } from './useOrganisation';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import SubscriptionSection from './SubscriptionSection';
+import PaddleBillingSection from './PaddleBillingSection';
 import { useOrgCreditBalance } from './useCredits';
 import { useOrgTemplates, useDeleteOrgTemplate } from '../templates/useTemplates';
 import TemplateFormModal from '../templates/TemplateFormModal';
@@ -336,6 +337,9 @@ export default function OrgSettingsPage() {
             </Link>
           </div>
           <SubscriptionSection orgId={org.id} />
+          <div className="mt-4">
+            <PaddleBillingSection orgId={org.id} />
+          </div>
         </section>
       )}
 

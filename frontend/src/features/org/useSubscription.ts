@@ -9,11 +9,12 @@ export function useCatalog() {
   });
 }
 
-export function useOrgSubscription(orgId: string | null) {
+export function useOrgSubscription(orgId: string | null, refetchInterval?: number | false) {
   return useQuery({
     queryKey: ['organisations', orgId, 'subscription'],
     queryFn: () => subscriptionsApi.getOrgSubscription(orgId!),
     enabled: !!orgId,
+    refetchInterval,
   });
 }
 

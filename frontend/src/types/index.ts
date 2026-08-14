@@ -224,6 +224,8 @@ export interface SubscriptionTierResponse {
   priceAnnual: number;
   currency: string;
   displayOrder: number;
+  paddlePriceIdMonthly: string | null;
+  paddlePriceIdAnnual: string | null;
 }
 
 export interface SubscriptionAddonResponse {
@@ -234,6 +236,8 @@ export interface SubscriptionAddonResponse {
   priceAnnual: number;
   available: boolean;
   displayOrder: number;
+  paddlePriceIdMonthly: string | null;
+  paddlePriceIdAnnual: string | null;
 }
 
 export interface CatalogResponse {
@@ -249,6 +253,26 @@ export interface OrgSubscriptionResponse {
   tier: SubscriptionTierResponse;
   addons: SubscriptionAddonResponse[];
   totalMonthly: number;
+  paddleCustomerId: string | null;
+  paddleSubscriptionId: string | null;
+  subscriptionStatus: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
+}
+
+// ---- Paddle billing ----
+
+export interface InitiateSubscriptionResponse {
+  orgId: string;
+  paddleCustomerId: string;
+}
+
+export interface PaddleSubscriptionResponse {
+  orgId: string;
+  paddleSubscriptionId: string;
+  status: string;
+}
+
+export interface UpdatePaymentMethodTransactionResponse {
+  transactionId: string;
 }
 
 // ---- API Keys ----
