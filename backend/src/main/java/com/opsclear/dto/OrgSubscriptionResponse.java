@@ -21,6 +21,9 @@ public class OrgSubscriptionResponse {
     private SubscriptionTierResponse tier;
     private List<SubscriptionAddonResponse> addons;
     private int totalMonthly;
+    private String paddleCustomerId;
+    private String paddleSubscriptionId;
+    private String subscriptionStatus;
 
     public static OrgSubscriptionResponse from(
             OrgSubscriptionModel model,
@@ -41,6 +44,9 @@ public class OrgSubscriptionResponse {
                 .tier(SubscriptionTierResponse.from(tier))
                 .addons(addons.stream().map(SubscriptionAddonResponse::from).toList())
                 .totalMonthly(basePrice + addonTotal)
+                .paddleCustomerId(model.getPaddleCustomerId())
+                .paddleSubscriptionId(model.getPaddleSubscriptionId())
+                .subscriptionStatus(model.getSubscriptionStatus())
                 .build();
     }
 }

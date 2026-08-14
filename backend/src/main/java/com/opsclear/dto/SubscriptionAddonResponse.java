@@ -17,6 +17,8 @@ public class SubscriptionAddonResponse {
     private int priceAnnual;
     private boolean available;
     private int displayOrder;
+    private String paddlePriceIdMonthly;
+    private String paddlePriceIdAnnual;
 
     public static SubscriptionAddonResponse from(SubscriptionAddonModel model) {
         return SubscriptionAddonResponse.builder()
@@ -27,6 +29,8 @@ public class SubscriptionAddonResponse {
                 .priceAnnual(model.getPriceAnnual())
                 .available(model.isAvailable())
                 .displayOrder(model.getDisplayOrder())
+                .paddlePriceIdMonthly(model.getPaddlePriceIdMonthly())
+                .paddlePriceIdAnnual(model.getPaddlePriceIdAnnual())
                 .build();
     }
 }
