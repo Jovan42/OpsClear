@@ -138,6 +138,16 @@ public class PaddleSubscriptionService {
         return cancelled;
     }
 
+    @Transactional(readOnly = true)
+    public String getUpdatePaymentMethodTransactionId(UUID orgId, UUID requesterId) {
+        requireOwner(orgId, requesterId);
+        OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
+        requireNotInternal(subscription);
+        requirePaddleSubscriptionExists(subscription);
+
+        return paddleClient.getUpdatePaymentMethodTransaction(subscription.getPaddleSubscriptionId()).id();
+    }
+
     @Transactional
     public SubscriptionTierModel syncTierPriceToPaddle(SubscriptionTierModel tier) {
         String productId = tier.getPaddleProductId();

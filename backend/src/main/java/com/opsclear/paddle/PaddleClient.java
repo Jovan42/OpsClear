@@ -115,6 +115,14 @@ public class PaddleClient {
         return response.data();
     }
 
+    public PaddleTransaction getUpdatePaymentMethodTransaction(String subscriptionId) {
+        PaddleEnvelope<PaddleTransaction> response = restClient.get()
+                .uri("/subscriptions/{id}/update-payment-method-transaction", subscriptionId)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleTransaction>>() { });
+        return response.data();
+    }
+
     public PaddleAdjustment createCreditAdjustment(
             String transactionId, String itemId, String amountMinorUnits, String reason) {
         Map<String, Object> body = Map.of(
