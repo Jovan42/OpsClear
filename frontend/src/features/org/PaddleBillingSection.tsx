@@ -61,6 +61,7 @@ export default function PaddleBillingSection({ orgId }: Props) {
 
   function handleEnterPaymentDetails() {
     if (!currentSub) return;
+    setCancelledMessage(false);
     setCheckoutMode('payment-details');
     initiate(undefined, {
       onSuccess: (data) => {
@@ -109,7 +110,11 @@ export default function PaddleBillingSection({ orgId }: Props) {
   const priceNotSynced = !tierPriceId || missingAddonPrice;
 
   const status = currentSub.subscriptionStatus;
-  const hasSubscription = !!currentSub.paddleSubscriptionId && status !== null;
+  // CANCELED is a terminal state, not an active subscription — paddleSubscriptionId
+  // stays set from the old (now-dead) subscription, so it can't be used alone here,
+  // or a canceled org would incorrectly render the Active/PAST_DUE view instead of
+  // the resubscribe CTA below.
+  const hasSubscription = !!currentSub.paddleSubscriptionId && status !== null && status !== 'CANCELED';
   const currency = currentSub.tier.currency;
 
   if (processing) {
