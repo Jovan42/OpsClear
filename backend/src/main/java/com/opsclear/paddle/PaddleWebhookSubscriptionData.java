@@ -13,5 +13,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record PaddleWebhookSubscriptionData(
         String id,
         @JsonProperty("customer_id") String customerId,
-        String status) {
+        String status,
+        @JsonProperty("scheduled_change") PaddleWebhookScheduledChange scheduledChange) {
 }

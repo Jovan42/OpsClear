@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq.tables.records;
 import com.opsclear.generated.jooq.tables.OrgSubscriptions;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.jooq.Record1;
@@ -175,6 +176,27 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         return (String) get(9);
     }
 
+    /**
+     * Setter for
+     * <code>public.org_subscriptions.paddle_scheduled_cancellation_at</code>.
+     * From Paddle's scheduled_change.effective_at when scheduled_change.action
+     * = cancel. Null when no cancellation is scheduled.
+     */
+    public OrgSubscriptionsRecord setPaddleScheduledCancellationAt(OffsetDateTime value) {
+        set(10, value);
+        return this;
+    }
+
+    /**
+     * Getter for
+     * <code>public.org_subscriptions.paddle_scheduled_cancellation_at</code>.
+     * From Paddle's scheduled_change.effective_at when scheduled_change.action
+     * = cancel. Null when no cancellation is scheduled.
+     */
+    public OffsetDateTime getPaddleScheduledCancellationAt() {
+        return (OffsetDateTime) get(10);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -198,7 +220,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
     /**
      * Create a detached, initialised OrgSubscriptionsRecord
      */
-    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus) {
+    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus, OffsetDateTime paddleScheduledCancellationAt) {
         super(OrgSubscriptions.ORG_SUBSCRIPTIONS);
 
         setId(id);
@@ -211,6 +233,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         setPaddleCustomerId(paddleCustomerId);
         setPaddleSubscriptionId(paddleSubscriptionId);
         setSubscriptionStatus(subscriptionStatus);
+        setPaddleScheduledCancellationAt(paddleScheduledCancellationAt);
         resetChangedOnNotNull();
     }
 }

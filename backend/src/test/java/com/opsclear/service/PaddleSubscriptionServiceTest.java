@@ -3,6 +3,7 @@ package com.opsclear.service;
 import com.opsclear.dto.UpdatePaddleSubscriptionRequest;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.OrgSubscriptionModel;
@@ -33,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -395,6 +397,25 @@ class PaddleSubscriptionServiceTest {
     }
 
     @Test
+    @DisplayName("cancel throws ConflictException when a cancellation is already scheduled")
+    void cancel_shouldThrow_whenCancellationAlreadyScheduled() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123")
+                .paddleScheduledCancellationAt(Instant.parse("2024-10-12T07:20:50.52Z")).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.cancel(orgId, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Paddle.CANCELLATION_ALREADY_SCHEDULED);
+        verify(paddleClient, never()).cancelSubscription(anyString());
+    }
+
+    @Test
     @DisplayName("cancel throws BadRequestException for an internal org")
     void cancel_shouldThrow_whenOrgIsInternal() {
         UUID orgId = UUID.randomUUID();
@@ -445,6 +466,125 @@ class PaddleSubscriptionServiceTest {
         when(organisationRepository.findMemberRole(orgId, callerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cancel(orgId, callerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    // --- resume ---
+
+    @Test
+    @DisplayName("resume removes the scheduled cancellation via Paddle and clears it locally")
+    void resume_shouldRemoveScheduledCancellation() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID subscriptionId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123")
+                .paddleScheduledCancellationAt(Instant.parse("2024-10-12T07:20:50.52Z")).build();
+        OrgSubscriptionModel resumed = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123")
+                .subscriptionStatus("ACTIVE").paddleScheduledCancellationAt(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(paddleClient.removeScheduledCancellation("sub_123"))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123"));
+        when(orgSubscriptionRepository.clearScheduledCancellation(subscriptionId, orgId)).thenReturn(resumed);
+
+        OrgSubscriptionModel result = service.resume(orgId, ownerId);
+
+        assertThat(result.getPaddleScheduledCancellationAt()).isNull();
+        verify(paddleClient).removeScheduledCancellation("sub_123");
+        verify(orgSubscriptionRepository).clearScheduledCancellation(subscriptionId, orgId);
+    }
+
+    @Test
+    @DisplayName("resume throws ConflictException when nothing is scheduled to resume")
+    void resume_shouldThrow_whenNoCancellationScheduled() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123")
+                .paddleScheduledCancellationAt(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.resume(orgId, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Paddle.NO_CANCELLATION_SCHEDULED);
+        verify(paddleClient, never()).removeScheduledCancellation(anyString());
+    }
+
+    @Test
+    @DisplayName("resume throws ConflictException when there's no Paddle subscription yet")
+    void resume_shouldThrow_whenNoPaddleSubscriptionYet() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.resume(orgId, ownerId))
+                .isInstanceOf(ConflictException.class);
+        verify(paddleClient, never()).removeScheduledCancellation(anyString());
+    }
+
+    @Test
+    @DisplayName("resume throws BadRequestException for an internal org")
+    void resume_shouldThrow_whenOrgIsInternal() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(true).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.resume(orgId, ownerId))
+                .isInstanceOf(BadRequestException.class);
+        verify(paddleClient, never()).removeScheduledCancellation(anyString());
+    }
+
+    @Test
+    @DisplayName("resume throws NotFoundException when the org has no subscription record yet")
+    void resume_shouldThrow_whenNoSubscriptionRecord() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resume(orgId, ownerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("resume throws ForbiddenException for a non-owner")
+    void resume_shouldThrow_forNonOwner() {
+        UUID orgId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> service.resume(orgId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("resume throws NotFoundException when the caller is not a member")
+    void resume_shouldThrow_whenCallerNotAMember() {
+        UUID orgId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, callerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resume(orgId, callerId))
                 .isInstanceOf(NotFoundException.class);
     }
 

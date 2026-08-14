@@ -106,7 +106,7 @@
 
   "paddleNotSetUpTitle": "Podaci za plaćanje",
   "paddleNotSetUpDesc": "Unesite podatke za plaćanje da biste aktivirali naplatu za plan iznad.",
-  "paddleCanceledDesc": "Naplata je otkazana. Unesite podatke za plaćanje da biste se ponovo pretplatili.",
+  "paddleCanceledDesc": "Naplata je otkazana. Unesite podatke za plaćanje da biste se ponovo pretplatili — biće vam naplaćen novi period naplate čim završite plaćanje.",
   "paddlePriceNotSyncedYet": "Ovaj plan još nije dostupan za plaćanje — proverite ponovo uskoro.",
   "paddleEnterPaymentDetailsButton": "Unesite podatke za plaćanje",
   "paddleProcessingTitle": "Obrada vašeg plaćanja",
@@ -121,7 +121,9 @@
   "paddleCancelSubscriptionButton": "Otkaži pretplatu",
   "paddleCancelModalTitle": "Otkazati pretplatu?",
   "paddleCancelModalMessage": "Vaša pretplata će ostati aktivna do kraja tekućeg perioda naplate, nakon čega se neće obnoviti.",
-  "paddleCancelScheduledDesc": "Vaša pretplata je podešena da se otkaže na kraju tekućeg perioda naplate.",
+  "paddleCancelScheduledDesc": "Vaša pretplata je podešena da se otkaže {{date}}. Možete je besplatno nastaviti u bilo kom trenutku pre toga.",
+  "paddleResumeSubscriptionButton": "Nastavi pretplatu",
+  "paddleResumedToast": "Otkazivanje je uklonjeno — vaša pretplata će se nastaviti kao i obično.",
 
   "roles": {
     "MEMBER": "Član",

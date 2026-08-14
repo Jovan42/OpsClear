@@ -5,6 +5,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -113,6 +114,18 @@ public class PaddleClient {
         Map<String, Object> body = Map.of("effective_from", "next_billing_period");
         PaddleEnvelope<PaddleSubscription> response = restClient.post()
                 .uri("/subscriptions/{id}/cancel", subscriptionId)
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleSubscription>>() { });
+        return response.data();
+    }
+
+    public PaddleSubscription removeScheduledCancellation(String subscriptionId) {
+        // Map.of rejects a null value — this genuinely needs to send
+        // {"scheduled_change": null} to clear it, not omit the field.
+        Map<String, Object> body = Collections.singletonMap("scheduled_change", null);
+        PaddleEnvelope<PaddleSubscription> response = restClient.patch()
+                .uri("/subscriptions/{id}", subscriptionId)
                 .body(body)
                 .retrieve()
                 .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleSubscription>>() { });

@@ -127,6 +127,7 @@ public class PaddleSubscriptionService {
         OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
         requireNotInternal(subscription);
         requirePaddleSubscriptionExists(subscription);
+        requireNoCancellationAlreadyScheduled(subscription);
 
         // subscription_status stays as-is here — Paddle keeps the subscription
         // "active" until the current period actually ends, then sends a
@@ -136,6 +137,22 @@ public class PaddleSubscriptionService {
         log.info("Scheduled end-of-period cancellation for Paddle subscription {} (org {})",
                 cancelled.id(), orgId);
         return cancelled;
+    }
+
+    @Transactional
+    public OrgSubscriptionModel resume(UUID orgId, UUID requesterId) {
+        requireOwner(orgId, requesterId);
+        OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
+        requireNotInternal(subscription);
+        requirePaddleSubscriptionExists(subscription);
+        requireCancellationScheduled(subscription);
+
+        paddleClient.removeScheduledCancellation(subscription.getPaddleSubscriptionId());
+        OrgSubscriptionModel updated =
+                orgSubscriptionRepository.clearScheduledCancellation(subscription.getId(), orgId);
+        log.info("Removed scheduled cancellation for Paddle subscription {} (org {})",
+                subscription.getPaddleSubscriptionId(), orgId);
+        return updated;
     }
 
     @Transactional(readOnly = true)
@@ -246,6 +263,21 @@ public class PaddleSubscriptionService {
     private void requirePaddleSubscriptionExists(OrgSubscriptionModel subscription) {
         if (subscription.getPaddleSubscriptionId() == null) {
             throw new ConflictException(ErrorMessages.Paddle.NO_PADDLE_SUBSCRIPTION_YET);
+        }
+    }
+
+    // Paddle itself rejects a second cancel with a raw 400
+    // (subscription_locked_pending_changes) — catching it here first gives a clearer,
+    // consistent 409 instead of forwarding Paddle's error shape to our own callers.
+    private void requireNoCancellationAlreadyScheduled(OrgSubscriptionModel subscription) {
+        if (subscription.getPaddleScheduledCancellationAt() != null) {
+            throw new ConflictException(ErrorMessages.Paddle.CANCELLATION_ALREADY_SCHEDULED);
+        }
+    }
+
+    private void requireCancellationScheduled(OrgSubscriptionModel subscription) {
+        if (subscription.getPaddleScheduledCancellationAt() == null) {
+            throw new ConflictException(ErrorMessages.Paddle.NO_CANCELLATION_SCHEDULED);
         }
     }
 

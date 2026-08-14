@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.paddle.PaddleWebhookEvent;
+import com.opsclear.paddle.PaddleWebhookScheduledChange;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.Set;
@@ -64,6 +66,8 @@ public class PaddleWebhookService {
             "canceled", "CANCELED",
             "paused", "CANCELED");
 
+    private static final String SCHEDULED_CHANGE_ACTION_CANCEL = "cancel";
+
     private final ObjectMapper objectMapper;
     private final OrgSubscriptionRepository orgSubscriptionRepository;
     private final String webhookSecret;
@@ -94,8 +98,10 @@ public class PaddleWebhookService {
             return;
         }
 
+        Instant scheduledCancellationAt = scheduledCancellationAt(event);
+
         int rows = orgSubscriptionRepository.updateFromPaddleWebhook(
-                event.data().customerId(), event.data().id(), localStatus);
+                event.data().customerId(), event.data().id(), localStatus, scheduledCancellationAt);
         if (rows == 0) {
             log.warn("Paddle event {} ({}) references customer {} — no matching org_subscriptions row",
                     event.eventId(), event.eventType(), event.data().customerId());
@@ -103,6 +109,17 @@ public class PaddleWebhookService {
             log.info("Paddle event {} ({}) synced subscription_status={} for customer {}",
                     event.eventId(), event.eventType(), localStatus, event.data().customerId());
         }
+    }
+
+    // null both when nothing is scheduled and when something other than a
+    // cancellation is scheduled (e.g. a pause) — this codebase only tracks
+    // scheduled cancellations, per JOB-197's scope.
+    private static Instant scheduledCancellationAt(PaddleWebhookEvent event) {
+        PaddleWebhookScheduledChange scheduledChange = event.data().scheduledChange();
+        if (scheduledChange == null || !SCHEDULED_CHANGE_ACTION_CANCEL.equals(scheduledChange.action())) {
+            return null;
+        }
+        return scheduledChange.effectiveAt();
     }
 
     // --- Guards ---

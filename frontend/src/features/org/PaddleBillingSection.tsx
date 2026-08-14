@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { CheckoutEventNames, type PaddleEventData } from '@paddle/paddle-js';
 import Button from '../../components/Button';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PADDLE_INLINE_FRAME_CLASS, closePaddleCheckout, openPaddleCheckout } from './paddleCheckout';
 import { useOrgSubscription } from './useSubscription';
-import { useInitiatePaddleSubscription, useUpdatePaymentMethod, useCancelSubscription } from './usePaddleSubscription';
+import {
+  useInitiatePaddleSubscription,
+  useUpdatePaymentMethod,
+  useCancelSubscription,
+  useResumeSubscription,
+} from './usePaddleSubscription';
 
 const PROCESSING_POLL_MS = 2000;
 const PROCESSING_TIMEOUT_MS = 20000;
@@ -21,18 +27,27 @@ function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
 }
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function PaddleBillingSection({ orgId }: Props) {
   const { t } = useTranslation('org');
   const queryClient = useQueryClient();
   const [awaitingWebhook, setAwaitingWebhook] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [cancelledMessage, setCancelledMessage] = useState(false);
   const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>(null);
+  // cancel() only calls Paddle — paddleScheduledCancellationAt is written by the
+  // webhook (JOB-197), which may take a moment (or, on a local dev server Paddle
+  // can't reach, never arrive) to land. This gives immediate feedback in the
+  // meantime; the durable field takes over (with a real date) once it does.
+  const [justCancelled, setJustCancelled] = useState(false);
 
   const { data: currentSub } = useOrgSubscription(orgId, awaitingWebhook ? PROCESSING_POLL_MS : false);
   const { mutate: initiate, isPending: initiating } = useInitiatePaddleSubscription(orgId);
   const { mutate: getUpdateTransaction, isPending: loadingUpdateTransaction } = useUpdatePaymentMethod(orgId);
   const { mutate: cancelSubscription, isPending: cancelling } = useCancelSubscription(orgId);
+  const { mutate: resumeSubscription, isPending: resuming } = useResumeSubscription(orgId);
 
   // Not just "status is null" — a resubscribe after cancellation starts from a
   // real, non-null status ('CANCELED'), which would otherwise make this always
@@ -66,7 +81,7 @@ export default function PaddleBillingSection({ orgId }: Props) {
 
   function handleEnterPaymentDetails() {
     if (!currentSub) return;
-    setCancelledMessage(false);
+    setJustCancelled(false);
     setCheckoutMode('payment-details');
     initiate(undefined, {
       onSuccess: (data) => {
@@ -104,7 +119,19 @@ export default function PaddleBillingSection({ orgId }: Props) {
     cancelSubscription(undefined, {
       onSuccess: () => {
         setCancelModalOpen(false);
-        setCancelledMessage(true);
+        setJustCancelled(true);
+      },
+    });
+  }
+
+  function handleResume() {
+    resumeSubscription(undefined, {
+      onSuccess: () => {
+        // Defensive — clearScheduledCancellation is synchronous server-side and the
+        // invalidated query should already reflect it, but this guarantees the
+        // optimistic flag never outlives an actual resume.
+        setJustCancelled(false);
+        toast.success(t('paddleResumedToast'));
       },
     });
   }
@@ -211,15 +238,25 @@ export default function PaddleBillingSection({ orgId }: Props) {
         </p>
       )}
 
-      {cancelledMessage && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t('paddleCancelScheduledDesc')}</p>
+      {currentSub.paddleScheduledCancellationAt ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {t('paddleCancelScheduledDesc', { date: formatDate(currentSub.paddleScheduledCancellationAt) })}
+        </p>
+      ) : (
+        justCancelled && (
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('paddleCancelModalMessage')}</p>
+        )
       )}
 
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" onClick={handleUpdatePaymentMethod} loading={loadingUpdateTransaction}>
           {t('paddleUpdatePaymentMethodButton')}
         </Button>
-        {!cancelledMessage && (
+        {justCancelled || currentSub.paddleScheduledCancellationAt ? (
+          <Button variant="secondary" size="sm" onClick={handleResume} loading={resuming}>
+            {t('paddleResumeSubscriptionButton')}
+          </Button>
+        ) : (
           <Button
             variant="ghost"
             size="sm"

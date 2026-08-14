@@ -21,6 +21,11 @@ export const paddleSubscriptionApi = {
       .post<PaddleSubscriptionResponse>(`/api/organisations/${orgId}/subscription/paddle/cancel`)
       .then((r) => r.data),
 
+  resume: (orgId: string) =>
+    apiClient
+      .post<PaddleSubscriptionResponse>(`/api/organisations/${orgId}/subscription/paddle/resume`)
+      .then((r) => r.data),
+
   getUpdatePaymentMethodTransaction: (orgId: string) =>
     apiClient
       .get<UpdatePaymentMethodTransactionResponse>(

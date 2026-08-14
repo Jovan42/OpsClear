@@ -68,17 +68,38 @@ public class OrgSubscriptionRepository {
         return findByOrgId(orgId).orElseThrow();
     }
 
+    // Written immediately rather than waiting on a webhook round-trip — same
+    // reasoning as PaddleSubscriptionService.updateSubscriptionItems persisting
+    // tier/addon selection immediately: this is the resume endpoint's own
+    // authoritative action, not something to infer from Paddle's async event stream.
+    public OrgSubscriptionModel clearScheduledCancellation(UUID subscriptionId, UUID orgId) {
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .setNull(ORG_SUBSCRIPTIONS.PADDLE_SCHEDULED_CANCELLATION_AT)
+                .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .where(ORG_SUBSCRIPTIONS.ID.eq(subscriptionId))
+                .execute();
+        return findByOrgId(orgId).orElseThrow();
+    }
+
     // Keyed by paddle_customer_id (stable for the org's whole lifetime, set once by
     // JOB-173's initiate) rather than paddle_subscription_id — the latter doesn't
     // exist yet on the very first subscription.created event, which is exactly the
     // event that sets it for the first time. Returns rows-affected so the caller can
     // detect "no matching org" (0) without an exception — that's a legitimate,
     // non-retriable outcome for a webhook (e.g. sandbox noise), not an error.
+    //
+    // scheduledCancellationAt is always overwritten, including to null — a webhook
+    // with no scheduled_change means any previous one no longer applies (e.g. Paddle
+    // resumed the subscription via its own customer portal), so this must clear a
+    // stale value, not just skip setting a new one.
     public int updateFromPaddleWebhook(
-            String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus) {
+            String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus,
+            Instant scheduledCancellationAt) {
         return dsl.update(ORG_SUBSCRIPTIONS)
                 .set(ORG_SUBSCRIPTIONS.PADDLE_SUBSCRIPTION_ID, paddleSubscriptionId)
                 .set(ORG_SUBSCRIPTIONS.SUBSCRIPTION_STATUS, subscriptionStatus)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_SCHEDULED_CANCELLATION_AT,
+                        scheduledCancellationAt != null ? scheduledCancellationAt.atOffset(ZoneOffset.UTC) : null)
                 .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .where(ORG_SUBSCRIPTIONS.PADDLE_CUSTOMER_ID.eq(paddleCustomerId))
                 .execute();
@@ -152,6 +173,8 @@ public class OrgSubscriptionRepository {
                 .paddleCustomerId(r.getPaddleCustomerId())
                 .paddleSubscriptionId(r.getPaddleSubscriptionId())
                 .subscriptionStatus(r.getSubscriptionStatus())
+                .paddleScheduledCancellationAt(r.getPaddleScheduledCancellationAt() == null
+                        ? null : r.getPaddleScheduledCancellationAt().toInstant())
                 .build();
     }
 

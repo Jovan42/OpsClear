@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -57,6 +58,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @DisplayName("Paddle subscription endpoints")
 class PaddleSubscriptionIntegrationTest {
+
+    private static final OffsetDateTime SCHEDULED_CANCELLATION_FIXTURE = OffsetDateTime.parse("2024-10-12T07:20:50.52Z");
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -133,6 +136,16 @@ class PaddleSubscriptionIntegrationTest {
     private void givenOrgIsInternal() {
         dsl.update(ORG_SUBSCRIPTIONS)
                 .set(ORG_SUBSCRIPTIONS.IS_INTERNAL, true)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .execute();
+    }
+
+    // Paddle can't be driven to a real scheduled-cancellation state here without a
+    // real subscription (checkout, JOB-178) — seeded directly, same pragmatic pattern
+    // as givenOrgHasFakePaddleSubscriptionId.
+    private void givenOrgHasScheduledCancellation() {
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_SCHEDULED_CANCELLATION_AT, SCHEDULED_CANCELLATION_FIXTURE)
                 .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
                 .execute();
     }
@@ -394,6 +407,20 @@ class PaddleSubscriptionIntegrationTest {
     }
 
     @Test
+    @DisplayName("cancel_shouldReturn409_whenCancellationAlreadyScheduled")
+    void cancel_shouldReturn409_whenCancellationAlreadyScheduled() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasScheduledCancellation();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "A cancellation is already scheduled for this subscription"));
+    }
+
+    @Test
     @DisplayName("cancel_shouldReturn400_forInternalOrg")
     void cancel_shouldReturn400_forInternalOrg() throws Exception {
         givenOrgHasSubscriptionRecord();
@@ -419,6 +446,77 @@ class PaddleSubscriptionIntegrationTest {
     @DisplayName("cancel_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
     void cancel_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
         mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isNotFound());
+    }
+
+    // ─── POST /api/organisations/{orgId}/subscription/paddle/resume ───────────
+
+    @Test
+    @DisplayName("resume_shouldReachPaddleApi_insteadOfFailingAtGuard_onceCancellationScheduled")
+    void resume_shouldReachPaddleApi_insteadOfFailingAtGuard_onceCancellationScheduled() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasScheduledCancellation();
+
+        // Same reasoning as cancel above: sub_test_placeholder isn't a real Paddle
+        // subscription, so the request reaches Paddle's real API and fails there
+        // instead of failing at our own guard.
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionResume(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("resume_shouldReturn409_whenNoCancellationScheduled")
+    void resume_shouldReturn409_whenNoCancellationScheduled() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionResume(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "There's no scheduled cancellation on this subscription to resume"));
+    }
+
+    @Test
+    @DisplayName("resume_shouldReturn409_whenNoPaddleSubscriptionYet")
+    void resume_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionResume(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("resume_shouldReturn400_forInternalOrg")
+    void resume_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionResume(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("resume_shouldReturn403_forNonOwner")
+    void resume_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasScheduledCancellation();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionResume(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("resume_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
+    void resume_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionResume(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isNotFound());
     }
