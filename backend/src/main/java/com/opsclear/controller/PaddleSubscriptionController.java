@@ -51,4 +51,18 @@ public class PaddleSubscriptionController {
                 .build();
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/cancel")
+    public ResponseEntity<PaddleSubscriptionResponse> cancel(
+            @PathVariable UUID orgId,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        PaddleSubscription cancelled = paddleSubscriptionService.cancel(orgId, callerId);
+        PaddleSubscriptionResponse response = PaddleSubscriptionResponse.builder()
+                .orgId(orgId)
+                .paddleSubscriptionId(cancelled.id())
+                .status(cancelled.status())
+                .build();
+        return ResponseEntity.ok(response);
+    }
 }

@@ -105,6 +105,16 @@ public class PaddleClient {
         return response.data().stream().findFirst();
     }
 
+    public PaddleSubscription cancelSubscription(String subscriptionId) {
+        Map<String, Object> body = Map.of("effective_from", "next_billing_period");
+        PaddleEnvelope<PaddleSubscription> response = restClient.post()
+                .uri("/subscriptions/{id}/cancel", subscriptionId)
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleSubscription>>() { });
+        return response.data();
+    }
+
     public PaddleAdjustment createCreditAdjustment(
             String transactionId, String itemId, String amountMinorUnits, String reason) {
         Map<String, Object> body = Map.of(
