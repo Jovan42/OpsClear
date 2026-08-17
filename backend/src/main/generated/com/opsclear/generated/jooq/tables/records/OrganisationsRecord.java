@@ -111,6 +111,21 @@ public class OrganisationsRecord extends UpdatableRecordImpl<OrganisationsRecord
         return (LocalDateTime) get(5);
     }
 
+    /**
+     * Setter for <code>public.organisations.paddle_customer_id</code>.
+     */
+    public OrganisationsRecord setPaddleCustomerId(String value) {
+        set(6, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.organisations.paddle_customer_id</code>.
+     */
+    public String getPaddleCustomerId() {
+        return (String) get(6);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -134,7 +149,7 @@ public class OrganisationsRecord extends UpdatableRecordImpl<OrganisationsRecord
     /**
      * Create a detached, initialised OrganisationsRecord
      */
-    public OrganisationsRecord(UUID id, String name, String slug, UUID createdBy, LocalDateTime createdAt, LocalDateTime deletedAt) {
+    public OrganisationsRecord(UUID id, String name, String slug, UUID createdBy, LocalDateTime createdAt, LocalDateTime deletedAt, String paddleCustomerId) {
         super(Organisations.ORGANISATIONS);
 
         setId(id);
@@ -143,6 +158,7 @@ public class OrganisationsRecord extends UpdatableRecordImpl<OrganisationsRecord
         setCreatedBy(createdBy);
         setCreatedAt(createdAt);
         setDeletedAt(deletedAt);
+        setPaddleCustomerId(paddleCustomerId);
         resetChangedOnNotNull();
     }
 }

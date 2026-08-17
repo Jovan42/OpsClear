@@ -4,7 +4,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.model.OrgSubscriptionModel;
+import com.opsclear.model.SubscriptionAddonModel;
+import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.repository.OrgSubscriptionRepository;
+import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,8 +24,11 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,9 +46,13 @@ class PaddleWebhookServiceTest {
     private static final String SECRET = "test-webhook-secret-fixture";
     private static final String TIMESTAMP = "1700000000";
 
+    @Mock private OrganisationRepository organisationRepository;
     @Mock private OrgSubscriptionRepository orgSubscriptionRepository;
+    @Mock private SubscriptionTierRepository tierRepository;
+    @Mock private SubscriptionAddonRepository addonRepository;
 
     private PaddleWebhookService service;
+    private UUID orgId;
 
     @BeforeEach
     void setUp() {
@@ -51,7 +63,21 @@ class PaddleWebhookServiceTest {
         // codebase deliberately doesn't map, would otherwise throw.
         ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        service = new PaddleWebhookService(objectMapper, orgSubscriptionRepository, SECRET);
+        service = new PaddleWebhookService(
+                objectMapper, organisationRepository, orgSubscriptionRepository, tierRepository, addonRepository,
+                SECRET);
+        orgId = UUID.randomUUID();
+    }
+
+    // Most tests exercise the "org already has an org_subscriptions row" path — the
+    // org resolves via organisations.paddle_customer_id, and that row is found so
+    // handle() takes the UPDATE branch instead of resolving items and creating one.
+    private UUID givenOrgResolvesToExistingSubscription() {
+        UUID subscriptionId = UUID.randomUUID();
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(
+                OrgSubscriptionModel.builder().id(subscriptionId).orgId(orgId).build()));
+        return subscriptionId;
     }
 
     // --- signature verification ---
@@ -113,11 +139,12 @@ class PaddleWebhookServiceTest {
     void handle_shouldAccept_whenHeaderHasMalformedSegment() {
         String body = subscriptionEventBody("subscription.created", "active");
         String header = "not-a-key-value-pair;" + signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null)).thenReturn(1);
+        UUID subscriptionId = givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null)).thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null);
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null);
     }
 
     @Test
@@ -125,11 +152,12 @@ class PaddleWebhookServiceTest {
     void handle_shouldAccept_whenHeaderHasUnrecognizedKeyValueSegment() {
         String body = subscriptionEventBody("subscription.created", "active");
         String header = "foo=bar;" + signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null)).thenReturn(1);
+        givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null)).thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null);
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null);
     }
 
     @Test
@@ -156,11 +184,13 @@ class PaddleWebhookServiceTest {
     void handle_shouldMapPaddleStatus_toLocalStatus(String paddleStatus, String localStatus) {
         String body = subscriptionEventBody("subscription.updated", paddleStatus);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", localStatus, null, null)).thenReturn(1);
+        givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", localStatus, null, null))
+                .thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", localStatus, null, null);
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(orgId, "sub_123", localStatus, null, null);
     }
 
     @Test
@@ -175,15 +205,31 @@ class PaddleWebhookServiceTest {
     }
 
     @Test
-    @DisplayName("handle logs and no-ops when no org matches the event's customer id")
+    @DisplayName("handle logs and no-ops when no organisation matches the event's customer id")
     void handle_shouldNoOp_whenNoMatchingOrg() {
         String body = subscriptionEventBody("subscription.created", "active");
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null)).thenReturn(0);
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.empty());
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null);
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any(), any());
+        verify(orgSubscriptionRepository, never()).createFromPaddleWebhook(
+                any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("handle logs a warning when the org resolves but its org_subscriptions row disappeared "
+            + "(defensive — updateFromPaddleWebhook affects 0 rows)")
+    void handle_shouldWarn_whenUpdateAffectsNoRows() {
+        String body = subscriptionEventBody("subscription.created", "active");
+        String header = signatureHeader(body, SECRET);
+        givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null)).thenReturn(0);
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null);
     }
 
     @Test
@@ -191,13 +237,14 @@ class PaddleWebhookServiceTest {
     void handle_shouldBeIdempotent_onRedelivery() {
         String body = subscriptionEventBody("subscription.created", "active");
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null)).thenReturn(1);
+        givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null)).thenReturn(1);
 
         service.handle(header, body);
         service.handle(header, body);
 
         verify(orgSubscriptionRepository, times(2))
-                .updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null);
+                .updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null);
     }
 
     // --- scheduled cancellation (JOB-197) ---
@@ -208,12 +255,13 @@ class PaddleWebhookServiceTest {
         Instant effectiveAt = Instant.parse("2024-10-12T07:20:50.52Z");
         String body = subscriptionEventBodyWithScheduledChange("subscription.updated", "active", "cancel", effectiveAt);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook(eq("ctm_123"), eq("sub_123"), eq("ACTIVE"), eq(effectiveAt), any()))
+        givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(eq(orgId), eq("sub_123"), eq("ACTIVE"), eq(effectiveAt), any()))
                 .thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", effectiveAt, null);
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", effectiveAt, null);
     }
 
     @Test
@@ -221,11 +269,12 @@ class PaddleWebhookServiceTest {
     void handle_shouldClearScheduledCancellation_whenScheduledChangeIsNull() {
         String body = subscriptionEventBody("subscription.updated", "active");
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null)).thenReturn(1);
+        givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null)).thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook(eq("ctm_123"), eq("sub_123"), eq("ACTIVE"), isNull(), any());
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(eq(orgId), eq("sub_123"), eq("ACTIVE"), isNull(), any());
     }
 
     @Test
@@ -234,11 +283,12 @@ class PaddleWebhookServiceTest {
         Instant effectiveAt = Instant.parse("2024-10-12T07:20:50.52Z");
         String body = subscriptionEventBodyWithScheduledChange("subscription.updated", "paused", "pause", effectiveAt);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "CANCELED", null, null)).thenReturn(1);
+        givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "CANCELED", null, null)).thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook(eq("ctm_123"), eq("sub_123"), eq("CANCELED"), isNull(), any());
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(eq(orgId), eq("sub_123"), eq("CANCELED"), isNull(), any());
     }
 
     // --- current billing period / pending downgrade rollover (JOB-198) ---
@@ -249,28 +299,13 @@ class PaddleWebhookServiceTest {
         Instant periodStart = Instant.parse("2026-08-01T00:00:00Z");
         String body = subscriptionEventBodyWithPeriod("subscription.updated", "active", periodStart);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.findByPaddleCustomerId("ctm_123")).thenReturn(Optional.empty());
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, periodStart))
+        givenOrgResolvesToExistingSubscription();
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, periodStart))
                 .thenReturn(1);
 
         service.handle(header, body);
 
-        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, periodStart);
-        verify(orgSubscriptionRepository, never()).applyPendingDowngrade(any());
-    }
-
-    @Test
-    @DisplayName("handle does not look up a pending downgrade when the event carries no current_billing_period "
-            + "(paused/canceled events, per Paddle's docs)")
-    void handle_shouldNotLookUpPendingDowngrade_whenCurrentPeriodAbsent() {
-        String body = subscriptionEventBody("subscription.canceled", "canceled");
-        String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "CANCELED", null, null))
-                .thenReturn(1);
-
-        service.handle(header, body);
-
-        verify(orgSubscriptionRepository, never()).findByPaddleCustomerId(any());
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, periodStart);
         verify(orgSubscriptionRepository, never()).applyPendingDowngrade(any());
     }
 
@@ -281,13 +316,14 @@ class PaddleWebhookServiceTest {
         Instant previousPeriodStart = Instant.parse("2026-07-01T00:00:00Z");
         Instant newPeriodStart = Instant.parse("2026-08-01T00:00:00Z");
         OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(subscriptionId).orgId(UUID.randomUUID())
+                .id(subscriptionId).orgId(orgId)
                 .paddleCurrentPeriodStartsAt(previousPeriodStart).pendingTierId(UUID.randomUUID()).build();
 
         String body = subscriptionEventBodyWithPeriod("subscription.updated", "active", newPeriodStart);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.findByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(subscription));
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, newPeriodStart))
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, newPeriodStart))
                 .thenReturn(1);
 
         service.handle(header, body);
@@ -302,13 +338,14 @@ class PaddleWebhookServiceTest {
         UUID subscriptionId = UUID.randomUUID();
         Instant newPeriodStart = Instant.parse("2026-08-01T00:00:00Z");
         OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(subscriptionId).orgId(UUID.randomUUID())
+                .id(subscriptionId).orgId(orgId)
                 .paddleCurrentPeriodStartsAt(null).pendingTierId(UUID.randomUUID()).build();
 
         String body = subscriptionEventBodyWithPeriod("subscription.updated", "active", newPeriodStart);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.findByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(subscription));
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, newPeriodStart))
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, newPeriodStart))
                 .thenReturn(1);
 
         service.handle(header, body);
@@ -322,13 +359,14 @@ class PaddleWebhookServiceTest {
         UUID subscriptionId = UUID.randomUUID();
         Instant periodStart = Instant.parse("2026-08-01T00:00:00Z");
         OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(subscriptionId).orgId(UUID.randomUUID())
+                .id(subscriptionId).orgId(orgId)
                 .paddleCurrentPeriodStartsAt(periodStart).pendingTierId(UUID.randomUUID()).build();
 
         String body = subscriptionEventBodyWithPeriod("subscription.updated", "active", periodStart);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.findByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(subscription));
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, periodStart))
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, periodStart))
                 .thenReturn(1);
 
         service.handle(header, body);
@@ -343,18 +381,96 @@ class PaddleWebhookServiceTest {
         Instant previousPeriodStart = Instant.parse("2026-07-01T00:00:00Z");
         Instant newPeriodStart = Instant.parse("2026-08-01T00:00:00Z");
         OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(subscriptionId).orgId(UUID.randomUUID())
+                .id(subscriptionId).orgId(orgId)
                 .paddleCurrentPeriodStartsAt(previousPeriodStart).pendingTierId(null).build();
 
         String body = subscriptionEventBodyWithPeriod("subscription.updated", "active", newPeriodStart);
         String header = signatureHeader(body, SECRET);
-        when(orgSubscriptionRepository.findByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(subscription));
-        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, newPeriodStart))
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, newPeriodStart))
                 .thenReturn(1);
 
         service.handle(header, body);
 
         verify(orgSubscriptionRepository, never()).applyPendingDowngrade(any());
+    }
+
+    // --- first-ever webhook creates the org_subscriptions row (JOB-200) ---
+
+    @Test
+    @DisplayName("handle creates the org_subscriptions row from Paddle's own item price ids when the org has "
+            + "none yet — never trusting a client-staged selection")
+    void handle_shouldCreateSubscriptionRow_onFirstWebhook_whenOrgHasNoRowYet() {
+        UUID tierId = UUID.randomUUID();
+        UUID addonId = UUID.randomUUID();
+        SubscriptionTierModel tier = SubscriptionTierModel.builder()
+                .id(tierId).paddlePriceIdMonthly("pri_tier_monthly").paddlePriceIdAnnual("pri_tier_annual").build();
+        SubscriptionAddonModel addon = SubscriptionAddonModel.builder().id(addonId).build();
+
+        String body = subscriptionEventBodyWithItems(
+                "subscription.created", "active", List.of("pri_tier_monthly", "pri_addon"));
+        String header = signatureHeader(body, SECRET);
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(tierRepository.findByPaddlePriceId("pri_tier_monthly")).thenReturn(Optional.of(tier));
+        when(tierRepository.findByPaddlePriceId("pri_addon")).thenReturn(Optional.empty());
+        when(addonRepository.findByPaddlePriceId("pri_addon")).thenReturn(Optional.of(addon));
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).createFromPaddleWebhook(
+                orgId, tierId, "MONTHLY", Set.of(addonId), "sub_123", "ACTIVE", null, null);
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("handle resolves ANNUAL billing cycle when the item price id matches the tier's annual price")
+    void handle_shouldResolveAnnualBillingCycle_whenPriceIdMatchesTiersAnnualColumn() {
+        UUID tierId = UUID.randomUUID();
+        SubscriptionTierModel tier = SubscriptionTierModel.builder()
+                .id(tierId).paddlePriceIdMonthly("pri_tier_monthly").paddlePriceIdAnnual("pri_tier_annual").build();
+
+        String body = subscriptionEventBodyWithItems("subscription.created", "active", List.of("pri_tier_annual"));
+        String header = signatureHeader(body, SECRET);
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(tierRepository.findByPaddlePriceId("pri_tier_annual")).thenReturn(Optional.of(tier));
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).createFromPaddleWebhook(
+                orgId, tierId, "ANNUAL", Set.of(), "sub_123", "ACTIVE", null, null);
+    }
+
+    @Test
+    @DisplayName("handle ignores a first-ever webhook with no items to resolve a plan from")
+    void handle_shouldIgnore_whenFirstWebhookHasNoItems() {
+        String body = subscriptionEventBody("subscription.created", "active");
+        String header = signatureHeader(body, SECRET);
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository, never()).createFromPaddleWebhook(
+                any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("handle ignores a first-ever webhook whose items don't resolve to any known tier")
+    void handle_shouldIgnore_whenFirstWebhookItemsDontResolveToATier() {
+        String body = subscriptionEventBodyWithItems("subscription.created", "active", List.of("pri_unknown"));
+        String header = signatureHeader(body, SECRET);
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(tierRepository.findByPaddlePriceId("pri_unknown")).thenReturn(Optional.empty());
+        when(addonRepository.findByPaddlePriceId("pri_unknown")).thenReturn(Optional.empty());
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository, never()).createFromPaddleWebhook(
+                any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     // --- non-subscription events ---
@@ -415,6 +531,15 @@ class PaddleWebhookServiceTest {
                 + "\"data\":{\"id\":\"sub_123\",\"customer_id\":\"ctm_123\",\"status\":\"" + status + "\","
                 + "\"scheduled_change\":{\"action\":\"" + scheduledAction + "\",\"effective_at\":\""
                 + effectiveAt + "\",\"resume_at\":null}}}";
+    }
+
+    private static String subscriptionEventBodyWithItems(String eventType, String status, List<String> priceIds) {
+        String items = priceIds.stream()
+                .map(priceId -> "{\"price\":{\"id\":\"" + priceId + "\"}}")
+                .collect(Collectors.joining(","));
+        return "{\"event_id\":\"evt_1\",\"event_type\":\"" + eventType + "\","
+                + "\"data\":{\"id\":\"sub_123\",\"customer_id\":\"ctm_123\",\"status\":\"" + status
+                + "\",\"scheduled_change\":null,\"items\":[" + items + "]}}";
     }
 
     private static String signatureHeader(String body, String secret) {

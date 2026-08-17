@@ -128,25 +128,10 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
     }
 
     /**
-     * Setter for <code>public.org_subscriptions.paddle_customer_id</code>.
-     */
-    public OrgSubscriptionsRecord setPaddleCustomerId(String value) {
-        set(7, value);
-        return this;
-    }
-
-    /**
-     * Getter for <code>public.org_subscriptions.paddle_customer_id</code>.
-     */
-    public String getPaddleCustomerId() {
-        return (String) get(7);
-    }
-
-    /**
      * Setter for <code>public.org_subscriptions.paddle_subscription_id</code>.
      */
     public OrgSubscriptionsRecord setPaddleSubscriptionId(String value) {
-        set(8, value);
+        set(7, value);
         return this;
     }
 
@@ -154,7 +139,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * Getter for <code>public.org_subscriptions.paddle_subscription_id</code>.
      */
     public String getPaddleSubscriptionId() {
-        return (String) get(8);
+        return (String) get(7);
     }
 
     /**
@@ -163,7 +148,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * until the org has a Paddle subscription.
      */
     public OrgSubscriptionsRecord setSubscriptionStatus(String value) {
-        set(9, value);
+        set(8, value);
         return this;
     }
 
@@ -173,7 +158,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * until the org has a Paddle subscription.
      */
     public String getSubscriptionStatus() {
-        return (String) get(9);
+        return (String) get(8);
     }
 
     /**
@@ -183,7 +168,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * = cancel. Null when no cancellation is scheduled.
      */
     public OrgSubscriptionsRecord setPaddleScheduledCancellationAt(OffsetDateTime value) {
-        set(10, value);
+        set(9, value);
         return this;
     }
 
@@ -194,14 +179,14 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * = cancel. Null when no cancellation is scheduled.
      */
     public OffsetDateTime getPaddleScheduledCancellationAt() {
-        return (OffsetDateTime) get(10);
+        return (OffsetDateTime) get(9);
     }
 
     /**
      * Setter for <code>public.org_subscriptions.pending_tier_id</code>.
      */
     public OrgSubscriptionsRecord setPendingTierId(UUID value) {
-        set(11, value);
+        set(10, value);
         return this;
     }
 
@@ -209,7 +194,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * Getter for <code>public.org_subscriptions.pending_tier_id</code>.
      */
     public UUID getPendingTierId() {
-        return (UUID) get(11);
+        return (UUID) get(10);
     }
 
     /**
@@ -217,7 +202,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * <code>public.org_subscriptions.paddle_current_period_starts_at</code>.
      */
     public OrgSubscriptionsRecord setPaddleCurrentPeriodStartsAt(OffsetDateTime value) {
-        set(12, value);
+        set(11, value);
         return this;
     }
 
@@ -226,7 +211,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * <code>public.org_subscriptions.paddle_current_period_starts_at</code>.
      */
     public OffsetDateTime getPaddleCurrentPeriodStartsAt() {
-        return (OffsetDateTime) get(12);
+        return (OffsetDateTime) get(11);
     }
 
     /**
@@ -234,7 +219,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * <code>public.org_subscriptions.paddle_pending_downgrade_effective_at</code>.
      */
     public OrgSubscriptionsRecord setPaddlePendingDowngradeEffectiveAt(OffsetDateTime value) {
-        set(13, value);
+        set(12, value);
         return this;
     }
 
@@ -243,7 +228,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
      * <code>public.org_subscriptions.paddle_pending_downgrade_effective_at</code>.
      */
     public OffsetDateTime getPaddlePendingDowngradeEffectiveAt() {
-        return (OffsetDateTime) get(13);
+        return (OffsetDateTime) get(12);
     }
 
     // -------------------------------------------------------------------------
@@ -269,7 +254,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
     /**
      * Create a detached, initialised OrgSubscriptionsRecord
      */
-    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus, OffsetDateTime paddleScheduledCancellationAt, UUID pendingTierId, OffsetDateTime paddleCurrentPeriodStartsAt, OffsetDateTime paddlePendingDowngradeEffectiveAt) {
+    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleSubscriptionId, String subscriptionStatus, OffsetDateTime paddleScheduledCancellationAt, UUID pendingTierId, OffsetDateTime paddleCurrentPeriodStartsAt, OffsetDateTime paddlePendingDowngradeEffectiveAt) {
         super(OrgSubscriptions.ORG_SUBSCRIPTIONS);
 
         setId(id);
@@ -279,7 +264,6 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         setIsInternal(isInternal);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        setPaddleCustomerId(paddleCustomerId);
         setPaddleSubscriptionId(paddleSubscriptionId);
         setSubscriptionStatus(subscriptionStatus);
         setPaddleScheduledCancellationAt(paddleScheduledCancellationAt);

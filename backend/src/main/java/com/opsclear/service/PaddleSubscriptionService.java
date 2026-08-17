@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -74,29 +75,32 @@ public class PaddleSubscriptionService {
     private final PaddleClient paddleClient;
     private final PaddlePriceResolver priceResolver;
 
+    // JOB-200: paddle_customer_id lives on organisations, not org_subscriptions —
+    // every tier/add-on has a real price, so the org_subscriptions row (tier_id is
+    // NOT NULL) must only ever be created once a real payment is confirmed by the
+    // webhook, never staged for free. This must still work for an org with no
+    // subscription row at all yet, since picking a plan happens *after* this.
     @Transactional
-    public OrgSubscriptionModel initiate(UUID orgId, UUID requesterId) {
+    public String initiate(UUID orgId, UUID requesterId) {
         requireOwner(orgId, requesterId);
-        OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
-        requireNotInternal(subscription);
-
-        if (subscription.getPaddleCustomerId() != null) {
-            log.info("Org {} already has Paddle customer {} — skipping creation",
-                    orgId, subscription.getPaddleCustomerId());
-            return subscription;
-        }
-
         OrganisationModel org = organisationRepository.findByIdAndDeletedAtIsNull(orgId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Organisation.NOT_FOUND));
+        orgSubscriptionRepository.findByOrgId(orgId).ifPresent(this::requireNotInternal);
+
+        Optional<String> existingCustomerId = organisationRepository.findPaddleCustomerId(orgId);
+        if (existingCustomerId.isPresent()) {
+            log.info("Org {} already has Paddle customer {} — skipping creation", orgId, existingCustomerId.get());
+            return existingCustomerId.get();
+        }
+
         UserModel requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
 
         PaddleCustomer customer = paddleClient.createCustomer(requester.getEmail(), org.getName());
-        OrgSubscriptionModel updated = orgSubscriptionRepository.updatePaddleCustomerId(
-                subscription.getId(), orgId, customer.id());
+        organisationRepository.updatePaddleCustomerId(orgId, customer.id());
 
         log.info("Created Paddle customer {} for org {}", customer.id(), orgId);
-        return updated;
+        return customer.id();
     }
 
     @Transactional
@@ -261,17 +265,20 @@ public class PaddleSubscriptionService {
 
     // No local invoice/transaction table by design (ADR-0044) — reads live from
     // Paddle on every call rather than mirroring history into our own DB. An org
-    // that hasn't completed checkout yet simply has no history, not an error.
+    // that hasn't completed checkout yet simply has no history, not an error — and
+    // per JOB-200, may not even have an org_subscriptions row yet at all.
     @Transactional(readOnly = true)
     public List<PaddleTransaction> getBillingHistory(UUID orgId, UUID requesterId) {
         requireOwner(orgId, requesterId);
-        OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
-        requireNotInternal(subscription);
+        organisationRepository.findByIdAndDeletedAtIsNull(orgId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Organisation.NOT_FOUND));
+        orgSubscriptionRepository.findByOrgId(orgId).ifPresent(this::requireNotInternal);
 
-        if (subscription.getPaddleCustomerId() == null) {
+        Optional<String> customerId = organisationRepository.findPaddleCustomerId(orgId);
+        if (customerId.isEmpty()) {
             return List.of();
         }
-        return paddleClient.listBillingHistory(subscription.getPaddleCustomerId());
+        return paddleClient.listBillingHistory(customerId.get());
     }
 
     @Transactional(readOnly = true)

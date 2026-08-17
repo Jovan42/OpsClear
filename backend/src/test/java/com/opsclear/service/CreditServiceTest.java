@@ -4,7 +4,6 @@ import com.opsclear.dto.GrantCreditRequest;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.OrgCreditModel;
-import com.opsclear.model.OrgSubscriptionModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.paddle.PaddleAdjustment;
@@ -12,7 +11,6 @@ import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleTransaction;
 import com.opsclear.paddle.PaddleTransactionItem;
 import com.opsclear.repository.OrgCreditRepository;
-import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +38,6 @@ class CreditServiceTest {
 
     @Mock private OrgCreditRepository orgCreditRepository;
     @Mock private OrganisationRepository organisationRepository;
-    @Mock private OrgSubscriptionRepository orgSubscriptionRepository;
     @Mock private FeedbackService feedbackService;
     @Mock private PaddleClient paddleClient;
 
@@ -48,9 +45,7 @@ class CreditServiceTest {
 
     @BeforeEach
     void setUp() {
-        creditService = new CreditService(
-                orgCreditRepository, organisationRepository, orgSubscriptionRepository, feedbackService,
-                paddleClient);
+        creditService = new CreditService(orgCreditRepository, organisationRepository, feedbackService, paddleClient);
     }
 
     // --- grant ---
@@ -112,26 +107,6 @@ class CreditServiceTest {
     // --- grant: Paddle credit sync ---
 
     @Test
-    @DisplayName("grant skips Paddle sync when the org has no subscription record")
-    void grant_shouldSkipPaddleSync_whenNoSubscriptionRecord() {
-        UUID orgId = UUID.randomUUID();
-        UUID grantedBy = UUID.randomUUID();
-        GrantCreditRequest request = GrantCreditRequest.builder()
-                .orgId(orgId).amount(500).reason("Goodwill").build();
-
-        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
-                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
-        when(orgCreditRepository.insert(orgId, 500, "Goodwill", null, grantedBy))
-                .thenReturn(OrgCreditModel.builder().id(UUID.randomUUID()).orgId(orgId).amount(500).build());
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
-
-        creditService.grant(grantedBy, request);
-
-        verify(paddleClient, never()).findLatestCompletedTransaction(any());
-        verify(paddleClient, never()).createCreditAdjustment(any(), any(), any(), any());
-    }
-
-    @Test
     @DisplayName("grant skips Paddle sync when the org has no Paddle customer yet")
     void grant_shouldSkipPaddleSync_whenNoPaddleCustomerId() {
         UUID orgId = UUID.randomUUID();
@@ -143,8 +118,7 @@ class CreditServiceTest {
                 .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
         when(orgCreditRepository.insert(orgId, 500, "Goodwill", null, grantedBy))
                 .thenReturn(OrgCreditModel.builder().id(UUID.randomUUID()).orgId(orgId).amount(500).build());
-        when(orgSubscriptionRepository.findByOrgId(orgId))
-                .thenReturn(Optional.of(OrgSubscriptionModel.builder().orgId(orgId).paddleCustomerId(null).build()));
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.empty());
 
         creditService.grant(grantedBy, request);
 
@@ -164,8 +138,7 @@ class CreditServiceTest {
                 .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
         when(orgCreditRepository.insert(orgId, 500, "Goodwill", null, grantedBy))
                 .thenReturn(OrgCreditModel.builder().id(UUID.randomUUID()).orgId(orgId).amount(500).build());
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(
-                Optional.of(OrgSubscriptionModel.builder().orgId(orgId).paddleCustomerId("ctm_123").build()));
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_123"));
         when(paddleClient.findLatestCompletedTransaction("ctm_123")).thenReturn(Optional.empty());
 
         creditService.grant(grantedBy, request);
@@ -186,8 +159,7 @@ class CreditServiceTest {
                 .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
         when(orgCreditRepository.insert(orgId, 29, "Great bug report", null, grantedBy)).thenReturn(
                 OrgCreditModel.builder().id(creditId).orgId(orgId).amount(29).reason("Great bug report").build());
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(
-                Optional.of(OrgSubscriptionModel.builder().orgId(orgId).paddleCustomerId("ctm_123").build()));
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_123"));
         PaddleTransaction transaction = new PaddleTransaction(
                 "txn_123", "completed", List.of(new PaddleTransactionItem("txnitm_123")), null, null, null);
         when(paddleClient.findLatestCompletedTransaction("ctm_123")).thenReturn(Optional.of(transaction));
@@ -212,8 +184,7 @@ class CreditServiceTest {
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
                 .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
         when(orgCreditRepository.insert(orgId, 500, "Goodwill", null, grantedBy)).thenReturn(inserted);
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(
-                Optional.of(OrgSubscriptionModel.builder().orgId(orgId).paddleCustomerId("ctm_123").build()));
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_123"));
         when(paddleClient.findLatestCompletedTransaction("ctm_123"))
                 .thenThrow(new RestClientException("Paddle is unreachable"));
 

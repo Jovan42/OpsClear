@@ -1,11 +1,13 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
+import com.opsclear.service.PaddleSubscriptionService;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -65,6 +68,7 @@ class PaddleWebhookIntegrationTest {
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private PaddleSubscriptionService paddleSubscriptionService;
 
     @Value("${paddle.webhook-secret}")
     private String configuredSecret;
@@ -103,9 +107,9 @@ class PaddleWebhookIntegrationTest {
                 .andExpect(status().isOk());
 
         customerId = "ctm_" + UUID.randomUUID();
-        dsl.update(ORG_SUBSCRIPTIONS)
-                .set(ORG_SUBSCRIPTIONS.PADDLE_CUSTOMER_ID, customerId)
-                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+        dsl.update(ORGANISATIONS)
+                .set(ORGANISATIONS.PADDLE_CUSTOMER_ID, customerId)
+                .where(ORGANISATIONS.ID.eq(orgId))
                 .execute();
     }
 
@@ -125,6 +129,36 @@ class PaddleWebhookIntegrationTest {
                 .andExpect(status().isOk());
 
         assertPersistedStatus(subscriptionId, "ACTIVE");
+    }
+
+    @Test
+    @DisplayName("JOB-200: a first-ever subscription.created webhook creates the org_subscriptions row by "
+            + "resolving Paddle's own item price ids back to our tier/add-on catalog — nothing here is trusted "
+            + "from a client")
+    void webhook_shouldCreateSubscriptionRow_onFirstEverEvent_whenOrgHasNoRowYet() throws Exception {
+        // setUp() already staged a row via the free picker (needed so other tests in
+        // this class exercise the UPDATE path) — undo that specifically for this
+        // test, which exercises the CREATE path for an org with no row at all yet.
+        dsl.deleteFrom(ORG_SUBSCRIPTIONS).where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId)).execute();
+
+        SubscriptionTierModel tier =
+                paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+        String subscriptionId = "sub_" + UUID.randomUUID();
+        String body = "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"subscription.created\","
+                + "\"data\":{\"id\":\"" + subscriptionId + "\",\"customer_id\":\"" + customerId + "\","
+                + "\"status\":\"active\",\"items\":[{\"price\":{\"id\":\"" + tier.getPaddlePriceIdMonthly()
+                + "\"}}]}}";
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        var record = dsl.selectFrom(ORG_SUBSCRIPTIONS)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .fetchSingle();
+        assertThat(record.getTierId()).isEqualTo(tierId);
+        assertThat(record.getBillingCycle()).isEqualTo("MONTHLY");
+        assertThat(record.getPaddleSubscriptionId()).isEqualTo(subscriptionId);
+        assertThat(record.getSubscriptionStatus()).isEqualTo("ACTIVE");
     }
 
     @Test

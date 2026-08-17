@@ -234,6 +234,30 @@ public class OrganisationRepository {
                 .execute();
     }
 
+    // JOB-200: kept as standalone lookups (not on OrganisationModel/toModel) — this
+    // field is only ever needed by Paddle-related code, not by the many general
+    // org-display call sites already reading OrganisationModel.
+    public Optional<String> findPaddleCustomerId(UUID orgId) {
+        return dsl.select(ORGANISATIONS.PADDLE_CUSTOMER_ID)
+                .from(ORGANISATIONS)
+                .where(ORGANISATIONS.ID.eq(orgId))
+                .fetchOptional(ORGANISATIONS.PADDLE_CUSTOMER_ID);
+    }
+
+    public void updatePaddleCustomerId(UUID orgId, String paddleCustomerId) {
+        dsl.update(ORGANISATIONS)
+                .set(ORGANISATIONS.PADDLE_CUSTOMER_ID, paddleCustomerId)
+                .where(ORGANISATIONS.ID.eq(orgId))
+                .execute();
+    }
+
+    public Optional<UUID> findIdByPaddleCustomerId(String paddleCustomerId) {
+        return dsl.select(ORGANISATIONS.ID)
+                .from(ORGANISATIONS)
+                .where(ORGANISATIONS.PADDLE_CUSTOMER_ID.eq(paddleCustomerId))
+                .fetchOptional(ORGANISATIONS.ID);
+    }
+
     public void deleteAll() {
         dsl.deleteFrom(ORG_SUBSCRIPTION_ADDONS).execute();
         dsl.deleteFrom(ORG_SUBSCRIPTIONS).execute();

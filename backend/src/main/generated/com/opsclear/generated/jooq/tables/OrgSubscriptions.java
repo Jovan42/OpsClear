@@ -92,11 +92,6 @@ public class OrgSubscriptions extends TableImpl<OrgSubscriptionsRecord> {
     public final TableField<OrgSubscriptionsRecord, LocalDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "");
 
     /**
-     * The column <code>public.org_subscriptions.paddle_customer_id</code>.
-     */
-    public final TableField<OrgSubscriptionsRecord, String> PADDLE_CUSTOMER_ID = createField(DSL.name("paddle_customer_id"), SQLDataType.CLOB, this, "");
-
-    /**
      * The column <code>public.org_subscriptions.paddle_subscription_id</code>.
      */
     public final TableField<OrgSubscriptionsRecord, String> PADDLE_SUBSCRIPTION_ID = createField(DSL.name("paddle_subscription_id"), SQLDataType.CLOB, this, "");

@@ -32,6 +32,19 @@ public class SubscriptionTierRepository {
                 .map(this::toModel);
     }
 
+    // Reverse lookup for the webhook (JOB-200) — resolving a real Paddle
+    // subscription's item price ids back to our own catalog, since the first-ever
+    // org_subscriptions row is created from what Paddle actually confirms was
+    // paid for, never trusted from the client. Matches either the monthly or
+    // annual price id; the caller determines which cycle matched.
+    public Optional<SubscriptionTierModel> findByPaddlePriceId(String priceId) {
+        return dsl.selectFrom(SUBSCRIPTION_TIERS)
+                .where(SUBSCRIPTION_TIERS.PADDLE_PRICE_ID_MONTHLY.eq(priceId)
+                        .or(SUBSCRIPTION_TIERS.PADDLE_PRICE_ID_ANNUAL.eq(priceId)))
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
     public SubscriptionTierModel updatePrice(UUID id, int priceMonthly, int priceAnnual) {
         dsl.update(SUBSCRIPTION_TIERS)
                 .set(SUBSCRIPTION_TIERS.PRICE_MONTHLY, priceMonthly)

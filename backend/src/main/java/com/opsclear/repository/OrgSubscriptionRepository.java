@@ -33,13 +33,6 @@ public class OrgSubscriptionRepository {
                 .map(this::toModel);
     }
 
-    public Optional<OrgSubscriptionModel> findByPaddleCustomerId(String paddleCustomerId) {
-        return dsl.selectFrom(ORG_SUBSCRIPTIONS)
-                .where(ORG_SUBSCRIPTIONS.PADDLE_CUSTOMER_ID.eq(paddleCustomerId))
-                .fetchOptional()
-                .map(this::toModel);
-    }
-
     public OrgSubscriptionModel create(UUID orgId, UUID tierId, String billingCycle, Set<UUID> addonIds) {
         UUID subscriptionId = dsl.insertInto(ORG_SUBSCRIPTIONS)
                 .set(ORG_SUBSCRIPTIONS.ORG_ID, orgId)
@@ -68,12 +61,33 @@ public class OrgSubscriptionRepository {
         return findByOrgId(orgId).orElseThrow();
     }
 
-    public OrgSubscriptionModel updatePaddleCustomerId(UUID subscriptionId, UUID orgId, String paddleCustomerId) {
-        dsl.update(ORG_SUBSCRIPTIONS)
-                .set(ORG_SUBSCRIPTIONS.PADDLE_CUSTOMER_ID, paddleCustomerId)
+    // The org's very first successful checkout — no org_subscriptions row exists
+    // yet (paddle_customer_id lives on organisations precisely so nothing here
+    // needs to exist before payment succeeds, JOB-200). tierId/addonIds are
+    // resolved by the caller from Paddle's own subscription items, never trusted
+    // from the client — this is the only source of truth for what was actually
+    // paid for.
+    public OrgSubscriptionModel createFromPaddleWebhook(
+            UUID orgId, UUID tierId, String billingCycle, Set<UUID> addonIds,
+            String paddleSubscriptionId, String subscriptionStatus,
+            Instant scheduledCancellationAt, Instant currentPeriodStartsAt) {
+        UUID subscriptionId = dsl.insertInto(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.ORG_ID, orgId)
+                .set(ORG_SUBSCRIPTIONS.TIER_ID, tierId)
+                .set(ORG_SUBSCRIPTIONS.BILLING_CYCLE, billingCycle)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_SUBSCRIPTION_ID, paddleSubscriptionId)
+                .set(ORG_SUBSCRIPTIONS.SUBSCRIPTION_STATUS, subscriptionStatus)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_SCHEDULED_CANCELLATION_AT,
+                        scheduledCancellationAt != null ? scheduledCancellationAt.atOffset(ZoneOffset.UTC) : null)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_CURRENT_PERIOD_STARTS_AT,
+                        currentPeriodStartsAt != null ? currentPeriodStartsAt.atOffset(ZoneOffset.UTC) : null)
+                .set(ORG_SUBSCRIPTIONS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
-                .where(ORG_SUBSCRIPTIONS.ID.eq(subscriptionId))
-                .execute();
+                .returning(ORG_SUBSCRIPTIONS.ID)
+                .fetchSingle()
+                .getId();
+
+        replaceAddons(subscriptionId, addonIds);
         return findByOrgId(orgId).orElseThrow();
     }
 
@@ -148,11 +162,10 @@ public class OrgSubscriptionRepository {
         replacePendingAddons(subscriptionId, Set.of());
     }
 
-    // Keyed by paddle_customer_id (stable for the org's whole lifetime, set once by
-    // JOB-173's initiate) rather than paddle_subscription_id — the latter doesn't
-    // exist yet on the very first subscription.created event, which is exactly the
-    // event that sets it for the first time. Returns rows-affected so the caller can
-    // detect "no matching org" (0) without an exception — that's a legitimate,
+    // Keyed by orgId — the caller resolves it first via
+    // organisations.paddle_customer_id (JOB-200), since paddle_customer_id no
+    // longer lives on this table. Returns rows-affected so the caller can detect
+    // "no matching org" (0) without an exception — that's a legitimate,
     // non-retriable outcome for a webhook (e.g. sandbox noise), not an error.
     //
     // scheduledCancellationAt is always overwritten, including to null — a webhook
@@ -163,7 +176,7 @@ public class OrgSubscriptionRepository {
     // it per Paddle's docs) — a missing value here isn't "no period", just "this
     // event type doesn't report it", so it must not clobber the last known one.
     public int updateFromPaddleWebhook(
-            String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus,
+            UUID orgId, String paddleSubscriptionId, String subscriptionStatus,
             Instant scheduledCancellationAt, Instant currentPeriodStartsAt) {
         var update = dsl.update(ORG_SUBSCRIPTIONS)
                 .set(ORG_SUBSCRIPTIONS.PADDLE_SUBSCRIPTION_ID, paddleSubscriptionId)
@@ -176,7 +189,7 @@ public class OrgSubscriptionRepository {
         }
         return update
                 .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
-                .where(ORG_SUBSCRIPTIONS.PADDLE_CUSTOMER_ID.eq(paddleCustomerId))
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
                 .execute();
     }
 
@@ -264,7 +277,6 @@ public class OrgSubscriptionRepository {
                 .createdAt(toInstant(r.getCreatedAt()))
                 .updatedAt(toInstant(r.getUpdatedAt()))
                 .addonIds(fetchAddonIds(r.getId()))
-                .paddleCustomerId(r.getPaddleCustomerId())
                 .paddleSubscriptionId(r.getPaddleSubscriptionId())
                 .subscriptionStatus(r.getSubscriptionStatus())
                 .paddleScheduledCancellationAt(r.getPaddleScheduledCancellationAt() == null

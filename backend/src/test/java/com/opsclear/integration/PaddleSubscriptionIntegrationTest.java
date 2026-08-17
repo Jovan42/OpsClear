@@ -261,11 +261,17 @@ class PaddleSubscriptionIntegrationTest {
     }
 
     @Test
-    @DisplayName("initiate_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
-    void initiate_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+    @DisplayName("initiate_shouldReturn201_andCreateRealPaddleCustomer_evenWithNoSubscriptionRecordYet")
+    void initiate_shouldReturn201_andCreateRealPaddleCustomer_evenWithNoSubscriptionRecordYet() throws Exception {
+        // JOB-200: paddle_customer_id lives on organisations, not org_subscriptions —
+        // every tier/add-on has a real price, so the org_subscriptions row is only
+        // ever created once a real payment is webhook-confirmed. initiate() must
+        // still work before that, while the org is still just picking a plan.
         mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orgId").value(orgId.toString()))
+                .andExpect(jsonPath("$.paddleCustomerId").value(org.hamcrest.Matchers.startsWith("ctm_")));
     }
 
     // ─── PUT /api/organisations/{orgId}/subscription/paddle ────────────────────
@@ -868,11 +874,15 @@ class PaddleSubscriptionIntegrationTest {
     }
 
     @Test
-    @DisplayName("getBillingHistory_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
-    void getBillingHistory_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+    @DisplayName("getBillingHistory_shouldReturn200WithEmptyList_whenNoSubscriptionRecordAtAll")
+    void getBillingHistory_shouldReturn200WithEmptyList_whenNoSubscriptionRecordAtAll() throws Exception {
+        // JOB-200: an org_subscriptions row may not exist at all yet (never staged
+        // via the free picker) — that's not an error, just "no billing history yet",
+        // same as having a row with no Paddle customer id.
         mockMvc.perform(get(ApiPaths.paddleSubscriptionTransactions(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
     }
 
     // ─── GET .../subscription/paddle/update-payment-method-transaction ────────
