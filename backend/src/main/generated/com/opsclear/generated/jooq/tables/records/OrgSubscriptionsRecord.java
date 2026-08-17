@@ -229,6 +229,23 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         return (OffsetDateTime) get(12);
     }
 
+    /**
+     * Setter for
+     * <code>public.org_subscriptions.paddle_pending_downgrade_effective_at</code>.
+     */
+    public OrgSubscriptionsRecord setPaddlePendingDowngradeEffectiveAt(OffsetDateTime value) {
+        set(13, value);
+        return this;
+    }
+
+    /**
+     * Getter for
+     * <code>public.org_subscriptions.paddle_pending_downgrade_effective_at</code>.
+     */
+    public OffsetDateTime getPaddlePendingDowngradeEffectiveAt() {
+        return (OffsetDateTime) get(13);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -252,7 +269,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
     /**
      * Create a detached, initialised OrgSubscriptionsRecord
      */
-    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus, OffsetDateTime paddleScheduledCancellationAt, UUID pendingTierId, OffsetDateTime paddleCurrentPeriodStartsAt) {
+    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus, OffsetDateTime paddleScheduledCancellationAt, UUID pendingTierId, OffsetDateTime paddleCurrentPeriodStartsAt, OffsetDateTime paddlePendingDowngradeEffectiveAt) {
         super(OrgSubscriptions.ORG_SUBSCRIPTIONS);
 
         setId(id);
@@ -268,6 +285,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         setPaddleScheduledCancellationAt(paddleScheduledCancellationAt);
         setPendingTierId(pendingTierId);
         setPaddleCurrentPeriodStartsAt(paddleCurrentPeriodStartsAt);
+        setPaddlePendingDowngradeEffectiveAt(paddlePendingDowngradeEffectiveAt);
         resetChangedOnNotNull();
     }
 }

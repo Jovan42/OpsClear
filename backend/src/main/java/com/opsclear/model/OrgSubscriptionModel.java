@@ -30,4 +30,5 @@ public class OrgSubscriptionModel {
     private Instant paddleCurrentPeriodStartsAt;
     private UUID pendingTierId;
     private List<UUID> pendingAddonIds;
+    private Instant paddlePendingDowngradeEffectiveAt;
 }

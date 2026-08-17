@@ -93,6 +93,20 @@ public class PaddleSubscriptionController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/cancel-pending-downgrade")
+    public ResponseEntity<PaddleSubscriptionResponse> cancelPendingDowngrade(
+            @PathVariable UUID orgId,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        OrgSubscriptionModel updated = paddleSubscriptionService.cancelPendingDowngrade(orgId, callerId);
+        PaddleSubscriptionResponse response = PaddleSubscriptionResponse.builder()
+                .orgId(orgId)
+                .paddleSubscriptionId(updated.getPaddleSubscriptionId())
+                .status(updated.getSubscriptionStatus())
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/update-payment-method-transaction")
     public ResponseEntity<UpdatePaymentMethodTransactionResponse> getUpdatePaymentMethodTransaction(
             @PathVariable UUID orgId,

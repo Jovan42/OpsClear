@@ -127,6 +127,12 @@ public class OrgSubscriptions extends TableImpl<OrgSubscriptionsRecord> {
      */
     public final TableField<OrgSubscriptionsRecord, OffsetDateTime> PADDLE_CURRENT_PERIOD_STARTS_AT = createField(DSL.name("paddle_current_period_starts_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
+    /**
+     * The column
+     * <code>public.org_subscriptions.paddle_pending_downgrade_effective_at</code>.
+     */
+    public final TableField<OrgSubscriptionsRecord, OffsetDateTime> PADDLE_PENDING_DOWNGRADE_EFFECTIVE_AT = createField(DSL.name("paddle_pending_downgrade_effective_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
     private OrgSubscriptions(Name alias, Table<OrgSubscriptionsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

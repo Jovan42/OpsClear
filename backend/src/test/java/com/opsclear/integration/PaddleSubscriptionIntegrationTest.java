@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -150,6 +151,16 @@ class PaddleSubscriptionIntegrationTest {
                 .set(ORG_SUBSCRIPTIONS.PADDLE_SCHEDULED_CANCELLATION_AT, SCHEDULED_CANCELLATION_FIXTURE)
                 .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
                 .execute();
+    }
+
+    // Same pragmatic seeding pattern as givenOrgHasScheduledCancellation — a pending
+    // downgrade is normally set by updateSubscriptionItems' own downgrade branch,
+    // seeded here directly for tests that only care about the guard/undo behavior.
+    private void givenOrgHasPendingDowngrade() {
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        subscriptionRepository.schedulePendingDowngrade(
+                subscriptionRepository.findByOrgId(orgId).orElseThrow().getId(), orgId, pendingTierId, Set.of(),
+                Instant.parse("2026-09-01T00:00:00Z"));
     }
 
     // subscription_tiers is global seed data shared across the whole test run (not
@@ -633,6 +644,78 @@ class PaddleSubscriptionIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ─── POST .../subscription/paddle/cancel-pending-downgrade ────────────────
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReachPaddleApi_insteadOfFailingAtGuard_oncePendingDowngradeExists")
+    void cancelPendingDowngrade_shouldReachPaddleApi_insteadOfFailingAtGuard_oncePendingDowngradeExists()
+            throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasPendingDowngrade();
+
+        // Same reasoning as cancel/resume above: sub_test_placeholder isn't a real
+        // Paddle subscription, so the request reaches Paddle's real API and fails
+        // there instead of failing at our own guard.
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn409_whenNoPendingDowngrade")
+    void cancelPendingDowngrade_shouldReturn409_whenNoPendingDowngrade() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "There's no pending downgrade on this subscription to cancel"));
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn409_whenNoPaddleSubscriptionYet")
+    void cancelPendingDowngrade_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn400_forInternalOrg")
+    void cancelPendingDowngrade_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn403_forNonOwner")
+    void cancelPendingDowngrade_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasPendingDowngrade();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
+    void cancelPendingDowngrade_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isNotFound());
+    }
+
     // ─── GET .../subscription/paddle/update-payment-method-transaction ────────
 
     @Test
@@ -717,14 +800,16 @@ class PaddleSubscriptionIntegrationTest {
         var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
         UUID pendingTierId = tierRepository.findAll().get(1).getId();
         UUID addonId = addonRepository.findAll().getFirst().getId();
+        Instant effectiveAt = Instant.parse("2026-09-01T00:00:00Z");
 
         var result = subscriptionRepository.schedulePendingDowngrade(
-                subscription.getId(), orgId, pendingTierId, Set.of(addonId));
+                subscription.getId(), orgId, pendingTierId, Set.of(addonId), effectiveAt);
 
         assertThat(result.getPendingTierId()).isEqualTo(pendingTierId);
         assertThat(result.getPendingAddonIds()).containsExactly(addonId);
         assertThat(result.getTierId()).isEqualTo(tierId);
         assertThat(result.getAddonIds()).isEmpty();
+        assertThat(result.getPaddlePendingDowngradeEffectiveAt()).isEqualTo(effectiveAt);
     }
 
     @Test
@@ -734,7 +819,8 @@ class PaddleSubscriptionIntegrationTest {
         var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
         UUID pendingTierId = tierRepository.findAll().get(1).getId();
         UUID addonId = addonRepository.findAll().getFirst().getId();
-        subscriptionRepository.schedulePendingDowngrade(subscription.getId(), orgId, pendingTierId, Set.of(addonId));
+        subscriptionRepository.schedulePendingDowngrade(
+                subscription.getId(), orgId, pendingTierId, Set.of(addonId), Instant.parse("2026-09-01T00:00:00Z"));
 
         subscriptionRepository.applyPendingDowngrade(subscription.getId());
 
@@ -743,6 +829,28 @@ class PaddleSubscriptionIntegrationTest {
         assertThat(result.getAddonIds()).containsExactly(addonId);
         assertThat(result.getPendingTierId()).isNull();
         assertThat(result.getPendingAddonIds()).isEmpty();
+        assertThat(result.getPaddlePendingDowngradeEffectiveAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("clearPendingDowngrade reverts to keeping the currently active tier/add-ons and clears "
+            + "the pending fields")
+    void clearPendingDowngrade_shouldClearPendingFields_withoutTouchingActivePlan() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        UUID addonId = addonRepository.findAll().getFirst().getId();
+        subscriptionRepository.schedulePendingDowngrade(
+                subscription.getId(), orgId, pendingTierId, Set.of(addonId), Instant.parse("2026-09-01T00:00:00Z"));
+
+        var result = subscriptionRepository.clearPendingDowngrade(subscription.getId(), orgId);
+
+        assertThat(result.getTierId()).isEqualTo(tierId);
+        assertThat(result.getAddonIds()).isEmpty();
+        assertThat(result.getPendingTierId()).isNull();
+        assertThat(result.getPendingAddonIds()).isEmpty();
+        assertThat(result.getPaddlePendingDowngradeEffectiveAt()).isNull();
+        assertThat(subscriptionRepository.findByOrgId(orgId).orElseThrow().getPendingTierId()).isNull();
     }
 
     @Test

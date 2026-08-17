@@ -97,13 +97,32 @@ public class OrgSubscriptionRepository {
     // desired plan is parked as "pending" until the webhook confirms the period has
     // actually rolled over (see applyPendingDowngrade).
     public OrgSubscriptionModel schedulePendingDowngrade(
-            UUID subscriptionId, UUID orgId, UUID pendingTierId, Set<UUID> pendingAddonIds) {
+            UUID subscriptionId, UUID orgId, UUID pendingTierId, Set<UUID> pendingAddonIds,
+            Instant effectiveAt) {
         dsl.update(ORG_SUBSCRIPTIONS)
                 .set(ORG_SUBSCRIPTIONS.PENDING_TIER_ID, pendingTierId)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_PENDING_DOWNGRADE_EFFECTIVE_AT,
+                        effectiveAt != null ? effectiveAt.atOffset(ZoneOffset.UTC) : null)
                 .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .where(ORG_SUBSCRIPTIONS.ID.eq(subscriptionId))
                 .execute();
         replacePendingAddons(subscriptionId, pendingAddonIds);
+        return findByOrgId(orgId).orElseThrow();
+    }
+
+    // The customer changed their mind before the pending downgrade took effect —
+    // reverts to keeping the currently active tier/addons indefinitely, same as if
+    // no downgrade had ever been scheduled. The caller is responsible for resetting
+    // Paddle's own items back to the active set first (do_not_bill, no billing
+    // impact) — this only clears our own local pending state.
+    public OrgSubscriptionModel clearPendingDowngrade(UUID subscriptionId, UUID orgId) {
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .setNull(ORG_SUBSCRIPTIONS.PENDING_TIER_ID)
+                .setNull(ORG_SUBSCRIPTIONS.PADDLE_PENDING_DOWNGRADE_EFFECTIVE_AT)
+                .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .where(ORG_SUBSCRIPTIONS.ID.eq(subscriptionId))
+                .execute();
+        replacePendingAddons(subscriptionId, Set.of());
         return findByOrgId(orgId).orElseThrow();
     }
 
@@ -121,6 +140,7 @@ public class OrgSubscriptionRepository {
         dsl.update(ORG_SUBSCRIPTIONS)
                 .set(ORG_SUBSCRIPTIONS.TIER_ID, record.getPendingTierId())
                 .setNull(ORG_SUBSCRIPTIONS.PENDING_TIER_ID)
+                .setNull(ORG_SUBSCRIPTIONS.PADDLE_PENDING_DOWNGRADE_EFFECTIVE_AT)
                 .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .where(ORG_SUBSCRIPTIONS.ID.eq(subscriptionId))
                 .execute();
@@ -253,6 +273,8 @@ public class OrgSubscriptionRepository {
                         ? null : r.getPaddleCurrentPeriodStartsAt().toInstant())
                 .pendingTierId(r.getPendingTierId())
                 .pendingAddonIds(fetchPendingAddonIds(r.getId()))
+                .paddlePendingDowngradeEffectiveAt(r.getPaddlePendingDowngradeEffectiveAt() == null
+                        ? null : r.getPaddlePendingDowngradeEffectiveAt().toInstant())
                 .build();
     }
 

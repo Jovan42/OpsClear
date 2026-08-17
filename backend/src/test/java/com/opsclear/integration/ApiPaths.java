@@ -236,6 +236,10 @@ final class ApiPaths {
         return "/api/organisations/" + orgId + "/subscription/paddle/preview";
     }
 
+    static String paddleSubscriptionCancelPendingDowngrade(UUID orgId) {
+        return "/api/organisations/" + orgId + "/subscription/paddle/cancel-pending-downgrade";
+    }
+
     // --- Super admin pricing ---
 
     static final String SUPER_ADMIN_PRICING_TIERS  = "/api/super-admin/pricing/tiers";

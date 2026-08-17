@@ -60,6 +60,7 @@ public class PaddleSubscriptionService {
     // plan until the webhook confirms that renewal actually happened.
     private static final String PRORATION_UPGRADE = "prorated_immediately";
     private static final String PRORATION_DOWNGRADE = "full_next_billing_period";
+    private static final String PRORATION_NO_CHANGE = "do_not_bill";
     private static final String INTERVAL_MONTH = "month";
     private static final String INTERVAL_YEAR = "year";
     private static final String CURRENCY_EUR = "EUR";
@@ -138,7 +139,7 @@ public class PaddleSubscriptionService {
             // (already-paid-for) tier/addons until the webhook confirms the period
             // has actually rolled over (see PaddleWebhookService).
             orgSubscriptionRepository.schedulePendingDowngrade(
-                    subscription.getId(), orgId, newTier.getId(), newAddonIds);
+                    subscription.getId(), orgId, newTier.getId(), newAddonIds, paddleSubscription.nextBilledAt());
             log.info("Paddle subscription {} downgrade scheduled for org {}: pendingTier={} "
                             + "(takes effect at next renewal)",
                     paddleSubscription.id(), orgId, newTier.getId());
@@ -225,6 +226,33 @@ public class PaddleSubscriptionService {
                 orgSubscriptionRepository.clearScheduledCancellation(subscription.getId(), orgId);
         log.info("Removed scheduled cancellation for Paddle subscription {} (org {})",
                 subscription.getPaddleSubscriptionId(), orgId);
+        return updated;
+    }
+
+    // The customer changed their mind before a pending downgrade took effect —
+    // reverts Paddle's items back to the currently active plan with do_not_bill
+    // (verified live: zero billing impact, next_billed_at unchanged), then clears
+    // the local pending state. Paddle's own item state already changed to the
+    // downgraded set the moment it was scheduled (see updateSubscriptionItems'
+    // class-level note) — this is undoing that, not a "cancel a scheduled
+    // change" in Paddle's own model (there is no such Paddle-side concept for a
+    // proration-mode item update, only for pause/cancel).
+    @Transactional
+    public OrgSubscriptionModel cancelPendingDowngrade(UUID orgId, UUID requesterId) {
+        requireOwner(orgId, requesterId);
+        OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
+        requireNotInternal(subscription);
+        requirePaddleSubscriptionExists(subscription);
+        requirePendingDowngradeExists(subscription);
+
+        SubscriptionTierModel activeTier = requireTier(subscription.getTierId());
+        List<PaddleSubscriptionItem> activeItems =
+                buildItems(activeTier, new HashSet<>(subscription.getAddonIds()), subscription.getBillingCycle());
+        paddleClient.updateSubscriptionItems(subscription.getPaddleSubscriptionId(), activeItems, PRORATION_NO_CHANGE);
+
+        OrgSubscriptionModel updated = orgSubscriptionRepository.clearPendingDowngrade(subscription.getId(), orgId);
+        log.info("Cancelled pending downgrade for Paddle subscription {} (org {}), reverted to active tier {}",
+                subscription.getPaddleSubscriptionId(), orgId, activeTier.getId());
         return updated;
     }
 
@@ -385,6 +413,12 @@ public class PaddleSubscriptionService {
     private void requireCancellationScheduled(OrgSubscriptionModel subscription) {
         if (subscription.getPaddleScheduledCancellationAt() == null) {
             throw new ConflictException(ErrorMessages.Paddle.NO_CANCELLATION_SCHEDULED);
+        }
+    }
+
+    private void requirePendingDowngradeExists(OrgSubscriptionModel subscription) {
+        if (subscription.getPendingTierId() == null) {
+            throw new ConflictException(ErrorMessages.Paddle.NO_PENDING_DOWNGRADE_TO_CANCEL);
         }
     }
 
