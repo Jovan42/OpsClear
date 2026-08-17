@@ -431,6 +431,65 @@ class PaddleSubscriptionServiceTest {
     }
 
     @Test
+    @DisplayName("updateSubscriptionItems throws ConflictException when the request both adds a pricier addon "
+            + "and removes a cheaper one in the same change")
+    void updateSubscriptionItems_shouldThrow_whenChangeIsMixed() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID existingAddonId = UUID.randomUUID();
+        UUID newAddonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId)
+                .addonIds(List.of(existingAddonId))
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(newAddonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+
+        assertThatThrownBy(() -> service.updateSubscriptionItems(orgId, ownerId, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Paddle.MIXED_UPGRADE_DOWNGRADE_NOT_ALLOWED);
+        verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems allows removing an addon on its own, with nothing added, as a "
+            + "pure (non-mixed) downgrade")
+    void updateSubscriptionItems_shouldAllow_whenOnlyRemovingAnAddon() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID existingAddonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId)
+                .addonIds(List.of(existingAddonId))
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(addonRepository.findByIds(Set.of(existingAddonId)))
+                .thenReturn(List.of(SubscriptionAddonModel.builder().id(existingAddonId).priceMonthly(9).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", Instant.parse("2026-09-01T00:00:00Z")));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period"));
+    }
+
+    @Test
     @DisplayName("updateSubscriptionItems throws ConflictException when there's no Paddle subscription yet")
     void updateSubscriptionItems_shouldThrow_whenNoPaddleSubscriptionYet() {
         UUID orgId = UUID.randomUUID();
@@ -610,6 +669,34 @@ class PaddleSubscriptionServiceTest {
 
         assertThat(result.isUpgrade()).isFalse();
         assertThat(result.getEffectiveAt()).isEqualTo(periodEnd);
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems throws ConflictException when the request both adds a pricier "
+            + "addon and removes a cheaper one in the same change")
+    void previewUpdateSubscriptionItems_shouldThrow_whenChangeIsMixed() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID existingAddonId = UUID.randomUUID();
+        UUID newAddonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId)
+                .addonIds(List.of(existingAddonId))
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(newAddonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+
+        assertThatThrownBy(() -> service.previewUpdateSubscriptionItems(orgId, ownerId, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Paddle.MIXED_UPGRADE_DOWNGRADE_NOT_ALLOWED);
+        verify(paddleClient, never()).previewUpdateSubscriptionItems(anyString(), any(), anyString());
     }
 
     @Test

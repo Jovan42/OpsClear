@@ -364,6 +364,38 @@ class PaddleSubscriptionIntegrationTest {
     }
 
     @Test
+    @DisplayName("update_shouldReturn409_whenChangeIsMixed_addingAndRemovingAddonsInTheSameRequest")
+    void update_shouldReturn409_whenChangeIsMixed_addingAndRemovingAddonsInTheSameRequest() throws Exception {
+        List<SubscriptionAddonModel> addons = addonRepository.findAll();
+        UUID existingAddonId = addons.get(0).getId();
+        UUID newAddonId = addons.get(1).getId();
+
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "tierId", tierId, "billingCycle", "MONTHLY", "addonIds", List.of(existingAddonId)))))
+                .andExpect(status().isOk());
+
+        // Real bug found via live manual testing: adding one addon while removing
+        // another in the same request nets out to an "upgrade" by total price, which
+        // would apply immediately and yank the removed addon away right now even
+        // though it's already paid for this period. Must be caught by our own guard
+        // before ever reaching Paddle's price resolver.
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("tierId", tierId, "addonIds", List.of(newAddonId)))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "This change both adds something more expensive and removes something cheaper — "
+                                + "please save these as two separate changes"));
+    }
+
+    @Test
     @DisplayName("update_shouldReturn400_forInternalOrg")
     void update_shouldReturn400_forInternalOrg() throws Exception {
         givenOrgHasSubscriptionRecord();
@@ -462,6 +494,33 @@ class PaddleSubscriptionIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn409_whenChangeIsMixed_addingAndRemovingAddonsInTheSameRequest")
+    void preview_shouldReturn409_whenChangeIsMixed_addingAndRemovingAddonsInTheSameRequest() throws Exception {
+        List<SubscriptionAddonModel> addons = addonRepository.findAll();
+        UUID existingAddonId = addons.get(0).getId();
+        UUID newAddonId = addons.get(1).getId();
+
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "tierId", tierId, "billingCycle", "MONTHLY", "addonIds", List.of(existingAddonId)))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("tierId", tierId, "addonIds", List.of(newAddonId)))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "This change both adds something more expensive and removes something cheaper — "
+                                + "please save these as two separate changes"));
     }
 
     @Test

@@ -109,6 +109,7 @@ public class PaddleSubscriptionService {
         Set<UUID> newAddonIds = request.getAddonIds() != null ? new HashSet<>(request.getAddonIds()) : new HashSet<>();
 
         String billingCycle = subscription.getBillingCycle();
+        requireNotMixedChange(subscription, newTier, newAddonIds, billingCycle);
         List<PaddleSubscriptionItem> items = buildItems(newTier, newAddonIds, billingCycle);
         boolean upgrade = isUpgrade(subscription, newTier, newAddonIds, billingCycle);
         if (!upgrade) {
@@ -164,6 +165,7 @@ public class PaddleSubscriptionService {
         Set<UUID> newAddonIds = request.getAddonIds() != null ? new HashSet<>(request.getAddonIds()) : new HashSet<>();
 
         String billingCycle = subscription.getBillingCycle();
+        requireNotMixedChange(subscription, newTier, newAddonIds, billingCycle);
         List<PaddleSubscriptionItem> items = buildItems(newTier, newAddonIds, billingCycle);
         boolean upgrade = isUpgrade(subscription, newTier, newAddonIds, billingCycle);
         if (!upgrade) {
@@ -413,6 +415,29 @@ public class PaddleSubscriptionService {
     private void requireCancellationScheduled(OrgSubscriptionModel subscription) {
         if (subscription.getPaddleScheduledCancellationAt() == null) {
             throw new ConflictException(ErrorMessages.Paddle.NO_CANCELLATION_SCHEDULED);
+        }
+    }
+
+    // A single request that both adds something pricier and removes something
+    // cheaper nets out to an "upgrade" by total price, which would apply
+    // immediately and — because Paddle's item update is atomic — also yank the
+    // removed item away right now, even though the customer already paid for it
+    // this period. Rather than splitting into two Paddle calls (immediate add +
+    // deferred remove) to get correct per-item semantics, simplest and safest is
+    // to just block the mixed case and ask the customer to save the increase and
+    // the decrease separately.
+    private void requireNotMixedChange(OrgSubscriptionModel subscription, SubscriptionTierModel newTier,
+            Set<UUID> newAddonIds, String billingCycle) {
+        SubscriptionTierModel currentTier = requireTier(subscription.getTierId());
+        int oldTierPrice = totalPrice(currentTier, Set.of(), billingCycle);
+        int newTierPrice = totalPrice(newTier, Set.of(), billingCycle);
+        Set<UUID> currentAddonIds = new HashSet<>(subscription.getAddonIds());
+        boolean addonAdded = newAddonIds.stream().anyMatch(id -> !currentAddonIds.contains(id));
+        boolean addonRemoved = currentAddonIds.stream().anyMatch(id -> !newAddonIds.contains(id));
+        boolean hasIncrease = newTierPrice > oldTierPrice || addonAdded;
+        boolean hasDecrease = newTierPrice < oldTierPrice || addonRemoved;
+        if (hasIncrease && hasDecrease) {
+            throw new ConflictException(ErrorMessages.Paddle.MIXED_UPGRADE_DOWNGRADE_NOT_ALLOWED);
         }
     }
 

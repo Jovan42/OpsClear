@@ -223,6 +223,9 @@ public final class ErrorMessages {
                 "There's no scheduled cancellation on this subscription to resume";
         public static final String NO_PENDING_DOWNGRADE_TO_CANCEL =
                 "There's no pending downgrade on this subscription to cancel";
+        public static final String MIXED_UPGRADE_DOWNGRADE_NOT_ALLOWED =
+                "This change both adds something more expensive and removes something cheaper — "
+                        + "please save these as two separate changes";
 
         private Paddle() {
         }
