@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
+import { CheckoutEventNames, type PaddleEventData } from '@paddle/paddle-js';
 import type { OrgSubscriptionResponse, PreviewSubscriptionUpdateResponse, SubscriptionTierResponse } from '../../types';
 import Skeleton from '../../components/Skeleton';
 import Button from '../../components/Button';
 import ConfirmModal from '../../components/ConfirmModal';
 import { useDebounce } from '../../hooks/useDebounce';
+import { hasRealPaddleBilling } from './paddleBillingStatus';
+import { PADDLE_INLINE_FRAME_CLASS, closePaddleCheckout, openPaddleCheckout } from './paddleCheckout';
 import { useCatalog, useOrgSubscription, useUpsertOrgSubscription } from './useSubscription';
 import {
   useCancelPendingDowngrade,
+  useInitiatePaddleSubscription,
   usePreviewPaddleSubscriptionUpdate,
   useUpdatePaddleSubscription,
 } from './usePaddleSubscription';
+
+const PROCESSING_POLL_MS = 2000;
+const PROCESSING_TIMEOUT_MS = 20000;
 
 function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
@@ -51,13 +59,16 @@ interface Props {
 
 export default function SubscriptionSection({ orgId }: Props) {
   const { t } = useTranslation('org');
+  const queryClient = useQueryClient();
   const { data: catalog, isLoading: catalogLoading } = useCatalog();
-  const { data: currentSub, isLoading: subLoading } = useOrgSubscription(orgId);
+  const [awaitingWebhook, setAwaitingWebhook] = useState(false);
+  const { data: currentSub, isLoading: subLoading } = useOrgSubscription(orgId, awaitingWebhook ? PROCESSING_POLL_MS : false);
   const { mutate: upsert, isPending: saving } = useUpsertOrgSubscription(orgId);
   const { mutate: previewPaddleUpdate, isPending: previewing } = usePreviewPaddleSubscriptionUpdate(orgId);
   const { mutate: previewLiveUpdate } = usePreviewPaddleSubscriptionUpdate(orgId);
   const { mutate: updatePaddleSubscription, isPending: savingPaddle } = useUpdatePaddleSubscription(orgId);
   const { mutate: cancelPendingDowngrade, isPending: cancellingPendingDowngrade } = useCancelPendingDowngrade(orgId);
+  const { mutate: initiate, isPending: initiating } = useInitiatePaddleSubscription(orgId);
 
   const [memberIdx,  setMemberIdx]  = useState(0);
   const [projectIdx, setProjectIdx] = useState(0);
@@ -68,6 +79,7 @@ export default function SubscriptionSection({ orgId }: Props) {
   const [pendingPreview, setPendingPreview] = useState<PreviewSubscriptionUpdateResponse | null>(null);
   const [livePreview, setLivePreview] = useState<PreviewSubscriptionUpdateResponse | null>(null);
   const [cancelDowngradeError, setCancelDowngradeError] = useState<string | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const memberBands  = [...new Set(catalog?.tiers.map((t) => t.maxMembers) ?? [])].sort((a, b) => a - b);
   const projectBands = [
@@ -107,9 +119,7 @@ export default function SubscriptionSection({ orgId }: Props) {
       setLivePreview(null);
       return;
     }
-    const hasBilling = !!currentSub.paddleSubscriptionId
-      && currentSub.subscriptionStatus !== null && currentSub.subscriptionStatus !== 'CANCELED';
-    if (!hasBilling) {
+    if (!hasRealPaddleBilling(currentSub)) {
       setLivePreview(null);
       return;
     }
@@ -135,6 +145,12 @@ export default function SubscriptionSection({ orgId }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSelectionKey]);
 
+  useEffect(() => {
+    if (!awaitingWebhook) return;
+    const timeout = setTimeout(() => setAwaitingWebhook(false), PROCESSING_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [awaitingWebhook]);
+
   if (catalogLoading || subLoading) {
     return (
       <div className="space-y-4">
@@ -156,10 +172,7 @@ export default function SubscriptionSection({ orgId }: Props) {
     );
   }
 
-  // Same "does this org have real, non-canceled Paddle billing" check as
-  // PaddleBillingSection.tsx — anything short of that keeps using the free upsert.
-  const status = currentSub?.subscriptionStatus ?? null;
-  const hasPaddleBilling = !!currentSub?.paddleSubscriptionId && status !== null && status !== 'CANCELED';
+  const hasPaddleBilling = hasRealPaddleBilling(currentSub);
 
   const availableAddons = catalog.addons.filter((a) => a.available);
   const comingSoonAddons = catalog.addons.filter((a) => !a.available);
@@ -170,6 +183,67 @@ export default function SubscriptionSection({ orgId }: Props) {
 
   const basePrice = selectedTier ? tierPrice(selectedTier, annual) : 0;
   const total = basePrice + addonTotal;
+
+  const selectedTierPriceId = selectedTier
+    ? (annual ? selectedTier.paddlePriceIdAnnual : selectedTier.paddlePriceIdMonthly)
+    : null;
+  const selectedAddonsMissingPrice = [...selectedAddons].some((id) => {
+    const addon = catalog.addons.find((a) => a.id === id);
+    return !addon || (annual ? addon.paddlePriceIdAnnual : addon.paddlePriceIdMonthly) === null;
+  });
+  const priceNotSynced = !selectedTierPriceId || selectedAddonsMissingPrice;
+
+  // Not just "status is null" — a resubscribe after cancellation starts from a
+  // real, non-null status ('CANCELED'), which would otherwise make this always
+  // false and skip straight back to the picker instead of showing processing
+  // while genuinely waiting on the new payment's webhook.
+  const processing =
+    awaitingWebhook && currentSub?.subscriptionStatus !== 'ACTIVE' && currentSub?.subscriptionStatus !== 'PAST_DUE';
+
+  if (processing) {
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-5">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('paddleProcessingTitle')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('paddleProcessingDesc')}</p>
+      </div>
+    );
+  }
+
+  if (checkoutOpen && selectedTier) {
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('paddleBillingTitle')}</p>
+          <button
+            onClick={handleAbandonCheckout}
+            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            {t('paddleCheckoutBackButton')}
+          </button>
+        </div>
+        <div className="text-sm space-y-1 border-b border-gray-200 dark:border-gray-700 pb-3">
+          <div className="flex justify-between text-gray-700 dark:text-gray-300">
+            <span>{t('upTo', { count: selectedTier.maxMembers })}</span>
+            <span>{fmt(basePrice)} {selectedTier.currency}</span>
+          </div>
+          {[...selectedAddons]
+            .map((id) => catalog.addons.find((a) => a.id === id))
+            .filter((a): a is NonNullable<typeof a> => !!a)
+            .map((a) => (
+              <div key={a.id} className="flex justify-between text-gray-500 dark:text-gray-400">
+                <span>{a.name}</span>
+                <span>{fmt(annual ? a.priceAnnual : a.priceMonthly)} {selectedTier.currency}</span>
+              </div>
+            ))}
+          <div className="flex justify-between font-medium text-gray-900 dark:text-white pt-1">
+            <span>{t('paddleCheckoutTotalLabel')}</span>
+            <span>{fmt(total)} {selectedTier.currency}</span>
+          </div>
+        </div>
+        <div className={PADDLE_INLINE_FRAME_CLASS} />
+      </div>
+    );
+  }
 
   const isMixedChange = hasPaddleBilling && !!selectedTier && !!currentSub
     && isMixedAddonChange(currentSub, selectedTier, selectedAddons);
@@ -217,16 +291,13 @@ export default function SubscriptionSection({ orgId }: Props) {
     }
   }
 
-  // Once an org is on real Paddle billing, plan changes go through the
-  // upgrade/downgrade-aware Paddle endpoints (JOB-198) instead of the free upsert —
-  // first a preview so the customer can confirm exactly what will happen (charged
-  // now vs. deferred to next renewal) before anything is actually changed.
-  function handleSave() {
-    if (!selectedTier || isMixedChange) return;
-    setSaveError(null);
-    setSaveSuccess(false);
-
-    if (!hasPaddleBilling) {
+  function handleCheckoutEvent(event: PaddleEventData) {
+    if (event.name === CheckoutEventNames.CHECKOUT_COMPLETED) {
+      if (!selectedTier) return;
+      setCheckoutOpen(false);
+      // Nothing is persisted locally until the transaction actually succeeds —
+      // this is the only write that ever sets tier_id/addons for an org that
+      // was never on real billing before (JOB-200).
       upsert(
         {
           tierId: selectedTier.id,
@@ -234,10 +305,69 @@ export default function SubscriptionSection({ orgId }: Props) {
           addonIds: [...selectedAddons],
         },
         {
-          onSuccess: () => setSaveSuccess(true),
+          onSuccess: () => {
+            setAwaitingWebhook(true);
+            setSaveSuccess(true);
+          },
           onError: handleSaveError,
         },
       );
+    } else if (event.name === CheckoutEventNames.CHECKOUT_CLOSED) {
+      setCheckoutOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'subscription'] });
+    }
+  }
+
+  function handleAbandonCheckout() {
+    closePaddleCheckout();
+    setCheckoutOpen(false);
+  }
+
+  // Once an org is on real Paddle billing, plan changes go through the
+  // upgrade/downgrade-aware Paddle endpoints (JOB-198) instead of the free upsert —
+  // first a preview so the customer can confirm exactly what will happen (charged
+  // now vs. deferred to next renewal) before anything is actually changed.
+  //
+  // Without real billing yet, Save no longer writes anything directly (JOB-200) —
+  // every tier/add-on has a real price, so staging a selection for free and never
+  // paying would grant it for free forever. Instead this opens Paddle checkout
+  // built straight from the current on-screen selection (not the saved record,
+  // which may not exist yet); the free upsert above only runs once that checkout
+  // actually completes.
+  function handleSave() {
+    if (!catalog || !selectedTier || isMixedChange) return;
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    if (!hasPaddleBilling) {
+      if (priceNotSynced || !selectedTierPriceId) {
+        setSaveError(t('paddlePriceNotSyncedYet'));
+        return;
+      }
+
+      const addonItems = [...selectedAddons]
+        .map((id) => catalog.addons.find((a) => a.id === id))
+        .filter((a): a is NonNullable<typeof a> => !!a)
+        .map((a) => (annual ? a.paddlePriceIdAnnual : a.paddlePriceIdMonthly))
+        .filter((priceId): priceId is string => priceId !== null)
+        .map((priceId) => ({ priceId, quantity: 1 }));
+
+      setCheckoutOpen(true);
+      initiate(undefined, {
+        onSuccess: (data) => {
+          openPaddleCheckout(
+            {
+              items: [{ priceId: selectedTierPriceId, quantity: 1 }, ...addonItems],
+              customer: { id: data.paddleCustomerId },
+            },
+            handleCheckoutEvent,
+          );
+        },
+        onError: (err) => {
+          setCheckoutOpen(false);
+          handleSaveError(err);
+        },
+      });
       return;
     }
 
@@ -459,12 +589,19 @@ export default function SubscriptionSection({ orgId }: Props) {
         )}
 
         <div className="pt-2 space-y-2">
-          <Button onClick={handleSave} loading={saving || previewing} disabled={!selectedTier || isMixedChange}>
-            {t('saveSubscriptionButton')}
+          <Button
+            onClick={handleSave}
+            loading={saving || previewing || initiating}
+            disabled={!selectedTier || isMixedChange || (!hasPaddleBilling && priceNotSynced)}
+          >
+            {hasPaddleBilling ? t('saveSubscriptionButton') : t('continueToPaymentButton')}
           </Button>
 
           {isMixedChange && (
             <p className="text-sm text-amber-600 dark:text-amber-400">{t('mixedChangeWarning')}</p>
+          )}
+          {!hasPaddleBilling && priceNotSynced && (
+            <p className="text-sm text-amber-600 dark:text-amber-400">{t('paddlePriceNotSyncedYet')}</p>
           )}
           {saveSuccess && (
             <p className="text-sm text-green-600 dark:text-green-400">{t('subscriptionSaved')}</p>
