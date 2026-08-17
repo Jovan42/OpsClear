@@ -490,6 +490,70 @@ class PaddleSubscriptionServiceTest {
     }
 
     @Test
+    @DisplayName("updateSubscriptionItems allows adding an addon on its own, at the same tier, with nothing "
+            + "removed, as a pure (non-mixed) upgrade")
+    void updateSubscriptionItems_shouldAllow_whenOnlyAddingAnAddon() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID newAddonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(newAddonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(addonRepository.findByIds(Set.of(newAddonId)))
+                .thenReturn(List.of(SubscriptionAddonModel.builder().id(newAddonId).priceMonthly(9).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(priceResolver.resolveAddonPriceId(newAddonId, "MONTHLY")).thenReturn("pri_addon");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", null));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately"));
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems evaluates the add/remove diff against a non-empty current addon set "
+            + "even when the resubmitted selection is unchanged, rather than only ever short-circuiting on an "
+            + "empty collection")
+    void updateSubscriptionItems_shouldEvaluateAddonDiff_whenResubmittingTheSameSelection() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID addonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId)
+                .addonIds(List.of(addonId))
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(addonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(addonRepository.findByIds(Set.of(addonId)))
+                .thenReturn(List.of(SubscriptionAddonModel.builder().id(addonId).priceMonthly(9).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(priceResolver.resolveAddonPriceId(addonId, "MONTHLY")).thenReturn("pri_addon");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", Instant.parse("2026-09-01T00:00:00Z")));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period"));
+    }
+
+    @Test
     @DisplayName("updateSubscriptionItems throws ConflictException when there's no Paddle subscription yet")
     void updateSubscriptionItems_shouldThrow_whenNoPaddleSubscriptionYet() {
         UUID orgId = UUID.randomUUID();
