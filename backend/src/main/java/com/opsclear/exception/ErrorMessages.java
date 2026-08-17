@@ -221,9 +221,6 @@ public final class ErrorMessages {
                 "A cancellation is already scheduled for this subscription";
         public static final String NO_CANCELLATION_SCHEDULED =
                 "There's no scheduled cancellation on this subscription to resume";
-        public static final String SCHEDULED_CHANGE_ALREADY_PENDING =
-                "This subscription already has a scheduled change (a pending downgrade or "
-                        + "cancellation) — resolve or wait for it before scheduling another one";
 
         private Paddle() {
         }
