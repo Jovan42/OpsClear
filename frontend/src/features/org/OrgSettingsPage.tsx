@@ -339,9 +339,7 @@ export default function OrgSettingsPage() {
             </Link>
           </div>
           <SubscriptionSection orgId={org.id} />
-          <div className="mt-4">
-            <PaddleBillingSection orgId={org.id} />
-          </div>
+          <PaddleBillingSection orgId={org.id} />
         </section>
       )}
 

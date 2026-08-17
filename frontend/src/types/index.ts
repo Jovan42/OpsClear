@@ -253,7 +253,6 @@ export interface OrgSubscriptionResponse {
   tier: SubscriptionTierResponse;
   addons: SubscriptionAddonResponse[];
   totalMonthly: number;
-  paddleCustomerId: string | null;
   paddleSubscriptionId: string | null;
   subscriptionStatus: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
   paddleScheduledCancellationAt: string | null;

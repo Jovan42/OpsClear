@@ -5,14 +5,12 @@ import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.OrgCreditModel;
-import com.opsclear.model.OrgSubscriptionModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.paddle.PaddleAdjustment;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleTransaction;
 import com.opsclear.repository.OrgCreditRepository;
-import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +37,6 @@ public class CreditService {
 
     private final OrgCreditRepository orgCreditRepository;
     private final OrganisationRepository organisationRepository;
-    private final OrgSubscriptionRepository orgSubscriptionRepository;
     private final FeedbackService feedbackService;
     private final PaddleClient paddleClient;
 
@@ -60,9 +57,7 @@ public class CreditService {
 
     private void syncCreditToPaddle(OrgCreditModel credit) {
         try {
-            String customerId = orgSubscriptionRepository.findByOrgId(credit.getOrgId())
-                    .map(OrgSubscriptionModel::getPaddleCustomerId)
-                    .orElse(null);
+            String customerId = organisationRepository.findPaddleCustomerId(credit.getOrgId()).orElse(null);
             if (customerId == null) {
                 log.info("Org {} has no Paddle customer yet — skipping Paddle credit sync", credit.getOrgId());
                 return;

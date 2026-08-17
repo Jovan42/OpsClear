@@ -81,32 +81,26 @@ class PaddleSubscriptionServiceTest {
     // --- initiate ---
 
     @Test
-    @DisplayName("initiate creates a Paddle customer and persists its id")
+    @DisplayName("initiate creates a Paddle customer and persists its id on organisations, even with no "
+            + "org_subscriptions row yet")
     void initiate_shouldCreatePaddleCustomer_andPersistId() {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
-        UUID subscriptionId = UUID.randomUUID();
-
-        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(subscriptionId).orgId(orgId).isInternal(false).build();
-        OrgSubscriptionModel updated = OrgSubscriptionModel.builder()
-                .id(subscriptionId).orgId(orgId).isInternal(false).paddleCustomerId("ctm_123").build();
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
                 .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).name("Acme Corp").build()));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.empty());
         when(userRepository.findById(ownerId))
                 .thenReturn(Optional.of(UserModel.builder().id(ownerId).email("owner@example.com").build()));
         when(paddleClient.createCustomer("owner@example.com", "Acme Corp"))
                 .thenReturn(new PaddleCustomer("ctm_123", "owner@example.com"));
-        when(orgSubscriptionRepository.updatePaddleCustomerId(subscriptionId, orgId, "ctm_123"))
-                .thenReturn(updated);
 
-        OrgSubscriptionModel result = service.initiate(orgId, ownerId);
+        String result = service.initiate(orgId, ownerId);
 
-        assertThat(result.getPaddleCustomerId()).isEqualTo("ctm_123");
-        verify(orgSubscriptionRepository).updatePaddleCustomerId(subscriptionId, orgId, "ctm_123");
+        assertThat(result).isEqualTo("ctm_123");
+        verify(organisationRepository).updatePaddleCustomerId(orgId, "ctm_123");
     }
 
     @Test
@@ -115,17 +109,17 @@ class PaddleSubscriptionServiceTest {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
 
-        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleCustomerId("ctm_existing").build();
-
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
+                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).name("Acme Corp").build()));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_existing"));
 
-        OrgSubscriptionModel result = service.initiate(orgId, ownerId);
+        String result = service.initiate(orgId, ownerId);
 
-        assertThat(result.getPaddleCustomerId()).isEqualTo("ctm_existing");
+        assertThat(result).isEqualTo("ctm_existing");
         verify(paddleClient, never()).createCustomer(anyString(), anyString());
-        verify(orgSubscriptionRepository, never()).updatePaddleCustomerId(any(), any(), anyString());
+        verify(organisationRepository, never()).updatePaddleCustomerId(any(), anyString());
     }
 
     @Test
@@ -137,6 +131,8 @@ class PaddleSubscriptionServiceTest {
                 .id(UUID.randomUUID()).orgId(orgId).isInternal(true).build();
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
+                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).name("Acme Corp").build()));
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
 
         assertThatThrownBy(() -> service.initiate(orgId, ownerId))
@@ -150,11 +146,8 @@ class PaddleSubscriptionServiceTest {
     void initiate_shouldThrow_whenOrgRecordMissing() {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
-        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).build();
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.initiate(orgId, ownerId))
@@ -168,13 +161,12 @@ class PaddleSubscriptionServiceTest {
     void initiate_shouldThrow_whenUserRecordMissing() {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
-        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).build();
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
                 .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).name("Acme Corp").build()));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.empty());
         when(userRepository.findById(ownerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.initiate(orgId, ownerId))
@@ -207,20 +199,6 @@ class PaddleSubscriptionServiceTest {
         assertThatThrownBy(() -> service.initiate(orgId, callerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Organisation not found");
-    }
-
-    @Test
-    @DisplayName("initiate throws NotFoundException when the org has no subscription record yet")
-    void initiate_shouldThrow_whenNoSubscriptionRecord() {
-        UUID orgId = UUID.randomUUID();
-        UUID ownerId = UUID.randomUUID();
-
-        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.initiate(orgId, ownerId))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessage("No subscription found for this organisation — select a tier first");
     }
 
     // --- updateSubscriptionItems ---
@@ -1238,15 +1216,15 @@ class PaddleSubscriptionServiceTest {
     void getBillingHistory_shouldReturnTransactions() {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
-
-        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleCustomerId("ctm_123").build();
         List<PaddleTransaction> transactions = List.of(
                 new PaddleTransaction("txn_1", "completed", List.of(), Instant.parse("2026-08-01T00:00:00Z"),
                         "EUR", new PaddleTransactionDetails(new PaddleTransactionTotals("2900"))));
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
+                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).name("Acme Corp").build()));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_123"));
         when(paddleClient.listBillingHistory("ctm_123")).thenReturn(transactions);
 
         List<PaddleTransaction> result = service.getBillingHistory(orgId, ownerId);
@@ -1262,11 +1240,11 @@ class PaddleSubscriptionServiceTest {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
 
-        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleCustomerId(null).build();
-
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
+                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).name("Acme Corp").build()));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.empty());
 
         List<PaddleTransaction> result = service.getBillingHistory(orgId, ownerId);
 
@@ -1284,6 +1262,8 @@ class PaddleSubscriptionServiceTest {
                 .id(UUID.randomUUID()).orgId(orgId).isInternal(true).build();
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
+                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).name("Acme Corp").build()));
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
 
         assertThatThrownBy(() -> service.getBillingHistory(orgId, ownerId))
@@ -1292,13 +1272,13 @@ class PaddleSubscriptionServiceTest {
     }
 
     @Test
-    @DisplayName("getBillingHistory throws NotFoundException when the org has no subscription record yet")
-    void getBillingHistory_shouldThrow_whenNoSubscriptionRecord() {
+    @DisplayName("getBillingHistory throws NotFoundException when the organisation record is missing")
+    void getBillingHistory_shouldThrow_whenOrgRecordMissing() {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getBillingHistory(orgId, ownerId))
                 .isInstanceOf(NotFoundException.class);

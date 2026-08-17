@@ -83,6 +83,11 @@ public class Organisations extends TableImpl<OrganisationsRecord> {
      */
     public final TableField<OrganisationsRecord, LocalDateTime> DELETED_AT = createField(DSL.name("deleted_at"), SQLDataType.LOCALDATETIME(6), this, "");
 
+    /**
+     * The column <code>public.organisations.paddle_customer_id</code>.
+     */
+    public final TableField<OrganisationsRecord, String> PADDLE_CUSTOMER_ID = createField(DSL.name("paddle_customer_id"), SQLDataType.CLOB, this, "");
+
     private Organisations(Name alias, Table<OrganisationsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

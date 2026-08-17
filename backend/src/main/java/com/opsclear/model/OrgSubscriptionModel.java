@@ -23,7 +23,6 @@ public class OrgSubscriptionModel {
     private Instant createdAt;
     private Instant updatedAt;
     private List<UUID> addonIds;
-    private String paddleCustomerId;
     private String paddleSubscriptionId;
     private String subscriptionStatus;
     private Instant paddleScheduledCancellationAt;

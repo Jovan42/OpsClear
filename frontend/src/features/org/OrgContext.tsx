@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AddonCode, OrgSubscriptionResponse, OrganisationResponse } from '../../types';
+import { hasRealPaddleBilling } from './paddleBillingStatus';
 
 export interface OrgState {
   org: OrganisationResponse | null;
@@ -37,8 +38,12 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     setSubscriptionState(next);
   }
 
+  // Every tier/add-on in the catalog has a real price (no free plan) — selecting
+  // one via the free picker only stages it (needed to compose what checkout will
+  // charge for), it doesn't grant access. Access requires real, active billing.
   function hasAddon(key: AddonCode): boolean {
     if (subscription?.internal) return true;
+    if (!hasRealPaddleBilling(subscription)) return false;
     return subscription?.addons.some((a) => a.key === key) ?? false;
   }
 

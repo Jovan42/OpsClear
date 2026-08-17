@@ -1,6 +1,5 @@
 package com.opsclear.dto;
 
-import com.opsclear.model.OrgSubscriptionModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,11 +17,4 @@ public class InitiateSubscriptionResponse {
 
     private UUID orgId;
     private String paddleCustomerId;
-
-    public static InitiateSubscriptionResponse from(OrgSubscriptionModel model) {
-        return InitiateSubscriptionResponse.builder()
-                .orgId(model.getOrgId())
-                .paddleCustomerId(model.getPaddleCustomerId())
-                .build();
-    }
 }

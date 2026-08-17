@@ -2,6 +2,8 @@ package com.opsclear.paddle;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 /**
  * The {@code data} object on a {@code subscription.*} webhook event — every such
  * event carries the subscription's full current state (not a delta), so
@@ -15,5 +17,6 @@ public record PaddleWebhookSubscriptionData(
         @JsonProperty("customer_id") String customerId,
         String status,
         @JsonProperty("scheduled_change") PaddleWebhookScheduledChange scheduledChange,
-        @JsonProperty("current_billing_period") PaddleWebhookBillingPeriod currentBillingPeriod) {
+        @JsonProperty("current_billing_period") PaddleWebhookBillingPeriod currentBillingPeriod,
+        List<PaddleWebhookSubscriptionItem> items) {
 }

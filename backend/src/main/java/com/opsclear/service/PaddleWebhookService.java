@@ -3,9 +3,15 @@ package com.opsclear.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
+import com.opsclear.model.OrgSubscriptionModel;
+import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.paddle.PaddleWebhookEvent;
 import com.opsclear.paddle.PaddleWebhookScheduledChange;
+import com.opsclear.paddle.PaddleWebhookSubscriptionItem;
 import com.opsclear.repository.OrgSubscriptionRepository;
+import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,9 +24,13 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Handles {@code POST /api/webhooks/paddle} (ADR-0044). Signature verification per
@@ -39,10 +49,19 @@ import java.util.Set;
  * terminal outcome before sending {@code past_due} or {@code canceled} — this
  * service just mirrors whatever Paddle reports, never infers it.
  *
+ * <p>JOB-200: every tier/add-on has a real price, so the org's very first
+ * org_subscriptions row (tier_id is NOT NULL) is only ever created here, once
+ * Paddle actually confirms a real subscription — never staged for free client-side.
+ * The row's tier/add-ons are resolved from the webhook's own item price ids, never
+ * trusted from the client. Subsequent events for an org that already has a row just
+ * update it, same as before.
+ *
  * <p>No explicit "already processed this event_id" ledger: every write here is a
- * plain field overwrite (UPDATE, not INSERT), so processing the same event twice
- * produces the same end state either way — naturally idempotent by construction,
- * not by tracking.
+ * plain field overwrite (UPDATE, not INSERT, once the row exists), so processing
+ * the same event twice produces the same end state either way — naturally
+ * idempotent by construction, not by tracking. A redelivered first-ever event is
+ * likewise safe: the row created by the first delivery makes every redelivery take
+ * the UPDATE path instead of inserting a duplicate.
  */
 @Service
 @Slf4j
@@ -67,16 +86,27 @@ public class PaddleWebhookService {
             "paused", "CANCELED");
 
     private static final String SCHEDULED_CHANGE_ACTION_CANCEL = "cancel";
+    private static final String BILLING_CYCLE_ANNUAL = "ANNUAL";
+    private static final String BILLING_CYCLE_MONTHLY = "MONTHLY";
 
     private final ObjectMapper objectMapper;
+    private final OrganisationRepository organisationRepository;
     private final OrgSubscriptionRepository orgSubscriptionRepository;
+    private final SubscriptionTierRepository tierRepository;
+    private final SubscriptionAddonRepository addonRepository;
     private final String webhookSecret;
 
     public PaddleWebhookService(ObjectMapper objectMapper,
+                                 OrganisationRepository organisationRepository,
                                  OrgSubscriptionRepository orgSubscriptionRepository,
+                                 SubscriptionTierRepository tierRepository,
+                                 SubscriptionAddonRepository addonRepository,
                                  @Value("${paddle.webhook-secret}") String webhookSecret) {
         this.objectMapper = objectMapper;
+        this.organisationRepository = organisationRepository;
         this.orgSubscriptionRepository = orgSubscriptionRepository;
+        this.tierRepository = tierRepository;
+        this.addonRepository = addonRepository;
         this.webhookSecret = webhookSecret;
     }
 
@@ -98,21 +128,74 @@ public class PaddleWebhookService {
             return;
         }
 
+        Optional<UUID> orgId = organisationRepository.findIdByPaddleCustomerId(event.data().customerId());
+        if (orgId.isEmpty()) {
+            log.warn("Paddle event {} ({}) references customer {} — no matching organisation",
+                    event.eventId(), event.eventType(), event.data().customerId());
+            return;
+        }
+
         Instant scheduledCancellationAt = scheduledCancellationAt(event);
         Instant currentPeriodStartsAt = currentPeriodStartsAt(event);
 
-        applyPendingDowngradeIfPeriodRolledOver(event.data().customerId(), currentPeriodStartsAt);
+        Optional<OrgSubscriptionModel> existing = orgSubscriptionRepository.findByOrgId(orgId.get());
+        if (existing.isEmpty()) {
+            createFirstSubscriptionFromWebhook(
+                    orgId.get(), event, localStatus, scheduledCancellationAt, currentPeriodStartsAt);
+            return;
+        }
+
+        applyPendingDowngradeIfPeriodRolledOver(existing.get(), currentPeriodStartsAt);
 
         int rows = orgSubscriptionRepository.updateFromPaddleWebhook(
-                event.data().customerId(), event.data().id(), localStatus, scheduledCancellationAt,
-                currentPeriodStartsAt);
+                orgId.get(), event.data().id(), localStatus, scheduledCancellationAt, currentPeriodStartsAt);
         if (rows == 0) {
-            log.warn("Paddle event {} ({}) references customer {} — no matching org_subscriptions row",
-                    event.eventId(), event.eventType(), event.data().customerId());
+            log.warn("Paddle event {} ({}) references org {} — no matching org_subscriptions row",
+                    event.eventId(), event.eventType(), orgId.get());
         } else {
-            log.info("Paddle event {} ({}) synced subscription_status={} for customer {}",
-                    event.eventId(), event.eventType(), localStatus, event.data().customerId());
+            log.info("Paddle event {} ({}) synced subscription_status={} for org {}",
+                    event.eventId(), event.eventType(), localStatus, orgId.get());
         }
+    }
+
+    // Resolves Paddle's real subscription items back to our own tier/add-on
+    // catalog — this is the org's very first successful checkout, so nothing here
+    // is trusted from the client; Paddle's own confirmed item list is the sole
+    // source of truth for what was actually paid for.
+    private void createFirstSubscriptionFromWebhook(UUID orgId, PaddleWebhookEvent event, String localStatus,
+            Instant scheduledCancellationAt, Instant currentPeriodStartsAt) {
+        List<PaddleWebhookSubscriptionItem> items = event.data().items();
+        if (items == null || items.isEmpty()) {
+            log.warn("Paddle event {} ({}) has no items to resolve a plan from for org {} — ignoring",
+                    event.eventId(), event.eventType(), orgId);
+            return;
+        }
+
+        SubscriptionTierModel tier = null;
+        String billingCycle = null;
+        Set<UUID> addonIds = new HashSet<>();
+        for (PaddleWebhookSubscriptionItem item : items) {
+            String priceId = item.price().id();
+            Optional<SubscriptionTierModel> matchedTier = tierRepository.findByPaddlePriceId(priceId);
+            if (matchedTier.isPresent()) {
+                tier = matchedTier.get();
+                billingCycle = priceId.equals(tier.getPaddlePriceIdAnnual())
+                        ? BILLING_CYCLE_ANNUAL : BILLING_CYCLE_MONTHLY;
+                continue;
+            }
+            addonRepository.findByPaddlePriceId(priceId).ifPresent(addon -> addonIds.add(addon.getId()));
+        }
+
+        if (tier == null) {
+            log.warn("Paddle event {} ({}) items didn't resolve to a known tier for org {} — ignoring",
+                    event.eventId(), event.eventType(), orgId);
+            return;
+        }
+
+        orgSubscriptionRepository.createFromPaddleWebhook(orgId, tier.getId(), billingCycle, addonIds,
+                event.data().id(), localStatus, scheduledCancellationAt, currentPeriodStartsAt);
+        log.info("Created org_subscriptions row for org {} from Paddle event {} ({}): tier={}, addons={}",
+                orgId, event.eventId(), event.eventType(), tier.getId(), addonIds.size());
     }
 
     // null both when nothing is scheduled and when something other than a
@@ -137,19 +220,17 @@ public class PaddleWebhookService {
     // That's detected here: if the webhook's period start is later than the one we
     // last knew, the period has rolled over, so any pending change gets promoted to
     // active now, before this event's own status/period fields are persisted below.
-    private void applyPendingDowngradeIfPeriodRolledOver(String customerId, Instant currentPeriodStartsAt) {
+    private void applyPendingDowngradeIfPeriodRolledOver(OrgSubscriptionModel subscription,
+            Instant currentPeriodStartsAt) {
         if (currentPeriodStartsAt == null) {
             return;
         }
-        orgSubscriptionRepository.findByPaddleCustomerId(customerId).ifPresent(subscription -> {
-            boolean periodRolledOver = subscription.getPaddleCurrentPeriodStartsAt() == null
-                    || currentPeriodStartsAt.isAfter(subscription.getPaddleCurrentPeriodStartsAt());
-            if (periodRolledOver && subscription.getPendingTierId() != null) {
-                orgSubscriptionRepository.applyPendingDowngrade(subscription.getId());
-                log.info("Applied pending downgrade for org {} at period rollover (customer {})",
-                        subscription.getOrgId(), customerId);
-            }
-        });
+        boolean periodRolledOver = subscription.getPaddleCurrentPeriodStartsAt() == null
+                || currentPeriodStartsAt.isAfter(subscription.getPaddleCurrentPeriodStartsAt());
+        if (periodRolledOver && subscription.getPendingTierId() != null) {
+            orgSubscriptionRepository.applyPendingDowngrade(subscription.getId());
+            log.info("Applied pending downgrade for org {} at period rollover", subscription.getOrgId());
+        }
     }
 
     // --- Guards ---

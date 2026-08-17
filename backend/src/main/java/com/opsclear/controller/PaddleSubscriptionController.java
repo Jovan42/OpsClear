@@ -38,8 +38,11 @@ public class PaddleSubscriptionController {
             @PathVariable UUID orgId,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        InitiateSubscriptionResponse response =
-                InitiateSubscriptionResponse.from(paddleSubscriptionService.initiate(orgId, callerId));
+        String paddleCustomerId = paddleSubscriptionService.initiate(orgId, callerId);
+        InitiateSubscriptionResponse response = InitiateSubscriptionResponse.builder()
+                .orgId(orgId)
+                .paddleCustomerId(paddleCustomerId)
+                .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

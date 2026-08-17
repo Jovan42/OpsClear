@@ -48,6 +48,16 @@ public class SubscriptionAddonRepository {
                 .map(this::toModel);
     }
 
+    // Reverse lookup for the webhook (JOB-200) — see
+    // SubscriptionTierRepository.findByPaddlePriceId for why.
+    public Optional<SubscriptionAddonModel> findByPaddlePriceId(String priceId) {
+        return dsl.selectFrom(SUBSCRIPTION_ADDONS)
+                .where(SUBSCRIPTION_ADDONS.PADDLE_PRICE_ID_MONTHLY.eq(priceId)
+                        .or(SUBSCRIPTION_ADDONS.PADDLE_PRICE_ID_ANNUAL.eq(priceId)))
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
     public SubscriptionAddonModel updatePrice(String key, int priceMonthly, int priceAnnual) {
         dsl.update(SUBSCRIPTION_ADDONS)
                 .set(SUBSCRIPTION_ADDONS.PRICE_MONTHLY, priceMonthly)
