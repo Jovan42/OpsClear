@@ -27,6 +27,8 @@ import com.opsclear.paddle.PaddleSubscriptionBillingPeriod;
 import com.opsclear.paddle.PaddleSubscriptionItem;
 import com.opsclear.paddle.PaddleSubscriptionPreview;
 import com.opsclear.paddle.PaddleTransaction;
+import com.opsclear.paddle.PaddleTransactionDetails;
+import com.opsclear.paddle.PaddleTransactionTotals;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -1229,6 +1231,103 @@ class PaddleSubscriptionServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    // --- getBillingHistory ---
+
+    @Test
+    @DisplayName("getBillingHistory returns Paddle's transaction list for the org's Paddle customer")
+    void getBillingHistory_shouldReturnTransactions() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleCustomerId("ctm_123").build();
+        List<PaddleTransaction> transactions = List.of(
+                new PaddleTransaction("txn_1", "completed", List.of(), Instant.parse("2026-08-01T00:00:00Z"),
+                        "EUR", new PaddleTransactionDetails(new PaddleTransactionTotals("2900"))));
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(paddleClient.listBillingHistory("ctm_123")).thenReturn(transactions);
+
+        List<PaddleTransaction> result = service.getBillingHistory(orgId, ownerId);
+
+        assertThat(result).isEqualTo(transactions);
+        verify(paddleClient).listBillingHistory("ctm_123");
+    }
+
+    @Test
+    @DisplayName("getBillingHistory returns an empty list when the org has no Paddle customer yet, rather than "
+            + "an error")
+    void getBillingHistory_shouldReturnEmptyList_whenNoPaddleCustomerYet() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleCustomerId(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        List<PaddleTransaction> result = service.getBillingHistory(orgId, ownerId);
+
+        assertThat(result).isEmpty();
+        verify(paddleClient, never()).listBillingHistory(anyString());
+    }
+
+    @Test
+    @DisplayName("getBillingHistory throws BadRequestException for an internal org")
+    void getBillingHistory_shouldThrow_whenOrgIsInternal() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(true).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.getBillingHistory(orgId, ownerId))
+                .isInstanceOf(BadRequestException.class);
+        verify(paddleClient, never()).listBillingHistory(anyString());
+    }
+
+    @Test
+    @DisplayName("getBillingHistory throws NotFoundException when the org has no subscription record yet")
+    void getBillingHistory_shouldThrow_whenNoSubscriptionRecord() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getBillingHistory(orgId, ownerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("getBillingHistory throws ForbiddenException for a non-owner")
+    void getBillingHistory_shouldThrow_forNonOwner() {
+        UUID orgId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> service.getBillingHistory(orgId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("getBillingHistory throws NotFoundException when the caller is not a member")
+    void getBillingHistory_shouldThrow_whenCallerNotAMember() {
+        UUID orgId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, callerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getBillingHistory(orgId, callerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
     // --- getUpdatePaymentMethodTransactionId ---
 
     @Test
@@ -1243,7 +1342,7 @@ class PaddleSubscriptionServiceTest {
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
         when(paddleClient.getUpdatePaymentMethodTransaction("sub_123"))
-                .thenReturn(new PaddleTransaction("txn_123", "draft", List.of()));
+                .thenReturn(new PaddleTransaction("txn_123", "draft", List.of(), null, null, null));
 
         String result = service.getUpdatePaymentMethodTransactionId(orgId, ownerId);
 

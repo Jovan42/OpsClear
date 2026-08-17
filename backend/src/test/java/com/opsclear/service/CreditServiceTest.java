@@ -189,7 +189,7 @@ class CreditServiceTest {
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(
                 Optional.of(OrgSubscriptionModel.builder().orgId(orgId).paddleCustomerId("ctm_123").build()));
         PaddleTransaction transaction = new PaddleTransaction(
-                "txn_123", "completed", List.of(new PaddleTransactionItem("txnitm_123")));
+                "txn_123", "completed", List.of(new PaddleTransactionItem("txnitm_123")), null, null, null);
         when(paddleClient.findLatestCompletedTransaction("ctm_123")).thenReturn(Optional.of(transaction));
         when(paddleClient.createCreditAdjustment("txn_123", "txnitm_123", "2900", "Great bug report"))
                 .thenReturn(new PaddleAdjustment("adj_123", true));

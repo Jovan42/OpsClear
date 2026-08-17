@@ -775,6 +775,65 @@ class PaddleSubscriptionIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ─── GET .../subscription/paddle/transactions ──────────────────────────────
+
+    @Test
+    @DisplayName("getBillingHistory_shouldReturn200WithRealPaddleResponse_forOwner")
+    void getBillingHistory_shouldReturn200WithRealPaddleResponse_forOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isCreated());
+
+        // Unlike update/cancel/resume, Paddle's List Transactions API works fine
+        // against a real customer with zero transactions yet (no checkout needed) —
+        // so this genuinely exercises the full round-trip, not just "reaches Paddle".
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionTransactions(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    @DisplayName("getBillingHistory_shouldReturn200WithEmptyList_whenNoPaddleCustomerYet")
+    void getBillingHistory_shouldReturn200WithEmptyList_whenNoPaddleCustomerYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionTransactions(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    @DisplayName("getBillingHistory_shouldReturn400_forInternalOrg")
+    void getBillingHistory_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionTransactions(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("getBillingHistory_shouldReturn403_forNonOwner")
+    void getBillingHistory_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionTransactions(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("getBillingHistory_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
+    void getBillingHistory_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+        mockMvc.perform(get(ApiPaths.paddleSubscriptionTransactions(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isNotFound());
+    }
+
     // ─── GET .../subscription/paddle/update-payment-method-transaction ────────
 
     @Test

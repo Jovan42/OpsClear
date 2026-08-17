@@ -1,6 +1,7 @@
 package com.opsclear.controller;
 
 import com.opsclear.dto.InitiateSubscriptionResponse;
+import com.opsclear.dto.PaddleBillingTransactionResponse;
 import com.opsclear.dto.PaddleSubscriptionResponse;
 import com.opsclear.dto.PreviewSubscriptionUpdateResponse;
 import com.opsclear.dto.UpdatePaddleSubscriptionRequest;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -105,6 +107,18 @@ public class PaddleSubscriptionController {
                 .status(updated.getSubscriptionStatus())
                 .build();
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/transactions")
+    public ResponseEntity<List<PaddleBillingTransactionResponse>> getBillingHistory(
+            @PathVariable UUID orgId,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        List<PaddleBillingTransactionResponse> transactions = paddleSubscriptionService
+                .getBillingHistory(orgId, callerId).stream()
+                .map(PaddleBillingTransactionResponse::from)
+                .toList();
+        return ResponseEntity.ok(transactions);
     }
 
     @GetMapping("/update-payment-method-transaction")

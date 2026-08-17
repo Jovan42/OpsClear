@@ -22,6 +22,7 @@ import com.opsclear.paddle.PaddlePriceResolver;
 import com.opsclear.paddle.PaddleSubscription;
 import com.opsclear.paddle.PaddleSubscriptionItem;
 import com.opsclear.paddle.PaddleSubscriptionPreview;
+import com.opsclear.paddle.PaddleTransaction;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -256,6 +257,21 @@ public class PaddleSubscriptionService {
         log.info("Cancelled pending downgrade for Paddle subscription {} (org {}), reverted to active tier {}",
                 subscription.getPaddleSubscriptionId(), orgId, activeTier.getId());
         return updated;
+    }
+
+    // No local invoice/transaction table by design (ADR-0044) — reads live from
+    // Paddle on every call rather than mirroring history into our own DB. An org
+    // that hasn't completed checkout yet simply has no history, not an error.
+    @Transactional(readOnly = true)
+    public List<PaddleTransaction> getBillingHistory(UUID orgId, UUID requesterId) {
+        requireOwner(orgId, requesterId);
+        OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
+        requireNotInternal(subscription);
+
+        if (subscription.getPaddleCustomerId() == null) {
+            return List.of();
+        }
+        return paddleClient.listBillingHistory(subscription.getPaddleCustomerId());
     }
 
     @Transactional(readOnly = true)

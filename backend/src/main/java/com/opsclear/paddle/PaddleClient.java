@@ -123,6 +123,22 @@ public class PaddleClient {
         return response.data().stream().findFirst();
     }
 
+    // No status filter, unlike findLatestCompletedTransaction — billing history should
+    // show failed/past-due attempts too, not just successful ones, so the customer can
+    // see why they were charged (or not) rather than a sanitized success-only view.
+    public List<PaddleTransaction> listBillingHistory(String customerId) {
+        PaddleEnvelope<List<PaddleTransaction>> response = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/transactions")
+                        .queryParam("customer_id", customerId)
+                        .queryParam("order_by", "billed_at[DESC]")
+                        .queryParam("per_page", 20)
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<List<PaddleTransaction>>>() { });
+        return response.data();
+    }
+
     public PaddleSubscription cancelSubscription(String subscriptionId) {
         Map<String, Object> body = Map.of("effective_from", "next_billing_period");
         PaddleEnvelope<PaddleSubscription> response = restClient.post()
