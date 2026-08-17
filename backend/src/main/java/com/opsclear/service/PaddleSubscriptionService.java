@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.dto.PreviewSubscriptionUpdateResponse;
 import com.opsclear.dto.UpdatePaddleSubscriptionRequest;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
@@ -15,10 +16,12 @@ import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleCustomer;
+import com.opsclear.paddle.PaddlePreviewTotals;
 import com.opsclear.paddle.PaddlePrice;
 import com.opsclear.paddle.PaddlePriceResolver;
 import com.opsclear.paddle.PaddleSubscription;
 import com.opsclear.paddle.PaddleSubscriptionItem;
+import com.opsclear.paddle.PaddleSubscriptionPreview;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -48,7 +51,15 @@ import java.util.UUID;
 @Slf4j
 public class PaddleSubscriptionService {
 
-    private static final String PRORATION_BILLING_MODE = "prorated_immediately";
+    // JOB-198: an upgrade (net price increase) applies immediately, charged prorated
+    // for the rest of the current period. A downgrade (net price decrease) applies
+    // to Paddle's own items immediately too — verified live against sandbox that no
+    // proration mode holds Paddle's item state back — but bills nothing until the
+    // real next renewal, and critically this app's own feature access (driven by
+    // tier_id/org_subscription_addons, never Paddle's item list) stays on the old
+    // plan until the webhook confirms that renewal actually happened.
+    private static final String PRORATION_UPGRADE = "prorated_immediately";
+    private static final String PRORATION_DOWNGRADE = "full_next_billing_period";
     private static final String INTERVAL_MONTH = "month";
     private static final String INTERVAL_YEAR = "year";
     private static final String CURRENCY_EUR = "EUR";
@@ -93,32 +104,78 @@ public class PaddleSubscriptionService {
         OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
         requireNotInternal(subscription);
         requirePaddleSubscriptionExists(subscription);
-        SubscriptionTierModel tier = requireTier(request.getTierId());
-
-        Set<UUID> addonIds = request.getAddonIds() != null ? new HashSet<>(request.getAddonIds()) : new HashSet<>();
+        SubscriptionTierModel newTier = requireTier(request.getTierId());
+        Set<UUID> newAddonIds = request.getAddonIds() != null ? new HashSet<>(request.getAddonIds()) : new HashSet<>();
 
         String billingCycle = subscription.getBillingCycle();
-        List<PaddleSubscriptionItem> items = new ArrayList<>();
-        items.add(new PaddleSubscriptionItem(priceResolver.resolveTierPriceId(tier.getId(), billingCycle), 1));
-        for (UUID addonId : addonIds) {
-            items.add(new PaddleSubscriptionItem(priceResolver.resolveAddonPriceId(addonId, billingCycle), 1));
-        }
+        List<PaddleSubscriptionItem> items = buildItems(newTier, newAddonIds, billingCycle);
+        boolean upgrade = isUpgrade(subscription, newTier, newAddonIds, billingCycle);
+        String prorationMode = upgrade ? PRORATION_UPGRADE : PRORATION_DOWNGRADE;
 
         PaddleSubscription paddleSubscription = paddleClient.updateSubscriptionItems(
-                subscription.getPaddleSubscriptionId(), items, PRORATION_BILLING_MODE);
+                subscription.getPaddleSubscriptionId(), items, prorationMode);
 
         // subscription_status is intentionally NOT written here — ADR-0044 keeps it
         // synced exclusively from Paddle webhook events (JOB-174), never computed
-        // locally. tier_id/addon selection, on the other hand, is this endpoint's own
-        // authoritative "change my plan" action, so it's updated immediately rather
-        // than waiting on a webhook round-trip — reuses the same repository method
-        // the free (non-Paddle) upsertSubscription flow already uses.
-        orgSubscriptionRepository.update(
-                subscription.getId(), orgId, tier.getId(), subscription.getBillingCycle(), addonIds);
+        // locally.
+        if (upgrade) {
+            // The org's own authoritative "change my plan" action for an upgrade —
+            // updated immediately rather than waiting on a webhook round-trip, same
+            // as before JOB-198.
+            orgSubscriptionRepository.update(subscription.getId(), orgId, newTier.getId(), billingCycle, newAddonIds);
+            log.info("Paddle subscription {} upgraded immediately for org {}: tier={}",
+                    paddleSubscription.id(), orgId, newTier.getId());
+        } else {
+            // A downgrade is parked as pending — the org keeps its current
+            // (already-paid-for) tier/addons until the webhook confirms the period
+            // has actually rolled over (see PaddleWebhookService).
+            orgSubscriptionRepository.schedulePendingDowngrade(
+                    subscription.getId(), orgId, newTier.getId(), newAddonIds);
+            log.info("Paddle subscription {} downgrade scheduled for org {}: pendingTier={} "
+                            + "(takes effect at next renewal)",
+                    paddleSubscription.id(), orgId, newTier.getId());
+        }
 
-        log.info("Paddle subscription {} updated for org {}: tier={}, status={}",
-                paddleSubscription.id(), orgId, tier.getId(), paddleSubscription.status());
         return paddleSubscription;
+    }
+
+    // Read-only preview of the same change updateSubscriptionItems would make,
+    // without applying or billing anything — lets the frontend show the customer
+    // exactly what will happen (charged now vs. takes effect later) before they
+    // confirm. Uses Paddle's real preview endpoint rather than computing the
+    // prorated amount ourselves.
+    @Transactional(readOnly = true)
+    public PreviewSubscriptionUpdateResponse previewUpdateSubscriptionItems(
+            UUID orgId, UUID requesterId, UpdatePaddleSubscriptionRequest request) {
+        requireOwner(orgId, requesterId);
+        OrgSubscriptionModel subscription = requireSubscriptionRecord(orgId);
+        requireNotInternal(subscription);
+        requirePaddleSubscriptionExists(subscription);
+        SubscriptionTierModel newTier = requireTier(request.getTierId());
+        Set<UUID> newAddonIds = request.getAddonIds() != null ? new HashSet<>(request.getAddonIds()) : new HashSet<>();
+
+        String billingCycle = subscription.getBillingCycle();
+        List<PaddleSubscriptionItem> items = buildItems(newTier, newAddonIds, billingCycle);
+        boolean upgrade = isUpgrade(subscription, newTier, newAddonIds, billingCycle);
+        String prorationMode = upgrade ? PRORATION_UPGRADE : PRORATION_DOWNGRADE;
+
+        PaddleSubscriptionPreview preview = paddleClient.previewUpdateSubscriptionItems(
+                subscription.getPaddleSubscriptionId(), items, prorationMode);
+
+        Integer immediateChargeAmount = null;
+        String currency = null;
+        if (preview.immediateTransaction() != null) {
+            PaddlePreviewTotals totals = preview.immediateTransaction().details().totals();
+            immediateChargeAmount = Integer.parseInt(totals.total()) / 100;
+            currency = totals.currencyCode();
+        }
+
+        return PreviewSubscriptionUpdateResponse.builder()
+                .upgrade(upgrade)
+                .immediateChargeAmount(immediateChargeAmount)
+                .currency(currency)
+                .effectiveAt(preview.currentBillingPeriod() != null ? preview.currentBillingPeriod().endsAt() : null)
+                .build();
     }
 
     @Transactional
@@ -228,6 +285,40 @@ public class PaddleSubscriptionService {
         }
 
         return new PaddleCatalogSyncResult(tiersSynced, addonsSynced);
+    }
+
+    // ─── Upgrade/downgrade classification helpers ───────────────────────────────
+
+    private List<PaddleSubscriptionItem> buildItems(
+            SubscriptionTierModel tier, Set<UUID> addonIds, String billingCycle) {
+        List<PaddleSubscriptionItem> items = new ArrayList<>();
+        items.add(new PaddleSubscriptionItem(priceResolver.resolveTierPriceId(tier.getId(), billingCycle), 1));
+        for (UUID addonId : addonIds) {
+            items.add(new PaddleSubscriptionItem(priceResolver.resolveAddonPriceId(addonId, billingCycle), 1));
+        }
+        return items;
+    }
+
+    // A net price decrease (or no change) is treated as a downgrade — anything that
+    // isn't strictly more expensive gets the deferred-to-renewal treatment, since
+    // there's no immediate extra charge to justify applying it right away.
+    private boolean isUpgrade(OrgSubscriptionModel subscription, SubscriptionTierModel newTier,
+            Set<UUID> newAddonIds, String billingCycle) {
+        SubscriptionTierModel currentTier = requireTier(subscription.getTierId());
+        int oldTotal = totalPrice(currentTier, new HashSet<>(subscription.getAddonIds()), billingCycle);
+        int newTotal = totalPrice(newTier, newAddonIds, billingCycle);
+        return newTotal > oldTotal;
+    }
+
+    private int totalPrice(SubscriptionTierModel tier, Set<UUID> addonIds, String billingCycle) {
+        boolean annual = "ANNUAL".equals(billingCycle);
+        int total = annual ? tier.getPriceAnnual() : tier.getPriceMonthly();
+        if (!addonIds.isEmpty()) {
+            for (SubscriptionAddonModel addon : addonRepository.findByIds(addonIds)) {
+                total += annual ? addon.getPriceAnnual() : addon.getPriceMonthly();
+            }
+        }
+        return total;
     }
 
     // ─── Paddle price sync helpers ──────────────────────────────────────────────

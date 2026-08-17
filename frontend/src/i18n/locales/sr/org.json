@@ -125,6 +125,12 @@
   "paddleResumeSubscriptionButton": "Nastavi pretplatu",
   "paddleResumedToast": "Otkazivanje je uklonjeno — vaša pretplata će se nastaviti kao i obično.",
 
+  "paddleUpdateConfirmUpgradeTitle": "Potvrdi nadogradnju",
+  "paddleUpdateConfirmUpgradeMessage": "Odmah ćete biti naplaćeni {{amount}} {{currency}}, srazmerno za preostali deo tekućeg perioda naplate.",
+  "paddleUpdateConfirmDowngradeTitle": "Potvrdi promenu plana",
+  "paddleUpdateConfirmDowngradeMessage": "Nema naplate sada. Zadržaćete trenutni plan do {{date}}, kada će se preći na novi plan.",
+  "paddleUpdateConfirmButton": "Potvrdi promenu",
+
   "roles": {
     "MEMBER": "Član",
     "ADMIN": "Administrator"

@@ -125,6 +125,12 @@
   "paddleResumeSubscriptionButton": "Resume subscription",
   "paddleResumedToast": "Cancellation removed — your subscription will continue as normal.",
 
+  "paddleUpdateConfirmUpgradeTitle": "Confirm upgrade",
+  "paddleUpdateConfirmUpgradeMessage": "You'll be charged {{amount}} {{currency}} now, prorated for the rest of your current billing period.",
+  "paddleUpdateConfirmDowngradeTitle": "Confirm plan change",
+  "paddleUpdateConfirmDowngradeMessage": "No charge now. You'll keep your current plan until {{date}}, when it will switch to the new plan.",
+  "paddleUpdateConfirmButton": "Confirm change",
+
   "roles": {
     "MEMBER": "Member",
     "ADMIN": "Admin"

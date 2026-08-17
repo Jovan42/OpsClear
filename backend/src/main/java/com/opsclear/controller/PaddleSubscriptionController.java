@@ -2,6 +2,7 @@ package com.opsclear.controller;
 
 import com.opsclear.dto.InitiateSubscriptionResponse;
 import com.opsclear.dto.PaddleSubscriptionResponse;
+import com.opsclear.dto.PreviewSubscriptionUpdateResponse;
 import com.opsclear.dto.UpdatePaddleSubscriptionRequest;
 import com.opsclear.dto.UpdatePaymentMethodTransactionResponse;
 import com.opsclear.model.OrgSubscriptionModel;
@@ -53,6 +54,15 @@ public class PaddleSubscriptionController {
                 .status(updated.status())
                 .build();
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/preview")
+    public ResponseEntity<PreviewSubscriptionUpdateResponse> preview(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody UpdatePaddleSubscriptionRequest request,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        return ResponseEntity.ok(paddleSubscriptionService.previewUpdateSubscriptionItems(orgId, callerId, request));
     }
 
     @PostMapping("/cancel")

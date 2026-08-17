@@ -13,6 +13,22 @@ export function useUpdatePaymentMethod(orgId: string) {
   });
 }
 
+export function usePreviewPaddleSubscriptionUpdate(orgId: string) {
+  return useMutation({
+    mutationFn: (body: { tierId: string; addonIds: string[] }) => paddleSubscriptionApi.preview(orgId, body),
+  });
+}
+
+export function useUpdatePaddleSubscription(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { tierId: string; addonIds: string[] }) => paddleSubscriptionApi.update(orgId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'subscription'] });
+    },
+  });
+}
+
 export function useCancelSubscription(orgId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -59,6 +59,19 @@ public class PaddleClient {
         return response.data();
     }
 
+    public PaddleSubscriptionPreview previewUpdateSubscriptionItems(
+            String subscriptionId, List<PaddleSubscriptionItem> items, String prorationBillingMode) {
+        Map<String, Object> body = Map.of(
+                "items", items,
+                "proration_billing_mode", prorationBillingMode);
+        PaddleEnvelope<PaddleSubscriptionPreview> response = restClient.patch()
+                .uri("/subscriptions/{id}/preview", subscriptionId)
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleSubscriptionPreview>>() { });
+        return response.data();
+    }
+
     public PaddleProduct createProduct(String name) {
         Map<String, Object> body = Map.of("name", name, "tax_category", "saas");
         PaddleEnvelope<PaddleProduct> response = restClient.post()

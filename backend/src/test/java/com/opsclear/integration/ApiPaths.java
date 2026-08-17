@@ -232,6 +232,10 @@ final class ApiPaths {
         return "/api/organisations/" + orgId + "/subscription/paddle/resume";
     }
 
+    static String paddleSubscriptionPreview(UUID orgId) {
+        return "/api/organisations/" + orgId + "/subscription/paddle/preview";
+    }
+
     // --- Super admin pricing ---
 
     static final String SUPER_ADMIN_PRICING_TIERS  = "/api/super-admin/pricing/tiers";

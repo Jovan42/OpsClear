@@ -116,6 +116,17 @@ public class OrgSubscriptions extends TableImpl<OrgSubscriptionsRecord> {
      */
     public final TableField<OrgSubscriptionsRecord, OffsetDateTime> PADDLE_SCHEDULED_CANCELLATION_AT = createField(DSL.name("paddle_scheduled_cancellation_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "From Paddle's scheduled_change.effective_at when scheduled_change.action = cancel. Null when no cancellation is scheduled.");
 
+    /**
+     * The column <code>public.org_subscriptions.pending_tier_id</code>.
+     */
+    public final TableField<OrgSubscriptionsRecord, UUID> PENDING_TIER_ID = createField(DSL.name("pending_tier_id"), SQLDataType.UUID, this, "");
+
+    /**
+     * The column
+     * <code>public.org_subscriptions.paddle_current_period_starts_at</code>.
+     */
+    public final TableField<OrgSubscriptionsRecord, OffsetDateTime> PADDLE_CURRENT_PERIOD_STARTS_AT = createField(DSL.name("paddle_current_period_starts_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
     private OrgSubscriptions(Name alias, Table<OrgSubscriptionsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

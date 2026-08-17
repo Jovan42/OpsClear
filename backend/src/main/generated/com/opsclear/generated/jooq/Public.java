@@ -19,6 +19,7 @@ import com.opsclear.generated.jooq.tables.OrgCredits;
 import com.opsclear.generated.jooq.tables.OrgSequences;
 import com.opsclear.generated.jooq.tables.OrgSettings;
 import com.opsclear.generated.jooq.tables.OrgSubscriptionAddons;
+import com.opsclear.generated.jooq.tables.OrgSubscriptionPendingAddons;
 import com.opsclear.generated.jooq.tables.OrgSubscriptions;
 import com.opsclear.generated.jooq.tables.OrganisationInvites;
 import com.opsclear.generated.jooq.tables.OrganisationMembers;
@@ -135,6 +136,11 @@ public class Public extends SchemaImpl {
     public final OrgSubscriptionAddons ORG_SUBSCRIPTION_ADDONS = OrgSubscriptionAddons.ORG_SUBSCRIPTION_ADDONS;
 
     /**
+     * The table <code>public.org_subscription_pending_addons</code>.
+     */
+    public final OrgSubscriptionPendingAddons ORG_SUBSCRIPTION_PENDING_ADDONS = OrgSubscriptionPendingAddons.ORG_SUBSCRIPTION_PENDING_ADDONS;
+
+    /**
      * The table <code>public.org_subscriptions</code>.
      */
     public final OrgSubscriptions ORG_SUBSCRIPTIONS = OrgSubscriptions.ORG_SUBSCRIPTIONS;
@@ -237,6 +243,7 @@ public class Public extends SchemaImpl {
             OrgSequences.ORG_SEQUENCES,
             OrgSettings.ORG_SETTINGS,
             OrgSubscriptionAddons.ORG_SUBSCRIPTION_ADDONS,
+            OrgSubscriptionPendingAddons.ORG_SUBSCRIPTION_PENDING_ADDONS,
             OrgSubscriptions.ORG_SUBSCRIPTIONS,
             OrganisationInvites.ORGANISATION_INVITES,
             OrganisationMembers.ORGANISATION_MEMBERS,

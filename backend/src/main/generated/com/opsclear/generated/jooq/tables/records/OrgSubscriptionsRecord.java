@@ -197,6 +197,38 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         return (OffsetDateTime) get(10);
     }
 
+    /**
+     * Setter for <code>public.org_subscriptions.pending_tier_id</code>.
+     */
+    public OrgSubscriptionsRecord setPendingTierId(UUID value) {
+        set(11, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.org_subscriptions.pending_tier_id</code>.
+     */
+    public UUID getPendingTierId() {
+        return (UUID) get(11);
+    }
+
+    /**
+     * Setter for
+     * <code>public.org_subscriptions.paddle_current_period_starts_at</code>.
+     */
+    public OrgSubscriptionsRecord setPaddleCurrentPeriodStartsAt(OffsetDateTime value) {
+        set(12, value);
+        return this;
+    }
+
+    /**
+     * Getter for
+     * <code>public.org_subscriptions.paddle_current_period_starts_at</code>.
+     */
+    public OffsetDateTime getPaddleCurrentPeriodStartsAt() {
+        return (OffsetDateTime) get(12);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -220,7 +252,7 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
     /**
      * Create a detached, initialised OrgSubscriptionsRecord
      */
-    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus, OffsetDateTime paddleScheduledCancellationAt) {
+    public OrgSubscriptionsRecord(UUID id, UUID orgId, UUID tierId, String billingCycle, Boolean isInternal, LocalDateTime createdAt, LocalDateTime updatedAt, String paddleCustomerId, String paddleSubscriptionId, String subscriptionStatus, OffsetDateTime paddleScheduledCancellationAt, UUID pendingTierId, OffsetDateTime paddleCurrentPeriodStartsAt) {
         super(OrgSubscriptions.ORG_SUBSCRIPTIONS);
 
         setId(id);
@@ -234,6 +266,8 @@ public class OrgSubscriptionsRecord extends UpdatableRecordImpl<OrgSubscriptions
         setPaddleSubscriptionId(paddleSubscriptionId);
         setSubscriptionStatus(subscriptionStatus);
         setPaddleScheduledCancellationAt(paddleScheduledCancellationAt);
+        setPendingTierId(pendingTierId);
+        setPaddleCurrentPeriodStartsAt(paddleCurrentPeriodStartsAt);
         resetChangedOnNotNull();
     }
 }

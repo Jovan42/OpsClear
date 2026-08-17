@@ -380,6 +380,78 @@ class PaddleSubscriptionIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // ─── POST /api/organisations/{orgId}/subscription/paddle/preview ──────────
+
+    @Test
+    @DisplayName("preview_shouldReachPaddleApi_insteadOfFailingAtResolver_onceTierSyncedToPaddle")
+    void preview_shouldReachPaddleApi_insteadOfFailingAtResolver_onceTierSyncedToPaddle() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+
+        // Same reasoning as the update-items tests above: resolving the tier's real
+        // Paddle Price id now succeeds, so the request genuinely reaches Paddle's real
+        // PATCH /subscriptions/{id}/preview — it then fails there because
+        // sub_test_placeholder isn't a real Paddle subscription. The important
+        // assertion is that this is no longer our own 409 conflict.
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn409_whenNoPaddleSubscriptionYet")
+    void preview_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn400_forInternalOrg")
+    void preview_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn403_forNonOwner")
+    void preview_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn404_whenTierDoesNotExist")
+    void preview_shouldReturn404_whenTierDoesNotExist() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", UUID.randomUUID()))))
+                .andExpect(status().isNotFound());
+    }
+
     // ─── POST /api/organisations/{orgId}/subscription/paddle/cancel ───────────
 
     @Test

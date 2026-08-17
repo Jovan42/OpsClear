@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
-import type { SubscriptionTierResponse } from '../../types';
+import type { PreviewSubscriptionUpdateResponse, SubscriptionTierResponse } from '../../types';
 import Skeleton from '../../components/Skeleton';
 import Button from '../../components/Button';
+import ConfirmModal from '../../components/ConfirmModal';
 import { useCatalog, useOrgSubscription, useUpsertOrgSubscription } from './useSubscription';
+import { usePreviewPaddleSubscriptionUpdate, useUpdatePaddleSubscription } from './usePaddleSubscription';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function tierPrice(tier: SubscriptionTierResponse, annual: boolean) {
@@ -23,6 +29,8 @@ export default function SubscriptionSection({ orgId }: Props) {
   const { data: catalog, isLoading: catalogLoading } = useCatalog();
   const { data: currentSub, isLoading: subLoading } = useOrgSubscription(orgId);
   const { mutate: upsert, isPending: saving } = useUpsertOrgSubscription(orgId);
+  const { mutate: previewPaddleUpdate, isPending: previewing } = usePreviewPaddleSubscriptionUpdate(orgId);
+  const { mutate: updatePaddleSubscription, isPending: savingPaddle } = useUpdatePaddleSubscription(orgId);
 
   const [memberIdx,  setMemberIdx]  = useState(0);
   const [projectIdx, setProjectIdx] = useState(0);
@@ -30,6 +38,7 @@ export default function SubscriptionSection({ orgId }: Props) {
   const [annual, setAnnual] = useState(false);
   const [saveError,   setSaveError]   = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [pendingPreview, setPendingPreview] = useState<PreviewSubscriptionUpdateResponse | null>(null);
 
   const memberBands  = [...new Set(catalog?.tiers.map((t) => t.maxMembers) ?? [])].sort((a, b) => a - b);
   const projectBands = [
@@ -75,6 +84,11 @@ export default function SubscriptionSection({ orgId }: Props) {
     );
   }
 
+  // Same "does this org have real, non-canceled Paddle billing" check as
+  // PaddleBillingSection.tsx — anything short of that keeps using the free upsert.
+  const status = currentSub?.subscriptionStatus ?? null;
+  const hasPaddleBilling = !!currentSub?.paddleSubscriptionId && status !== null && status !== 'CANCELED';
+
   const availableAddons = catalog.addons.filter((a) => a.available);
   const comingSoonAddons = catalog.addons.filter((a) => !a.available);
 
@@ -95,24 +109,59 @@ export default function SubscriptionSection({ orgId }: Props) {
     setSaveError(null);
   }
 
+  function handleSaveError(err: unknown) {
+    if (isAxiosError(err) && err.response?.data?.message) {
+      setSaveError(err.response.data.message as string);
+    } else {
+      setSaveError(t('somethingWentWrongTryAgain'));
+    }
+  }
+
+  // Once an org is on real Paddle billing, plan changes go through the
+  // upgrade/downgrade-aware Paddle endpoints (JOB-198) instead of the free upsert —
+  // first a preview so the customer can confirm exactly what will happen (charged
+  // now vs. deferred to next renewal) before anything is actually changed.
   function handleSave() {
     if (!selectedTier) return;
     setSaveError(null);
     setSaveSuccess(false);
-    upsert(
+
+    if (!hasPaddleBilling) {
+      upsert(
+        {
+          tierId: selectedTier.id,
+          billingCycle: annual ? 'ANNUAL' : 'MONTHLY',
+          addonIds: [...selectedAddons],
+        },
+        {
+          onSuccess: () => setSaveSuccess(true),
+          onError: handleSaveError,
+        },
+      );
+      return;
+    }
+
+    previewPaddleUpdate(
+      { tierId: selectedTier.id, addonIds: [...selectedAddons] },
       {
-        tierId: selectedTier.id,
-        billingCycle: annual ? 'ANNUAL' : 'MONTHLY',
-        addonIds: [...selectedAddons],
+        onSuccess: (preview) => setPendingPreview(preview),
+        onError: handleSaveError,
       },
+    );
+  }
+
+  function handleConfirmPaddleUpdate() {
+    if (!selectedTier) return;
+    updatePaddleSubscription(
+      { tierId: selectedTier.id, addonIds: [...selectedAddons] },
       {
-        onSuccess: () => setSaveSuccess(true),
+        onSuccess: () => {
+          setPendingPreview(null);
+          setSaveSuccess(true);
+        },
         onError: (err) => {
-          if (isAxiosError(err) && err.response?.data?.message) {
-            setSaveError(err.response.data.message as string);
-          } else {
-            setSaveError(t('somethingWentWrongTryAgain'));
-          }
+          setPendingPreview(null);
+          handleSaveError(err);
         },
       },
     );
@@ -259,7 +308,7 @@ export default function SubscriptionSection({ orgId }: Props) {
         </div>
 
         <div className="pt-2 space-y-2">
-          <Button onClick={handleSave} loading={saving} disabled={!selectedTier}>
+          <Button onClick={handleSave} loading={saving || previewing} disabled={!selectedTier}>
             {t('saveSubscriptionButton')}
           </Button>
 
@@ -271,6 +320,25 @@ export default function SubscriptionSection({ orgId }: Props) {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={!!pendingPreview}
+        onClose={() => setPendingPreview(null)}
+        onConfirm={handleConfirmPaddleUpdate}
+        title={pendingPreview?.upgrade ? t('paddleUpdateConfirmUpgradeTitle') : t('paddleUpdateConfirmDowngradeTitle')}
+        message={
+          pendingPreview?.upgrade
+            ? t('paddleUpdateConfirmUpgradeMessage', {
+                amount: fmt(pendingPreview.immediateChargeAmount ?? 0),
+                currency: pendingPreview.currency ?? '',
+              })
+            : t('paddleUpdateConfirmDowngradeMessage', {
+                date: pendingPreview?.effectiveAt ? formatDate(pendingPreview.effectiveAt) : '',
+              })
+        }
+        confirmLabel={t('paddleUpdateConfirmButton')}
+        isPending={savingPaddle}
+      />
     </div>
   );
 }

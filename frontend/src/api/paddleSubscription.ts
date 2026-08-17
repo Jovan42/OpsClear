@@ -2,6 +2,7 @@ import apiClient from './client';
 import type {
   InitiateSubscriptionResponse,
   PaddleSubscriptionResponse,
+  PreviewSubscriptionUpdateResponse,
   UpdatePaymentMethodTransactionResponse,
 } from '../types';
 
@@ -14,6 +15,11 @@ export const paddleSubscriptionApi = {
   update: (orgId: string, body: { tierId: string; addonIds: string[] }) =>
     apiClient
       .put<PaddleSubscriptionResponse>(`/api/organisations/${orgId}/subscription/paddle`, body)
+      .then((r) => r.data),
+
+  preview: (orgId: string, body: { tierId: string; addonIds: string[] }) =>
+    apiClient
+      .post<PreviewSubscriptionUpdateResponse>(`/api/organisations/${orgId}/subscription/paddle/preview`, body)
       .then((r) => r.data),
 
   cancel: (orgId: string) =>

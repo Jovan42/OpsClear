@@ -276,6 +276,13 @@ export interface UpdatePaymentMethodTransactionResponse {
   transactionId: string;
 }
 
+export interface PreviewSubscriptionUpdateResponse {
+  upgrade: boolean;
+  immediateChargeAmount: number | null;
+  currency: string | null;
+  effectiveAt: string | null;
+}
+
 // ---- API Keys ----
 
 export interface ApiKeyResponse {
