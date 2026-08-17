@@ -3,6 +3,8 @@ package com.opsclear.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.paddle.PaddleEnvelope;
+import com.opsclear.paddle.PaddleTransaction;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -14,11 +16,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -73,6 +78,10 @@ class PaddleSubscriptionIntegrationTest {
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
+    @Value("${paddle.api-key}")
+    private String paddleApiKey;
+    @Value("${paddle.base-url}")
+    private String paddleBaseUrl;
 
     private UUID ownerId;
     private UUID memberId;
@@ -161,6 +170,29 @@ class PaddleSubscriptionIntegrationTest {
         subscriptionRepository.schedulePendingDowngrade(
                 subscriptionRepository.findByOrgId(orgId).orElseThrow().getId(), orgId, pendingTierId, Set.of(),
                 Instant.parse("2026-09-01T00:00:00Z"));
+    }
+
+    // A real Paddle Transaction, so getBillingHistory's response mapping (PaddleTransaction/
+    // PaddleTransactionDetails/PaddleTransactionTotals/PaddleBillingTransactionResponse) is
+    // actually exercised against real data — a subscription-linked transaction needs real
+    // checkout (JOB-178, can't be automated here), but Paddle's manual-collection mode lets
+    // an ad-hoc transaction be created directly via the API, no card or checkout required.
+    private String givenCustomerHasARealDraftTransaction(String customerId, String priceId) {
+        Map<String, Object> body = Map.of(
+                "customer_id", customerId,
+                "collection_mode", "manual",
+                "billing_details", Map.of("payment_terms", Map.of("interval", "day", "frequency", 30)),
+                "items", List.of(Map.of("price_id", priceId, "quantity", 1)));
+        PaddleEnvelope<PaddleTransaction> response = RestClient.builder()
+                .baseUrl(paddleBaseUrl)
+                .defaultHeader("Authorization", "Bearer " + paddleApiKey)
+                .build()
+                .post()
+                .uri("/transactions")
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleTransaction>>() { });
+        return response.data().id();
     }
 
     // subscription_tiers is global seed data shared across the whole test run (not
@@ -781,17 +813,26 @@ class PaddleSubscriptionIntegrationTest {
     @DisplayName("getBillingHistory_shouldReturn200WithRealPaddleResponse_forOwner")
     void getBillingHistory_shouldReturn200WithRealPaddleResponse_forOwner() throws Exception {
         givenOrgHasSubscriptionRecord();
-        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
+        String initiateResponse = mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String customerId = objectMapper.readTree(initiateResponse).get("paddleCustomerId").asText();
 
-        // Unlike update/cancel/resume, Paddle's List Transactions API works fine
-        // against a real customer with zero transactions yet (no checkout needed) —
-        // so this genuinely exercises the full round-trip, not just "reaches Paddle".
+        var tier = paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+        String transactionId = givenCustomerHasARealDraftTransaction(customerId, tier.getPaddlePriceIdMonthly());
+
+        // A real transaction against a real customer (no checkout/subscription needed,
+        // see givenCustomerHasARealDraftTransaction) — exercises the actual response
+        // mapping (PaddleTransaction/.../PaddleBillingTransactionResponse), not just an
+        // empty array.
         mockMvc.perform(get(ApiPaths.paddleSubscriptionTransactions(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$[0].id").value(transactionId))
+                .andExpect(jsonPath("$[0].status").value("draft"))
+                .andExpect(jsonPath("$[0].currency").value("EUR"))
+                .andExpect(jsonPath("$[0].totalAmount").value(tier.getPriceMonthly()));
     }
 
     @Test
