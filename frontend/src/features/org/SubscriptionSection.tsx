@@ -328,10 +328,19 @@ export default function SubscriptionSection({ orgId }: Props) {
         title={pendingPreview?.upgrade ? t('paddleUpdateConfirmUpgradeTitle') : t('paddleUpdateConfirmDowngradeTitle')}
         message={
           pendingPreview?.upgrade
-            ? t('paddleUpdateConfirmUpgradeMessage', {
-                amount: fmt(pendingPreview.immediateChargeAmount ?? 0),
-                currency: pendingPreview.currency ?? '',
-              })
+            ? (
+              <div className="space-y-3">
+                <p>{t('paddleUpdateConfirmUpgradeMessage')}</p>
+                <div className="flex justify-between items-baseline pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('paddleUpdateConfirmChargedNowLabel')}
+                  </span>
+                  <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {fmt(pendingPreview.immediateChargeAmount ?? 0)} {pendingPreview.currency ?? ''}
+                  </span>
+                </div>
+              </div>
+            )
             : t('paddleUpdateConfirmDowngradeMessage', {
                 date: pendingPreview?.effectiveAt ? formatDate(pendingPreview.effectiveAt) : '',
               })
