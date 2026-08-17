@@ -23,10 +23,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static com.opsclear.generated.jooq.Tables.SUBSCRIPTION_TIERS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -648,5 +650,73 @@ class PaddleSubscriptionIntegrationTest {
         mockMvc.perform(get(ApiPaths.paddleSubscriptionUpdatePaymentMethodTransaction(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isNotFound());
+    }
+
+    // ─── OrgSubscriptionRepository — pending-downgrade / resume persistence ────
+    //
+    // These write pure DB state, no Paddle call involved, so — unlike the endpoint
+    // tests above — they don't need a real Paddle subscription id to exercise for
+    // real. Called directly against the real Testcontainers Postgres (JOB-198).
+
+    @Test
+    @DisplayName("clearScheduledCancellation clears the column and returns the updated model")
+    void clearScheduledCancellation_shouldClearColumn() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasScheduledCancellation();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+
+        var result = subscriptionRepository.clearScheduledCancellation(subscription.getId(), orgId);
+
+        assertThat(result.getPaddleScheduledCancellationAt()).isNull();
+        assertThat(subscriptionRepository.findByOrgId(orgId).orElseThrow().getPaddleScheduledCancellationAt())
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("schedulePendingDowngrade persists a pending tier and add-ons without touching the active ones")
+    void schedulePendingDowngrade_shouldPersistPendingSelection() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        UUID addonId = addonRepository.findAll().getFirst().getId();
+
+        var result = subscriptionRepository.schedulePendingDowngrade(
+                subscription.getId(), orgId, pendingTierId, Set.of(addonId));
+
+        assertThat(result.getPendingTierId()).isEqualTo(pendingTierId);
+        assertThat(result.getPendingAddonIds()).containsExactly(addonId);
+        assertThat(result.getTierId()).isEqualTo(tierId);
+        assertThat(result.getAddonIds()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("applyPendingDowngrade promotes the pending tier/add-ons to active and clears the pending fields")
+    void applyPendingDowngrade_shouldPromotePendingToActive() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        UUID addonId = addonRepository.findAll().getFirst().getId();
+        subscriptionRepository.schedulePendingDowngrade(subscription.getId(), orgId, pendingTierId, Set.of(addonId));
+
+        subscriptionRepository.applyPendingDowngrade(subscription.getId());
+
+        var result = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        assertThat(result.getTierId()).isEqualTo(pendingTierId);
+        assertThat(result.getAddonIds()).containsExactly(addonId);
+        assertThat(result.getPendingTierId()).isNull();
+        assertThat(result.getPendingAddonIds()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("applyPendingDowngrade is a no-op when nothing is pending")
+    void applyPendingDowngrade_shouldNoOp_whenNothingPending() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+
+        subscriptionRepository.applyPendingDowngrade(subscription.getId());
+
+        var result = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        assertThat(result.getTierId()).isEqualTo(tierId);
+        assertThat(result.getAddonIds()).isEmpty();
     }
 }

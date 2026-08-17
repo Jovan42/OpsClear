@@ -180,6 +180,20 @@ class PaddleWebhookIntegrationTest {
     }
 
     @Test
+    @DisplayName("subscription.updated with a scheduled change that isn't a cancel (e.g. pause) doesn't persist "
+            + "a scheduled cancellation")
+    void webhook_shouldIgnoreScheduledCancellation_whenScheduledChangeIsNotCancel() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String body = subscriptionEventBodyWithScheduledChange(
+                "subscription.updated", subscriptionId, "active", "pause", "2024-10-12T07:20:50.52Z");
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertPersistedScheduledCancellation(subscriptionId, null);
+    }
+
+    @Test
     @DisplayName("transaction.payment_failed is accepted with 200 but does not mutate subscription status")
     void webhook_shouldAcceptButIgnore_transactionPaymentFailed() throws Exception {
         String subscriptionId = givenExistingPaddleSubscription("ACTIVE");

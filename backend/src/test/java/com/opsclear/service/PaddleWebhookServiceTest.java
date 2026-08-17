@@ -284,6 +284,27 @@ class PaddleWebhookServiceTest {
     }
 
     @Test
+    @DisplayName("handle applies a pending downgrade when the org has no previously-known period start at all "
+            + "(e.g. its first webhook since JOB-198 shipped)")
+    void handle_shouldApplyPendingDowngrade_whenNoPreviousPeriodKnown() {
+        UUID subscriptionId = UUID.randomUUID();
+        Instant newPeriodStart = Instant.parse("2026-08-01T00:00:00Z");
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(UUID.randomUUID())
+                .paddleCurrentPeriodStartsAt(null).pendingTierId(UUID.randomUUID()).build();
+
+        String body = subscriptionEventBodyWithPeriod("subscription.updated", "active", newPeriodStart);
+        String header = signatureHeader(body, SECRET);
+        when(orgSubscriptionRepository.findByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(subscription));
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, newPeriodStart))
+                .thenReturn(1);
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).applyPendingDowngrade(subscriptionId);
+    }
+
+    @Test
     @DisplayName("handle does not apply a pending downgrade when the period has not actually rolled over")
     void handle_shouldNotApplyPendingDowngrade_whenPeriodUnchanged() {
         UUID subscriptionId = UUID.randomUUID();

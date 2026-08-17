@@ -515,6 +515,81 @@ class PaddleSubscriptionServiceTest {
                 .isInstanceOf(ForbiddenException.class);
     }
 
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems treats a null addonIds request as no add-ons")
+    void previewUpdateSubscriptionItems_shouldTreatNullAddonIds_asNoAddons() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(10).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.previewUpdateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscriptionPreview(
+                        null,
+                        new PaddlePreviewImmediateTransaction(
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("2000", "EUR")))));
+
+        PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
+
+        assertThat(result.isUpgrade()).isTrue();
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<PaddleSubscriptionItem>> itemsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(paddleClient).previewUpdateSubscriptionItems(eq("sub_123"), itemsCaptor.capture(), eq("prorated_immediately"));
+        assertThat(itemsCaptor.getValue()).containsExactly(new PaddleSubscriptionItem("pri_tier", 1));
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems compares annual prices (tier and add-ons) for an ANNUAL subscription")
+    void previewUpdateSubscriptionItems_shouldCompareAnnualPrices_forAnnualBillingCycle() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID addonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("ANNUAL").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(addonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId)).thenReturn(Optional.of(
+                SubscriptionTierModel.builder().id(currentTierId).priceMonthly(100).priceAnnual(10).build()));
+        when(tierRepository.findById(tierId)).thenReturn(Optional.of(
+                SubscriptionTierModel.builder().id(tierId).priceMonthly(5).priceAnnual(20).build()));
+        when(addonRepository.findByIds(Set.of(addonId))).thenReturn(
+                List.of(SubscriptionAddonModel.builder().id(addonId).priceMonthly(1).priceAnnual(5).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "ANNUAL")).thenReturn("pri_tier");
+        when(priceResolver.resolveAddonPriceId(addonId, "ANNUAL")).thenReturn("pri_addon");
+        when(paddleClient.previewUpdateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscriptionPreview(
+                        null,
+                        new PaddlePreviewImmediateTransaction(
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("1500", "EUR")))));
+
+        PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
+
+        // old total (annual) = 10, new total (annual) = 20 + 5 = 25 — an upgrade despite
+        // the monthly prices alone (100 -> 5) implying the opposite, proving the annual
+        // ternary branch (not the monthly one) is what actually drove the comparison.
+        assertThat(result.isUpgrade()).isTrue();
+    }
+
     // --- cancel ---
 
     @Test
