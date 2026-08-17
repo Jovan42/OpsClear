@@ -121,6 +121,18 @@ class PaddleWebhookServiceTest {
     }
 
     @Test
+    @DisplayName("handle accepts a signature header containing an unrecognized but well-formed key=value segment")
+    void handle_shouldAccept_whenHeaderHasUnrecognizedKeyValueSegment() {
+        String body = subscriptionEventBody("subscription.created", "active");
+        String header = "foo=bar;" + signatureHeader(body, SECRET);
+        when(orgSubscriptionRepository.updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null)).thenReturn(1);
+
+        service.handle(header, body);
+
+        verify(orgSubscriptionRepository).updateFromPaddleWebhook("ctm_123", "sub_123", "ACTIVE", null, null);
+    }
+
+    @Test
     @DisplayName("handle rejects a body that isn't valid JSON, even with a valid signature")
     void handle_shouldReject_whenBodyNotValidJson() {
         String body = "not-json";
