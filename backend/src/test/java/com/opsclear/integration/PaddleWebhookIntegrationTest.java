@@ -1,10 +1,12 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import com.opsclear.service.PaddleSubscriptionService;
@@ -67,6 +69,7 @@ class PaddleWebhookIntegrationTest {
     @Autowired private OrgSubscriptionRepository subscriptionRepository;
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
 
@@ -143,11 +146,13 @@ class PaddleWebhookIntegrationTest {
 
         SubscriptionTierModel tier =
                 paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+        SubscriptionAddonModel addon =
+                paddleSubscriptionService.syncAddonPriceToPaddle(addonRepository.findAll().getFirst());
         String subscriptionId = "sub_" + UUID.randomUUID();
         String body = "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"subscription.created\","
                 + "\"data\":{\"id\":\"" + subscriptionId + "\",\"customer_id\":\"" + customerId + "\","
                 + "\"status\":\"active\",\"items\":[{\"price\":{\"id\":\"" + tier.getPaddlePriceIdMonthly()
-                + "\"}}]}}";
+                + "\"}},{\"price\":{\"id\":\"" + addon.getPaddlePriceIdMonthly() + "\"}}]}}";
 
         postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
                 .andExpect(status().isOk());
@@ -159,6 +164,37 @@ class PaddleWebhookIntegrationTest {
         assertThat(record.getBillingCycle()).isEqualTo("MONTHLY");
         assertThat(record.getPaddleSubscriptionId()).isEqualTo(subscriptionId);
         assertThat(record.getSubscriptionStatus()).isEqualTo("ACTIVE");
+
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        assertThat(subscription.getAddonIds()).containsExactly(addon.getId());
+    }
+
+    @Test
+    @DisplayName("JOB-200: a first-ever webhook with no items is ignored — nothing to resolve a plan from")
+    void webhook_shouldIgnore_whenFirstEverEventHasNoItems() throws Exception {
+        dsl.deleteFrom(ORG_SUBSCRIPTIONS).where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId)).execute();
+        String body = subscriptionEventBody("subscription.created", "sub_" + UUID.randomUUID(), "active");
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertThat(dsl.selectFrom(ORG_SUBSCRIPTIONS).where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId)).fetchOptional())
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("JOB-200: a first-ever webhook whose items don't resolve to any known tier is ignored")
+    void webhook_shouldIgnore_whenFirstEverEventItemsDontResolveToATier() throws Exception {
+        dsl.deleteFrom(ORG_SUBSCRIPTIONS).where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId)).execute();
+        String body = "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"subscription.created\","
+                + "\"data\":{\"id\":\"sub_" + UUID.randomUUID() + "\",\"customer_id\":\"" + customerId + "\","
+                + "\"status\":\"active\",\"items\":[{\"price\":{\"id\":\"pri_not_in_our_catalog\"}}]}}";
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertThat(dsl.selectFrom(ORG_SUBSCRIPTIONS).where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId)).fetchOptional())
+                .isEmpty();
     }
 
     @Test
