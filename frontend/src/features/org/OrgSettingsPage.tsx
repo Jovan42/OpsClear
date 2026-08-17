@@ -16,6 +16,7 @@ import { useOrganisation, useUpdateOrganisation, useDeleteOrganisation, useOrgMe
 import { usePageTitle } from '../../hooks/usePageTitle';
 import SubscriptionSection from './SubscriptionSection';
 import PaddleBillingSection from './PaddleBillingSection';
+import BillingHistorySection from './BillingHistorySection';
 import { useOrgCreditBalance } from './useCredits';
 import { useOrgTemplates, useDeleteOrgTemplate } from '../templates/useTemplates';
 import TemplateFormModal from '../templates/TemplateFormModal';
@@ -43,6 +44,7 @@ export default function OrgSettingsPage() {
 
   const [slugApiError, setSlugApiError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [billingHistoryOpen, setBillingHistoryOpen] = useState(false);
 
   const { data: orgTemplates = [], isLoading: templatesLoading } = useOrgTemplates(ctxOrg?.id ?? null);
   const deleteOrgTemplate = useDeleteOrgTemplate(ctxOrg?.id ?? '');
@@ -339,6 +341,35 @@ export default function OrgSettingsPage() {
           <SubscriptionSection orgId={org.id} />
           <div className="mt-4">
             <PaddleBillingSection orgId={org.id} />
+          </div>
+        </section>
+      )}
+
+      {/* ── Billing history (accordion, collapsed by default — settings already has a lot on the page) ── */}
+      {isOwner && (
+        <section>
+          <div className="border border-gray-200 dark:border-gray-700 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setBillingHistoryOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
+            >
+              <span>{t('org:billingHistoryHeading')}</span>
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform ${billingHistoryOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {billingHistoryOpen && (
+              <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700 pt-3">
+                <BillingHistorySection orgId={org.id} />
+              </div>
+            )}
           </div>
         </section>
       )}

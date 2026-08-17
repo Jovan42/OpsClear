@@ -1,6 +1,8 @@
 {
   "openNavMenu": "Open navigation menu",
   "menu": "Menu",
+  "pastDueBannerText": "Your last payment didn't go through — you can still view everything, but new changes are blocked until it's resolved.",
+  "pastDueBannerLink": "Update payment method",
   "organisation": "Organisation",
   "settings": "Settings",
   "feedback": "Feedback",

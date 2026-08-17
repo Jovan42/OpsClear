@@ -279,6 +279,14 @@ export interface UpdatePaymentMethodTransactionResponse {
   transactionId: string;
 }
 
+export interface PaddleBillingTransactionResponse {
+  id: string;
+  status: string;
+  billedAt: string | null;
+  currency: string | null;
+  totalAmount: number | null;
+}
+
 export interface PreviewSubscriptionUpdateResponse {
   upgrade: boolean;
   immediateChargeAmount: number | null;
