@@ -110,6 +110,9 @@ public class PaddleSubscriptionService {
         String billingCycle = subscription.getBillingCycle();
         List<PaddleSubscriptionItem> items = buildItems(newTier, newAddonIds, billingCycle);
         boolean upgrade = isUpgrade(subscription, newTier, newAddonIds, billingCycle);
+        if (!upgrade) {
+            requireNoScheduledChangeAlreadyPending(subscription);
+        }
         String prorationMode = upgrade ? PRORATION_UPGRADE : PRORATION_DOWNGRADE;
 
         PaddleSubscription paddleSubscription = paddleClient.updateSubscriptionItems(
@@ -157,6 +160,9 @@ public class PaddleSubscriptionService {
         String billingCycle = subscription.getBillingCycle();
         List<PaddleSubscriptionItem> items = buildItems(newTier, newAddonIds, billingCycle);
         boolean upgrade = isUpgrade(subscription, newTier, newAddonIds, billingCycle);
+        if (!upgrade) {
+            requireNoScheduledChangeAlreadyPending(subscription);
+        }
         String prorationMode = upgrade ? PRORATION_UPGRADE : PRORATION_DOWNGRADE;
 
         PaddleSubscriptionPreview preview = paddleClient.previewUpdateSubscriptionItems(
@@ -363,6 +369,18 @@ public class PaddleSubscriptionService {
     private void requireNoCancellationAlreadyScheduled(OrgSubscriptionModel subscription) {
         if (subscription.getPaddleScheduledCancellationAt() != null) {
             throw new ConflictException(ErrorMessages.Paddle.CANCELLATION_ALREADY_SCHEDULED);
+        }
+    }
+
+    // Paddle rejects updateSubscriptionItems/previewUpdateSubscriptionItems with
+    // full_next_billing_period if the subscription already has ANY scheduled change
+    // pending — a not-yet-applied downgrade (this codebase's own pendingTierId) or a
+    // scheduled cancellation (JOB-197) — real 400 confirmed live against sandbox
+    // (subscription_invalid_billing_mode_for_scheduled_change). Only guards downgrade
+    // attempts: upgrades use prorated_immediately, which Paddle allows regardless.
+    private void requireNoScheduledChangeAlreadyPending(OrgSubscriptionModel subscription) {
+        if (subscription.getPendingTierId() != null || subscription.getPaddleScheduledCancellationAt() != null) {
+            throw new ConflictException(ErrorMessages.Paddle.SCHEDULED_CHANGE_ALREADY_PENDING);
         }
     }
 

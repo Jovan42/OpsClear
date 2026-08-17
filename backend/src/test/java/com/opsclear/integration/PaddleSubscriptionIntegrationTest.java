@@ -331,6 +331,28 @@ class PaddleSubscriptionIntegrationTest {
     }
 
     @Test
+    @DisplayName("update_shouldReturn409_insteadOfPaddlesRaw400_whenADowngradeIsAttemptedWithACancellationAlreadyScheduled")
+    void update_shouldReturn409_insteadOfPaddlesRaw400_whenADowngradeIsAttemptedWithACancellationAlreadyScheduled()
+            throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasScheduledCancellation();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+
+        // Requesting the same tier (no price change) classifies as a downgrade —
+        // real bug found via live manual testing: Paddle rejects a second
+        // full_next_billing_period change with a raw 400
+        // (subscription_invalid_billing_mode_for_scheduled_change) when the
+        // subscription already has a scheduled cancellation pending. This must be
+        // caught by our own guard before ever reaching Paddle.
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     @DisplayName("update_shouldReturn400_forInternalOrg")
     void update_shouldReturn400_forInternalOrg() throws Exception {
         givenOrgHasSubscriptionRecord();
@@ -407,6 +429,22 @@ class PaddleSubscriptionIntegrationTest {
     @DisplayName("preview_shouldReturn409_whenNoPaddleSubscriptionYet")
     void preview_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
         givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn409_insteadOfPaddlesRaw400_whenADowngradeIsAttemptedWithACancellationAlreadyScheduled")
+    void preview_shouldReturn409_insteadOfPaddlesRaw400_whenADowngradeIsAttemptedWithACancellationAlreadyScheduled()
+            throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasScheduledCancellation();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
 
         mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
