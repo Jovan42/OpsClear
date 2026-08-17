@@ -132,6 +132,12 @@
   "paddleUpdateConfirmDowngradeMessage": "Nema naplate sada. Zadržaćete trenutni plan do {{date}}, kada će se preći na novi plan.",
   "paddleUpdateConfirmButton": "Potvrdi promenu",
 
+  "paddleExtraToPayNowLabel": "Dodatno za naplatu sada",
+  "pendingDowngradeTitle": "Zakazana promena plana",
+  "pendingDowngradeDesc": "Vaš plan će se promeniti na sledeći {{date}}:",
+  "cancelPendingDowngradeButton": "Otkaži zakazano smanjenje",
+  "mixedChangeWarning": "Dodajete nešto skuplje i uklanjate nešto jeftinije u istoj promeni — sačuvajte ih kao dve odvojene promene.",
+
   "roles": {
     "MEMBER": "Član",
     "ADMIN": "Administrator"

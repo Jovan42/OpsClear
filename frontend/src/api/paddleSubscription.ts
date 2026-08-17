@@ -32,6 +32,11 @@ export const paddleSubscriptionApi = {
       .post<PaddleSubscriptionResponse>(`/api/organisations/${orgId}/subscription/paddle/resume`)
       .then((r) => r.data),
 
+  cancelPendingDowngrade: (orgId: string) =>
+    apiClient
+      .post<PaddleSubscriptionResponse>(`/api/organisations/${orgId}/subscription/paddle/cancel-pending-downgrade`)
+      .then((r) => r.data),
+
   getUpdatePaymentMethodTransaction: (orgId: string) =>
     apiClient
       .get<UpdatePaymentMethodTransactionResponse>(

@@ -48,3 +48,13 @@ export function useResumeSubscription(orgId: string) {
     },
   });
 }
+
+export function useCancelPendingDowngrade(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => paddleSubscriptionApi.cancelPendingDowngrade(orgId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'subscription'] });
+    },
+  });
+}

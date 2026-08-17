@@ -257,6 +257,9 @@ export interface OrgSubscriptionResponse {
   paddleSubscriptionId: string | null;
   subscriptionStatus: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
   paddleScheduledCancellationAt: string | null;
+  pendingTierId: string | null;
+  pendingAddonIds: string[];
+  paddlePendingDowngradeEffectiveAt: string | null;
 }
 
 // ---- Paddle billing ----
