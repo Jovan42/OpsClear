@@ -126,6 +126,25 @@ function OrgLoader() {
   return null;
 }
 
+// App-wide, not buried in org settings (JOB-179) — a subscription already went
+// past due should be visible wherever the user happens to be, not just on the one
+// page where they'd think to look for it.
+function PastDueBanner() {
+  const { subscription } = useCurrentOrg();
+  const { t } = useTranslation('shared1');
+
+  if (subscription?.subscriptionStatus !== 'PAST_DUE') return null;
+
+  return (
+    <div className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2 text-sm text-amber-800 dark:text-amber-300 text-center">
+      {t('pastDueBannerText')}{' '}
+      <Link to="/org/settings" className="font-medium underline hover:no-underline">
+        {t('pastDueBannerLink')}
+      </Link>
+    </div>
+  );
+}
+
 export default function AppLayout() {
   useTheme();
   const { name } = useAuth();
@@ -197,6 +216,7 @@ export default function AppLayout() {
           onClose={() => setDrawerOpen(false)}
         />
       )}
+      <PastDueBanner />
       <main className="flex-1">
         <OrgLoader />
         <Outlet />
