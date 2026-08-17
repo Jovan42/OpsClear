@@ -25,6 +25,9 @@ public class OrgSubscriptionResponse {
     private String paddleSubscriptionId;
     private String subscriptionStatus;
     private Instant paddleScheduledCancellationAt;
+    private UUID pendingTierId;
+    private List<UUID> pendingAddonIds;
+    private Instant paddlePendingDowngradeEffectiveAt;
 
     public static OrgSubscriptionResponse from(
             OrgSubscriptionModel model,
@@ -49,6 +52,9 @@ public class OrgSubscriptionResponse {
                 .paddleSubscriptionId(model.getPaddleSubscriptionId())
                 .subscriptionStatus(model.getSubscriptionStatus())
                 .paddleScheduledCancellationAt(model.getPaddleScheduledCancellationAt())
+                .pendingTierId(model.getPendingTierId())
+                .pendingAddonIds(model.getPendingAddonIds())
+                .paddlePendingDowngradeEffectiveAt(model.getPaddlePendingDowngradeEffectiveAt())
                 .build();
     }
 }

@@ -22,6 +22,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -179,6 +180,20 @@ class PaddleWebhookIntegrationTest {
     }
 
     @Test
+    @DisplayName("subscription.updated with a scheduled change that isn't a cancel (e.g. pause) doesn't persist "
+            + "a scheduled cancellation")
+    void webhook_shouldIgnoreScheduledCancellation_whenScheduledChangeIsNotCancel() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String body = subscriptionEventBodyWithScheduledChange(
+                "subscription.updated", subscriptionId, "active", "pause", "2024-10-12T07:20:50.52Z");
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertPersistedScheduledCancellation(subscriptionId, null);
+    }
+
+    @Test
     @DisplayName("transaction.payment_failed is accepted with 200 but does not mutate subscription status")
     void webhook_shouldAcceptButIgnore_transactionPaymentFailed() throws Exception {
         String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
@@ -290,6 +305,73 @@ class PaddleWebhookIntegrationTest {
     }
 
     @Test
+    @DisplayName("subscription.updated with current_billing_period persists its starts_at")
+    void webhook_shouldPersistCurrentPeriodStartsAt_whenPresent() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        Instant periodStart = Instant.parse("2026-08-01T00:00:00Z");
+        String body = subscriptionEventBodyWithPeriod("subscription.updated", subscriptionId, "active", periodStart);
+
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        var record = dsl.selectFrom(ORG_SUBSCRIPTIONS)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .fetchSingle();
+        assertThat(record.getPaddleCurrentPeriodStartsAt().toInstant()).isEqualTo(periodStart);
+    }
+
+    @Test
+    @DisplayName("JOB-198: a pending downgrade is applied once the webhook reports the period has rolled over")
+    void webhook_shouldApplyPendingDowngrade_whenPeriodRollsOver() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        Instant previousPeriodStart = Instant.parse("2026-07-01T00:00:00Z");
+        Instant newPeriodStart = Instant.parse("2026-08-01T00:00:00Z");
+
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.PENDING_TIER_ID, pendingTierId)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_CURRENT_PERIOD_STARTS_AT, previousPeriodStart.atOffset(ZoneOffset.UTC))
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .execute();
+
+        String body = subscriptionEventBodyWithPeriod("subscription.updated", subscriptionId, "active", newPeriodStart);
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        var record = dsl.selectFrom(ORG_SUBSCRIPTIONS)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .fetchSingle();
+        assertThat(record.getTierId()).isEqualTo(pendingTierId);
+        assertThat(record.getPendingTierId()).isNull();
+        assertThat(record.getPaddleCurrentPeriodStartsAt().toInstant()).isEqualTo(newPeriodStart);
+    }
+
+    @Test
+    @DisplayName("JOB-198: a pending downgrade is left untouched when the period has not rolled over yet")
+    void webhook_shouldNotApplyPendingDowngrade_whenPeriodUnchanged() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        UUID originalTierId = tierId;
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        Instant periodStart = Instant.parse("2026-08-01T00:00:00Z");
+
+        dsl.update(ORG_SUBSCRIPTIONS)
+                .set(ORG_SUBSCRIPTIONS.PENDING_TIER_ID, pendingTierId)
+                .set(ORG_SUBSCRIPTIONS.PADDLE_CURRENT_PERIOD_STARTS_AT, periodStart.atOffset(ZoneOffset.UTC))
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .execute();
+
+        String body = subscriptionEventBodyWithPeriod("subscription.updated", subscriptionId, "active", periodStart);
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        var record = dsl.selectFrom(ORG_SUBSCRIPTIONS)
+                .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                .fetchSingle();
+        assertThat(record.getTierId()).isEqualTo(originalTierId);
+        assertThat(record.getPendingTierId()).isEqualTo(pendingTierId);
+    }
+
+    @Test
     @DisplayName("redelivering the same event is idempotent — same end state, no error")
     void webhook_shouldBeIdempotent_onRedelivery() throws Exception {
         String subscriptionId = "sub_" + UUID.randomUUID();
@@ -346,6 +428,14 @@ class PaddleWebhookIntegrationTest {
         return "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"" + eventType + "\","
                 + "\"data\":{\"id\":\"" + subscriptionId + "\",\"customer_id\":\"" + customerId + "\","
                 + "\"status\":\"" + status + "\"}}";
+    }
+
+    private String subscriptionEventBodyWithPeriod(
+            String eventType, String subscriptionId, String status, Instant periodStartsAt) {
+        return "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"" + eventType + "\","
+                + "\"data\":{\"id\":\"" + subscriptionId + "\",\"customer_id\":\"" + customerId + "\","
+                + "\"status\":\"" + status + "\",\"current_billing_period\":{\"starts_at\":\""
+                + periodStartsAt + "\"}}}";
     }
 
     private String subscriptionEventBodyWithScheduledChange(

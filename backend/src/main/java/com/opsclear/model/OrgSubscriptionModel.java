@@ -27,4 +27,8 @@ public class OrgSubscriptionModel {
     private String paddleSubscriptionId;
     private String subscriptionStatus;
     private Instant paddleScheduledCancellationAt;
+    private Instant paddleCurrentPeriodStartsAt;
+    private UUID pendingTierId;
+    private List<UUID> pendingAddonIds;
+    private Instant paddlePendingDowngradeEffectiveAt;
 }

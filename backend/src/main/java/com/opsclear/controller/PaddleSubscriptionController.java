@@ -2,6 +2,7 @@ package com.opsclear.controller;
 
 import com.opsclear.dto.InitiateSubscriptionResponse;
 import com.opsclear.dto.PaddleSubscriptionResponse;
+import com.opsclear.dto.PreviewSubscriptionUpdateResponse;
 import com.opsclear.dto.UpdatePaddleSubscriptionRequest;
 import com.opsclear.dto.UpdatePaymentMethodTransactionResponse;
 import com.opsclear.model.OrgSubscriptionModel;
@@ -55,6 +56,15 @@ public class PaddleSubscriptionController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/preview")
+    public ResponseEntity<PreviewSubscriptionUpdateResponse> preview(
+            @PathVariable UUID orgId,
+            @Valid @RequestBody UpdatePaddleSubscriptionRequest request,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        return ResponseEntity.ok(paddleSubscriptionService.previewUpdateSubscriptionItems(orgId, callerId, request));
+    }
+
     @PostMapping("/cancel")
     public ResponseEntity<PaddleSubscriptionResponse> cancel(
             @PathVariable UUID orgId,
@@ -79,6 +89,20 @@ public class PaddleSubscriptionController {
                 .orgId(orgId)
                 .paddleSubscriptionId(resumed.getPaddleSubscriptionId())
                 .status(resumed.getSubscriptionStatus())
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/cancel-pending-downgrade")
+    public ResponseEntity<PaddleSubscriptionResponse> cancelPendingDowngrade(
+            @PathVariable UUID orgId,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        OrgSubscriptionModel updated = paddleSubscriptionService.cancelPendingDowngrade(orgId, callerId);
+        PaddleSubscriptionResponse response = PaddleSubscriptionResponse.builder()
+                .orgId(orgId)
+                .paddleSubscriptionId(updated.getPaddleSubscriptionId())
+                .status(updated.getSubscriptionStatus())
                 .build();
         return ResponseEntity.ok(response);
     }

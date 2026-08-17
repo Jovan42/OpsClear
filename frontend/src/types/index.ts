@@ -257,6 +257,9 @@ export interface OrgSubscriptionResponse {
   paddleSubscriptionId: string | null;
   subscriptionStatus: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
   paddleScheduledCancellationAt: string | null;
+  pendingTierId: string | null;
+  pendingAddonIds: string[];
+  paddlePendingDowngradeEffectiveAt: string | null;
 }
 
 // ---- Paddle billing ----
@@ -274,6 +277,13 @@ export interface PaddleSubscriptionResponse {
 
 export interface UpdatePaymentMethodTransactionResponse {
   transactionId: string;
+}
+
+export interface PreviewSubscriptionUpdateResponse {
+  upgrade: boolean;
+  immediateChargeAmount: number | null;
+  currency: string | null;
+  effectiveAt: string | null;
 }
 
 // ---- API Keys ----

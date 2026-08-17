@@ -14,5 +14,6 @@ public record PaddleWebhookSubscriptionData(
         String id,
         @JsonProperty("customer_id") String customerId,
         String status,
-        @JsonProperty("scheduled_change") PaddleWebhookScheduledChange scheduledChange) {
+        @JsonProperty("scheduled_change") PaddleWebhookScheduledChange scheduledChange,
+        @JsonProperty("current_billing_period") PaddleWebhookBillingPeriod currentBillingPeriod) {
 }

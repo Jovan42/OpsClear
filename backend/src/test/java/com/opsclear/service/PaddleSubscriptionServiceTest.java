@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.dto.PreviewSubscriptionUpdateResponse;
 import com.opsclear.dto.UpdatePaddleSubscriptionRequest;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
@@ -15,11 +16,16 @@ import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleCustomer;
+import com.opsclear.paddle.PaddlePreviewImmediateTransaction;
+import com.opsclear.paddle.PaddlePreviewTotals;
+import com.opsclear.paddle.PaddlePreviewTransactionDetails;
 import com.opsclear.paddle.PaddlePrice;
 import com.opsclear.paddle.PaddlePriceResolver;
 import com.opsclear.paddle.PaddleProduct;
 import com.opsclear.paddle.PaddleSubscription;
+import com.opsclear.paddle.PaddleSubscriptionBillingPeriod;
 import com.opsclear.paddle.PaddleSubscriptionItem;
+import com.opsclear.paddle.PaddleSubscriptionPreview;
 import com.opsclear.paddle.PaddleTransaction;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -218,27 +224,33 @@ class PaddleSubscriptionServiceTest {
     // --- updateSubscriptionItems ---
 
     @Test
-    @DisplayName("updateSubscriptionItems resolves price ids, calls Paddle, and updates the local record")
-    void updateSubscriptionItems_shouldSyncPaddle_andUpdateLocalRecord() {
+    @DisplayName("updateSubscriptionItems resolves price ids, calls Paddle, and updates the local record on an upgrade")
+    void updateSubscriptionItems_shouldSyncPaddle_andUpdateLocalRecord_onUpgrade() {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
         UUID subscriptionId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
         UUID tierId = UUID.randomUUID();
         UUID addonId = UUID.randomUUID();
 
         OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(subscriptionId).orgId(orgId).isInternal(false)
+                .id(subscriptionId).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
                 .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
         UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
                 .tierId(tierId).addonIds(Set.of(addonId)).build();
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
-        when(tierRepository.findById(tierId)).thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).build()));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(10).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(20).build()));
+        when(addonRepository.findByIds(Set.of(addonId))).thenReturn(
+                List.of(SubscriptionAddonModel.builder().id(addonId).priceMonthly(5).build()));
         when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
         when(priceResolver.resolveAddonPriceId(addonId, "MONTHLY")).thenReturn("pri_addon");
         when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
-                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123"));
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", null));
 
         PaddleSubscription result = service.updateSubscriptionItems(orgId, ownerId, request);
 
@@ -251,6 +263,7 @@ class PaddleSubscriptionServiceTest {
                 new PaddleSubscriptionItem("pri_tier", 1), new PaddleSubscriptionItem("pri_addon", 1));
 
         verify(orgSubscriptionRepository).update(subscriptionId, orgId, tierId, "MONTHLY", Set.of(addonId));
+        verify(orgSubscriptionRepository, never()).schedulePendingDowngrade(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -259,20 +272,24 @@ class PaddleSubscriptionServiceTest {
         UUID orgId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
         UUID subscriptionId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
         UUID tierId = UUID.randomUUID();
 
         OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
-                .id(subscriptionId).orgId(orgId).isInternal(false)
+                .id(subscriptionId).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
                 .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
         UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
                 .tierId(tierId).addonIds(null).build();
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
-        when(tierRepository.findById(tierId)).thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).build()));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(10).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(20).build()));
         when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
         when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
-                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123"));
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", null));
 
         service.updateSubscriptionItems(orgId, ownerId, request);
 
@@ -282,6 +299,258 @@ class PaddleSubscriptionServiceTest {
         assertThat(itemsCaptor.getValue()).containsExactly(new PaddleSubscriptionItem("pri_tier", 1));
 
         verify(orgSubscriptionRepository).update(subscriptionId, orgId, tierId, "MONTHLY", Set.of());
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems defers to Paddle's next billing period and schedules a pending "
+            + "downgrade instead of touching the active tier, on a net price decrease")
+    void updateSubscriptionItems_shouldSchedulePendingDowngrade_onDowngrade() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID subscriptionId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(30).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(10).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        Instant nextBilledAt = Instant.parse("2026-09-01T00:00:00Z");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", nextBilledAt));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period"));
+        verify(orgSubscriptionRepository)
+                .schedulePendingDowngrade(subscriptionId, orgId, tierId, Set.of(), nextBilledAt);
+        verify(orgSubscriptionRepository, never()).update(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems overwrites an already-pending downgrade with a new one, rather than "
+            + "blocking it — Paddle's full_next_billing_period calls don't conflict with each other")
+    void updateSubscriptionItems_shouldOverwritePendingDowngrade_withANewOne() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID subscriptionId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").pendingTierId(UUID.randomUUID()).build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(30).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(10).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        Instant nextBilledAt = Instant.parse("2026-09-01T00:00:00Z");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", nextBilledAt));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period"));
+        verify(orgSubscriptionRepository)
+                .schedulePendingDowngrade(subscriptionId, orgId, tierId, Set.of(), nextBilledAt);
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems throws ConflictException for a downgrade when a cancellation is "
+            + "already scheduled — Paddle rejects a second scheduled change")
+    void updateSubscriptionItems_shouldThrow_whenCancellationAlreadyScheduled() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY")
+                .paddleScheduledCancellationAt(Instant.parse("2026-09-01T00:00:00Z")).build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(30).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(10).build()));
+
+        assertThatThrownBy(() -> service.updateSubscriptionItems(orgId, ownerId, request))
+                .isInstanceOf(ConflictException.class);
+        verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems does not guard an upgrade against an already-scheduled change — "
+            + "Paddle allows prorated_immediately regardless")
+    void updateSubscriptionItems_shouldAllowUpgrade_evenWhenChangeAlreadyScheduled() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID subscriptionId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY")
+                .paddleScheduledCancellationAt(Instant.parse("2026-09-01T00:00:00Z")).build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(10).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", null));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately"));
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems throws ConflictException when the request both adds a pricier addon "
+            + "and removes a cheaper one in the same change")
+    void updateSubscriptionItems_shouldThrow_whenChangeIsMixed() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID existingAddonId = UUID.randomUUID();
+        UUID newAddonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId)
+                .addonIds(List.of(existingAddonId))
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(newAddonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+
+        assertThatThrownBy(() -> service.updateSubscriptionItems(orgId, ownerId, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Paddle.MIXED_UPGRADE_DOWNGRADE_NOT_ALLOWED);
+        verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems allows removing an addon on its own, with nothing added, as a "
+            + "pure (non-mixed) downgrade")
+    void updateSubscriptionItems_shouldAllow_whenOnlyRemovingAnAddon() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID existingAddonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId)
+                .addonIds(List.of(existingAddonId))
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(addonRepository.findByIds(Set.of(existingAddonId)))
+                .thenReturn(List.of(SubscriptionAddonModel.builder().id(existingAddonId).priceMonthly(9).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", Instant.parse("2026-09-01T00:00:00Z")));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period"));
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems allows adding an addon on its own, at the same tier, with nothing "
+            + "removed, as a pure (non-mixed) upgrade")
+    void updateSubscriptionItems_shouldAllow_whenOnlyAddingAnAddon() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID newAddonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(newAddonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(addonRepository.findByIds(Set.of(newAddonId)))
+                .thenReturn(List.of(SubscriptionAddonModel.builder().id(newAddonId).priceMonthly(9).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(priceResolver.resolveAddonPriceId(newAddonId, "MONTHLY")).thenReturn("pri_addon");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", null));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately"));
+    }
+
+    @Test
+    @DisplayName("updateSubscriptionItems evaluates the add/remove diff against a non-empty current addon set "
+            + "even when the resubmitted selection is unchanged, rather than only ever short-circuiting on an "
+            + "empty collection")
+    void updateSubscriptionItems_shouldEvaluateAddonDiff_whenResubmittingTheSameSelection() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID addonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId)
+                .addonIds(List.of(addonId))
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(addonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(addonRepository.findByIds(Set.of(addonId)))
+                .thenReturn(List.of(SubscriptionAddonModel.builder().id(addonId).priceMonthly(9).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(priceResolver.resolveAddonPriceId(addonId, "MONTHLY")).thenReturn("pri_addon");
+        when(paddleClient.updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period")))
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", Instant.parse("2026-09-01T00:00:00Z")));
+
+        service.updateSubscriptionItems(orgId, ownerId, request);
+
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period"));
     }
 
     @Test
@@ -357,6 +626,251 @@ class PaddleSubscriptionServiceTest {
                 .isInstanceOf(ForbiddenException.class);
     }
 
+    // --- previewUpdateSubscriptionItems ---
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems returns the prorated charge for an upgrade, with no billing "
+            + "applied by Paddle")
+    void previewUpdateSubscriptionItems_shouldReturnImmediateCharge_onUpgrade() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(10).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.previewUpdateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscriptionPreview(
+                        null,
+                        new PaddlePreviewImmediateTransaction(
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("1250", "EUR")))));
+
+        PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
+
+        assertThat(result.isUpgrade()).isTrue();
+        assertThat(result.getImmediateChargeAmount()).isEqualTo(12);
+        assertThat(result.getCurrency()).isEqualTo("EUR");
+        assertThat(result.getEffectiveAt()).isNull();
+        verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems returns no charge and the period end date for a downgrade")
+    void previewUpdateSubscriptionItems_shouldReturnEffectiveDate_onDowngrade() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        Instant periodEnd = Instant.parse("2026-09-01T00:00:00Z");
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(30).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(10).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.previewUpdateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period")))
+                .thenReturn(new PaddleSubscriptionPreview(
+                        new PaddleSubscriptionBillingPeriod(Instant.parse("2026-08-01T00:00:00Z"), periodEnd),
+                        null));
+
+        PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
+
+        assertThat(result.isUpgrade()).isFalse();
+        assertThat(result.getImmediateChargeAmount()).isNull();
+        assertThat(result.getCurrency()).isNull();
+        assertThat(result.getEffectiveAt()).isEqualTo(periodEnd);
+        verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems allows previewing a new downgrade even when one is already "
+            + "pending, since it would simply overwrite it")
+    void previewUpdateSubscriptionItems_shouldAllowPreview_whenADowngradeIsAlreadyPending() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        Instant periodEnd = Instant.parse("2026-09-01T00:00:00Z");
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").pendingTierId(UUID.randomUUID()).build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(30).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(10).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.previewUpdateSubscriptionItems(eq("sub_123"), any(), eq("full_next_billing_period")))
+                .thenReturn(new PaddleSubscriptionPreview(
+                        new PaddleSubscriptionBillingPeriod(Instant.parse("2026-08-01T00:00:00Z"), periodEnd),
+                        null));
+
+        PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
+
+        assertThat(result.isUpgrade()).isFalse();
+        assertThat(result.getEffectiveAt()).isEqualTo(periodEnd);
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems throws ConflictException when the request both adds a pricier "
+            + "addon and removes a cheaper one in the same change")
+    void previewUpdateSubscriptionItems_shouldThrow_whenChangeIsMixed() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID existingAddonId = UUID.randomUUID();
+        UUID newAddonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(tierId)
+                .addonIds(List.of(existingAddonId))
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(newAddonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+
+        assertThatThrownBy(() -> service.previewUpdateSubscriptionItems(orgId, ownerId, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Paddle.MIXED_UPGRADE_DOWNGRADE_NOT_ALLOWED);
+        verify(paddleClient, never()).previewUpdateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems throws ConflictException when there's no Paddle subscription yet")
+    void previewUpdateSubscriptionItems_shouldThrow_whenNoPaddleSubscriptionYet() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId(null).build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder().tierId(tierId).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.previewUpdateSubscriptionItems(orgId, ownerId, request))
+                .isInstanceOf(ConflictException.class);
+        verify(paddleClient, never()).previewUpdateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems throws ForbiddenException for a non-owner")
+    void previewUpdateSubscriptionItems_shouldThrow_forNonOwner() {
+        UUID orgId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+        UpdatePaddleSubscriptionRequest request =
+                UpdatePaddleSubscriptionRequest.builder().tierId(UUID.randomUUID()).build();
+
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> service.previewUpdateSubscriptionItems(orgId, memberId, request))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems treats a null addonIds request as no add-ons")
+    void previewUpdateSubscriptionItems_shouldTreatNullAddonIds_asNoAddons() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(10).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.previewUpdateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscriptionPreview(
+                        null,
+                        new PaddlePreviewImmediateTransaction(
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("2000", "EUR")))));
+
+        PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
+
+        assertThat(result.isUpgrade()).isTrue();
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<PaddleSubscriptionItem>> itemsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(paddleClient).previewUpdateSubscriptionItems(eq("sub_123"), itemsCaptor.capture(), eq("prorated_immediately"));
+        assertThat(itemsCaptor.getValue()).containsExactly(new PaddleSubscriptionItem("pri_tier", 1));
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems compares annual prices (tier and add-ons) for an ANNUAL subscription")
+    void previewUpdateSubscriptionItems_shouldCompareAnnualPrices_forAnnualBillingCycle() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+        UUID addonId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("ANNUAL").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of(addonId)).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId)).thenReturn(Optional.of(
+                SubscriptionTierModel.builder().id(currentTierId).priceMonthly(100).priceAnnual(10).build()));
+        when(tierRepository.findById(tierId)).thenReturn(Optional.of(
+                SubscriptionTierModel.builder().id(tierId).priceMonthly(5).priceAnnual(20).build()));
+        when(addonRepository.findByIds(Set.of(addonId))).thenReturn(
+                List.of(SubscriptionAddonModel.builder().id(addonId).priceMonthly(1).priceAnnual(5).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "ANNUAL")).thenReturn("pri_tier");
+        when(priceResolver.resolveAddonPriceId(addonId, "ANNUAL")).thenReturn("pri_addon");
+        when(paddleClient.previewUpdateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscriptionPreview(
+                        null,
+                        new PaddlePreviewImmediateTransaction(
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("1500", "EUR")))));
+
+        PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
+
+        // old total (annual) = 10, new total (annual) = 20 + 5 = 25 — an upgrade despite
+        // the monthly prices alone (100 -> 5) implying the opposite, proving the annual
+        // ternary branch (not the monthly one) is what actually drove the comparison.
+        assertThat(result.isUpgrade()).isTrue();
+    }
+
     // --- cancel ---
 
     @Test
@@ -371,7 +885,7 @@ class PaddleSubscriptionServiceTest {
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
         when(paddleClient.cancelSubscription("sub_123"))
-                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123"));
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", null));
 
         PaddleSubscription result = service.cancel(orgId, ownerId);
 
@@ -488,7 +1002,7 @@ class PaddleSubscriptionServiceTest {
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
         when(paddleClient.removeScheduledCancellation("sub_123"))
-                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123"));
+                .thenReturn(new PaddleSubscription("sub_123", "active", "ctm_123", null));
         when(orgSubscriptionRepository.clearScheduledCancellation(subscriptionId, orgId)).thenReturn(resumed);
 
         OrgSubscriptionModel result = service.resume(orgId, ownerId);
@@ -585,6 +1099,133 @@ class PaddleSubscriptionServiceTest {
         when(organisationRepository.findMemberRole(orgId, callerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.resume(orgId, callerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    // --- cancelPendingDowngrade ---
+
+    @Test
+    @DisplayName("cancelPendingDowngrade reverts Paddle's items to the active plan with do_not_bill and clears "
+            + "the local pending state")
+    void cancelPendingDowngrade_shouldRevertPaddleItems_andClearLocalPendingState() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID subscriptionId = UUID.randomUUID();
+        UUID activeTierId = UUID.randomUUID();
+        UUID activeAddonId = UUID.randomUUID();
+        UUID pendingTierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123")
+                .billingCycle("MONTHLY").tierId(activeTierId).addonIds(List.of(activeAddonId))
+                .pendingTierId(pendingTierId).build();
+        OrgSubscriptionModel updated = OrgSubscriptionModel.builder()
+                .id(subscriptionId).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123")
+                .billingCycle("MONTHLY").tierId(activeTierId).addonIds(List.of(activeAddonId))
+                .pendingTierId(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(activeTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(activeTierId).priceMonthly(30).build()));
+        when(priceResolver.resolveTierPriceId(activeTierId, "MONTHLY")).thenReturn("pri_tier");
+        when(priceResolver.resolveAddonPriceId(activeAddonId, "MONTHLY")).thenReturn("pri_addon");
+        when(orgSubscriptionRepository.clearPendingDowngrade(subscriptionId, orgId)).thenReturn(updated);
+
+        OrgSubscriptionModel result = service.cancelPendingDowngrade(orgId, ownerId);
+
+        assertThat(result.getPendingTierId()).isNull();
+        verify(paddleClient).updateSubscriptionItems(eq("sub_123"), any(), eq("do_not_bill"));
+        verify(orgSubscriptionRepository).clearPendingDowngrade(subscriptionId, orgId);
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade throws ConflictException when there's no pending downgrade to cancel")
+    void cancelPendingDowngrade_shouldThrow_whenNoPendingDowngrade() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId("sub_123")
+                .pendingTierId(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.cancelPendingDowngrade(orgId, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Paddle.NO_PENDING_DOWNGRADE_TO_CANCEL);
+        verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade throws ConflictException when there's no Paddle subscription yet")
+    void cancelPendingDowngrade_shouldThrow_whenNoPaddleSubscriptionYet() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).paddleSubscriptionId(null).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.cancelPendingDowngrade(orgId, ownerId))
+                .isInstanceOf(ConflictException.class);
+        verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade throws BadRequestException for an internal org")
+    void cancelPendingDowngrade_shouldThrow_whenOrgIsInternal() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(true).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+
+        assertThatThrownBy(() -> service.cancelPendingDowngrade(orgId, ownerId))
+                .isInstanceOf(BadRequestException.class);
+        verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade throws NotFoundException when the org has no subscription record yet")
+    void cancelPendingDowngrade_shouldThrow_whenNoSubscriptionRecord() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cancelPendingDowngrade(orgId, ownerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade throws ForbiddenException for a non-owner")
+    void cancelPendingDowngrade_shouldThrow_forNonOwner() {
+        UUID orgId = UUID.randomUUID();
+        UUID memberId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> service.cancelPendingDowngrade(orgId, memberId))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade throws NotFoundException when the caller is not a member")
+    void cancelPendingDowngrade_shouldThrow_whenCallerNotAMember() {
+        UUID orgId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(organisationRepository.findMemberRole(orgId, callerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cancelPendingDowngrade(orgId, callerId))
                 .isInstanceOf(NotFoundException.class);
     }
 

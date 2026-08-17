@@ -125,6 +125,19 @@
   "paddleResumeSubscriptionButton": "Resume subscription",
   "paddleResumedToast": "Cancellation removed — your subscription will continue as normal.",
 
+  "paddleUpdateConfirmUpgradeTitle": "Confirm upgrade",
+  "paddleUpdateConfirmUpgradeMessage": "You'll be charged now, prorated for the rest of your current billing period.",
+  "paddleUpdateConfirmChargedNowLabel": "Charged now",
+  "paddleUpdateConfirmDowngradeTitle": "Confirm plan change",
+  "paddleUpdateConfirmDowngradeMessage": "No charge now. You'll keep your current plan until {{date}}, when it will switch to the new plan.",
+  "paddleUpdateConfirmButton": "Confirm change",
+
+  "paddleExtraToPayNowLabel": "Extra to pay now",
+  "pendingDowngradeTitle": "Plan change scheduled",
+  "pendingDowngradeDesc": "Your plan will switch to the following on {{date}}:",
+  "cancelPendingDowngradeButton": "Cancel pending downgrade",
+  "mixedChangeWarning": "You're adding something more expensive and removing something cheaper in the same change — please save these as two separate changes.",
+
   "roles": {
     "MEMBER": "Member",
     "ADMIN": "Admin"

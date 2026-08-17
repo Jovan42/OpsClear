@@ -349,6 +349,6 @@ class NoteIntegrationTest {
     private void markSubscriptionPastDue() {
         UUID subscriptionId = subscriptionRepository.findByOrgId(orgId).orElseThrow().getId();
         subscriptionRepository.updatePaddleCustomerId(subscriptionId, orgId, "ctm_test_past_due");
-        subscriptionRepository.updateFromPaddleWebhook("ctm_test_past_due", "sub_test_past_due", "PAST_DUE", null);
+        subscriptionRepository.updateFromPaddleWebhook("ctm_test_past_due", "sub_test_past_due", "PAST_DUE", null, null);
     }
 }

@@ -99,9 +99,13 @@ public class PaddleWebhookService {
         }
 
         Instant scheduledCancellationAt = scheduledCancellationAt(event);
+        Instant currentPeriodStartsAt = currentPeriodStartsAt(event);
+
+        applyPendingDowngradeIfPeriodRolledOver(event.data().customerId(), currentPeriodStartsAt);
 
         int rows = orgSubscriptionRepository.updateFromPaddleWebhook(
-                event.data().customerId(), event.data().id(), localStatus, scheduledCancellationAt);
+                event.data().customerId(), event.data().id(), localStatus, scheduledCancellationAt,
+                currentPeriodStartsAt);
         if (rows == 0) {
             log.warn("Paddle event {} ({}) references customer {} — no matching org_subscriptions row",
                     event.eventId(), event.eventType(), event.data().customerId());
@@ -120,6 +124,32 @@ public class PaddleWebhookService {
             return null;
         }
         return scheduledChange.effectiveAt();
+    }
+
+    // null for paused/canceled subscriptions, per Paddle's docs — not every
+    // subscription.* event carries a current billing period.
+    private static Instant currentPeriodStartsAt(PaddleWebhookEvent event) {
+        return event.data().currentBillingPeriod() != null ? event.data().currentBillingPeriod().startsAt() : null;
+    }
+
+    // JOB-198: a downgrade never touches the active tier/addons at request time —
+    // it only takes effect once the period it was requested during actually ends.
+    // That's detected here: if the webhook's period start is later than the one we
+    // last knew, the period has rolled over, so any pending change gets promoted to
+    // active now, before this event's own status/period fields are persisted below.
+    private void applyPendingDowngradeIfPeriodRolledOver(String customerId, Instant currentPeriodStartsAt) {
+        if (currentPeriodStartsAt == null) {
+            return;
+        }
+        orgSubscriptionRepository.findByPaddleCustomerId(customerId).ifPresent(subscription -> {
+            boolean periodRolledOver = subscription.getPaddleCurrentPeriodStartsAt() == null
+                    || currentPeriodStartsAt.isAfter(subscription.getPaddleCurrentPeriodStartsAt());
+            if (periodRolledOver && subscription.getPendingTierId() != null) {
+                orgSubscriptionRepository.applyPendingDowngrade(subscription.getId());
+                log.info("Applied pending downgrade for org {} at period rollover (customer {})",
+                        subscription.getOrgId(), customerId);
+            }
+        });
     }
 
     // --- Guards ---

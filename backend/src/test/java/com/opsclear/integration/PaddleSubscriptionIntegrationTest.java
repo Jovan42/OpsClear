@@ -20,13 +20,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static com.opsclear.generated.jooq.Tables.SUBSCRIPTION_TIERS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -148,6 +151,16 @@ class PaddleSubscriptionIntegrationTest {
                 .set(ORG_SUBSCRIPTIONS.PADDLE_SCHEDULED_CANCELLATION_AT, SCHEDULED_CANCELLATION_FIXTURE)
                 .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
                 .execute();
+    }
+
+    // Same pragmatic seeding pattern as givenOrgHasScheduledCancellation — a pending
+    // downgrade is normally set by updateSubscriptionItems' own downgrade branch,
+    // seeded here directly for tests that only care about the guard/undo behavior.
+    private void givenOrgHasPendingDowngrade() {
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        subscriptionRepository.schedulePendingDowngrade(
+                subscriptionRepository.findByOrgId(orgId).orElseThrow().getId(), orgId, pendingTierId, Set.of(),
+                Instant.parse("2026-09-01T00:00:00Z"));
     }
 
     // subscription_tiers is global seed data shared across the whole test run (not
@@ -329,6 +342,60 @@ class PaddleSubscriptionIntegrationTest {
     }
 
     @Test
+    @DisplayName("update_shouldReturn409_insteadOfPaddlesRaw400_whenADowngradeIsAttemptedWithACancellationAlreadyScheduled")
+    void update_shouldReturn409_insteadOfPaddlesRaw400_whenADowngradeIsAttemptedWithACancellationAlreadyScheduled()
+            throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasScheduledCancellation();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+
+        // Requesting the same tier (no price change) classifies as a downgrade —
+        // real bug found via live manual testing: Paddle rejects a second
+        // full_next_billing_period change with a raw 400
+        // (subscription_invalid_billing_mode_for_scheduled_change) when the
+        // subscription already has a scheduled cancellation pending. This must be
+        // caught by our own guard before ever reaching Paddle.
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("update_shouldReturn409_whenChangeIsMixed_addingAndRemovingAddonsInTheSameRequest")
+    void update_shouldReturn409_whenChangeIsMixed_addingAndRemovingAddonsInTheSameRequest() throws Exception {
+        List<SubscriptionAddonModel> addons = addonRepository.findAll();
+        UUID existingAddonId = addons.get(0).getId();
+        UUID newAddonId = addons.get(1).getId();
+
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "tierId", tierId, "billingCycle", "MONTHLY", "addonIds", List.of(existingAddonId)))))
+                .andExpect(status().isOk());
+
+        // Real bug found via live manual testing: adding one addon while removing
+        // another in the same request nets out to an "upgrade" by total price, which
+        // would apply immediately and yank the removed addon away right now even
+        // though it's already paid for this period. Must be caught by our own guard
+        // before ever reaching Paddle's price resolver.
+        mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("tierId", tierId, "addonIds", List.of(newAddonId)))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "This change both adds something more expensive and removes something cheaper — "
+                                + "please save these as two separate changes"));
+    }
+
+    @Test
     @DisplayName("update_shouldReturn400_forInternalOrg")
     void update_shouldReturn400_forInternalOrg() throws Exception {
         givenOrgHasSubscriptionRecord();
@@ -378,6 +445,121 @@ class PaddleSubscriptionIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // ─── POST /api/organisations/{orgId}/subscription/paddle/preview ──────────
+
+    @Test
+    @DisplayName("preview_shouldReachPaddleApi_insteadOfFailingAtResolver_onceTierSyncedToPaddle")
+    void preview_shouldReachPaddleApi_insteadOfFailingAtResolver_onceTierSyncedToPaddle() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+
+        // Same reasoning as the update-items tests above: resolving the tier's real
+        // Paddle Price id now succeeds, so the request genuinely reaches Paddle's real
+        // PATCH /subscriptions/{id}/preview — it then fails there because
+        // sub_test_placeholder isn't a real Paddle subscription. The important
+        // assertion is that this is no longer our own 409 conflict.
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn409_whenNoPaddleSubscriptionYet")
+    void preview_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn409_insteadOfPaddlesRaw400_whenADowngradeIsAttemptedWithACancellationAlreadyScheduled")
+    void preview_shouldReturn409_insteadOfPaddlesRaw400_whenADowngradeIsAttemptedWithACancellationAlreadyScheduled()
+            throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasScheduledCancellation();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn409_whenChangeIsMixed_addingAndRemovingAddonsInTheSameRequest")
+    void preview_shouldReturn409_whenChangeIsMixed_addingAndRemovingAddonsInTheSameRequest() throws Exception {
+        List<SubscriptionAddonModel> addons = addonRepository.findAll();
+        UUID existingAddonId = addons.get(0).getId();
+        UUID newAddonId = addons.get(1).getId();
+
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        mockMvc.perform(put(ApiPaths.orgSubscription(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "tierId", tierId, "billingCycle", "MONTHLY", "addonIds", List.of(existingAddonId)))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("tierId", tierId, "addonIds", List.of(newAddonId)))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "This change both adds something more expensive and removes something cheaper — "
+                                + "please save these as two separate changes"));
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn400_forInternalOrg")
+    void preview_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn403_forNonOwner")
+    void preview_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("preview_shouldReturn404_whenTierDoesNotExist")
+    void preview_shouldReturn404_whenTierDoesNotExist() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", UUID.randomUUID()))))
+                .andExpect(status().isNotFound());
     }
 
     // ─── POST /api/organisations/{orgId}/subscription/paddle/cancel ───────────
@@ -521,6 +703,78 @@ class PaddleSubscriptionIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ─── POST .../subscription/paddle/cancel-pending-downgrade ────────────────
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReachPaddleApi_insteadOfFailingAtGuard_oncePendingDowngradeExists")
+    void cancelPendingDowngrade_shouldReachPaddleApi_insteadOfFailingAtGuard_oncePendingDowngradeExists()
+            throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasPendingDowngrade();
+
+        // Same reasoning as cancel/resume above: sub_test_placeholder isn't a real
+        // Paddle subscription, so the request reaches Paddle's real API and fails
+        // there instead of failing at our own guard.
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn409_whenNoPendingDowngrade")
+    void cancelPendingDowngrade_shouldReturn409_whenNoPendingDowngrade() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "There's no pending downgrade on this subscription to cancel"));
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn409_whenNoPaddleSubscriptionYet")
+    void cancelPendingDowngrade_shouldReturn409_whenNoPaddleSubscriptionYet() throws Exception {
+        givenOrgHasSubscriptionRecord();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn400_forInternalOrg")
+    void cancelPendingDowngrade_shouldReturn400_forInternalOrg() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgIsInternal();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn403_forNonOwner")
+    void cancelPendingDowngrade_shouldReturn403_forNonOwner() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        givenOrgHasPendingDowngrade();
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("cancelPendingDowngrade_shouldReturn404_whenOrgHasNoSubscriptionRecordYet")
+    void cancelPendingDowngrade_shouldReturn404_whenOrgHasNoSubscriptionRecordYet() throws Exception {
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
+                .andExpect(status().isNotFound());
+    }
+
     // ─── GET .../subscription/paddle/update-payment-method-transaction ────────
 
     @Test
@@ -576,5 +830,98 @@ class PaddleSubscriptionIntegrationTest {
         mockMvc.perform(get(ApiPaths.paddleSubscriptionUpdatePaymentMethodTransaction(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isNotFound());
+    }
+
+    // ─── OrgSubscriptionRepository — pending-downgrade / resume persistence ────
+    //
+    // These write pure DB state, no Paddle call involved, so — unlike the endpoint
+    // tests above — they don't need a real Paddle subscription id to exercise for
+    // real. Called directly against the real Testcontainers Postgres (JOB-198).
+
+    @Test
+    @DisplayName("clearScheduledCancellation clears the column and returns the updated model")
+    void clearScheduledCancellation_shouldClearColumn() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasScheduledCancellation();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+
+        var result = subscriptionRepository.clearScheduledCancellation(subscription.getId(), orgId);
+
+        assertThat(result.getPaddleScheduledCancellationAt()).isNull();
+        assertThat(subscriptionRepository.findByOrgId(orgId).orElseThrow().getPaddleScheduledCancellationAt())
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("schedulePendingDowngrade persists a pending tier and add-ons without touching the active ones")
+    void schedulePendingDowngrade_shouldPersistPendingSelection() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        UUID addonId = addonRepository.findAll().getFirst().getId();
+        Instant effectiveAt = Instant.parse("2026-09-01T00:00:00Z");
+
+        var result = subscriptionRepository.schedulePendingDowngrade(
+                subscription.getId(), orgId, pendingTierId, Set.of(addonId), effectiveAt);
+
+        assertThat(result.getPendingTierId()).isEqualTo(pendingTierId);
+        assertThat(result.getPendingAddonIds()).containsExactly(addonId);
+        assertThat(result.getTierId()).isEqualTo(tierId);
+        assertThat(result.getAddonIds()).isEmpty();
+        assertThat(result.getPaddlePendingDowngradeEffectiveAt()).isEqualTo(effectiveAt);
+    }
+
+    @Test
+    @DisplayName("applyPendingDowngrade promotes the pending tier/add-ons to active and clears the pending fields")
+    void applyPendingDowngrade_shouldPromotePendingToActive() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        UUID addonId = addonRepository.findAll().getFirst().getId();
+        subscriptionRepository.schedulePendingDowngrade(
+                subscription.getId(), orgId, pendingTierId, Set.of(addonId), Instant.parse("2026-09-01T00:00:00Z"));
+
+        subscriptionRepository.applyPendingDowngrade(subscription.getId());
+
+        var result = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        assertThat(result.getTierId()).isEqualTo(pendingTierId);
+        assertThat(result.getAddonIds()).containsExactly(addonId);
+        assertThat(result.getPendingTierId()).isNull();
+        assertThat(result.getPendingAddonIds()).isEmpty();
+        assertThat(result.getPaddlePendingDowngradeEffectiveAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("clearPendingDowngrade reverts to keeping the currently active tier/add-ons and clears "
+            + "the pending fields")
+    void clearPendingDowngrade_shouldClearPendingFields_withoutTouchingActivePlan() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        UUID pendingTierId = tierRepository.findAll().get(1).getId();
+        UUID addonId = addonRepository.findAll().getFirst().getId();
+        subscriptionRepository.schedulePendingDowngrade(
+                subscription.getId(), orgId, pendingTierId, Set.of(addonId), Instant.parse("2026-09-01T00:00:00Z"));
+
+        var result = subscriptionRepository.clearPendingDowngrade(subscription.getId(), orgId);
+
+        assertThat(result.getTierId()).isEqualTo(tierId);
+        assertThat(result.getAddonIds()).isEmpty();
+        assertThat(result.getPendingTierId()).isNull();
+        assertThat(result.getPendingAddonIds()).isEmpty();
+        assertThat(result.getPaddlePendingDowngradeEffectiveAt()).isNull();
+        assertThat(subscriptionRepository.findByOrgId(orgId).orElseThrow().getPendingTierId()).isNull();
+    }
+
+    @Test
+    @DisplayName("applyPendingDowngrade is a no-op when nothing is pending")
+    void applyPendingDowngrade_shouldNoOp_whenNothingPending() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        var subscription = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+
+        subscriptionRepository.applyPendingDowngrade(subscription.getId());
+
+        var result = subscriptionRepository.findByOrgId(orgId).orElseThrow();
+        assertThat(result.getTierId()).isEqualTo(tierId);
+        assertThat(result.getAddonIds()).isEmpty();
     }
 }
