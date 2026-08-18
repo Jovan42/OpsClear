@@ -25,6 +25,7 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
   const [selectedOrgId, setSelectedOrgId] = useState(fixedOrgId ?? '');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
+  const [syncWarning, setSyncWarning] = useState<string | null>(null);
 
   // Reset the form whenever the modal transitions closed -> open, per React's
   // documented "adjusting state when a prop changes" pattern (setState during
@@ -37,6 +38,7 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
       setSelectedOrgId(fixedOrgId ?? '');
       setAmount('');
       setReason('');
+      setSyncWarning(null);
       reset();
     }
   }
@@ -50,7 +52,18 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
     if (!canSubmit) return;
     grant(
       { orgId, amount: parsedAmount, reason: reason.trim(), submissionId },
-      { onSuccess: onClose },
+      {
+        onSuccess: (data) => {
+          // The grant itself always succeeds (org_credits is the source of truth) —
+          // but if Paddle sync was skipped/failed, keep the modal open with a warning
+          // instead of silently closing, so the admin doesn't assume it went through.
+          if (data.paddleSyncSkippedReason) {
+            setSyncWarning(data.paddleSyncSkippedReason);
+          } else {
+            onClose();
+          }
+        },
+      },
     );
   }
 
@@ -108,6 +121,17 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
           />
         </div>
 
+        {syncWarning && (
+          <div className="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+              {t('superAdmin:grantModal.syncWarningTitle')}
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+              {t(`superAdmin:grantModal.syncWarning.${syncWarning}`)}
+            </p>
+          </div>
+        )}
+
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400">
             {isAxiosError(error) && error.response?.data?.message
@@ -117,10 +141,14 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
         )}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose}>{t('common:cancel')}</Button>
-          <Button type="submit" loading={isPending} disabled={!canSubmit}>
-            {t('superAdmin:grantModal.submitButton')}
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {syncWarning ? t('superAdmin:grantModal.closeButton') : t('common:cancel')}
           </Button>
+          {!syncWarning && (
+            <Button type="submit" loading={isPending} disabled={!canSubmit}>
+              {t('superAdmin:grantModal.submitButton')}
+            </Button>
+          )}
         </div>
       </form>
     </Modal>

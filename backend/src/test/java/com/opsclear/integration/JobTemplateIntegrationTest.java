@@ -121,6 +121,7 @@ class JobTemplateIntegrationTest {
                 .filter(a -> a.getKey().equals("JOB_TEMPLATES")).findFirst().orElseThrow().getId();
         UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(templateAddonId));
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
     }
 
     // --- POST /api/projects/{projectId}/templates ---

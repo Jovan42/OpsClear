@@ -10,6 +10,8 @@ import com.opsclear.model.OrganisationRole;
 import com.opsclear.paddle.PaddleAdjustment;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleTransaction;
+import com.opsclear.paddle.PaddleTransactionDetails;
+import com.opsclear.paddle.PaddleTransactionLineItem;
 import com.opsclear.repository.OrgCreditRepository;
 import com.opsclear.repository.OrganisationRepository;
 import lombok.RequiredArgsConstructor;
@@ -51,34 +53,66 @@ public class CreditService {
                 request.getSubmissionId(), grantedBy);
         log.info("Granted {} credit to org {} by user {} (submission={})",
                 credit.getAmount(), credit.getOrgId(), grantedBy, credit.getSubmissionId());
-        syncCreditToPaddle(credit);
+        syncCreditToPaddle(credit).ifPresent(credit::setPaddleSyncSkippedReason);
         return credit;
     }
 
-    private void syncCreditToPaddle(OrgCreditModel credit) {
+    // Returns a stable reason code (surfaced to the super admin console, see
+    // PaddleSyncSkippedReason) when the sync was skipped or failed, empty when it
+    // succeeded. org_credits stays the source of truth either way — this is purely a
+    // caller-facing signal, never a reason to fail the grant itself (JOB-180 #2).
+    private Optional<String> syncCreditToPaddle(OrgCreditModel credit) {
         try {
             String customerId = organisationRepository.findPaddleCustomerId(credit.getOrgId()).orElse(null);
             if (customerId == null) {
                 log.info("Org {} has no Paddle customer yet — skipping Paddle credit sync", credit.getOrgId());
-                return;
+                return Optional.of(PaddleSyncSkippedReason.NO_PADDLE_CUSTOMER);
             }
 
             Optional<PaddleTransaction> transaction = paddleClient.findLatestCompletedTransaction(customerId);
             if (transaction.isEmpty()) {
                 log.info("Paddle customer {} has no completed transactions yet — skipping Paddle credit sync",
                         customerId);
-                return;
+                return Optional.of(PaddleSyncSkippedReason.NO_COMPLETED_TRANSACTION);
+            }
+
+            // The item_id Adjustments needs is the transaction *line* item id
+            // (details.line_items[].id, e.g. "txnitm_..."), not the top-level items[]
+            // array — Paddle echoes the latter back from the request with no id of its
+            // own, so reading .id() off it is always null regardless of item count.
+            List<PaddleTransactionLineItem> lineItems = Optional.ofNullable(transaction.get().details())
+                    .map(PaddleTransactionDetails::lineItems)
+                    .orElse(List.of());
+            if (lineItems.isEmpty()) {
+                log.warn("Paddle transaction {} for customer {} has no line items — skipping Paddle credit sync",
+                        transaction.get().id(), customerId);
+                return Optional.of(PaddleSyncSkippedReason.NO_LINE_ITEMS);
             }
 
             String transactionId = transaction.get().id();
-            String itemId = transaction.get().items().get(0).id();
+            String itemId = lineItems.get(0).id();
             PaddleAdjustment adjustment = paddleClient.createCreditAdjustment(
                     transactionId, itemId, toMinorUnits(credit.getAmount()), credit.getReason());
             log.info("Created Paddle credit adjustment {} against transaction {} for org {} (credit {})",
                     adjustment.id(), transactionId, credit.getOrgId(), credit.getId());
+            return Optional.empty();
         } catch (RuntimeException e) {
             log.warn("Failed to sync credit {} (org {}) to Paddle — ledger entry stands regardless",
                     credit.getId(), credit.getOrgId(), e);
+            return Optional.of(PaddleSyncSkippedReason.PADDLE_ERROR);
+        }
+    }
+
+    /** Stable reason codes for a skipped/failed Paddle credit sync — kept as plain
+     *  string constants (not a Java enum) so they serialize directly and the frontend
+     *  can switch on them without generating a matching type. */
+    public static final class PaddleSyncSkippedReason {
+        public static final String NO_PADDLE_CUSTOMER = "NO_PADDLE_CUSTOMER";
+        public static final String NO_COMPLETED_TRANSACTION = "NO_COMPLETED_TRANSACTION";
+        public static final String NO_LINE_ITEMS = "NO_LINE_ITEMS";
+        public static final String PADDLE_ERROR = "PADDLE_ERROR";
+
+        private PaddleSyncSkippedReason() {
         }
     }
 

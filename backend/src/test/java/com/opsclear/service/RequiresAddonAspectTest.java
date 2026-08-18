@@ -73,6 +73,7 @@ class RequiresAddonAspectTest {
         RequiresAddon annotation = mock(RequiresAddon.class);
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
         when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
+        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
         when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
         stubSignature(false);
 
@@ -99,6 +100,7 @@ class RequiresAddonAspectTest {
         RequiresAddon annotation = mock(RequiresAddon.class);
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
         when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
+        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
         when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(false);
 
         assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
@@ -112,10 +114,25 @@ class RequiresAddonAspectTest {
         RequiresAddon annotation = mock(RequiresAddon.class);
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
         when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
+        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
         when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(false);
 
         assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("Should throw ForbiddenException when org has no real Paddle billing, without consulting the staged add-on selection")
+    void checkAddon_shouldThrowForbidden_whenNoRealBilling() {
+        RequiresAddon annotation = mock(RequiresAddon.class);
+        when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
+        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
+        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(false);
+
+        assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessageContaining("DASHBOARD");
+        verify(subscriptionRepository, never()).hasAddon(any(), any());
     }
 
     @Test
@@ -136,6 +153,7 @@ class RequiresAddonAspectTest {
         RequiresAddon annotation = mock(RequiresAddon.class);
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
         when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
+        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
         when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
         when(subscriptionRepository.findSubscriptionStatus(orgId)).thenReturn(Optional.of("ACTIVE"));
         stubSignature(false);
@@ -151,6 +169,7 @@ class RequiresAddonAspectTest {
         RequiresAddon annotation = mock(RequiresAddon.class);
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
         when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
+        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
         when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
         when(subscriptionRepository.findSubscriptionStatus(orgId)).thenReturn(Optional.empty());
         stubSignature(false);
@@ -166,6 +185,7 @@ class RequiresAddonAspectTest {
         RequiresAddon annotation = mock(RequiresAddon.class);
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
         when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
+        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
         when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
         stubSignature(true);
 
@@ -181,6 +201,7 @@ class RequiresAddonAspectTest {
         RequiresAddon annotation = mock(RequiresAddon.class);
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
         when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
+        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
         when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
         when(subscriptionRepository.findSubscriptionStatus(orgId)).thenReturn(Optional.of("PAST_DUE"));
         stubSignature(false);

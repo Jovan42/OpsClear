@@ -21,13 +21,14 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 /**
+ * Requires real, webhook-confirmed Paddle billing before honoring the staged
+ * {@code hasAddon()} selection (JOB-200: a staged tier/add-on pick is not itself
+ * access — see {@code hasRealPaddleBilling()} on the frontend for the mirrored check).
  * Also enforces ADR-0044's PAST_DUE gating for every {@code @RequiresAddon}-protected
  * endpoint: reads stay available, writes are blocked until payment recovers. Detects
  * read vs. write by inspecting the intercepted method's own {@code @GetMapping} —
  * every {@code @RequiresAddon} method carries exactly one Spring mapping annotation,
- * so this needs no separate read/write metadata. Skipped entirely for internal orgs
- * (same as the add-on check) and when {@code subscription_status} is null — the org
- * hasn't completed its first Paddle checkout yet, so no restriction applies.
+ * so this needs no separate read/write metadata. Skipped entirely for internal orgs.
  */
 @Aspect
 @Component
@@ -52,6 +53,11 @@ public class RequiresAddonAspect {
         if (subscriptionRepository.isInternal(orgId)) {
             log.debug("Skipping add-on check for internal org {}", orgId);
             return pjp.proceed();
+        }
+
+        if (!subscriptionRepository.hasRealBilling(orgId)) {
+            throw new ForbiddenException(
+                    requiresAddon.value().name() + " add-on is required to access this feature");
         }
 
         if (!subscriptionRepository.hasAddon(orgId, requiresAddon.value().name())) {
