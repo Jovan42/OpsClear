@@ -1,9 +1,11 @@
 package com.opsclear.service;
 
+import com.opsclear.dto.CreditLedgerEntryResponse;
 import com.opsclear.dto.GrantCreditRequest;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.exception.PaddleSyncException;
 import com.opsclear.model.OrgCreditModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
@@ -24,13 +26,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * {@code syncCreditToPaddle} is best-effort (ADR-0044): Paddle has no equivalent to
- * Stripe's Customer Balance — its only credit mechanism, an Adjustment, requires an
- * existing transaction to attach to. A credit can be granted to an org at any time,
- * including one with no Paddle customer yet or zero completed transactions, so this
- * applies the credit against the org's most recently billed transaction when one
- * exists and silently skips Paddle otherwise. {@code org_credits} is always the
- * source of truth; a Paddle failure here must never fail the grant itself.
+ * {@code syncCreditToPaddle} is best-effort for the "nothing to sync against yet"
+ * cases (ADR-0044): a credit can be granted to an org at any time, including one with
+ * no Paddle customer yet, zero completed transactions, or a transaction with no line
+ * items — those are legitimate states, not failures, so the grant still stands and
+ * {@code org_credits} is the record of truth. A genuine Paddle failure (network error,
+ * rate limit, unexpected API response) is different: Paddle *does* have something to
+ * sync against, the call just didn't reach it, so leaving the ledger entry in place
+ * would silently misrepresent reality. {@link #grant} rolls the whole transaction back
+ * in that case (JOB-180) so the admin gets a clear error and can retry, rather than a
+ * ledger entry Paddle never received.
  */
 @Service
 @RequiredArgsConstructor
@@ -53,14 +58,22 @@ public class CreditService {
                 request.getSubmissionId(), grantedBy);
         log.info("Granted {} credit to org {} by user {} (submission={})",
                 credit.getAmount(), credit.getOrgId(), grantedBy, credit.getSubmissionId());
-        syncCreditToPaddle(credit).ifPresent(credit::setPaddleSyncSkippedReason);
+        Optional<String> skipReason = syncCreditToPaddle(credit);
+        if (PaddleSyncSkippedReason.PADDLE_ERROR.equals(skipReason.orElse(null))) {
+            // Unlike the other skip reasons, Paddle genuinely had something to sync
+            // against here — rolling back so the ledger never claims a sync that
+            // didn't happen. @Transactional unwinds the insert above (and the
+            // markCreditedForOrg call, if any) along with this.
+            throw new PaddleSyncException(ErrorMessages.Paddle.CREDIT_SYNC_FAILED);
+        }
+        skipReason.ifPresent(credit::setPaddleSyncSkippedReason);
         return credit;
     }
 
-    // Returns a stable reason code (surfaced to the super admin console, see
-    // PaddleSyncSkippedReason) when the sync was skipped or failed, empty when it
-    // succeeded. org_credits stays the source of truth either way — this is purely a
-    // caller-facing signal, never a reason to fail the grant itself (JOB-180 #2).
+    // Returns a stable reason code (see PaddleSyncSkippedReason) when the sync was
+    // skipped or failed, empty when it succeeded. The three "nothing to sync against
+    // yet" cases are non-fatal signals only — grant() lets those stand. PADDLE_ERROR is
+    // different: grant() rolls the transaction back for that one (JOB-180).
     private Optional<String> syncCreditToPaddle(OrgCreditModel credit) {
         try {
             String customerId = organisationRepository.findPaddleCustomerId(credit.getOrgId()).orElse(null);
@@ -103,9 +116,12 @@ public class CreditService {
         }
     }
 
-    /** Stable reason codes for a skipped/failed Paddle credit sync — kept as plain
-     *  string constants (not a Java enum) so they serialize directly and the frontend
-     *  can switch on them without generating a matching type. */
+    /** Stable reason codes for a skipped Paddle credit sync — kept as plain string
+     *  constants (not a Java enum) so they serialize directly and the frontend can
+     *  switch on them without generating a matching type. Only the first three ever
+     *  reach {@link CreditLedgerEntryResponse#getPaddleSyncSkippedReason()} — grant()
+     *  turns PADDLE_ERROR into a thrown {@link PaddleSyncException} instead, so it's
+     *  used internally as a control-flow signal but never actually serialized. */
     public static final class PaddleSyncSkippedReason {
         public static final String NO_PADDLE_CUSTOMER = "NO_PADDLE_CUSTOMER";
         public static final String NO_COMPLETED_TRANSACTION = "NO_COMPLETED_TRANSACTION";

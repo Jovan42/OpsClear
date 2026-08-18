@@ -226,6 +226,8 @@ public final class ErrorMessages {
         public static final String MIXED_UPGRADE_DOWNGRADE_NOT_ALLOWED =
                 "This change both adds something more expensive and removes something cheaper — "
                         + "please save these as two separate changes";
+        public static final String CREDIT_SYNC_FAILED =
+                "Failed to sync this credit to Paddle — the grant was not saved. Please retry.";
 
         private Paddle() {
         }

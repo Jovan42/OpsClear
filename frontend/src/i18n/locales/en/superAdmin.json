@@ -50,8 +50,7 @@
     "syncWarning": {
       "NO_PADDLE_CUSTOMER": "This org has no Paddle customer yet — nothing to sync until they check out at least once.",
       "NO_COMPLETED_TRANSACTION": "This org's Paddle customer has no completed transaction yet — the credit has no invoice to attach to.",
-      "NO_LINE_ITEMS": "Paddle's latest transaction for this org returned no line items — could not attach the credit.",
-      "PADDLE_ERROR": "Paddle sync failed unexpectedly — check the backend logs for this grant."
+      "NO_LINE_ITEMS": "Paddle's latest transaction for this org returned no line items — could not attach the credit."
     }
   }
 }

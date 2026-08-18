@@ -3,6 +3,7 @@ package com.opsclear.service;
 import com.opsclear.dto.GrantCreditRequest;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.exception.PaddleSyncException;
 import com.opsclear.model.OrgCreditModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
@@ -227,8 +228,9 @@ class CreditServiceTest {
     }
 
     @Test
-    @DisplayName("grant still succeeds when the Paddle sync call throws")
-    void grant_shouldStillSucceed_whenPaddleCallThrows() {
+    @DisplayName("grant rolls back (throws PaddleSyncException) when the Paddle sync call throws — "
+            + "unlike the other skip reasons, Paddle genuinely had something to sync against here (JOB-180)")
+    void grant_shouldRollBack_whenPaddleCallThrows() {
         UUID orgId = UUID.randomUUID();
         UUID grantedBy = UUID.randomUUID();
         GrantCreditRequest request = GrantCreditRequest.builder()
@@ -243,11 +245,8 @@ class CreditServiceTest {
         when(paddleClient.findLatestCompletedTransaction("ctm_123"))
                 .thenThrow(new RestClientException("Paddle is unreachable"));
 
-        OrgCreditModel result = creditService.grant(grantedBy, request);
-
-        assertThat(result).isEqualTo(inserted);
-        assertThat(result.getPaddleSyncSkippedReason())
-                .isEqualTo(CreditService.PaddleSyncSkippedReason.PADDLE_ERROR);
+        assertThatThrownBy(() -> creditService.grant(grantedBy, request))
+                .isInstanceOf(PaddleSyncException.class);
     }
 
     // --- getBalance ---

@@ -348,8 +348,9 @@ export interface CreditLedgerEntryResponse {
   grantedByName: string | null;
   createdAt: string;
   /** Only ever set on the response to POST /credits/grant, when the Paddle sync was
-   *  skipped or failed for that grant — one of NO_PADDLE_CUSTOMER,
-   *  NO_COMPLETED_TRANSACTION, NO_LINE_ITEMS, PADDLE_ERROR. */
+   *  skipped for that grant — one of NO_PADDLE_CUSTOMER, NO_COMPLETED_TRANSACTION,
+   *  NO_LINE_ITEMS. A genuine Paddle failure rolls the grant back instead (502) rather
+   *  than reaching this field. */
   paddleSyncSkippedReason: string | null;
 }
 
