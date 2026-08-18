@@ -42,15 +42,14 @@
     "orgLabel": "Organisation",
     "orgPlaceholder": "Select an organisation…",
     "amountLabel": "Amount",
+    "amountHint": "Applied as a one-time discount on the org's next Paddle charge (min. 5). Requires a real, active Paddle subscription — a credit granted before that just sits in the ledger until then.",
     "reasonLabel": "Reason",
     "submitButton": "Grant credit",
     "errorGeneric": "Something went wrong. Please try again.",
     "closeButton": "Close",
     "syncWarningTitle": "Credit recorded, but not reflected in Paddle yet",
     "syncWarning": {
-      "NO_PADDLE_CUSTOMER": "This org has no Paddle customer yet — nothing to sync until they check out at least once.",
-      "NO_COMPLETED_TRANSACTION": "This org's Paddle customer has no completed transaction yet — the credit has no invoice to attach to.",
-      "NO_LINE_ITEMS": "Paddle's latest transaction for this org returned no line items — could not attach the credit."
+      "NO_PADDLE_SUBSCRIPTION": "This org has no real, active Paddle subscription yet — nothing to attach the discount to until they check out."
     }
   }
 }

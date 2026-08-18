@@ -1218,7 +1218,7 @@ class PaddleSubscriptionServiceTest {
         UUID ownerId = UUID.randomUUID();
         List<PaddleTransaction> transactions = List.of(
                 new PaddleTransaction("txn_1", "completed", List.of(), Instant.parse("2026-08-01T00:00:00Z"),
-                        "EUR", new PaddleTransactionDetails(new PaddleTransactionTotals("2900"), List.of())));
+                        "EUR", new PaddleTransactionDetails(new PaddleTransactionTotals("2900"))));
 
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))

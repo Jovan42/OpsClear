@@ -6,7 +6,9 @@ import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.repository.OrgCreditRepository;
+import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,6 +57,8 @@ class CreditGrantRollbackIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private OrgCreditRepository orgCreditRepository;
+    @Autowired private OrgSubscriptionRepository orgSubscriptionRepository;
+    @Autowired private SubscriptionTierRepository tierRepository;
     @MockitoBean private PaddleClient paddleClient;
 
     private UUID superUserId;
@@ -67,6 +72,7 @@ class CreditGrantRollbackIntegrationTest {
         // organisationRepository.deleteAll().
         userRepository.deleteAll();
         orgCreditRepository.deleteAll();
+        orgSubscriptionRepository.deleteAll();
         organisationRepository.deleteAll();
 
         superUserId = UUID.randomUUID();
@@ -79,13 +85,19 @@ class CreditGrantRollbackIntegrationTest {
                 OrganisationModel.builder().name("Test Org").slug("RLB").createdBy(ownerId).build());
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
-        organisationRepository.updatePaddleCustomerId(orgId, "ctm_test_rollback");
+
+        // A real, webhook-confirmed subscription (not just a Paddle customer) is what
+        // syncCreditToPaddle now checks for (JOB-180 — Discounts attach to the
+        // subscription, not the customer).
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        orgSubscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of());
+        orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_rollback", "ACTIVE", null, null);
     }
 
     @Test
     @DisplayName("grantCredit_shouldReturn502AndRollBack_whenPaddleCallFails")
     void grantCredit_shouldReturn502AndRollBack_whenPaddleCallFails() throws Exception {
-        when(paddleClient.findLatestCompletedTransaction(any()))
+        when(paddleClient.createOneTimeDiscount(any(), any(), any()))
                 .thenThrow(new RestClientException("429 Too Many Requests"));
 
         mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)

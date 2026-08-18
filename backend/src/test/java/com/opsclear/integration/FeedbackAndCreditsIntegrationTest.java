@@ -372,15 +372,16 @@ class FeedbackAndCreditsIntegrationTest {
     }
 
     @Test
-    @DisplayName("grantCredit_shouldReturn201_whenPaddleCustomerHasNoCompletedTransactionsYet")
-    void grantCredit_shouldReturn201_whenPaddleCustomerHasNoCompletedTransactionsYet() throws Exception {
-        // Real Paddle sandbox call (ADR-0044) — proves the "customer exists but has
-        // never billed anything" skip branch for real, not mocked. A genuinely
-        // completed Paddle transaction can't be produced in sandbox at all without
-        // real embedded checkout (JOB-178, not built yet — same constraint
+    @DisplayName("grantCredit_shouldReturn201_whenOrgHasNoRealPaddleSubscriptionYet")
+    void grantCredit_shouldReturn201_whenOrgHasNoRealPaddleSubscriptionYet() throws Exception {
+        // Real Paddle sandbox call (ADR-0044) — proves the "Paddle customer exists but
+        // there's no real subscription yet" skip branch for real, not mocked. A
+        // genuine Subscription can't be produced in sandbox at all without real
+        // embedded checkout (JOB-178, not built yet — same constraint
         // JOB-176's PaddleSubscriptionIntegrationTest already documents), so the
-        // "adjustment actually created" branch is covered at the unit level only
-        // (CreditServiceTest), not here.
+        // "discount actually created and attached" branch is covered at the unit
+        // level only (CreditServiceTest) and CreditGrantRollbackIntegrationTest's
+        // mocked PaddleClient, not here.
         //
         // Paddle's sandbox customer data is not reset between runs the way the local
         // DB is, so a literal hardcoded email collides with a customer left over from
@@ -404,9 +405,10 @@ class FeedbackAndCreditsIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("orgId", paddleOrgId, "amount", 500, "reason", "No transactions yet"))))
+                                Map.of("orgId", paddleOrgId, "amount", 500, "reason", "No subscription yet"))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.amount").value(500));
+                .andExpect(jsonPath("$.amount").value(500))
+                .andExpect(jsonPath("$.paddleSyncSkippedReason").value("NO_PADDLE_SUBSCRIPTION"));
     }
 
     @Test
@@ -431,6 +433,17 @@ class FeedbackAndCreditsIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 Map.of("orgId", orgId, "amount", 0, "reason", "Zero credit"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("grantCredit_shouldReturn400_whenAmountBelowMinimum")
+    void grantCredit_shouldReturn400_whenAmountBelowMinimum() throws Exception {
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("orgId", orgId, "amount", 4, "reason", "Too small to bother with"))))
                 .andExpect(status().isBadRequest());
     }
 
