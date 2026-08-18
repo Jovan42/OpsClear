@@ -3,13 +3,15 @@ package com.opsclear.service;
 import com.opsclear.dto.GrantCreditRequest;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.exception.PaddleSyncException;
 import com.opsclear.model.OrgCreditModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.paddle.PaddleAdjustment;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleTransaction;
-import com.opsclear.paddle.PaddleTransactionItem;
+import com.opsclear.paddle.PaddleTransactionDetails;
+import com.opsclear.paddle.PaddleTransactionLineItem;
 import com.opsclear.repository.OrgCreditRepository;
 import com.opsclear.repository.OrganisationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -120,8 +122,10 @@ class CreditServiceTest {
                 .thenReturn(OrgCreditModel.builder().id(UUID.randomUUID()).orgId(orgId).amount(500).build());
         when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.empty());
 
-        creditService.grant(grantedBy, request);
+        OrgCreditModel result = creditService.grant(grantedBy, request);
 
+        assertThat(result.getPaddleSyncSkippedReason())
+                .isEqualTo(CreditService.PaddleSyncSkippedReason.NO_PADDLE_CUSTOMER);
         verify(paddleClient, never()).findLatestCompletedTransaction(any());
         verify(paddleClient, never()).createCreditAdjustment(any(), any(), any(), any());
     }
@@ -141,8 +145,10 @@ class CreditServiceTest {
         when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_123"));
         when(paddleClient.findLatestCompletedTransaction("ctm_123")).thenReturn(Optional.empty());
 
-        creditService.grant(grantedBy, request);
+        OrgCreditModel result = creditService.grant(grantedBy, request);
 
+        assertThat(result.getPaddleSyncSkippedReason())
+                .isEqualTo(CreditService.PaddleSyncSkippedReason.NO_COMPLETED_TRANSACTION);
         verify(paddleClient, never()).createCreditAdjustment(any(), any(), any(), any());
     }
 
@@ -160,20 +166,71 @@ class CreditServiceTest {
         when(orgCreditRepository.insert(orgId, 29, "Great bug report", null, grantedBy)).thenReturn(
                 OrgCreditModel.builder().id(creditId).orgId(orgId).amount(29).reason("Great bug report").build());
         when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_123"));
-        PaddleTransaction transaction = new PaddleTransaction(
-                "txn_123", "completed", List.of(new PaddleTransactionItem("txnitm_123")), null, null, null);
+        PaddleTransactionDetails details = new PaddleTransactionDetails(
+                null, List.of(new PaddleTransactionLineItem("txnitm_123")));
+        PaddleTransaction transaction = new PaddleTransaction("txn_123", "completed", List.of(), null, null, details);
         when(paddleClient.findLatestCompletedTransaction("ctm_123")).thenReturn(Optional.of(transaction));
         when(paddleClient.createCreditAdjustment("txn_123", "txnitm_123", "2900", "Great bug report"))
                 .thenReturn(new PaddleAdjustment("adj_123", true));
 
-        creditService.grant(grantedBy, request);
+        OrgCreditModel result = creditService.grant(grantedBy, request);
 
+        assertThat(result.getPaddleSyncSkippedReason()).isNull();
         verify(paddleClient).createCreditAdjustment("txn_123", "txnitm_123", "2900", "Great bug report");
     }
 
     @Test
-    @DisplayName("grant still succeeds when the Paddle sync call throws")
-    void grant_shouldStillSucceed_whenPaddleCallThrows() {
+    @DisplayName("grant skips Paddle sync when the completed transaction has no line items — "
+            + "the top-level items[] array Paddle echoes back carries no id of its own (JOB-180 NPE fix)")
+    void grant_shouldSkipPaddleSync_whenTransactionHasNoLineItems() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        GrantCreditRequest request = GrantCreditRequest.builder()
+                .orgId(orgId).amount(500).reason("Goodwill").build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
+                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
+        when(orgCreditRepository.insert(orgId, 500, "Goodwill", null, grantedBy))
+                .thenReturn(OrgCreditModel.builder().id(UUID.randomUUID()).orgId(orgId).amount(500).build());
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_123"));
+        PaddleTransaction transaction = new PaddleTransaction(
+                "txn_123", "completed", List.of(), null, null, new PaddleTransactionDetails(null, List.of()));
+        when(paddleClient.findLatestCompletedTransaction("ctm_123")).thenReturn(Optional.of(transaction));
+
+        OrgCreditModel result = creditService.grant(grantedBy, request);
+
+        assertThat(result.getPaddleSyncSkippedReason())
+                .isEqualTo(CreditService.PaddleSyncSkippedReason.NO_LINE_ITEMS);
+        verify(paddleClient, never()).createCreditAdjustment(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("grant skips Paddle sync when the completed transaction has no details object at all")
+    void grant_shouldSkipPaddleSync_whenTransactionHasNoDetails() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        GrantCreditRequest request = GrantCreditRequest.builder()
+                .orgId(orgId).amount(500).reason("Goodwill").build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
+                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
+        when(orgCreditRepository.insert(orgId, 500, "Goodwill", null, grantedBy))
+                .thenReturn(OrgCreditModel.builder().id(UUID.randomUUID()).orgId(orgId).amount(500).build());
+        when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.of("ctm_123"));
+        PaddleTransaction transaction = new PaddleTransaction("txn_123", "completed", List.of(), null, null, null);
+        when(paddleClient.findLatestCompletedTransaction("ctm_123")).thenReturn(Optional.of(transaction));
+
+        OrgCreditModel result = creditService.grant(grantedBy, request);
+
+        assertThat(result.getPaddleSyncSkippedReason())
+                .isEqualTo(CreditService.PaddleSyncSkippedReason.NO_LINE_ITEMS);
+        verify(paddleClient, never()).createCreditAdjustment(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("grant rolls back (throws PaddleSyncException) when the Paddle sync call throws — "
+            + "unlike the other skip reasons, Paddle genuinely had something to sync against here (JOB-180)")
+    void grant_shouldRollBack_whenPaddleCallThrows() {
         UUID orgId = UUID.randomUUID();
         UUID grantedBy = UUID.randomUUID();
         GrantCreditRequest request = GrantCreditRequest.builder()
@@ -188,9 +245,8 @@ class CreditServiceTest {
         when(paddleClient.findLatestCompletedTransaction("ctm_123"))
                 .thenThrow(new RestClientException("Paddle is unreachable"));
 
-        OrgCreditModel result = creditService.grant(grantedBy, request);
-
-        assertThat(result).isEqualTo(inserted);
+        assertThatThrownBy(() -> creditService.grant(grantedBy, request))
+                .isInstanceOf(PaddleSyncException.class);
     }
 
     // --- getBalance ---

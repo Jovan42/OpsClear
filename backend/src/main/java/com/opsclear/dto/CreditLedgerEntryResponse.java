@@ -25,6 +25,9 @@ public class CreditLedgerEntryResponse {
     private UUID grantedBy;
     private String grantedByName;
     private Instant createdAt;
+    // Only ever populated on the response to POST /credits/grant, and only when the
+    // Paddle sync was skipped/failed for that grant — see CreditService.grant().
+    private String paddleSyncSkippedReason;
 
     public static CreditLedgerEntryResponse from(OrgCreditModel model) {
         return CreditLedgerEntryResponse.builder()
@@ -36,6 +39,7 @@ public class CreditLedgerEntryResponse {
                 .grantedBy(model.getGrantedBy())
                 .grantedByName(model.getGrantedByName())
                 .createdAt(model.getCreatedAt())
+                .paddleSyncSkippedReason(model.getPaddleSyncSkippedReason())
                 .build();
     }
 }

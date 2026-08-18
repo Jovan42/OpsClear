@@ -128,6 +128,9 @@ class RecurringScheduleIntegrationTest {
             // Addon not seeded yet — create subscription without it so tests cover the 403 path
             subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of());
         }
+        // JOB-200: RequiresAddonAspect now requires real, webhook-confirmed billing before
+        // honoring the staged addon selection above — simulate that confirmation here.
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
     }
 
     private boolean hasAddon() {

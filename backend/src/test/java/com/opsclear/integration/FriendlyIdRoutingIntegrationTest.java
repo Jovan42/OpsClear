@@ -110,6 +110,7 @@ class FriendlyIdRoutingIntegrationTest {
                 .filter(a -> a.getKey().equals("MILESTONES")).findFirst().orElseThrow().getId();
         UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(milestonesAddonId));
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
     }
 
     // --- project resolution ---

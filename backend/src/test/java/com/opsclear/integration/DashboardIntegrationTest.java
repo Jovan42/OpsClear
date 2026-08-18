@@ -111,6 +111,7 @@ class DashboardIntegrationTest {
                 .filter(a -> a.getKey().equals("DASHBOARD")).findFirst().orElseThrow().getId();
         UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(dashboardAddonId));
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
     }
 
     private JobModel saveJob(String title, JobStatus status, UUID assignedTo) {

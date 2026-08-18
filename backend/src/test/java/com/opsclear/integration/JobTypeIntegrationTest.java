@@ -106,6 +106,7 @@ class JobTypeIntegrationTest {
                 .filter(a -> a.getKey().equals("JOB_TYPES")).findFirst().orElseThrow().getId();
         UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(jobTypesAddonId));
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
     }
 
     // --- POST /api/projects/{projectId}/job-types ---

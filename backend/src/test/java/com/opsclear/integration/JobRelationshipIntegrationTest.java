@@ -109,6 +109,7 @@ class JobRelationshipIntegrationTest {
                 .filter(a -> a.getKey().equals("JOB_RELATIONSHIPS")).findFirst().orElseThrow().getId();
         UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(relationshipsAddonId));
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
     }
 
     // --- POST /api/projects/{projectId}/jobs/{jobId}/relationships ---

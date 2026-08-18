@@ -24,4 +24,10 @@ public class OrgCreditModel {
     private UUID grantedBy;
     private String grantedByName;
     private Instant createdAt;
+
+    // Not persisted — set only on the object returned from CreditService.grant() when
+    // the Paddle sync was skipped (JOB-180 #2), so the super admin console can warn the
+    // caller immediately instead of the failure being silent/log-only. Ledger reads
+    // (getLedger) never populate this — it's a one-shot signal for the grant response.
+    private String paddleSyncSkippedReason;
 }

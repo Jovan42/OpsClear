@@ -211,6 +211,19 @@ public class OrgSubscriptionRepository {
                         .and(ORG_SUBSCRIPTIONS.IS_INTERNAL.isTrue()));
     }
 
+    // Mirrors the frontend's hasRealPaddleBilling(): a real, currently-billed
+    // subscription exists once Paddle has confirmed one via webhook and it hasn't
+    // been canceled — as opposed to just a staged tier_id/addons selection.
+    public boolean hasRealBilling(UUID orgId) {
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(ORG_SUBSCRIPTIONS)
+                        .where(ORG_SUBSCRIPTIONS.ORG_ID.eq(orgId))
+                        .and(ORG_SUBSCRIPTIONS.PADDLE_SUBSCRIPTION_ID.isNotNull())
+                        .and(ORG_SUBSCRIPTIONS.SUBSCRIPTION_STATUS.isNotNull())
+                        .and(ORG_SUBSCRIPTIONS.SUBSCRIPTION_STATUS.ne("CANCELED")));
+    }
+
     public boolean hasAddon(UUID orgId, String addonKey) {
         return dsl.fetchExists(
                 dsl.selectOne()

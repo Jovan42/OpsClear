@@ -100,6 +100,7 @@ class ApiKeyIntegrationTest {
                 .filter(a -> a.getKey().equals("API_KEYS")).findFirst().orElseThrow().getId();
         UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(org.getId(), tierId, "MONTHLY", Set.of(apiKeysAddonId));
+        subscriptionRepository.updateFromPaddleWebhook(org.getId(), "sub_test_" + org.getId(), "ACTIVE", null, null);
     }
 
     // --- POST /api/user/api-keys ---

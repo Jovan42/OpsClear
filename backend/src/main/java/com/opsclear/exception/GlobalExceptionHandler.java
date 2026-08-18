@@ -37,6 +37,12 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("Bad Request", ex.getMessage()));
     }
 
+    @ExceptionHandler(PaddleSyncException.class)
+    public ResponseEntity<ErrorResponse> handlePaddleSync(PaddleSyncException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ErrorResponse.of("Bad Gateway", ex.getMessage()));
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
         String message = ex.getConstraintViolations().stream()

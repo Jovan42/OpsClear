@@ -88,9 +88,10 @@ class AddonGatingIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 200 when DASHBOARD add-on is active")
+    @DisplayName("Should return 200 when DASHBOARD add-on is active and billing is real")
     void dashboardGet_shouldReturn200_whenAddonActive() throws Exception {
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(dashboardAddonId));
+        markRealBilling();
 
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
@@ -101,6 +102,7 @@ class AddonGatingIntegrationTest {
     @DisplayName("Should return 403 when DASHBOARD add-on is not in subscription")
     void dashboardGet_shouldReturn403_whenAddonNotActive() throws Exception {
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(notesAddonId));
+        markRealBilling();
 
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
@@ -110,6 +112,17 @@ class AddonGatingIntegrationTest {
     @Test
     @DisplayName("Should return 403 when org has no subscription")
     void dashboardGet_shouldReturn403_whenNoSubscription() throws Exception {
+        mockMvc.perform(get(ApiPaths.dashboard(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("JOB-200/JOB-180: should return 403 when DASHBOARD add-on is staged but the org has no "
+            + "real, webhook-confirmed Paddle billing yet — a staged selection alone must never grant access")
+    void dashboardGet_shouldReturn403_whenAddonStagedButNoRealBilling() throws Exception {
+        subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(dashboardAddonId));
+
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
                 .andExpect(status().isForbidden());
@@ -127,5 +140,9 @@ class AddonGatingIntegrationTest {
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
                 .andExpect(status().isOk());
+    }
+
+    private void markRealBilling() {
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
     }
 }

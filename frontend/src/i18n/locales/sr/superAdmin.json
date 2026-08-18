@@ -44,6 +44,13 @@
     "amountLabel": "Iznos",
     "reasonLabel": "Razlog",
     "submitButton": "Odobri kredit",
-    "errorGeneric": "Nešto nije u redu. Pokušajte ponovo."
+    "errorGeneric": "Nešto nije u redu. Pokušajte ponovo.",
+    "closeButton": "Zatvori",
+    "syncWarningTitle": "Kredit je zabeležen, ali još nije odražen u Paddle-u",
+    "syncWarning": {
+      "NO_PADDLE_CUSTOMER": "Ova organizacija još nema Paddle kupca — nema šta da se sinhronizuje dok se bar jednom ne izvrši plaćanje.",
+      "NO_COMPLETED_TRANSACTION": "Paddle kupac ove organizacije nema nijednu završenu transakciju — kredit nema fakturu na koju bi se prikačio.",
+      "NO_LINE_ITEMS": "Poslednja Paddle transakcija za ovu organizaciju nema stavke — kredit nije mogao biti prikačen."
+    }
   }
 }
