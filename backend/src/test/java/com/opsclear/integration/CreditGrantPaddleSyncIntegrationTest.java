@@ -5,6 +5,8 @@ import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
+import com.opsclear.paddle.PaddleDiscount;
+import com.opsclear.paddle.PaddleSubscription;
 import com.opsclear.repository.OrgCreditRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -29,6 +31,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -38,18 +41,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Isolated from {@link FeedbackAndCreditsIntegrationTest} deliberately: this is the
- * one credit-grant scenario in the suite that mocks {@link PaddleClient} rather than
- * hitting the real sandbox (JOB-180) — a genuine Paddle transport failure can't be
- * produced on demand against a real API, and this is also the only way to prove the
- * transaction actually rolls back end-to-end (a real DB, not a Mockito assertion that
- * an exception was merely thrown). Sharing a class with the real-sandbox tests would
+ * credit-grant Paddle-sync scenario in the suite that mocks {@link PaddleClient}
+ * rather than hitting the real sandbox (JOB-180) — a genuine Paddle transport failure
+ * can't be produced on demand against a real API, and mocking is the only way to prove
+ * the transaction actually rolls back end-to-end (a real DB, not a Mockito assertion
+ * that an exception was merely thrown) or that the success path calls both Paddle
+ * methods with the right arguments. Sharing a class with the real-sandbox tests would
  * mean this mock leaks into them too, so it gets its own Spring context instead.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@DisplayName("Credit grant — rollback on a genuine Paddle sync failure")
-class CreditGrantRollbackIntegrationTest {
+@DisplayName("Credit grant — Paddle discount sync (mocked PaddleClient)")
+class CreditGrantPaddleSyncIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -109,5 +113,27 @@ class CreditGrantRollbackIntegrationTest {
                 .andExpect(jsonPath("$.error").value("Bad Gateway"));
 
         assertThat(orgCreditRepository.findByOrgId(orgId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("grantCredit_shouldReturn201_andAttachDiscount_whenPaddleSyncSucceeds")
+    void grantCredit_shouldReturn201_andAttachDiscount_whenPaddleSyncSucceeds() throws Exception {
+        when(paddleClient.createOneTimeDiscount("2900", "EUR", "OpsClear credit: Great bug report"))
+                .thenReturn(new PaddleDiscount("dsc_test_123"));
+        when(paddleClient.attachDiscountToSubscription("sub_test_rollback", "dsc_test_123"))
+                .thenReturn(new PaddleSubscription("sub_test_rollback", "active", "ctm_test", null));
+
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("orgId", orgId, "amount", 29, "reason", "Great bug report"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.amount").value(29))
+                .andExpect(jsonPath("$.paddleSyncSkippedReason").doesNotExist());
+
+        verify(paddleClient).createOneTimeDiscount("2900", "EUR", "OpsClear credit: Great bug report");
+        verify(paddleClient).attachDiscountToSubscription("sub_test_rollback", "dsc_test_123");
+        assertThat(orgCreditRepository.findByOrgId(orgId)).hasSize(1);
     }
 }

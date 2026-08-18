@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.paddle.PaddleClient;
+import com.opsclear.paddle.PaddlePrice;
+import com.opsclear.paddle.PaddleProduct;
 import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
@@ -16,12 +19,16 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,6 +36,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Mocks {@link PaddleClient} (JOB-180) — this class used to hit Paddle's real sandbox
+ * on every price update and especially on {@code syncCatalog} (up to ~46 products +
+ * ~92 prices in one test run, since it syncs every unsynced tier/addon), which was a
+ * major source of Cloudflare rate-limit failures when the suite ran repeatedly.
+ * {@code createProduct}/{@code createPrice} return a fresh unique id per call so the
+ * "second update replaces the price but reuses the product" assertions still hold
+ * (the service itself only calls {@code createProduct} once a tier already has one).
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -41,6 +57,7 @@ class SuperAdminPricingIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private SubscriptionAddonRepository addonRepository;
+    @MockitoBean private PaddleClient paddleClient;
 
     private UUID superUserId;
     private UUID regularUserId;
@@ -57,6 +74,11 @@ class SuperAdminPricingIntegrationTest {
         dsl.update(USERS).set(USERS.SUPER_USER, true).where(USERS.ID.eq(superUserId)).execute();
 
         tierId = tierRepository.findAll().getFirst().getId();
+
+        when(paddleClient.createProduct(any()))
+                .thenAnswer(inv -> new PaddleProduct("pro_" + UUID.randomUUID(), inv.getArgument(0)));
+        when(paddleClient.createPrice(any(), any(), any(), any(), any()))
+                .thenAnswer(inv -> new PaddlePrice("pri_" + UUID.randomUUID(), "active"));
     }
 
     // --- GET /api/super-admin/pricing/tiers ---
@@ -259,6 +281,9 @@ class SuperAdminPricingIntegrationTest {
         assertThat(secondSync.getPaddleProductId()).isEqualTo(firstSync.getPaddleProductId());
         assertThat(secondSync.getPaddlePriceIdMonthly()).isNotEqualTo(firstSync.getPaddlePriceIdMonthly());
         assertThat(secondSync.getPaddlePriceIdAnnual()).isNotEqualTo(firstSync.getPaddlePriceIdAnnual());
+        // The old monthly + annual prices from the first sync must be archived, not left dangling.
+        verify(paddleClient).archivePrice(firstSync.getPaddlePriceIdMonthly());
+        verify(paddleClient).archivePrice(firstSync.getPaddlePriceIdAnnual());
     }
 
     @Test
