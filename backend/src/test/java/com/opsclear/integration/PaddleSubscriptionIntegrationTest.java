@@ -5,8 +5,12 @@ import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleCustomer;
+import com.opsclear.paddle.PaddlePreviewImmediateTransaction;
+import com.opsclear.paddle.PaddlePreviewTransactionDetails;
+import com.opsclear.paddle.PaddlePreviewTotals;
 import com.opsclear.paddle.PaddlePrice;
 import com.opsclear.paddle.PaddleProduct;
+import com.opsclear.paddle.PaddleSubscriptionPreview;
 import com.opsclear.paddle.PaddleTransaction;
 import com.opsclear.paddle.PaddleTransactionDetails;
 import com.opsclear.paddle.PaddleTransactionTotals;
@@ -20,6 +24,7 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -497,6 +502,33 @@ class PaddleSubscriptionIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
                 .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @DisplayName("preview_shouldSurfaceCreditApplied_whenPaddlePreviewIncludesADiscount")
+    void preview_shouldSurfaceCreditApplied_whenPaddlePreviewIncludesADiscount() throws Exception {
+        givenOrgHasSubscriptionRecord();
+        givenOrgHasFakePaddleSubscriptionId();
+        paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
+
+        // doReturn, not when(...).thenReturn(...): the default setUp() stub for this
+        // same method throws, and when(mock.method()) evaluates that stubbed call
+        // before attaching the new one — doReturn skips invoking the mock entirely.
+        Mockito.doReturn(new PaddleSubscriptionPreview(
+                        null,
+                        new PaddlePreviewImmediateTransaction(
+                                new PaddlePreviewTransactionDetails(
+                                        new PaddlePreviewTotals("1250", "10000", "EUR")))))
+                .when(paddleClient).previewUpdateSubscriptionItems(any(), any(), any());
+
+        mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("tierId", tierId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.immediateChargeAmount").value(12))
+                .andExpect(jsonPath("$.creditApplied").value(100))
+                .andExpect(jsonPath("$.currency").value("EUR"));
     }
 
     @Test
