@@ -300,6 +300,47 @@ class CreditServiceTest {
     }
 
     @Test
+    @DisplayName("consumeCredit still debits the full amount but skips the re-sync when the org has no Paddle "
+            + "subscription to carry the leftover forward to")
+    void consumeCredit_shouldSkipCarryForward_whenOrgHasNoPaddleSubscription() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        OrgCreditModel grant = OrgCreditModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).amount(15).grantedBy(grantedBy).build();
+
+        when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_123")).thenReturn(false);
+        when(orgCreditRepository.findGrantsByPaddleDiscountId("dsc_123")).thenReturn(List.of(grant));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+
+        creditService.consumeCredit("dsc_123", 8);
+
+        verify(orgCreditRepository).insertDebit(orgId, -15, "Consumed via Paddle transaction", grantedBy, "dsc_123");
+        verify(paddleClient, never()).createOneTimeDiscount(any(), any(), any());
+        verify(orgCreditRepository, never()).insert(any(), anyInt(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("consumeCredit still debits the full amount even when re-syncing the leftover to Paddle fails")
+    void consumeCredit_shouldStillDebit_whenCarryForwardPaddleCallThrows() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        OrgCreditModel grant = OrgCreditModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).amount(15).grantedBy(grantedBy).build();
+
+        when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_123")).thenReturn(false);
+        when(orgCreditRepository.findGrantsByPaddleDiscountId("dsc_123")).thenReturn(List.of(grant));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(
+                OrgSubscriptionModel.builder().orgId(orgId).paddleSubscriptionId("sub_123").build()));
+        when(paddleClient.createOneTimeDiscount(any(), any(), any()))
+                .thenThrow(new RestClientException("Paddle is unreachable"));
+
+        creditService.consumeCredit("dsc_123", 8);
+
+        verify(orgCreditRepository).insertDebit(orgId, -15, "Consumed via Paddle transaction", grantedBy, "dsc_123");
+        verify(orgCreditRepository, never()).insert(any(), anyInt(), any(), any(), any());
+    }
+
+    @Test
     @DisplayName("consumeCredit is a no-op when a debit for this discount id already exists (webhook redelivery)")
     void consumeCredit_shouldBeNoOp_whenAlreadyDebited() {
         when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_123")).thenReturn(true);

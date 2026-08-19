@@ -521,6 +521,45 @@ class PaddleWebhookServiceTest {
     }
 
     @Test
+    @DisplayName("handle parses the transaction's own totals.discount into whole currency units for consumeCredit")
+    void handle_shouldParseAppliedDiscountAmount_fromTransactionTotals() {
+        String body = "{\"event_id\":\"evt_2\",\"event_type\":\"transaction.completed\","
+                + "\"data\":{\"id\":\"txn_456\",\"subscription_id\":\"sub_123\",\"discount_id\":\"dsc_789\","
+                + "\"details\":{\"totals\":{\"total\":\"0\",\"discount\":\"800\",\"currency_code\":\"EUR\"}}}}";
+        String header = signatureHeader(body, SECRET);
+
+        service.handle(header, body);
+
+        verify(creditService).consumeCredit("dsc_789", 8);
+    }
+
+    @Test
+    @DisplayName("handle treats a present-but-null totals.discount as unknown (null)")
+    void handle_shouldTreatNullTotalsDiscount_asUnknown() {
+        String body = "{\"event_id\":\"evt_2\",\"event_type\":\"transaction.completed\","
+                + "\"data\":{\"id\":\"txn_456\",\"subscription_id\":\"sub_123\",\"discount_id\":\"dsc_789\","
+                + "\"details\":{\"totals\":{\"total\":\"0\",\"discount\":null,\"currency_code\":\"EUR\"}}}}";
+        String header = signatureHeader(body, SECRET);
+
+        service.handle(header, body);
+
+        verify(creditService).consumeCredit("dsc_789", null);
+    }
+
+    @Test
+    @DisplayName("handle treats an unparseable totals.discount as unknown (null), not a thrown exception")
+    void handle_shouldTreatUnparseableAppliedDiscountAmount_asNull() {
+        String body = "{\"event_id\":\"evt_2\",\"event_type\":\"transaction.completed\","
+                + "\"data\":{\"id\":\"txn_456\",\"subscription_id\":\"sub_123\",\"discount_id\":\"dsc_789\","
+                + "\"details\":{\"totals\":{\"total\":\"0\",\"discount\":\"not-a-number\",\"currency_code\":\"EUR\"}}}}";
+        String header = signatureHeader(body, SECRET);
+
+        service.handle(header, body);
+
+        verify(creditService).consumeCredit("dsc_789", null);
+    }
+
+    @Test
     @DisplayName("handle ignores a transaction.completed event that has a discount_id but no subscription_id "
             + "(a non-subscription transaction) — nothing to detach it from")
     void handle_shouldIgnore_transactionCompletedWithNoSubscriptionId() {

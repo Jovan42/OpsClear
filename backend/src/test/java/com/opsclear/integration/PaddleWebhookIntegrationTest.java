@@ -29,6 +29,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestClientException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -549,6 +550,27 @@ class PaddleWebhookIntegrationTest {
         assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(7);
         verify(paddleClient, times(2)).createOneTimeDiscount(any(), any(), any());
         verify(paddleClient, times(2)).attachDiscountToSubscription(eq(subscriptionId), any());
+    }
+
+    @Test
+    @DisplayName("transaction.completed still debits the full amount even when re-syncing the leftover to "
+            + "Paddle fails — the debit reflects that the old discount really was consumed, independent of "
+            + "whether the leftover could be re-attached")
+    void webhook_shouldStillDebitFullAmount_whenCarryForwardPaddleCallFails() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        when(paddleClient.createOneTimeDiscount(any(), any(), any()))
+                .thenReturn(new PaddleDiscount("dsc_initial"))
+                .thenThrow(new RestClientException("Paddle is unreachable"));
+
+        creditService.grant(ownerId, GrantCreditRequest.builder()
+                .orgId(orgId).amount(15).reason("Test grant").build());
+        assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(15);
+
+        String body = transactionCompletedEventBody(subscriptionId, "dsc_initial", "800");
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(0);
     }
 
     // --- helpers ---
