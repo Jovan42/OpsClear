@@ -183,7 +183,12 @@ public class PaddleClient {
     // drops the first one. Not yet solved (JOB-180) — flagged as a known limitation
     // pending live sandbox verification of how Paddle actually behaves here.
     public PaddleSubscription attachDiscountToSubscription(String subscriptionId, String discountId) {
-        Map<String, Object> body = Map.of("discount", Map.of("id", discountId));
+        // effective_from is required alongside id — confirmed via a real sandbox 400
+        // ("effective_from is required") the first time this shipped. "immediately"
+        // matches the intent (apply to whatever transaction comes next for the
+        // subscription, not deferred to the following renewal specifically).
+        Map<String, Object> body = Map.of(
+                "discount", Map.of("id", discountId, "effective_from", "immediately"));
         PaddleEnvelope<PaddleSubscription> response = restClient.patch()
                 .uri("/subscriptions/{id}", subscriptionId)
                 .body(body)

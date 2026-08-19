@@ -256,6 +256,7 @@ class PaddleClientTest {
         server.expect(requestTo(BASE_URL + "/subscriptions/sub_123"))
                 .andExpect(method(HttpMethod.PATCH))
                 .andExpect(jsonPath("$.discount.id").value("dsc_123"))
+                .andExpect(jsonPath("$.discount.effective_from").value("immediately"))
                 .andRespond(withSuccess(
                         """
                         {"data": {"id": "sub_123", "status": "active"}}
