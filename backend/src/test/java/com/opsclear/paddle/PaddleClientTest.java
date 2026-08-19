@@ -230,7 +230,7 @@ class PaddleClientTest {
     }
 
     @Test
-    @DisplayName("createOneTimeDiscount posts a non-recurring, checkout-disabled flat discount and maps the response")
+    @DisplayName("createOneTimeDiscount posts a checkout-disabled flat discount capped to one recurring interval")
     void createOneTimeDiscount_shouldPostBody_andMapResponse() {
         server.expect(requestTo(BASE_URL + "/discounts"))
                 .andExpect(method(HttpMethod.POST))
@@ -238,7 +238,8 @@ class PaddleClientTest {
                 .andExpect(jsonPath("$.amount").value("2900"))
                 .andExpect(jsonPath("$.currency_code").value("EUR"))
                 .andExpect(jsonPath("$.enabled_for_checkout").value(false))
-                .andExpect(jsonPath("$.recur").value(false))
+                .andExpect(jsonPath("$.recur").value(true))
+                .andExpect(jsonPath("$.maximum_recurring_intervals").value(1))
                 .andRespond(withSuccess(
                         """
                         {"data": {"id": "dsc_123"}}
