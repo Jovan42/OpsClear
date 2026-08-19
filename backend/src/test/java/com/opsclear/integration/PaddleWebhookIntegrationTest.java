@@ -40,6 +40,8 @@ import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -470,6 +472,31 @@ class PaddleWebhookIntegrationTest {
         assertPersistedStatus(subscriptionId, "ACTIVE");
     }
 
+    @Test
+    @DisplayName("transaction.completed with a discount detaches it from the subscription")
+    void webhook_shouldDetachDiscount_whenTransactionCompletedUsedOne() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String discountId = "dsc_" + UUID.randomUUID();
+
+        String body = transactionCompletedEventBody(subscriptionId, discountId);
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        verify(paddleClient).removeDiscountFromSubscription(subscriptionId);
+    }
+
+    @Test
+    @DisplayName("transaction.completed with no discount is a no-op")
+    void webhook_shouldIgnore_transactionCompletedWithNoDiscount() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+
+        String body = transactionCompletedEventBody(subscriptionId, null);
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        verify(paddleClient, never()).removeDiscountFromSubscription(any());
+    }
+
     // --- helpers ---
 
     private String givenExistingPaddleSubscription(String status) {
@@ -530,6 +557,13 @@ class PaddleWebhookIntegrationTest {
                 + "\"data\":{\"id\":\"" + subscriptionId + "\",\"customer_id\":\"" + customerId + "\","
                 + "\"status\":\"" + status + "\",\"scheduled_change\":{\"action\":\"" + scheduledAction
                 + "\",\"effective_at\":\"" + effectiveAt + "\",\"resume_at\":null}}}";
+    }
+
+    private String transactionCompletedEventBody(String subscriptionId, String discountId) {
+        String discountField = discountId == null ? "null" : "\"" + discountId + "\"";
+        return "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"transaction.completed\","
+                + "\"data\":{\"id\":\"txn_" + UUID.randomUUID() + "\",\"subscription_id\":\"" + subscriptionId
+                + "\",\"discount_id\":" + discountField + "}}";
     }
 
     private static String signatureHeader(String body, String secret) {

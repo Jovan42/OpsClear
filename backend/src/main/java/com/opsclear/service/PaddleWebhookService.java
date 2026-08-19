@@ -5,9 +5,11 @@ import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.model.OrgSubscriptionModel;
 import com.opsclear.model.SubscriptionTierModel;
+import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleWebhookEvent;
 import com.opsclear.paddle.PaddleWebhookScheduledChange;
 import com.opsclear.paddle.PaddleWebhookSubscriptionItem;
+import com.opsclear.paddle.PaddleWebhookTransactionEvent;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -42,12 +44,23 @@ import java.util.UUID;
  * <p>Paddle's {@code transaction.payment_failed} event carries no field
  * distinguishing an individual retry attempt from the terminal failure after
  * retries are exhausted (confirmed against Paddle's current docs) — so this service
- * doesn't act on transaction events at all. Instead, {@code subscription.*} events
+ * doesn't act on that event. Instead, {@code subscription.*} events
  * (created/activated/updated/canceled/past_due) are the sole source of truth for
  * {@code subscription_status}: each one carries the subscription's full current
  * state, and Paddle itself is what decides when dunning has actually reached a
  * terminal outcome before sending {@code past_due} or {@code canceled} — this
  * service just mirrors whatever Paddle reports, never infers it.
+ *
+ * <p>{@code transaction.completed} is handled, though (JOB-180): a one-time credit
+ * discount turned out to not actually be transaction-scoped in Paddle's own model —
+ * confirmed via real sandbox data that it applies to every transaction within the
+ * same billing period, not just the first, no matter how {@code recur}/
+ * {@code maximum_recurring_intervals}/{@code usage_limit} are set. As soon as a
+ * completed transaction reports it used a discount, this detaches that discount from
+ * the subscription immediately, so no second transaction in the same period can
+ * catch it too. Every subscription-level discount in this app comes from exactly one
+ * mechanism ({@code CreditService}), so detaching unconditionally on any
+ * discount-bearing completed transaction is safe — there's nothing else it could be.
  *
  * <p>JOB-200: every tier/add-on has a real price, so the org's very first
  * org_subscriptions row (tier_id is NOT NULL) is only ever created here, once
@@ -73,6 +86,7 @@ public class PaddleWebhookService {
             "subscription.updated",
             "subscription.canceled",
             "subscription.past_due");
+    private static final String TRANSACTION_COMPLETED_EVENT_TYPE = "transaction.completed";
 
     // paused has no equivalent in our subscription_status CHECK (ACTIVE/PAST_DUE/
     // CANCELED only, see V032) - a paused Paddle subscription still means "this org
@@ -94,6 +108,7 @@ public class PaddleWebhookService {
     private final OrgSubscriptionRepository orgSubscriptionRepository;
     private final SubscriptionTierRepository tierRepository;
     private final SubscriptionAddonRepository addonRepository;
+    private final PaddleClient paddleClient;
     private final String webhookSecret;
 
     public PaddleWebhookService(ObjectMapper objectMapper,
@@ -101,12 +116,14 @@ public class PaddleWebhookService {
                                  OrgSubscriptionRepository orgSubscriptionRepository,
                                  SubscriptionTierRepository tierRepository,
                                  SubscriptionAddonRepository addonRepository,
+                                 PaddleClient paddleClient,
                                  @Value("${paddle.webhook-secret}") String webhookSecret) {
         this.objectMapper = objectMapper;
         this.organisationRepository = organisationRepository;
         this.orgSubscriptionRepository = orgSubscriptionRepository;
         this.tierRepository = tierRepository;
         this.addonRepository = addonRepository;
+        this.paddleClient = paddleClient;
         this.webhookSecret = webhookSecret;
     }
 
@@ -114,6 +131,11 @@ public class PaddleWebhookService {
     public void handle(String signatureHeader, String rawBody) {
         requireValidSignature(signatureHeader, rawBody);
         PaddleWebhookEvent event = parse(rawBody);
+
+        if (TRANSACTION_COMPLETED_EVENT_TYPE.equals(event.eventType())) {
+            handleTransactionCompleted(rawBody, event.eventId());
+            return;
+        }
 
         if (!SUBSCRIPTION_EVENT_TYPES.contains(event.eventType())) {
             log.info("Ignoring Paddle event {} of type {} — not a subscription status event",
@@ -196,6 +218,30 @@ public class PaddleWebhookService {
                 event.data().id(), localStatus, scheduledCancellationAt, currentPeriodStartsAt);
         log.info("Created org_subscriptions row for org {} from Paddle event {} ({}): tier={}, addons={}",
                 orgId, event.eventId(), event.eventType(), tier.getId(), addonIds.size());
+    }
+
+    // Detaches a one-time credit discount the moment it's actually consumed — see the
+    // class-level note on why this is needed and why detaching unconditionally is safe.
+    private void handleTransactionCompleted(String rawBody, String eventId) {
+        PaddleWebhookTransactionEvent txnEvent = parseTransactionEvent(rawBody);
+        String discountId = txnEvent.data().discountId();
+        String subscriptionId = txnEvent.data().subscriptionId();
+        if (discountId == null || subscriptionId == null) {
+            log.debug("Paddle event {} (transaction.completed) used no discount — nothing to detach", eventId);
+            return;
+        }
+
+        paddleClient.removeDiscountFromSubscription(subscriptionId);
+        log.info("Detached consumed one-time discount {} from Paddle subscription {} (event {})",
+                discountId, subscriptionId, eventId);
+    }
+
+    private PaddleWebhookTransactionEvent parseTransactionEvent(String rawBody) {
+        try {
+            return objectMapper.readValue(rawBody, PaddleWebhookTransactionEvent.class);
+        } catch (Exception e) {
+            throw new ForbiddenException(ErrorMessages.Paddle.INVALID_WEBHOOK_SIGNATURE);
+        }
     }
 
     // null both when nothing is scheduled and when something other than a

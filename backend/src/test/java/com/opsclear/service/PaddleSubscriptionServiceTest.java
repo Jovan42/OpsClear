@@ -634,15 +634,50 @@ class PaddleSubscriptionServiceTest {
                 .thenReturn(new PaddleSubscriptionPreview(
                         null,
                         new PaddlePreviewImmediateTransaction(
-                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("1250", "EUR")))));
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("1250", null, "EUR")))));
 
         PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
 
         assertThat(result.isUpgrade()).isTrue();
         assertThat(result.getImmediateChargeAmount()).isEqualTo(12);
+        assertThat(result.getCreditApplied()).isNull();
         assertThat(result.getCurrency()).isEqualTo("EUR");
         assertThat(result.getEffectiveAt()).isNull();
         verify(paddleClient, never()).updateSubscriptionItems(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("previewUpdateSubscriptionItems surfaces how much of the charge an attached credit covered "
+            + "(JOB-180) — Paddle already nets it into the total, this just calls it out separately")
+    void previewUpdateSubscriptionItems_shouldSurfaceCreditApplied_whenPaddlePreviewIncludesADiscount() {
+        UUID orgId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        UUID currentTierId = UUID.randomUUID();
+        UUID tierId = UUID.randomUUID();
+
+        OrgSubscriptionModel subscription = OrgSubscriptionModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).isInternal(false).tierId(currentTierId).addonIds(List.of())
+                .paddleSubscriptionId("sub_123").billingCycle("MONTHLY").build();
+        UpdatePaddleSubscriptionRequest request = UpdatePaddleSubscriptionRequest.builder()
+                .tierId(tierId).addonIds(Set.of()).build();
+
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(subscription));
+        when(tierRepository.findById(currentTierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(currentTierId).priceMonthly(10).build()));
+        when(tierRepository.findById(tierId))
+                .thenReturn(Optional.of(SubscriptionTierModel.builder().id(tierId).priceMonthly(30).build()));
+        when(priceResolver.resolveTierPriceId(tierId, "MONTHLY")).thenReturn("pri_tier");
+        when(paddleClient.previewUpdateSubscriptionItems(eq("sub_123"), any(), eq("prorated_immediately")))
+                .thenReturn(new PaddleSubscriptionPreview(
+                        null,
+                        new PaddlePreviewImmediateTransaction(
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("1250", "10000", "EUR")))));
+
+        PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
+
+        assertThat(result.getImmediateChargeAmount()).isEqualTo(12);
+        assertThat(result.getCreditApplied()).isEqualTo(100);
     }
 
     @Test
@@ -801,7 +836,7 @@ class PaddleSubscriptionServiceTest {
                 .thenReturn(new PaddleSubscriptionPreview(
                         null,
                         new PaddlePreviewImmediateTransaction(
-                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("2000", "EUR")))));
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("2000", null, "EUR")))));
 
         PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
 
@@ -841,7 +876,7 @@ class PaddleSubscriptionServiceTest {
                 .thenReturn(new PaddleSubscriptionPreview(
                         null,
                         new PaddlePreviewImmediateTransaction(
-                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("1500", "EUR")))));
+                                new PaddlePreviewTransactionDetails(new PaddlePreviewTotals("1500", null, "EUR")))));
 
         PreviewSubscriptionUpdateResponse result = service.previewUpdateSubscriptionItems(orgId, ownerId, request);
 

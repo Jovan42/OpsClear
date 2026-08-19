@@ -6,6 +6,7 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.model.OrgSubscriptionModel;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
+import com.opsclear.paddle.PaddleClient;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -50,6 +51,7 @@ class PaddleWebhookServiceTest {
     @Mock private OrgSubscriptionRepository orgSubscriptionRepository;
     @Mock private SubscriptionTierRepository tierRepository;
     @Mock private SubscriptionAddonRepository addonRepository;
+    @Mock private PaddleClient paddleClient;
 
     private PaddleWebhookService service;
     private UUID orgId;
@@ -65,7 +67,7 @@ class PaddleWebhookServiceTest {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         service = new PaddleWebhookService(
                 objectMapper, organisationRepository, orgSubscriptionRepository, tierRepository, addonRepository,
-                SECRET);
+                paddleClient, SECRET);
         orgId = UUID.randomUUID();
     }
 
@@ -488,15 +490,44 @@ class PaddleWebhookServiceTest {
     }
 
     @Test
-    @DisplayName("handle ignores transaction.completed without mutating subscription status")
-    void handle_shouldIgnore_transactionCompleted() {
+    @DisplayName("handle ignores transaction.completed with no discount_id — nothing to detach, and it never "
+            + "mutates subscription status either way")
+    void handle_shouldIgnore_transactionCompletedWithNoDiscount() {
         String body = "{\"event_id\":\"evt_2\",\"event_type\":\"transaction.completed\","
-                + "\"data\":{\"id\":\"txn_456\"}}";
+                + "\"data\":{\"id\":\"txn_456\",\"subscription_id\":\"sub_123\"}}";
         String header = signatureHeader(body, SECRET);
 
         service.handle(header, body);
 
+        verify(paddleClient, never()).removeDiscountFromSubscription(any());
         verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("handle detaches the discount from the subscription once a transaction.completed event "
+            + "reports it was actually consumed (JOB-180 — Paddle applies a discount to every transaction in "
+            + "the same billing period otherwise, not just the first)")
+    void handle_shouldDetachDiscount_whenTransactionCompletedUsedOne() {
+        String body = "{\"event_id\":\"evt_2\",\"event_type\":\"transaction.completed\","
+                + "\"data\":{\"id\":\"txn_456\",\"subscription_id\":\"sub_123\",\"discount_id\":\"dsc_789\"}}";
+        String header = signatureHeader(body, SECRET);
+
+        service.handle(header, body);
+
+        verify(paddleClient).removeDiscountFromSubscription("sub_123");
+    }
+
+    @Test
+    @DisplayName("handle ignores a transaction.completed event that has a discount_id but no subscription_id "
+            + "(a non-subscription transaction) — nothing to detach it from")
+    void handle_shouldIgnore_transactionCompletedWithNoSubscriptionId() {
+        String body = "{\"event_id\":\"evt_2\",\"event_type\":\"transaction.completed\","
+                + "\"data\":{\"id\":\"txn_456\",\"discount_id\":\"dsc_789\"}}";
+        String header = signatureHeader(body, SECRET);
+
+        service.handle(header, body);
+
+        verify(paddleClient, never()).removeDiscountFromSubscription(any());
     }
 
     @Test

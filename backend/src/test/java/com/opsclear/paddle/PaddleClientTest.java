@@ -269,4 +269,23 @@ class PaddleClientTest {
         assertThat(result.id()).isEqualTo("sub_123");
         server.verify();
     }
+
+    @Test
+    @DisplayName("removeDiscountFromSubscription sends a literal null discount and maps the response")
+    void removeDiscountFromSubscription_shouldPatchNullDiscount_andMapResponse() {
+        server.expect(requestTo(BASE_URL + "/subscriptions/sub_123"))
+                .andExpect(method(HttpMethod.PATCH))
+                .andExpect(content().json("""
+                        {"discount": null}
+                        """))
+                .andRespond(withSuccess(
+                        """
+                        {"data": {"id": "sub_123", "status": "active"}}
+                        """, MediaType.APPLICATION_JSON));
+
+        PaddleSubscription result = client.removeDiscountFromSubscription("sub_123");
+
+        assertThat(result.status()).isEqualTo("active");
+        server.verify();
+    }
 }

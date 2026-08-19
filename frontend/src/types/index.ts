@@ -289,6 +289,10 @@ export interface PaddleBillingTransactionResponse {
 export interface PreviewSubscriptionUpdateResponse {
   upgrade: boolean;
   immediateChargeAmount: number | null;
+  /** Only set when Paddle's preview actually applied a discount (e.g. an unconsumed
+   *  credit) to this charge — already netted into immediateChargeAmount, this is just
+   *  how much of that reduction came from the credit specifically. */
+  creditApplied: number | null;
   currency: string | null;
   effectiveAt: string | null;
 }

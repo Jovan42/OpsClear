@@ -191,8 +191,8 @@ public class PaddleClient {
     // A subscription has at most one discount attached at a time — attaching a new one
     // replaces whatever was there before. If a prior one-time credit discount hasn't
     // been consumed by a transaction yet when a second credit is granted, this silently
-    // drops the first one. Not yet solved (JOB-180) — flagged as a known limitation
-    // pending live sandbox verification of how Paddle actually behaves here.
+    // drops the first one — still a known limitation, unrelated to the multi-use bug
+    // below, which is what removeDiscountFromSubscription solves.
     public PaddleSubscription attachDiscountToSubscription(String subscriptionId, String discountId) {
         // effective_from is required alongside id — confirmed via a real sandbox 400
         // ("effective_from is required") the first time this shipped. "immediately"
@@ -200,6 +200,25 @@ public class PaddleClient {
         // subscription, not deferred to the following renewal specifically).
         Map<String, Object> body = Map.of(
                 "discount", Map.of("id", discountId, "effective_from", "immediately"));
+        PaddleEnvelope<PaddleSubscription> response = restClient.patch()
+                .uri("/subscriptions/{id}", subscriptionId)
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleSubscription>>() { });
+        return response.data();
+    }
+
+    // recur:true + maximum_recurring_intervals:1 + usage_limit:1 (see
+    // createOneTimeDiscount) turned out to still not be transaction-scoped —
+    // confirmed via real Paddle transaction data that a discount applies to every
+    // transaction within the same billing period, not just the first, and
+    // usage_limit only decrements once per period regardless. This is the actual
+    // fix: called from PaddleWebhookService as soon as a transaction.completed event
+    // reports our discount was used, so no second transaction in the same period can
+    // catch it too. Map.of rejects a null value — this genuinely needs to send
+    // {"discount": null} to clear it, same pattern as removeScheduledCancellation.
+    public PaddleSubscription removeDiscountFromSubscription(String subscriptionId) {
+        Map<String, Object> body = Collections.singletonMap("discount", null);
         PaddleEnvelope<PaddleSubscription> response = restClient.patch()
                 .uri("/subscriptions/{id}", subscriptionId)
                 .body(body)

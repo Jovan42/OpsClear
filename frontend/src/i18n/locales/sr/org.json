@@ -127,6 +127,7 @@
 
   "paddleUpdateConfirmUpgradeTitle": "Potvrdi nadogradnju",
   "paddleUpdateConfirmUpgradeMessage": "Odmah ćete biti naplaćeni, srazmerno za preostali deo tekućeg perioda naplate.",
+  "paddleUpdateConfirmCreditAppliedLabel": "Primenjen kredit",
   "paddleUpdateConfirmChargedNowLabel": "Naplaćeno odmah",
   "paddleUpdateConfirmDowngradeTitle": "Potvrdi promenu plana",
   "paddleUpdateConfirmDowngradeMessage": "Nema naplate sada. Zadržaćete trenutni plan do {{date}}, kada će se preći na novi plan.",

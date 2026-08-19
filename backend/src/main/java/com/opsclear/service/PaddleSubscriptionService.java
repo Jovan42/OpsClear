@@ -187,16 +187,28 @@ public class PaddleSubscriptionService {
                 subscription.getPaddleSubscriptionId(), items, prorationMode);
 
         Integer immediateChargeAmount = null;
+        Integer creditApplied = null;
         String currency = null;
         if (preview.immediateTransaction() != null) {
             PaddlePreviewTotals totals = preview.immediateTransaction().details().totals();
             immediateChargeAmount = Integer.parseInt(totals.total()) / 100;
             currency = totals.currencyCode();
+            // Paddle's preview already nets any attached discount (e.g. a credit,
+            // JOB-180) into totals.total — this surfaces how much of that reduction
+            // came from the discount specifically, so the customer sees it called out
+            // rather than just a smaller number with no explanation.
+            if (totals.discount() != null) {
+                int discountMinorUnits = Integer.parseInt(totals.discount());
+                if (discountMinorUnits > 0) {
+                    creditApplied = discountMinorUnits / 100;
+                }
+            }
         }
 
         return PreviewSubscriptionUpdateResponse.builder()
                 .upgrade(upgrade)
                 .immediateChargeAmount(immediateChargeAmount)
+                .creditApplied(creditApplied)
                 .currency(currency)
                 .effectiveAt(preview.currentBillingPeriod() != null ? preview.currentBillingPeriod().endsAt() : null)
                 .build();
