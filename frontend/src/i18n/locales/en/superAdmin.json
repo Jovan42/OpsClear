@@ -47,6 +47,8 @@
     "submitButton": "Grant credit",
     "errorGeneric": "Something went wrong. Please try again.",
     "closeButton": "Close",
+    "successTitle": "Credit applied in Paddle",
+    "successMessage": "€{{amount}} will be deducted from {{orgName}}'s next Paddle charge.",
     "syncWarningTitle": "Credit recorded, but not reflected in Paddle yet",
     "syncWarning": {
       "NO_PADDLE_SUBSCRIPTION": "This org has no real, active Paddle subscription yet — nothing to attach the discount to until they check out."

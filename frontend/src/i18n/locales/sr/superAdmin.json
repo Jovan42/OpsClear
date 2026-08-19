@@ -47,6 +47,8 @@
     "submitButton": "Odobri kredit",
     "errorGeneric": "Nešto nije u redu. Pokušajte ponovo.",
     "closeButton": "Zatvori",
+    "successTitle": "Kredit primenjen u Paddle-u",
+    "successMessage": "€{{amount}} će biti odbijeno od sledeće Paddle naplate za {{orgName}}.",
     "syncWarningTitle": "Kredit je zabeležen, ali još nije odražen u Paddle-u",
     "syncWarning": {
       "NO_PADDLE_SUBSCRIPTION": "Ova organizacija još nema realnu, aktivnu Paddle pretplatu — nema na šta da se prikači popust dok se ne izvrši plaćanje."
