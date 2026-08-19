@@ -52,6 +52,7 @@ class PaddleWebhookServiceTest {
     @Mock private SubscriptionTierRepository tierRepository;
     @Mock private SubscriptionAddonRepository addonRepository;
     @Mock private PaddleClient paddleClient;
+    @Mock private CreditService creditService;
 
     private PaddleWebhookService service;
     private UUID orgId;
@@ -67,7 +68,7 @@ class PaddleWebhookServiceTest {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         service = new PaddleWebhookService(
                 objectMapper, organisationRepository, orgSubscriptionRepository, tierRepository, addonRepository,
-                paddleClient, SECRET);
+                paddleClient, creditService, SECRET);
         orgId = UUID.randomUUID();
     }
 
@@ -501,12 +502,13 @@ class PaddleWebhookServiceTest {
 
         verify(paddleClient, never()).removeDiscountFromSubscription(any());
         verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any(), any());
+        verify(creditService, never()).consumeCredit(any(), any());
     }
 
     @Test
-    @DisplayName("handle detaches the discount from the subscription once a transaction.completed event "
-            + "reports it was actually consumed (JOB-180 — Paddle applies a discount to every transaction in "
-            + "the same billing period otherwise, not just the first)")
+    @DisplayName("handle detaches the discount from the subscription and debits the consumed credit once a "
+            + "transaction.completed event reports it was actually consumed (JOB-180 — Paddle applies a "
+            + "discount to every transaction in the same billing period otherwise, not just the first)")
     void handle_shouldDetachDiscount_whenTransactionCompletedUsedOne() {
         String body = "{\"event_id\":\"evt_2\",\"event_type\":\"transaction.completed\","
                 + "\"data\":{\"id\":\"txn_456\",\"subscription_id\":\"sub_123\",\"discount_id\":\"dsc_789\"}}";
@@ -515,6 +517,7 @@ class PaddleWebhookServiceTest {
         service.handle(header, body);
 
         verify(paddleClient).removeDiscountFromSubscription("sub_123");
+        verify(creditService).consumeCredit("dsc_789", null);
     }
 
     @Test
@@ -528,6 +531,7 @@ class PaddleWebhookServiceTest {
         service.handle(header, body);
 
         verify(paddleClient, never()).removeDiscountFromSubscription(any());
+        verify(creditService, never()).consumeCredit(any(), any());
     }
 
     @Test

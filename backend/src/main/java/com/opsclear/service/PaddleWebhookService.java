@@ -61,6 +61,10 @@ import java.util.UUID;
  * catch it too. Every subscription-level discount in this app comes from exactly one
  * mechanism ({@code CreditService}), so detaching unconditionally on any
  * discount-bearing completed transaction is safe — there's nothing else it could be.
+ * The same event also drives {@link CreditService#consumeCredit}, which is what
+ * actually lowers the org's displayed credit balance — detaching the Paddle discount
+ * alone doesn't touch {@code org_credits}, and without this the ledger would keep
+ * reporting a balance the org can no longer actually spend.
  *
  * <p>JOB-200: every tier/add-on has a real price, so the org's very first
  * org_subscriptions row (tier_id is NOT NULL) is only ever created here, once
@@ -109,6 +113,7 @@ public class PaddleWebhookService {
     private final SubscriptionTierRepository tierRepository;
     private final SubscriptionAddonRepository addonRepository;
     private final PaddleClient paddleClient;
+    private final CreditService creditService;
     private final String webhookSecret;
 
     public PaddleWebhookService(ObjectMapper objectMapper,
@@ -117,6 +122,7 @@ public class PaddleWebhookService {
                                  SubscriptionTierRepository tierRepository,
                                  SubscriptionAddonRepository addonRepository,
                                  PaddleClient paddleClient,
+                                 CreditService creditService,
                                  @Value("${paddle.webhook-secret}") String webhookSecret) {
         this.objectMapper = objectMapper;
         this.organisationRepository = organisationRepository;
@@ -124,6 +130,7 @@ public class PaddleWebhookService {
         this.tierRepository = tierRepository;
         this.addonRepository = addonRepository;
         this.paddleClient = paddleClient;
+        this.creditService = creditService;
         this.webhookSecret = webhookSecret;
     }
 
@@ -234,6 +241,25 @@ public class PaddleWebhookService {
         paddleClient.removeDiscountFromSubscription(subscriptionId);
         log.info("Detached consumed one-time discount {} from Paddle subscription {} (event {})",
                 discountId, subscriptionId, eventId);
+        creditService.consumeCredit(discountId, appliedDiscountAmount(txnEvent));
+    }
+
+    // Whole currency units actually taken off this transaction — null if the payload
+    // didn't carry a parseable totals.discount, which CreditService treats as "assume
+    // fully consumed" rather than risk computing a bogus leftover from bad data.
+    private static Integer appliedDiscountAmount(PaddleWebhookTransactionEvent txnEvent) {
+        if (txnEvent.data().details() == null || txnEvent.data().details().totals() == null) {
+            return null;
+        }
+        String discount = txnEvent.data().details().totals().discount();
+        if (discount == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(discount) / 100;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private PaddleWebhookTransactionEvent parseTransactionEvent(String rawBody) {

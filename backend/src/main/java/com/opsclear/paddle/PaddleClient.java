@@ -5,6 +5,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -170,6 +172,19 @@ public class PaddleClient {
     // separate field that actually caps total redemptions, confirmed as the fix here.
     // enabled_for_checkout:false keeps it from ever being redeemable as a public
     // coupon code.
+    //
+    // maximum_recurring_intervals:1 originally also meant the discount's "valid
+    // until" was whatever the org's *current billing period* end happened to be —
+    // fine for a monthly org granted a credit right after renewal, but far too short
+    // for one granted right before renewal, and completely tied to billing-cycle
+    // timing rather than to the credit itself. DISCOUNT_MAX_RECURRING_INTERVALS is
+    // raised well past 1 so it's never the binding constraint (usage_limit:1 alone
+    // already caps total redemptions to one, regardless of how many intervals the
+    // discount is nominally eligible across); expires_at is the field that actually
+    // governs how long a credit stays redeemable.
+    private static final int DISCOUNT_VALIDITY_DAYS = 90;
+    private static final int DISCOUNT_MAX_RECURRING_INTERVALS = 12;
+
     public PaddleDiscount createOneTimeDiscount(String amountMinorUnits, String currencyCode, String description) {
         Map<String, Object> body = Map.of(
                 "type", "flat",
@@ -178,8 +193,9 @@ public class PaddleClient {
                 "description", description,
                 "enabled_for_checkout", false,
                 "recur", true,
-                "maximum_recurring_intervals", 1,
-                "usage_limit", 1);
+                "maximum_recurring_intervals", DISCOUNT_MAX_RECURRING_INTERVALS,
+                "usage_limit", 1,
+                "expires_at", Instant.now().plus(DISCOUNT_VALIDITY_DAYS, ChronoUnit.DAYS).toString());
         PaddleEnvelope<PaddleDiscount> response = restClient.post()
                 .uri("/discounts")
                 .body(body)

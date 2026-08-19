@@ -29,6 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -147,6 +149,7 @@ class CreditServiceTest {
         when(orgSubscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
         when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(
                 OrgSubscriptionModel.builder().orgId(orgId).paddleSubscriptionId("sub_123").build()));
+        when(orgCreditRepository.findUnconsumedGrants(orgId)).thenReturn(List.of());
         when(paddleClient.createOneTimeDiscount("2900", "EUR", "OpsClear credit: Great bug report"))
                 .thenReturn(new PaddleDiscount("dsc_123"));
 
@@ -155,6 +158,37 @@ class CreditServiceTest {
         assertThat(result.getPaddleSyncSkippedReason()).isNull();
         verify(paddleClient).createOneTimeDiscount("2900", "EUR", "OpsClear credit: Great bug report");
         verify(paddleClient).attachDiscountToSubscription("sub_123", "dsc_123");
+        verify(orgCreditRepository).setPaddleDiscountId(List.of(creditId), "dsc_123");
+    }
+
+    @Test
+    @DisplayName("grant folds any still-unconsumed prior grant into the new discount instead of stranding it")
+    void grant_shouldFoldUnconsumedPriorGrant_intoNewDiscount() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        UUID creditId = UUID.randomUUID();
+        UUID priorCreditId = UUID.randomUUID();
+        GrantCreditRequest request = GrantCreditRequest.builder()
+                .orgId(orgId).amount(6).reason("Second grant").build();
+        OrgCreditModel priorUnconsumed = OrgCreditModel.builder()
+                .id(priorCreditId).orgId(orgId).amount(5).grantedBy(grantedBy).build();
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId))
+                .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
+        when(orgCreditRepository.insert(orgId, 6, "Second grant", null, grantedBy)).thenReturn(
+                OrgCreditModel.builder().id(creditId).orgId(orgId).amount(6).reason("Second grant").build());
+        when(orgSubscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(
+                OrgSubscriptionModel.builder().orgId(orgId).paddleSubscriptionId("sub_123").build()));
+        when(orgCreditRepository.findUnconsumedGrants(orgId)).thenReturn(List.of(priorUnconsumed));
+        when(paddleClient.createOneTimeDiscount("1100", "EUR", "OpsClear credit: Second grant"))
+                .thenReturn(new PaddleDiscount("dsc_combined"));
+
+        creditService.grant(grantedBy, request);
+
+        verify(paddleClient).createOneTimeDiscount("1100", "EUR", "OpsClear credit: Second grant");
+        verify(paddleClient).attachDiscountToSubscription("sub_123", "dsc_combined");
+        verify(orgCreditRepository).setPaddleDiscountId(List.of(priorCreditId, creditId), "dsc_combined");
     }
 
     @Test
@@ -179,6 +213,112 @@ class CreditServiceTest {
 
         assertThatThrownBy(() -> creditService.grant(grantedBy, request))
                 .isInstanceOf(PaddleSyncException.class);
+    }
+
+    // --- consumeCredit ---
+
+    @Test
+    @DisplayName("consumeCredit inserts an offsetting negative row for the full amount when fully applied")
+    void consumeCredit_shouldInsertFullDebit_whenAppliedAmountCoversTheWholeDiscount() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        OrgCreditModel grant = OrgCreditModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).amount(29).grantedBy(grantedBy).build();
+
+        when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_123")).thenReturn(false);
+        when(orgCreditRepository.findGrantsByPaddleDiscountId("dsc_123")).thenReturn(List.of(grant));
+
+        creditService.consumeCredit("dsc_123", 29);
+
+        verify(orgCreditRepository).insertDebit(
+                orgId, -29, "Consumed via Paddle transaction", grantedBy, "dsc_123");
+        verify(paddleClient, never()).createOneTimeDiscount(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("consumeCredit sums every grant sharing the discount id (merged by an earlier grant)")
+    void consumeCredit_shouldSumAllGrantsSharingTheDiscountId() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        OrgCreditModel first = OrgCreditModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).amount(5).grantedBy(grantedBy).build();
+        OrgCreditModel second = OrgCreditModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).amount(6).grantedBy(grantedBy).build();
+
+        when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_combined")).thenReturn(false);
+        when(orgCreditRepository.findGrantsByPaddleDiscountId("dsc_combined")).thenReturn(List.of(first, second));
+
+        creditService.consumeCredit("dsc_combined", 11);
+
+        verify(orgCreditRepository).insertDebit(
+                orgId, -11, "Consumed via Paddle transaction", grantedBy, "dsc_combined");
+    }
+
+    @Test
+    @DisplayName("consumeCredit treats a null appliedAmount as fully consumed (payload didn't carry totals.discount)")
+    void consumeCredit_shouldTreatNullAppliedAmount_asFullyConsumed() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        OrgCreditModel grant = OrgCreditModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).amount(15).grantedBy(grantedBy).build();
+
+        when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_123")).thenReturn(false);
+        when(orgCreditRepository.findGrantsByPaddleDiscountId("dsc_123")).thenReturn(List.of(grant));
+
+        creditService.consumeCredit("dsc_123", null);
+
+        verify(orgCreditRepository).insertDebit(
+                orgId, -15, "Consumed via Paddle transaction", grantedBy, "dsc_123");
+        verify(paddleClient, never()).createOneTimeDiscount(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("consumeCredit re-syncs the leftover as a fresh discount when only part of it was applied")
+    void consumeCredit_shouldCarryForwardRemainder_whenPartiallyApplied() {
+        UUID orgId = UUID.randomUUID();
+        UUID grantedBy = UUID.randomUUID();
+        UUID carryForwardId = UUID.randomUUID();
+        OrgCreditModel grant = OrgCreditModel.builder()
+                .id(UUID.randomUUID()).orgId(orgId).amount(15).grantedBy(grantedBy).build();
+
+        when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_123")).thenReturn(false);
+        when(orgCreditRepository.findGrantsByPaddleDiscountId("dsc_123")).thenReturn(List.of(grant));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(
+                OrgSubscriptionModel.builder().orgId(orgId).paddleSubscriptionId("sub_123").build()));
+        when(paddleClient.createOneTimeDiscount("700", "EUR",
+                "OpsClear credit: carried forward from a partially-used discount"))
+                .thenReturn(new PaddleDiscount("dsc_remainder"));
+        when(orgCreditRepository.insert(eq(orgId), eq(7),
+                eq("Carried forward — previous discount only partially used"), isNull(), eq(grantedBy)))
+                .thenReturn(OrgCreditModel.builder().id(carryForwardId).orgId(orgId).amount(7).build());
+
+        creditService.consumeCredit("dsc_123", 8);
+
+        verify(orgCreditRepository).insertDebit(orgId, -15, "Consumed via Paddle transaction", grantedBy, "dsc_123");
+        verify(paddleClient).attachDiscountToSubscription("sub_123", "dsc_remainder");
+        verify(orgCreditRepository).setPaddleDiscountId(List.of(carryForwardId), "dsc_remainder");
+    }
+
+    @Test
+    @DisplayName("consumeCredit is a no-op when a debit for this discount id already exists (webhook redelivery)")
+    void consumeCredit_shouldBeNoOp_whenAlreadyDebited() {
+        when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_123")).thenReturn(true);
+
+        creditService.consumeCredit("dsc_123", 29);
+
+        verify(orgCreditRepository, never()).findGrantsByPaddleDiscountId(any());
+        verify(orgCreditRepository, never()).insertDebit(any(), anyInt(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("consumeCredit is a no-op when no grant row matches the discount id")
+    void consumeCredit_shouldBeNoOp_whenNoMatchingGrantFound() {
+        when(orgCreditRepository.hasDebitForPaddleDiscountId("dsc_123")).thenReturn(false);
+        when(orgCreditRepository.findGrantsByPaddleDiscountId("dsc_123")).thenReturn(List.of());
+
+        creditService.consumeCredit("dsc_123", 29);
+
+        verify(orgCreditRepository, never()).insertDebit(any(), anyInt(), any(), any(), any());
     }
 
     // --- getBalance ---

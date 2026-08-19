@@ -1,5 +1,6 @@
 package com.opsclear.paddle;
 
+import org.hamcrest.CustomMatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -230,7 +233,8 @@ class PaddleClientTest {
     }
 
     @Test
-    @DisplayName("createOneTimeDiscount posts a checkout-disabled flat discount capped to one recurring interval")
+    @DisplayName("createOneTimeDiscount posts a checkout-disabled flat discount, capped to one redemption, "
+            + "valid for 90 days regardless of the org's billing cycle")
     void createOneTimeDiscount_shouldPostBody_andMapResponse() {
         server.expect(requestTo(BASE_URL + "/discounts"))
                 .andExpect(method(HttpMethod.POST))
@@ -239,8 +243,21 @@ class PaddleClientTest {
                 .andExpect(jsonPath("$.currency_code").value("EUR"))
                 .andExpect(jsonPath("$.enabled_for_checkout").value(false))
                 .andExpect(jsonPath("$.recur").value(true))
-                .andExpect(jsonPath("$.maximum_recurring_intervals").value(1))
+                .andExpect(jsonPath("$.maximum_recurring_intervals").value(12))
                 .andExpect(jsonPath("$.usage_limit").value(1))
+                .andExpect(jsonPath("$.expires_at").value(new CustomMatcher<Object>("an ISO instant ~90 days out") {
+                    @Override
+                    public boolean matches(Object actual) {
+                        try {
+                            Instant expiresAt = Instant.parse((String) actual);
+                            Instant now = Instant.now();
+                            return expiresAt.isAfter(now.plus(89, ChronoUnit.DAYS))
+                                    && expiresAt.isBefore(now.plus(91, ChronoUnit.DAYS));
+                        } catch (RuntimeException e) {
+                            return false;
+                        }
+                    }
+                }))
                 .andRespond(withSuccess(
                         """
                         {"data": {"id": "dsc_123"}}

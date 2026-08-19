@@ -55,6 +55,71 @@ public class OrgCreditRepository {
         return total != null ? total.intValue() : 0;
     }
 
+    // Backfilled right after a discount is created for one or more grant rows — the
+    // grant row(s) are inserted first (see insert()), before any discount exists.
+    // Bulk because a discount can represent several merged unconsumed grants (see
+    // findUnconsumedGrants) once mergeIntoNewPaddleDiscount reassigns them all here.
+    public void setPaddleDiscountId(List<UUID> creditIds, String discountId) {
+        dsl.update(ORG_CREDITS)
+                .set(ORG_CREDITS.PADDLE_DISCOUNT_ID, discountId)
+                .where(ORG_CREDITS.ID.in(creditIds))
+                .execute();
+    }
+
+    // Grant rows still worth something on Paddle: synced to a real discount
+    // (paddle_discount_id set) but not yet consumed by a transaction (no debit row for
+    // that discount id yet). A subscription only ever has one discount attached at a
+    // time, so before creating a new one for a fresh grant, CreditService folds these
+    // in — otherwise the new discount would silently replace them, and Paddle would
+    // discard whatever value they still represented (JOB-180 #5).
+    public List<OrgCreditModel> findUnconsumedGrants(UUID orgId) {
+        return selectWithJoins()
+                .where(ORG_CREDITS.ORG_ID.eq(orgId))
+                .and(ORG_CREDITS.AMOUNT.gt(0))
+                .and(ORG_CREDITS.PADDLE_DISCOUNT_ID.isNotNull())
+                .and(org.jooq.impl.DSL.notExists(dsl.selectOne()
+                        .from(ORG_CREDITS.as("debit"))
+                        .where(ORG_CREDITS.as("debit").PADDLE_DISCOUNT_ID.eq(ORG_CREDITS.PADDLE_DISCOUNT_ID))
+                        .and(ORG_CREDITS.as("debit").AMOUNT.lt(0))))
+                .fetch()
+                .map(this::toModel);
+    }
+
+    // Every grant row sharing a given discount id — amount > 0 distinguishes them from
+    // the negative debit row consumeCredit() may have already inserted for the same
+    // discount id (both share paddle_discount_id, see the V038 migration comment).
+    // More than one row can share a discount id once mergeIntoNewPaddleDiscount has
+    // folded several unconsumed grants into a single replacement discount.
+    public List<OrgCreditModel> findGrantsByPaddleDiscountId(String discountId) {
+        return selectWithJoins()
+                .where(ORG_CREDITS.PADDLE_DISCOUNT_ID.eq(discountId))
+                .and(ORG_CREDITS.AMOUNT.gt(0))
+                .fetch()
+                .map(this::toModel);
+    }
+
+    // Idempotency check for CreditService.consumeCredit() — a redelivered
+    // transaction.completed webhook must not debit the same discount twice.
+    public boolean hasDebitForPaddleDiscountId(String discountId) {
+        return dsl.fetchExists(dsl.selectOne()
+                .from(ORG_CREDITS)
+                .where(ORG_CREDITS.PADDLE_DISCOUNT_ID.eq(discountId))
+                .and(ORG_CREDITS.AMOUNT.lt(0)));
+    }
+
+    // A negative-amount row, not an UPDATE of the original grant — org_credits is
+    // append-only by design (see V030's table comment), so consumption is recorded as
+    // its own ledger entry rather than mutating history.
+    public void insertDebit(UUID orgId, int amount, String reason, UUID grantedBy, String discountId) {
+        dsl.insertInto(ORG_CREDITS)
+                .set(ORG_CREDITS.ORG_ID, orgId)
+                .set(ORG_CREDITS.AMOUNT, amount)
+                .set(ORG_CREDITS.REASON, reason)
+                .set(ORG_CREDITS.GRANTED_BY, grantedBy)
+                .set(ORG_CREDITS.PADDLE_DISCOUNT_ID, discountId)
+                .execute();
+    }
+
     public void deleteAll() {
         dsl.deleteFrom(ORG_CREDITS).execute();
     }

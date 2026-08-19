@@ -579,12 +579,27 @@ export default function SubscriptionSection({ orgId }: Props) {
           </div>
         </div>
 
-        {livePreview?.upgrade && (livePreview.immediateChargeAmount ?? 0) > 0 && (
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500 dark:text-gray-400">{t('paddleExtraToPayNowLabel')}</span>
-            <span className="font-semibold text-green-600 dark:text-green-400">
-              {fmt(livePreview.immediateChargeAmount ?? 0)} {livePreview.currency}
-            </span>
+        {livePreview?.upgrade
+          && (!!livePreview.creditApplied || (livePreview.immediateChargeAmount ?? 0) > 0) && (
+          <div className="space-y-1">
+            {!!livePreview.creditApplied && (
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  {t('paddleUpdateConfirmCreditAppliedLabel')}
+                </span>
+                <span className="font-semibold text-amber-600 dark:text-amber-400">
+                  -{fmt(livePreview.creditApplied)} {livePreview.currency}
+                </span>
+              </div>
+            )}
+            {(livePreview.immediateChargeAmount ?? 0) > 0 && (
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500 dark:text-gray-400">{t('paddleExtraToPayNowLabel')}</span>
+                <span className="font-semibold text-green-600 dark:text-green-400">
+                  {fmt(livePreview.immediateChargeAmount ?? 0)} {livePreview.currency}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

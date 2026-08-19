@@ -127,6 +127,31 @@ public class OrgCreditsRecord extends UpdatableRecordImpl<OrgCreditsRecord> {
         return (OffsetDateTime) get(6);
     }
 
+    /**
+     * Setter for <code>public.org_credits.paddle_discount_id</code>. Set on a
+     * grant row once its one-time Paddle discount is created (JOB-180). When
+     * PaddleWebhookService detects that discount was actually consumed by a
+     * transaction, it inserts a matching negative-amount row with the same
+     * paddle_discount_id — the existence of that debit row is what makes the
+     * detach idempotent on webhook redelivery.
+     */
+    public OrgCreditsRecord setPaddleDiscountId(String value) {
+        set(7, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.org_credits.paddle_discount_id</code>. Set on a
+     * grant row once its one-time Paddle discount is created (JOB-180). When
+     * PaddleWebhookService detects that discount was actually consumed by a
+     * transaction, it inserts a matching negative-amount row with the same
+     * paddle_discount_id — the existence of that debit row is what makes the
+     * detach idempotent on webhook redelivery.
+     */
+    public String getPaddleDiscountId() {
+        return (String) get(7);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -150,7 +175,7 @@ public class OrgCreditsRecord extends UpdatableRecordImpl<OrgCreditsRecord> {
     /**
      * Create a detached, initialised OrgCreditsRecord
      */
-    public OrgCreditsRecord(UUID id, UUID orgId, Integer amount, String reason, UUID submissionId, UUID grantedBy, OffsetDateTime createdAt) {
+    public OrgCreditsRecord(UUID id, UUID orgId, Integer amount, String reason, UUID submissionId, UUID grantedBy, OffsetDateTime createdAt, String paddleDiscountId) {
         super(OrgCredits.ORG_CREDITS);
 
         setId(id);
@@ -160,6 +185,7 @@ public class OrgCreditsRecord extends UpdatableRecordImpl<OrgCreditsRecord> {
         setSubmissionId(submissionId);
         setGrantedBy(grantedBy);
         setCreatedAt(createdAt);
+        setPaddleDiscountId(paddleDiscountId);
         resetChangedOnNotNull();
     }
 }
