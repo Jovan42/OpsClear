@@ -58,6 +58,7 @@ public class Indexes {
     public static final Index IDX_MILESTONES_PROJECT = Internal.createIndex(DSL.name("idx_milestones_project"), Milestones.MILESTONES, new OrderField[] { Milestones.MILESTONES.PROJECT_ID }, false);
     public static final Index IDX_NOTES_JOB_ID = Internal.createIndex(DSL.name("idx_notes_job_id"), Notes.NOTES, new OrderField[] { Notes.NOTES.JOB_ID }, false);
     public static final Index IDX_ORG_CREDITS_ORG = Internal.createIndex(DSL.name("idx_org_credits_org"), OrgCredits.ORG_CREDITS, new OrderField[] { OrgCredits.ORG_CREDITS.ORG_ID }, false);
+    public static final Index IDX_ORG_CREDITS_PADDLE_DISCOUNT_ID = Internal.createIndex(DSL.name("idx_org_credits_paddle_discount_id"), OrgCredits.ORG_CREDITS, new OrderField[] { OrgCredits.ORG_CREDITS.PADDLE_DISCOUNT_ID }, false);
     public static final Index IDX_ORGANISATION_INVITES_EMAIL = Internal.createIndex(DSL.name("idx_organisation_invites_email"), OrganisationInvites.ORGANISATION_INVITES, new OrderField[] { OrganisationInvites.ORGANISATION_INVITES.EMAIL }, false);
     public static final Index IDX_ORGANISATION_INVITES_TOKEN = Internal.createIndex(DSL.name("idx_organisation_invites_token"), OrganisationInvites.ORGANISATION_INVITES, new OrderField[] { OrganisationInvites.ORGANISATION_INVITES.TOKEN }, false);
     public static final Index IDX_PROJECT_MEMBERS_PROJECT = Internal.createIndex(DSL.name("idx_project_members_project"), ProjectMembers.PROJECT_MEMBERS, new OrderField[] { ProjectMembers.PROJECT_MEMBERS.PROJECT_ID }, false);

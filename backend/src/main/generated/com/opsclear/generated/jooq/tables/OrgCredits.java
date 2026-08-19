@@ -91,6 +91,16 @@ public class OrgCredits extends TableImpl<OrgCreditsRecord> {
      */
     public final TableField<OrgCreditsRecord, OffsetDateTime> CREATED_AT = createField(DSL.name("created_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    /**
+     * The column <code>public.org_credits.paddle_discount_id</code>. Set on a
+     * grant row once its one-time Paddle discount is created (JOB-180). When
+     * PaddleWebhookService detects that discount was actually consumed by a
+     * transaction, it inserts a matching negative-amount row with the same
+     * paddle_discount_id — the existence of that debit row is what makes the
+     * detach idempotent on webhook redelivery.
+     */
+    public final TableField<OrgCreditsRecord, String> PADDLE_DISCOUNT_ID = createField(DSL.name("paddle_discount_id"), SQLDataType.CLOB, this, "Set on a grant row once its one-time Paddle discount is created (JOB-180). When PaddleWebhookService detects that discount was actually consumed by a transaction, it inserts a matching negative-amount row with the same paddle_discount_id — the existence of that debit row is what makes the detach idempotent on webhook redelivery.");
+
     private OrgCredits(Name alias, Table<OrgCreditsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -127,7 +137,7 @@ public class OrgCredits extends TableImpl<OrgCreditsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_ORG_CREDITS_ORG);
+        return Arrays.asList(Indexes.IDX_ORG_CREDITS_ORG, Indexes.IDX_ORG_CREDITS_PADDLE_DISCOUNT_ID);
     }
 
     @Override

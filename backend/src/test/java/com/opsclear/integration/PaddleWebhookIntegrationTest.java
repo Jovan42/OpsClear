@@ -1,10 +1,12 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.dto.GrantCreditRequest;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
+import com.opsclear.paddle.PaddleDiscount;
 import com.opsclear.paddle.PaddlePrice;
 import com.opsclear.paddle.PaddleProduct;
 import com.opsclear.repository.OrgSubscriptionRepository;
@@ -12,11 +14,13 @@ import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
+import com.opsclear.service.CreditService;
 import com.opsclear.service.PaddleSubscriptionService;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -25,6 +29,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestClientException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -40,7 +45,9 @@ import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -84,6 +91,7 @@ class PaddleWebhookIntegrationTest {
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
+    @Autowired private CreditService creditService;
     @MockitoBean private PaddleClient paddleClient;
 
     @Value("${paddle.webhook-secret}")
@@ -497,6 +505,74 @@ class PaddleWebhookIntegrationTest {
         verify(paddleClient, never()).removeDiscountFromSubscription(any());
     }
 
+    @Test
+    @DisplayName("transaction.completed for a consumed credit discount debits the org's displayed credit balance")
+    void webhook_shouldDebitCreditBalance_whenTransactionCompletedConsumesItsDiscount() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        String discountId = "dsc_" + UUID.randomUUID();
+        when(paddleClient.createOneTimeDiscount(any(), any(), any())).thenReturn(new PaddleDiscount(discountId));
+
+        creditService.grant(ownerId, GrantCreditRequest.builder()
+                .orgId(orgId).amount(9).reason("Test grant").build());
+        assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(9);
+
+        String body = transactionCompletedEventBody(subscriptionId, discountId);
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("transaction.completed that only partially consumes a discount re-syncs the leftover instead of "
+            + "losing it — Paddle's flat discount is all-or-nothing per transaction (confirmed via real sandbox "
+            + "data), so the difference must be re-attached as a fresh discount rather than dropped")
+    void webhook_shouldCarryForwardRemainder_whenTransactionCompletedOnlyPartiallyConsumesTheDiscount()
+            throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        when(paddleClient.createOneTimeDiscount(any(), any(), any()))
+                .thenAnswer(inv -> new PaddleDiscount("dsc_" + UUID.randomUUID()));
+
+        creditService.grant(ownerId, GrantCreditRequest.builder()
+                .orgId(orgId).amount(15).reason("Test grant").build());
+        assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(15);
+
+        ArgumentCaptor<String> discountIdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(paddleClient).attachDiscountToSubscription(eq(subscriptionId), discountIdCaptor.capture());
+        String discountId = discountIdCaptor.getValue();
+
+        // Only 8 EUR (800 minor units) of the 15 EUR discount was actually applied —
+        // the transaction's own totals.discount, exactly like a real Paddle payload.
+        String body = transactionCompletedEventBody(subscriptionId, discountId, "800");
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(7);
+        verify(paddleClient, times(2)).createOneTimeDiscount(any(), any(), any());
+        verify(paddleClient, times(2)).attachDiscountToSubscription(eq(subscriptionId), any());
+    }
+
+    @Test
+    @DisplayName("transaction.completed still debits the full amount even when re-syncing the leftover to "
+            + "Paddle fails — the debit reflects that the old discount really was consumed, independent of "
+            + "whether the leftover could be re-attached")
+    void webhook_shouldStillDebitFullAmount_whenCarryForwardPaddleCallFails() throws Exception {
+        String subscriptionId = givenExistingPaddleSubscription("ACTIVE");
+        when(paddleClient.createOneTimeDiscount(any(), any(), any()))
+                .thenReturn(new PaddleDiscount("dsc_initial"))
+                .thenThrow(new RestClientException("Paddle is unreachable"));
+
+        creditService.grant(ownerId, GrantCreditRequest.builder()
+                .orgId(orgId).amount(15).reason("Test grant").build());
+        assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(15);
+
+        String body = transactionCompletedEventBody(subscriptionId, "dsc_initial", "800");
+        postWebhook(body, signatureHeader(body, WEBHOOK_SECRET))
+                .andExpect(status().isOk());
+
+        assertThat(creditService.getBalance(orgId, ownerId)).isEqualTo(0);
+    }
+
     // --- helpers ---
 
     private String givenExistingPaddleSubscription(String status) {
@@ -560,10 +636,17 @@ class PaddleWebhookIntegrationTest {
     }
 
     private String transactionCompletedEventBody(String subscriptionId, String discountId) {
+        return transactionCompletedEventBody(subscriptionId, discountId, null);
+    }
+
+    private String transactionCompletedEventBody(
+            String subscriptionId, String discountId, String appliedDiscountMinorUnits) {
         String discountField = discountId == null ? "null" : "\"" + discountId + "\"";
+        String detailsField = appliedDiscountMinorUnits == null ? "" : ",\"details\":{\"totals\":{\"total\":\"0\","
+                + "\"discount\":\"" + appliedDiscountMinorUnits + "\",\"currency_code\":\"EUR\"}}";
         return "{\"event_id\":\"evt_" + UUID.randomUUID() + "\",\"event_type\":\"transaction.completed\","
                 + "\"data\":{\"id\":\"txn_" + UUID.randomUUID() + "\",\"subscription_id\":\"" + subscriptionId
-                + "\",\"discount_id\":" + discountField + "}}";
+                + "\",\"discount_id\":" + discountField + detailsField + "}}";
     }
 
     private static String signatureHeader(String body, String secret) {

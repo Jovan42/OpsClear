@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -77,6 +78,12 @@ public class CreditService {
     // skipped or failed, empty when it succeeded. NO_PADDLE_SUBSCRIPTION is a non-fatal
     // signal only — grant() lets that stand. PADDLE_ERROR is different: grant() rolls
     // the transaction back for that one (JOB-180).
+    //
+    // A subscription only ever has one discount attached at a time, so a second grant
+    // can't just create its own discount — that would silently replace and permanently
+    // strand whatever a prior, still-unconsumed grant was worth (JOB-180 #5). Instead
+    // this folds every currently-unconsumed grant (see findUnconsumedGrants) together
+    // with the new one into a single replacement discount for their combined total.
     private Optional<String> syncCreditToPaddle(OrgCreditModel credit) {
         try {
             Optional<OrgSubscriptionModel> subscription = orgSubscriptionRepository.findByOrgId(credit.getOrgId());
@@ -87,11 +94,18 @@ public class CreditService {
                 return Optional.of(PaddleSyncSkippedReason.NO_PADDLE_SUBSCRIPTION);
             }
 
-            PaddleDiscount discount = paddleClient.createOneTimeDiscount(
-                    toMinorUnits(credit.getAmount()), CURRENCY_EUR, discountDescription(credit));
-            paddleClient.attachDiscountToSubscription(paddleSubscriptionId, discount.id());
-            log.info("Attached one-time Paddle discount {} ({} {}) to subscription {} for org {} (credit {})",
-                    discount.id(), credit.getAmount(), CURRENCY_EUR, paddleSubscriptionId,
+            List<OrgCreditModel> unconsumed = orgCreditRepository.findUnconsumedGrants(credit.getOrgId());
+            int totalAmount = credit.getAmount() + unconsumed.stream().mapToInt(OrgCreditModel::getAmount).sum();
+
+            PaddleDiscount discount = attachNewDiscount(paddleSubscriptionId, totalAmount, discountDescription(credit));
+
+            List<UUID> foldedCreditIds = new ArrayList<>(unconsumed.stream().map(OrgCreditModel::getId).toList());
+            foldedCreditIds.add(credit.getId());
+            orgCreditRepository.setPaddleDiscountId(foldedCreditIds, discount.id());
+
+            log.info("Attached one-time Paddle discount {} ({} {}, folding in {} prior unconsumed grant(s)) to "
+                            + "subscription {} for org {} (credit {})",
+                    discount.id(), totalAmount, CURRENCY_EUR, unconsumed.size(), paddleSubscriptionId,
                     credit.getOrgId(), credit.getId());
             return Optional.empty();
         } catch (RuntimeException e) {
@@ -102,6 +116,12 @@ public class CreditService {
                     credit.getId(), credit.getOrgId(), e);
             return Optional.of(PaddleSyncSkippedReason.PADDLE_ERROR);
         }
+    }
+
+    private PaddleDiscount attachNewDiscount(String paddleSubscriptionId, int amount, String description) {
+        PaddleDiscount discount = paddleClient.createOneTimeDiscount(toMinorUnits(amount), CURRENCY_EUR, description);
+        paddleClient.attachDiscountToSubscription(paddleSubscriptionId, discount.id());
+        return discount;
     }
 
     private static String discountDescription(OrgCreditModel credit) {
@@ -124,6 +144,79 @@ public class CreditService {
 
     private static String toMinorUnits(int wholeEuros) {
         return String.valueOf(wholeEuros * 100);
+    }
+
+    // Called from PaddleWebhookService once a transaction.completed event confirms a
+    // credit discount was actually redeemed (JOB-180 #4/#5) — a discount being
+    // detached from the subscription doesn't by itself mean the org's displayed
+    // balance should drop; this is what makes that happen. Safe to call more than once
+    // for the same discount id (webhook redelivery) — hasDebitForPaddleDiscountId
+    // makes it a no-op past the first time.
+    //
+    // Paddle's flat one-time discount is all-or-nothing per transaction — confirmed
+    // via real sandbox data that a discount larger than the transaction it's applied
+    // to gets capped at that transaction's total and then fully consumed regardless,
+    // with no rollover of the difference. appliedAmount is however much of the
+    // discount this specific transaction actually used (whole currency units, from the
+    // webhook's own totals.discount — see PaddleWebhookService); null means the
+    // payload didn't carry enough to compute it, treated as fully consumed rather than
+    // risk creating a phantom leftover discount from bad data. Whatever's left over
+    // gets immediately re-synced as a fresh discount so it isn't silently lost.
+    @Transactional
+    public void consumeCredit(String discountId, Integer appliedAmount) {
+        if (orgCreditRepository.hasDebitForPaddleDiscountId(discountId)) {
+            return;
+        }
+        List<OrgCreditModel> grants = orgCreditRepository.findGrantsByPaddleDiscountId(discountId);
+        if (grants.isEmpty()) {
+            log.warn("Paddle discount {} was consumed but no matching org_credits grant was found", discountId);
+            return;
+        }
+
+        UUID orgId = grants.get(0).getOrgId();
+        UUID grantedBy = grants.get(0).getGrantedBy();
+        int totalDiscountAmount = grants.stream().mapToInt(OrgCreditModel::getAmount).sum();
+        int consumed = appliedAmount == null ? totalDiscountAmount : Math.min(appliedAmount, totalDiscountAmount);
+
+        orgCreditRepository.insertDebit(orgId, -totalDiscountAmount, "Consumed via Paddle transaction", grantedBy,
+                discountId);
+        log.info("Consumed {} credit for org {} (discount {}, {} actually applied to the transaction)",
+                totalDiscountAmount, orgId, discountId, consumed);
+
+        int remainder = totalDiscountAmount - consumed;
+        if (remainder > 0) {
+            carryForwardRemainder(orgId, remainder, grantedBy, discountId);
+        }
+    }
+
+    private void carryForwardRemainder(UUID orgId, int remainder, UUID grantedBy, String settledDiscountId) {
+        Optional<OrgSubscriptionModel> subscription = orgSubscriptionRepository.findByOrgId(orgId);
+        String paddleSubscriptionId = subscription.map(OrgSubscriptionModel::getPaddleSubscriptionId).orElse(null);
+        if (paddleSubscriptionId == null) {
+            log.warn("Discount {} for org {} left {} unconsumed but the org has no Paddle subscription to "
+                            + "re-sync it to — the balance will be short until the org's next credit grant "
+                            + "re-syncs it",
+                    settledDiscountId, orgId, remainder);
+            return;
+        }
+        try {
+            PaddleDiscount discount = attachNewDiscount(paddleSubscriptionId, remainder,
+                    "OpsClear credit: carried forward from a partially-used discount");
+            OrgCreditModel carryForward = orgCreditRepository.insert(
+                    orgId, remainder, "Carried forward — previous discount only partially used", null, grantedBy);
+            orgCreditRepository.setPaddleDiscountId(List.of(carryForward.getId()), discount.id());
+            log.info("Carried forward {} unconsumed credit for org {} into new Paddle discount {}",
+                    remainder, orgId, discount.id());
+        } catch (RuntimeException e) {
+            // Unlike grant()'s PADDLE_ERROR path, there's no request to roll back here
+            // — the debit above already happened and correctly reflects that the old
+            // discount really was consumed. This failure just means the leftover
+            // couldn't be re-attached to Paddle, so it's effectively lost from the
+            // org's usable balance until manually re-granted.
+            log.warn("Failed to re-sync {} leftover credit for org {} after discount {} was only partially "
+                            + "used — that amount is stranded until re-granted", remainder, orgId,
+                    settledDiscountId, e);
+        }
     }
 
     @Transactional(readOnly = true)
