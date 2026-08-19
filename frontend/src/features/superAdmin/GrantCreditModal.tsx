@@ -30,6 +30,10 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [syncWarning, setSyncWarning] = useState<string | null>(null);
+  // Set only once a grant that DID sync to Paddle comes back — holds the amount so the
+  // confirmation can say exactly what was applied, since the form fields may have
+  // already been cleared/changed by the time the admin reads it.
+  const [grantedAmount, setGrantedAmount] = useState<number | null>(null);
 
   // Reset the form whenever the modal transitions closed -> open, per React's
   // documented "adjusting state when a prop changes" pattern (setState during
@@ -43,11 +47,13 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
       setAmount('');
       setReason('');
       setSyncWarning(null);
+      setGrantedAmount(null);
       reset();
     }
   }
 
   const orgId = fixedOrgId ?? selectedOrgId;
+  const orgDisplayName = orgName ?? orgs?.find((org) => org.id === orgId)?.name ?? '';
   const parsedAmount = Number(amount);
   const canSubmit =
     !!orgId && Number.isInteger(parsedAmount) && parsedAmount >= MIN_CREDIT_AMOUNT && reason.trim() !== '';
@@ -60,12 +66,13 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
       {
         onSuccess: (data) => {
           // The grant itself always succeeds (org_credits is the source of truth) —
-          // but if Paddle sync was skipped/failed, keep the modal open with a warning
-          // instead of silently closing, so the admin doesn't assume it went through.
+          // but keep the modal open either way instead of silently closing, so the
+          // admin sees exactly what happened: either a Paddle-sync warning, or
+          // confirmation of what was actually applied and where.
           if (data.paddleSyncSkippedReason) {
             setSyncWarning(data.paddleSyncSkippedReason);
           } else {
-            onClose();
+            setGrantedAmount(parsedAmount);
           }
         },
       },
@@ -127,6 +134,17 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
           />
         </div>
 
+        {grantedAmount !== null && (
+          <div className="rounded-lg border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 px-3 py-2">
+            <p className="text-sm font-medium text-green-800 dark:text-green-300">
+              {t('superAdmin:grantModal.successTitle')}
+            </p>
+            <p className="text-sm text-green-700 dark:text-green-400 mt-1">
+              {t('superAdmin:grantModal.successMessage', { amount: grantedAmount, orgName: orgDisplayName })}
+            </p>
+          </div>
+        )}
+
         {syncWarning && (
           <div className="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
@@ -148,9 +166,9 @@ export default function GrantCreditModal({ open, onClose, orgId: fixedOrgId, org
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            {syncWarning ? t('superAdmin:grantModal.closeButton') : t('common:cancel')}
+            {syncWarning || grantedAmount !== null ? t('superAdmin:grantModal.closeButton') : t('common:cancel')}
           </Button>
-          {!syncWarning && (
+          {!syncWarning && grantedAmount === null && (
             <Button type="submit" loading={isPending} disabled={!canSubmit}>
               {t('superAdmin:grantModal.submitButton')}
             </Button>
