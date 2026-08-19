@@ -160,10 +160,16 @@ public class PaddleClient {
     // recur:false was the first attempt here and Paddle rejects it outright when
     // attaching to a subscription (subscription_one_off_discount_not_valid, confirmed
     // via a real sandbox 400) — a subscription-attached discount must be "recurring"
-    // by Paddle's rules. recur:true + maximum_recurring_intervals:1 satisfies that
-    // while still only actually applying to one billing period, which is the one-time
-    // behavior we actually want. enabled_for_checkout:false keeps it from ever being
-    // redeemable as a public coupon code.
+    // by Paddle's rules. recur:true + maximum_recurring_intervals:1 satisfies that, but
+    // confirmed via a real sandbox test that it does NOT limit it to one transaction —
+    // three immediate/prorated charges inside the same billing period each got the
+    // full discount applied separately (verified against real Paddle transaction data:
+    // discount_id present + a nonzero details.totals.discount on all three). recur/
+    // maximum_recurring_intervals only govern which *billing periods* it's eligible in,
+    // not how many transactions within a period can redeem it — usage_limit is the
+    // separate field that actually caps total redemptions, confirmed as the fix here.
+    // enabled_for_checkout:false keeps it from ever being redeemable as a public
+    // coupon code.
     public PaddleDiscount createOneTimeDiscount(String amountMinorUnits, String currencyCode, String description) {
         Map<String, Object> body = Map.of(
                 "type", "flat",
@@ -172,7 +178,8 @@ public class PaddleClient {
                 "description", description,
                 "enabled_for_checkout", false,
                 "recur", true,
-                "maximum_recurring_intervals", 1);
+                "maximum_recurring_intervals", 1,
+                "usage_limit", 1);
         PaddleEnvelope<PaddleDiscount> response = restClient.post()
                 .uri("/discounts")
                 .body(body)

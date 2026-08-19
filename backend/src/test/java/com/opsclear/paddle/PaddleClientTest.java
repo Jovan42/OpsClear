@@ -240,6 +240,7 @@ class PaddleClientTest {
                 .andExpect(jsonPath("$.enabled_for_checkout").value(false))
                 .andExpect(jsonPath("$.recur").value(true))
                 .andExpect(jsonPath("$.maximum_recurring_intervals").value(1))
+                .andExpect(jsonPath("$.usage_limit").value(1))
                 .andRespond(withSuccess(
                         """
                         {"data": {"id": "dsc_123"}}
