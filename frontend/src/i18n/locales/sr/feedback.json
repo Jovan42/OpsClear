@@ -18,7 +18,7 @@
   },
   "creditBalance": {
     "heading": "Stanje kredita",
-    "description": "Krediti osvojeni kroz povratne informacije i posebna odobravanja."
+    "description": "Krediti osvojeni kroz povratne informacije i posebna odobravanja — primenjuju se kao popust na sledeću Paddle naplatu kada pređete na plaćenu pretplatu."
   },
   "form": {
     "typeLabel": "Tip",

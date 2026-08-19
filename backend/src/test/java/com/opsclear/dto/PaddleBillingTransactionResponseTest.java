@@ -19,7 +19,7 @@ class PaddleBillingTransactionResponseTest {
     void from_shouldMapAllFields() {
         PaddleTransaction transaction = new PaddleTransaction(
                 "txn_123", "completed", List.of(), Instant.parse("2026-08-01T00:00:00Z"), "EUR",
-                new PaddleTransactionDetails(new PaddleTransactionTotals("2900"), List.of()));
+                new PaddleTransactionDetails(new PaddleTransactionTotals("2900")));
 
         PaddleBillingTransactionResponse result = PaddleBillingTransactionResponse.from(transaction);
 
@@ -45,7 +45,7 @@ class PaddleBillingTransactionResponseTest {
     @DisplayName("from — leaves totalAmount null when totals is null")
     void from_shouldLeaveTotalAmountNull_whenTotalsIsNull() {
         PaddleTransaction transaction = new PaddleTransaction(
-                "txn_123", "draft", List.of(), null, null, new PaddleTransactionDetails(null, List.of()));
+                "txn_123", "draft", List.of(), null, null, new PaddleTransactionDetails(null));
 
         PaddleBillingTransactionResponse result = PaddleBillingTransactionResponse.from(transaction);
 

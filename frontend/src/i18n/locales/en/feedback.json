@@ -18,7 +18,7 @@
   },
   "creditBalance": {
     "heading": "Credit balance",
-    "description": "Credits earned from feedback and discretionary grants."
+    "description": "Credits earned from feedback and discretionary grants — applied as a discount on your next Paddle charge once you're on a paid subscription."
   },
   "form": {
     "typeLabel": "Type",

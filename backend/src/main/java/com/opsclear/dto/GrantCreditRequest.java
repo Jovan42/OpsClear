@@ -1,5 +1,6 @@
 package com.opsclear.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -24,6 +25,9 @@ public class GrantCreditRequest {
 
     @NotNull(message = "Amount is required")
     @Positive(message = "Amount must be positive")
+    // Floor to avoid granting a credit too small to be worth the Paddle sync overhead
+    // (a one-time Discount object created and attached per grant, JOB-180).
+    @Min(value = 5, message = "Amount must be at least 5")
     private Integer amount;
 
     @NotBlank(message = "Reason must not be blank")

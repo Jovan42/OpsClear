@@ -3,8 +3,13 @@ package com.opsclear.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.UserModel;
-import com.opsclear.paddle.PaddleEnvelope;
+import com.opsclear.paddle.PaddleClient;
+import com.opsclear.paddle.PaddleCustomer;
+import com.opsclear.paddle.PaddlePrice;
+import com.opsclear.paddle.PaddleProduct;
 import com.opsclear.paddle.PaddleTransaction;
+import com.opsclear.paddle.PaddleTransactionDetails;
+import com.opsclear.paddle.PaddleTransactionTotals;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -16,14 +21,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -35,6 +39,8 @@ import java.util.UUID;
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static com.opsclear.generated.jooq.Tables.SUBSCRIPTION_TIERS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -43,23 +49,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Runs against Paddle's real sandbox API (not mocked) per this project's explicit
- * choice for JOB-173 — sandbox, not live, so there's no real-money consequence.
- * Requires PADDLE_API_KEY to be set in the environment running these tests; if it
- * isn't, every test here fails with a connection/auth error against Paddle, not a
- * silent skip — that's intentional, matching this project's "confirmed against a
- * real API call" testing philosophy rather than a mocked stand-in.
+ * Mocks {@link PaddleClient} (JOB-180) — previously ran against Paddle's real sandbox
+ * API, which became a major source of Cloudflare rate-limit failures (this file alone
+ * makes several Paddle calls per test across ~20 of its ~39 tests) when run repeatedly.
  *
  * <p>The update-items endpoint's actual successful round-trip to Paddle's
- * {@code PATCH /subscriptions/{id}} still can't be exercised end-to-end here: Paddle
- * does not support creating a Subscription via API at all (only real checkout
- * completion creates one, JOB-178), so there is no real subscription id sandbox-side
- * to PATCH against. What JOB-176 does unblock is the resolver step — once a tier/
- * addon has been synced to Paddle (see {@code SuperAdminPricingIntegrationTest}),
- * resolving its Price id succeeds for real, and the request genuinely reaches
- * Paddle's API instead of failing at our own resolver; it then fails there instead,
- * because {@code sub_test_placeholder} isn't a real subscription id — see
- * {@code update_shouldReachPaddleApi_insteadOfFailingAtResolver_onceTierSyncedToPaddle}.
+ * {@code PATCH /subscriptions/{id}} still can't be exercised end-to-end here even with
+ * a real API: Paddle does not support creating a Subscription via API at all (only
+ * real checkout completion creates one, JOB-178), so there was never a real
+ * subscription id sandbox-side to PATCH against — the "reaches Paddle instead of
+ * failing at our own resolver/guard" tests below always relied on Paddle rejecting a
+ * fake placeholder id, which a mocked {@code thenThrow} now simulates directly instead.
+ * That successful-response path is covered at the unit level in
+ * {@code PaddleSubscriptionServiceTest}.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -68,6 +70,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PaddleSubscriptionIntegrationTest {
 
     private static final OffsetDateTime SCHEDULED_CANCELLATION_FIXTURE = OffsetDateTime.parse("2024-10-12T07:20:50.52Z");
+    private static final String SIMULATED_PADDLE_REJECTION =
+            "simulated - Paddle would reject a fake subscription id";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -78,20 +82,12 @@ class PaddleSubscriptionIntegrationTest {
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
-    @Value("${paddle.api-key}")
-    private String paddleApiKey;
-    @Value("${paddle.base-url}")
-    private String paddleBaseUrl;
+    @MockitoBean private PaddleClient paddleClient;
 
     private UUID ownerId;
     private UUID memberId;
     private UUID orgId;
     private UUID tierId;
-    // Unique per run: Paddle's sandbox customer data is NOT reset the way the
-    // local DB is (subscriptionRepository.deleteAll() etc. below), so a literal
-    // hardcoded email collides with a customer left over from a previous run
-    // (Paddle rejects a second POST /customers for the same email with 409
-    // customer_already_exists). Randomizing keeps this suite re-runnable.
     private String ownerEmail;
 
     @BeforeEach
@@ -123,6 +119,26 @@ class PaddleSubscriptionIntegrationTest {
                 .andExpect(status().isCreated());
 
         tierId = tierRepository.findAll().getFirst().getId();
+
+        when(paddleClient.createCustomer(any(), any()))
+                .thenAnswer(inv -> new PaddleCustomer("ctm_" + UUID.randomUUID(), inv.getArgument(0)));
+        when(paddleClient.createProduct(any()))
+                .thenAnswer(inv -> new PaddleProduct("pro_" + UUID.randomUUID(), inv.getArgument(0)));
+        when(paddleClient.createPrice(any(), any(), any(), any(), any()))
+                .thenAnswer(inv -> new PaddlePrice("pri_" + UUID.randomUUID(), "active"));
+        // sub_test_placeholder (see givenOrgHasFakePaddleSubscriptionId) was never a
+        // real Paddle subscription — these all simulate Paddle rejecting it, matching
+        // real observed sandbox behavior for the "reachesPaddleApi" tests below.
+        when(paddleClient.updateSubscriptionItems(any(), any(), any()))
+                .thenThrow(new RestClientException(SIMULATED_PADDLE_REJECTION));
+        when(paddleClient.previewUpdateSubscriptionItems(any(), any(), any()))
+                .thenThrow(new RestClientException(SIMULATED_PADDLE_REJECTION));
+        when(paddleClient.cancelSubscription(any()))
+                .thenThrow(new RestClientException(SIMULATED_PADDLE_REJECTION));
+        when(paddleClient.removeScheduledCancellation(any()))
+                .thenThrow(new RestClientException(SIMULATED_PADDLE_REJECTION));
+        when(paddleClient.getUpdatePaymentMethodTransaction(any()))
+                .thenThrow(new RestClientException(SIMULATED_PADDLE_REJECTION));
     }
 
     private void givenOrgHasSubscriptionRecord() throws Exception {
@@ -170,29 +186,6 @@ class PaddleSubscriptionIntegrationTest {
         subscriptionRepository.schedulePendingDowngrade(
                 subscriptionRepository.findByOrgId(orgId).orElseThrow().getId(), orgId, pendingTierId, Set.of(),
                 Instant.parse("2026-09-01T00:00:00Z"));
-    }
-
-    // A real Paddle Transaction, so getBillingHistory's response mapping (PaddleTransaction/
-    // PaddleTransactionDetails/PaddleTransactionTotals/PaddleBillingTransactionResponse) is
-    // actually exercised against real data — a subscription-linked transaction needs real
-    // checkout (JOB-178, can't be automated here), but Paddle's manual-collection mode lets
-    // an ad-hoc transaction be created directly via the API, no card or checkout required.
-    private String givenCustomerHasARealDraftTransaction(String customerId, String priceId) {
-        Map<String, Object> body = Map.of(
-                "customer_id", customerId,
-                "collection_mode", "manual",
-                "billing_details", Map.of("payment_terms", Map.of("interval", "day", "frequency", 30)),
-                "items", List.of(Map.of("price_id", priceId, "quantity", 1)));
-        PaddleEnvelope<PaddleTransaction> response = RestClient.builder()
-                .baseUrl(paddleBaseUrl)
-                .defaultHeader("Authorization", "Bearer " + paddleApiKey)
-                .build()
-                .post()
-                .uri("/transactions")
-                .body(body)
-                .retrieve()
-                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleTransaction>>() { });
-        return response.data().id();
     }
 
     // subscription_tiers is global seed data shared across the whole test run (not
@@ -313,11 +306,12 @@ class PaddleSubscriptionIntegrationTest {
         givenOrgHasFakePaddleSubscriptionId();
         paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
 
-        // Resolving the tier's real Paddle Price id now succeeds, so the request
-        // genuinely reaches Paddle's PATCH /subscriptions/{id} — it then fails there
-        // (surfaced as a generic 500 via GlobalExceptionHandler's catch-all) because
-        // sub_test_placeholder isn't a real Paddle subscription; Paddle subscriptions
-        // can only be created via real checkout (JOB-178), never faked in sandbox.
+        // Resolving the tier's synced Paddle Price id succeeds, so the request passes
+        // our own resolver and genuinely reaches PaddleClient.updateSubscriptionItems
+        // — mocked to throw (setUp), surfaced as a generic 500 via
+        // GlobalExceptionHandler's catch-all, simulating what Paddle's real sandbox
+        // does for sub_test_placeholder (never a real subscription — Paddle
+        // subscriptions can only be created via real checkout, JOB-178, never faked).
         // The important assertion is that this is no longer our own 409 conflict.
         mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
@@ -335,10 +329,10 @@ class PaddleSubscriptionIntegrationTest {
         SubscriptionAddonModel addon = addonRepository.findAll().getFirst();
         paddleSubscriptionService.syncAddonPriceToPaddle(addon);
 
-        // Same reasoning as the tier-only test above: resolving the addon's real
-        // Paddle Price id now succeeds, so the request reaches Paddle's real API and
-        // fails there (sub_test_placeholder isn't a real subscription) instead of
-        // failing at our own resolver.
+        // Same reasoning as the tier-only test above: resolving the addon's synced
+        // Paddle Price id succeeds, so the request passes our own resolver and reaches
+        // the mocked-to-throw PaddleClient.updateSubscriptionItems instead of failing
+        // at our own resolver.
         mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -370,8 +364,8 @@ class PaddleSubscriptionIntegrationTest {
         paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
 
         // Proves the resolver picks the tier's ANNUAL Paddle Price id (not just
-        // MONTHLY, already covered above) — the request reaches Paddle's real API
-        // instead of failing at our own resolver.
+        // MONTHLY, already covered above) — the request reaches the mocked-to-throw
+        // PaddleClient.updateSubscriptionItems instead of failing at our own resolver.
         mockMvc.perform(put(ApiPaths.paddleSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -494,11 +488,10 @@ class PaddleSubscriptionIntegrationTest {
         givenOrgHasFakePaddleSubscriptionId();
         paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
 
-        // Same reasoning as the update-items tests above: resolving the tier's real
-        // Paddle Price id now succeeds, so the request genuinely reaches Paddle's real
-        // PATCH /subscriptions/{id}/preview — it then fails there because
-        // sub_test_placeholder isn't a real Paddle subscription. The important
-        // assertion is that this is no longer our own 409 conflict.
+        // Same reasoning as the update-items tests above: resolving the tier's synced
+        // Paddle Price id succeeds, so the request passes our own resolver and reaches
+        // the mocked-to-throw PaddleClient.previewUpdateSubscriptionItems. The
+        // important assertion is that this is no longer our own 409 conflict.
         mockMvc.perform(post(ApiPaths.paddleSubscriptionPreview(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -608,9 +601,9 @@ class PaddleSubscriptionIntegrationTest {
         givenOrgHasSubscriptionRecord();
         givenOrgHasFakePaddleSubscriptionId();
 
-        // Same reasoning as the update-items tests above: sub_test_placeholder isn't
-        // a real Paddle subscription, so the request reaches Paddle's real API and
-        // fails there instead of failing at our own guard.
+        // Same reasoning as the update-items tests above: the request passes our own
+        // guard and reaches the mocked-to-throw PaddleClient.cancelSubscription
+        // instead of failing at our own guard.
         mockMvc.perform(post(ApiPaths.paddleSubscriptionCancel(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isInternalServerError());
@@ -679,9 +672,9 @@ class PaddleSubscriptionIntegrationTest {
         givenOrgHasFakePaddleSubscriptionId();
         givenOrgHasScheduledCancellation();
 
-        // Same reasoning as cancel above: sub_test_placeholder isn't a real Paddle
-        // subscription, so the request reaches Paddle's real API and fails there
-        // instead of failing at our own guard.
+        // Same reasoning as cancel above: the request passes our own guard and reaches
+        // the mocked-to-throw PaddleClient.removeScheduledCancellation instead of
+        // failing at our own guard.
         mockMvc.perform(post(ApiPaths.paddleSubscriptionResume(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isInternalServerError());
@@ -751,9 +744,9 @@ class PaddleSubscriptionIntegrationTest {
         givenOrgHasFakePaddleSubscriptionId();
         givenOrgHasPendingDowngrade();
 
-        // Same reasoning as cancel/resume above: sub_test_placeholder isn't a real
-        // Paddle subscription, so the request reaches Paddle's real API and fails
-        // there instead of failing at our own guard.
+        // Same reasoning as cancel/resume above: the request passes our own guard and
+        // reaches the mocked-to-throw PaddleClient.updateSubscriptionItems (reverting
+        // to the active tier) instead of failing at our own guard.
         mockMvc.perform(post(ApiPaths.paddleSubscriptionCancelPendingDowngrade(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isInternalServerError());
@@ -816,8 +809,8 @@ class PaddleSubscriptionIntegrationTest {
     // ─── GET .../subscription/paddle/transactions ──────────────────────────────
 
     @Test
-    @DisplayName("getBillingHistory_shouldReturn200WithRealPaddleResponse_forOwner")
-    void getBillingHistory_shouldReturn200WithRealPaddleResponse_forOwner() throws Exception {
+    @DisplayName("getBillingHistory_shouldReturn200WithMappedTransaction_forOwner")
+    void getBillingHistory_shouldReturn200WithMappedTransaction_forOwner() throws Exception {
         givenOrgHasSubscriptionRecord();
         String initiateResponse = mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
@@ -825,13 +818,16 @@ class PaddleSubscriptionIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         String customerId = objectMapper.readTree(initiateResponse).get("paddleCustomerId").asText();
 
-        var tier = paddleSubscriptionService.syncTierPriceToPaddle(tierRepository.findById(tierId).orElseThrow());
-        String transactionId = givenCustomerHasARealDraftTransaction(customerId, tier.getPaddlePriceIdMonthly());
+        var tier = tierRepository.findById(tierId).orElseThrow();
+        String transactionId = "txn_" + UUID.randomUUID();
+        String amountMinorUnits = String.valueOf(tier.getPriceMonthly() * 100);
+        when(paddleClient.listBillingHistory(customerId)).thenReturn(List.of(new PaddleTransaction(
+                transactionId, "draft", List.of(), null, "EUR",
+                new PaddleTransactionDetails(new PaddleTransactionTotals(amountMinorUnits)))));
 
-        // A real transaction against a real customer (no checkout/subscription needed,
-        // see givenCustomerHasARealDraftTransaction) — exercises the actual response
-        // mapping (PaddleTransaction/.../PaddleBillingTransactionResponse), not just an
-        // empty array.
+        // Exercises the actual response mapping (PaddleTransaction/.../
+        // PaddleBillingTransactionResponse) against a hand-built but realistically
+        // shaped transaction, not just an empty array.
         mockMvc.perform(get(ApiPaths.paddleSubscriptionTransactions(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isOk())
@@ -894,9 +890,9 @@ class PaddleSubscriptionIntegrationTest {
         givenOrgHasSubscriptionRecord();
         givenOrgHasFakePaddleSubscriptionId();
 
-        // Same reasoning as cancel/update above: sub_test_placeholder isn't a real
-        // Paddle subscription, so the request reaches Paddle's real API and fails
-        // there instead of failing at our own guard.
+        // Same reasoning as cancel/update above: the request passes our own guard and
+        // reaches the mocked-to-throw PaddleClient.getUpdatePaymentMethodTransaction
+        // instead of failing at our own guard.
         mockMvc.perform(get(ApiPaths.paddleSubscriptionUpdatePaymentMethodTransaction(orgId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
                 .andExpect(status().isInternalServerError());

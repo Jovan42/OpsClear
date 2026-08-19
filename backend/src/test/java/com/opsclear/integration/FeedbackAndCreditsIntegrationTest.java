@@ -2,6 +2,8 @@ package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.UserModel;
+import com.opsclear.paddle.PaddleClient;
+import com.opsclear.paddle.PaddleCustomer;
 import com.opsclear.repository.FeedbackSubmissionRepository;
 import com.opsclear.repository.OrgCreditRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -17,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -24,6 +27,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.USERS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -32,6 +37,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/** {@link PaddleClient} is mocked (JOB-180) — one test here calls {@code initiate}
+ *  (real {@code createCustomer}) purely as setup, which used to hit Paddle's real
+ *  sandbox. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -47,6 +55,7 @@ class FeedbackAndCreditsIntegrationTest {
     @Autowired private OrgCreditRepository orgCreditRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
+    @MockitoBean private PaddleClient paddleClient;
 
     private UUID ownerId;
     private UUID adminId;
@@ -85,6 +94,9 @@ class FeedbackAndCreditsIntegrationTest {
         addMember(orgId, ownerId, memberId, "MEMBER");
 
         otherOrgId = createOrg(outsiderId, "outsider@example.com", "Other Corp", "OTH");
+
+        when(paddleClient.createCustomer(any(), any()))
+                .thenAnswer(inv -> new PaddleCustomer("ctm_" + UUID.randomUUID(), inv.getArgument(0)));
     }
 
     private UUID createOrg(UUID callerId, String email, String name, String slug) throws Exception {
@@ -372,20 +384,18 @@ class FeedbackAndCreditsIntegrationTest {
     }
 
     @Test
-    @DisplayName("grantCredit_shouldReturn201_whenPaddleCustomerHasNoCompletedTransactionsYet")
-    void grantCredit_shouldReturn201_whenPaddleCustomerHasNoCompletedTransactionsYet() throws Exception {
-        // Real Paddle sandbox call (ADR-0044) — proves the "customer exists but has
-        // never billed anything" skip branch for real, not mocked. A genuinely
-        // completed Paddle transaction can't be produced in sandbox at all without
-        // real embedded checkout (JOB-178, not built yet — same constraint
-        // JOB-176's PaddleSubscriptionIntegrationTest already documents), so the
-        // "adjustment actually created" branch is covered at the unit level only
-        // (CreditServiceTest), not here.
+    @DisplayName("grantCredit_shouldReturn201_whenOrgHasNoRealPaddleSubscriptionYet")
+    void grantCredit_shouldReturn201_whenOrgHasNoRealPaddleSubscriptionYet() throws Exception {
+        // Proves the "Paddle customer exists but there's no real subscription yet"
+        // skip branch (JOB-180). A genuine Subscription can't be produced even against
+        // a real sandbox without real embedded checkout (JOB-178, not built yet — same
+        // constraint PaddleSubscriptionIntegrationTest documents), so the "discount
+        // actually created and attached" branch is covered instead by
+        // CreditGrantPaddleSyncIntegrationTest's mocked PaddleClient and
+        // CreditServiceTest at the unit level.
         //
-        // Paddle's sandbox customer data is not reset between runs the way the local
-        // DB is, so a literal hardcoded email collides with a customer left over from
-        // a previous run (409 customer_already_exists) — a dedicated randomized-email
-        // owner is used here instead of this file's shared fixed-email owner.
+        // A dedicated owner (rather than this file's shared fixed-email owner) keeps
+        // this test's org isolated from the others in the class.
         UUID paddleOwnerId = UUID.randomUUID();
         String paddleOwnerEmail = "paddle-owner-" + UUID.randomUUID() + "@example.com";
         userRepository.save(UserModel.builder().id(paddleOwnerId).email(paddleOwnerEmail).name("Paddle Owner").build());
@@ -404,9 +414,10 @@ class FeedbackAndCreditsIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                Map.of("orgId", paddleOrgId, "amount", 500, "reason", "No transactions yet"))))
+                                Map.of("orgId", paddleOrgId, "amount", 500, "reason", "No subscription yet"))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.amount").value(500));
+                .andExpect(jsonPath("$.amount").value(500))
+                .andExpect(jsonPath("$.paddleSyncSkippedReason").value("NO_PADDLE_SUBSCRIPTION"));
     }
 
     @Test
@@ -431,6 +442,17 @@ class FeedbackAndCreditsIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 Map.of("orgId", orgId, "amount", 0, "reason", "Zero credit"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("grantCredit_shouldReturn400_whenAmountBelowMinimum")
+    void grantCredit_shouldReturn400_whenAmountBelowMinimum() throws Exception {
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("orgId", orgId, "amount", 4, "reason", "Too small to bother with"))))
                 .andExpect(status().isBadRequest());
     }
 

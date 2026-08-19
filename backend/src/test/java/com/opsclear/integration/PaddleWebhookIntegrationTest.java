@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.SubscriptionTierModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.paddle.PaddleClient;
+import com.opsclear.paddle.PaddlePrice;
+import com.opsclear.paddle.PaddleProduct;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -20,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import javax.crypto.Mac;
@@ -35,6 +39,8 @@ import java.util.UUID;
 import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -53,6 +59,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * verification and dispatch logic is correct; it does not prove Paddle's real
  * deliveries match this shape byte-for-byte (see PaddleWebhookService's class
  * Javadoc and the PR description for the verified-vs-assumed breakdown).
+ *
+ * <p>{@link PaddleClient} is mocked (JOB-180) — one test here also calls
+ * {@code syncTierPriceToPaddle}/{@code syncAddonPriceToPaddle} directly to get real
+ * price ids to embed in the webhook body, which used to hit Paddle's real sandbox too.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -72,6 +82,7 @@ class PaddleWebhookIntegrationTest {
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
+    @MockitoBean private PaddleClient paddleClient;
 
     @Value("${paddle.webhook-secret}")
     private String configuredSecret;
@@ -114,6 +125,11 @@ class PaddleWebhookIntegrationTest {
                 .set(ORGANISATIONS.PADDLE_CUSTOMER_ID, customerId)
                 .where(ORGANISATIONS.ID.eq(orgId))
                 .execute();
+
+        when(paddleClient.createProduct(any()))
+                .thenAnswer(inv -> new PaddleProduct("pro_" + UUID.randomUUID(), inv.getArgument(0)));
+        when(paddleClient.createPrice(any(), any(), any(), any(), any()))
+                .thenAnswer(inv -> new PaddlePrice("pri_" + UUID.randomUUID(), "active"));
     }
 
     @Test

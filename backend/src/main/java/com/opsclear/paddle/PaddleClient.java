@@ -8,7 +8,6 @@ import org.springframework.web.client.RestClient;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Thin wrapper over Paddle's REST API (ADR-0044). Deliberately minimal — only the
@@ -109,23 +108,9 @@ public class PaddleClient {
                 .toBodilessEntity();
     }
 
-    public Optional<PaddleTransaction> findLatestCompletedTransaction(String customerId) {
-        PaddleEnvelope<List<PaddleTransaction>> response = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/transactions")
-                        .queryParam("customer_id", customerId)
-                        .queryParam("status", "completed")
-                        .queryParam("order_by", "billed_at[DESC]")
-                        .queryParam("per_page", 1)
-                        .build())
-                .retrieve()
-                .body(new ParameterizedTypeReference<PaddleEnvelope<List<PaddleTransaction>>>() { });
-        return response.data().stream().findFirst();
-    }
-
-    // No status filter, unlike findLatestCompletedTransaction — billing history should
-    // show failed/past-due attempts too, not just successful ones, so the customer can
-    // see why they were charged (or not) rather than a sanitized success-only view.
+    // No status filter — billing history should show failed/past-due attempts too, not
+    // just successful ones, so the customer can see why they were charged (or not)
+    // rather than a sanitized success-only view.
     public List<PaddleTransaction> listBillingHistory(String customerId) {
         PaddleEnvelope<List<PaddleTransaction>> response = restClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -169,19 +154,41 @@ public class PaddleClient {
         return response.data();
     }
 
-    public PaddleAdjustment createCreditAdjustment(
-            String transactionId, String itemId, String amountMinorUnits, String reason) {
+    // A one-time, non-checkout discount (JOB-180): unlike an Adjustment, this works
+    // regardless of the subscription's collection mode, and reduces a future charge
+    // rather than moving money right now — matching what ADR-0043 actually promised.
+    // recur:false means Paddle applies it to the next transaction generated for the
+    // subscription it's attached to (see attachDiscountToSubscription) and then retires
+    // it automatically; enabled_for_checkout:false keeps it from ever being redeemable
+    // as a public coupon code.
+    public PaddleDiscount createOneTimeDiscount(String amountMinorUnits, String currencyCode, String description) {
         Map<String, Object> body = Map.of(
-                "action", "credit",
-                "type", "partial",
-                "transaction_id", transactionId,
-                "reason", reason,
-                "items", List.of(Map.of("item_id", itemId, "type", "partial", "amount", amountMinorUnits)));
-        PaddleEnvelope<PaddleAdjustment> response = restClient.post()
-                .uri("/adjustments")
+                "type", "flat",
+                "amount", amountMinorUnits,
+                "currency_code", currencyCode,
+                "description", description,
+                "enabled_for_checkout", false,
+                "recur", false);
+        PaddleEnvelope<PaddleDiscount> response = restClient.post()
+                .uri("/discounts")
                 .body(body)
                 .retrieve()
-                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleAdjustment>>() { });
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleDiscount>>() { });
+        return response.data();
+    }
+
+    // A subscription has at most one discount attached at a time — attaching a new one
+    // replaces whatever was there before. If a prior one-time credit discount hasn't
+    // been consumed by a transaction yet when a second credit is granted, this silently
+    // drops the first one. Not yet solved (JOB-180) — flagged as a known limitation
+    // pending live sandbox verification of how Paddle actually behaves here.
+    public PaddleSubscription attachDiscountToSubscription(String subscriptionId, String discountId) {
+        Map<String, Object> body = Map.of("discount", Map.of("id", discountId));
+        PaddleEnvelope<PaddleSubscription> response = restClient.patch()
+                .uri("/subscriptions/{id}", subscriptionId)
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleSubscription>>() { });
         return response.data();
     }
 }
