@@ -157,10 +157,13 @@ public class PaddleClient {
     // A one-time, non-checkout discount (JOB-180): unlike an Adjustment, this works
     // regardless of the subscription's collection mode, and reduces a future charge
     // rather than moving money right now — matching what ADR-0043 actually promised.
-    // recur:false means Paddle applies it to the next transaction generated for the
-    // subscription it's attached to (see attachDiscountToSubscription) and then retires
-    // it automatically; enabled_for_checkout:false keeps it from ever being redeemable
-    // as a public coupon code.
+    // recur:false was the first attempt here and Paddle rejects it outright when
+    // attaching to a subscription (subscription_one_off_discount_not_valid, confirmed
+    // via a real sandbox 400) — a subscription-attached discount must be "recurring"
+    // by Paddle's rules. recur:true + maximum_recurring_intervals:1 satisfies that
+    // while still only actually applying to one billing period, which is the one-time
+    // behavior we actually want. enabled_for_checkout:false keeps it from ever being
+    // redeemable as a public coupon code.
     public PaddleDiscount createOneTimeDiscount(String amountMinorUnits, String currencyCode, String description) {
         Map<String, Object> body = Map.of(
                 "type", "flat",
@@ -168,7 +171,8 @@ public class PaddleClient {
                 "currency_code", currencyCode,
                 "description", description,
                 "enabled_for_checkout", false,
-                "recur", false);
+                "recur", true,
+                "maximum_recurring_intervals", 1);
         PaddleEnvelope<PaddleDiscount> response = restClient.post()
                 .uri("/discounts")
                 .body(body)
