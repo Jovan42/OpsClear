@@ -95,7 +95,10 @@ public class CreditService {
                     credit.getOrgId(), credit.getId());
             return Optional.empty();
         } catch (RuntimeException e) {
-            log.warn("Failed to sync credit {} (org {}) to Paddle — ledger entry stands regardless",
+            // Unlike a skip reason, grant() rolls the whole transaction back for
+            // PADDLE_ERROR — this log line fires before that unwind happens, so it's
+            // reporting the failure, not stating the ledger entry's final fate.
+            log.warn("Failed to sync credit {} (org {}) to Paddle — grant will be rolled back",
                     credit.getId(), credit.getOrgId(), e);
             return Optional.of(PaddleSyncSkippedReason.PADDLE_ERROR);
         }
