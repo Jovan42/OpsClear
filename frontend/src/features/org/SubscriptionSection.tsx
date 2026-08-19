@@ -622,6 +622,16 @@ export default function SubscriptionSection({ orgId }: Props) {
             ? (
               <div className="space-y-3">
                 <p>{t('paddleUpdateConfirmUpgradeMessage')}</p>
+                {!!pendingPreview.creditApplied && (
+                  <div className="flex justify-between items-baseline text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {t('paddleUpdateConfirmCreditAppliedLabel')}
+                    </span>
+                    <span className="text-amber-600 dark:text-amber-400">
+                      -{fmt(pendingPreview.creditApplied)} {pendingPreview.currency ?? ''}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-baseline pt-2 border-t border-gray-200 dark:border-gray-700">
                   <span className="text-sm text-gray-500 dark:text-gray-400">
                     {t('paddleUpdateConfirmChargedNowLabel')}
