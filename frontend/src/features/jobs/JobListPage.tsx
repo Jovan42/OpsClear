@@ -7,6 +7,7 @@ import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
 import ProgressBar from '../../components/ProgressBar';
+import RefreshButton from '../../components/RefreshButton';
 import PriorityBadge from '../../components/PriorityBadge';
 import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
@@ -402,7 +403,7 @@ export default function JobListPage() {
     });
   }
 
-  const { data: jobs = [], isLoading, isError, refetch } = useJobList(
+  const { data: jobs = [], isLoading, isError, isFetching, dataUpdatedAt, refetch } = useJobList(
     projectId,
     debouncedSearch || undefined,
     priorityFilter !== 'ALL' ? priorityFilter : undefined,
@@ -443,7 +444,10 @@ export default function JobListPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('jobListPage.heading')}</h1>
-        <Button onClick={() => setModalOpen(true)} disabled={project?.status === 'COMPLETED'}>{t('jobListPage.newJobButton')}</Button>
+        <div className="flex items-center gap-3">
+          <RefreshButton lastUpdated={dataUpdatedAt} isFetching={isFetching} onRefresh={() => void refetch()} />
+          <Button onClick={() => setModalOpen(true)} disabled={project?.status === 'COMPLETED'}>{t('jobListPage.newJobButton')}</Button>
+        </div>
       </div>
 
       {/* Search + Priority filter + Milestone filter + View toggle */}

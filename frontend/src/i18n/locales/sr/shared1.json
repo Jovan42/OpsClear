@@ -11,6 +11,13 @@
   "signOut": "Odjavi se",
   "projectSwitcherEmpty": "Nema drugih aktivnih projekata",
   "projectSwitcherNotAMember": "Niste član ovog projekta",
+  "refresh": {
+    "button": "Osveži",
+    "lastUpdated": "Ažurirano {{time}}",
+    "justNow": "upravo sada",
+    "minutesAgo": "pre {{count}}min",
+    "hoursAgo": "pre {{count}}h"
+  },
   "projectLinks": "Linkovi projekta",
   "noLinksYet": "Još uvek nema linkova.",
   "urlPlaceholder": "https://…",

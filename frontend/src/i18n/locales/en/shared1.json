@@ -11,6 +11,13 @@
   "signOut": "Sign out",
   "projectSwitcherEmpty": "No other active projects",
   "projectSwitcherNotAMember": "You're not a member of this project",
+  "refresh": {
+    "button": "Refresh",
+    "lastUpdated": "Updated {{time}}",
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago"
+  },
   "projectLinks": "Project Links",
   "noLinksYet": "No links yet.",
   "urlPlaceholder": "https://…",

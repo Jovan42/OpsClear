@@ -5,6 +5,7 @@ import { CheckCircle2 } from 'lucide-react';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 import PageError from '../../components/PageError';
+import RefreshButton from '../../components/RefreshButton';
 import Skeleton from '../../components/Skeleton';
 import ApprovalDecisionModal from '../jobs/components/ApprovalDecisionModal';
 import UpgradeCard from '../../components/UpgradeCard';
@@ -82,7 +83,7 @@ export default function ApprovalQueuePage() {
   const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);
   const { hasAddon } = useCurrentOrg();
-  const { data: approvals = [], isLoading, isError, refetch } = useApprovalQueue(projectId);
+  const { data: approvals = [], isLoading, isError, isFetching, dataUpdatedAt, refetch } = useApprovalQueue(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
   usePageTitle(t('approvals.pageTitle'), project?.name);
   const [decision, setDecision] = useState<DecisionState>(null);
@@ -152,6 +153,7 @@ export default function ApprovalQueuePage() {
             </span>
           )}
         </h1>
+        <RefreshButton lastUpdated={dataUpdatedAt} isFetching={isFetching} onRefresh={() => void refetch()} />
       </div>
 
       {groups.length === 0 ? (
