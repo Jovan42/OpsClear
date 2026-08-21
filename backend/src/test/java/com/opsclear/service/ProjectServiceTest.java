@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
@@ -81,7 +82,8 @@ class ProjectServiceTest {
         OrganisationModel org = OrganisationModel.builder()
                 .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(ownerId).build();
         // Default: all callers belong to an org. Individual tests override for "no org" scenarios.
-        when(organisationRepository.findByMember(any())).thenReturn(Optional.of(org));
+        // lenient() — the getDirectory tests below use findMemberRole instead, never touching this stub.
+        lenient().when(organisationRepository.findByMember(any())).thenReturn(Optional.of(org));
     }
 
     @Test
@@ -615,6 +617,52 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> projectService.updateStatus(projectId, ProjectStatus.COMPLETED, ownerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+    }
+
+    @Test
+    @DisplayName("getDirectory_shouldReturnDirectory_whenCallerIsOwnerOrAdmin")
+    void getDirectory_shouldReturnDirectory_whenCallerIsOwnerOrAdmin() {
+        UUID orgId = UUID.randomUUID();
+        List<com.opsclear.model.ProjectDirectoryEntryModel> directory = List.of(
+                com.opsclear.model.ProjectDirectoryEntryModel.builder()
+                        .id(UUID.randomUUID())
+                        .friendlyId("PRJ-001")
+                        .name("Orphaned project")
+                        .ownerId(ownerId)
+                        .ownerName("Test Owner")
+                        .status(ProjectStatus.ACTIVE)
+                        .memberCount(0)
+                        .build());
+        when(organisationRepository.findMemberRole(orgId, ownerId))
+                .thenReturn(Optional.of(com.opsclear.model.OrganisationRole.OWNER));
+        when(projectRepository.findDirectoryByOrgId(orgId)).thenReturn(directory);
+
+        List<com.opsclear.model.ProjectDirectoryEntryModel> result = projectService.getDirectory(orgId, ownerId);
+
+        assertThat(result).isEqualTo(directory);
+    }
+
+    @Test
+    @DisplayName("getDirectory_shouldThrowForbiddenException_whenCallerIsPlainMember")
+    void getDirectory_shouldThrow_whenCallerIsPlainMember() {
+        UUID orgId = UUID.randomUUID();
+        when(organisationRepository.findMemberRole(orgId, ownerId))
+                .thenReturn(Optional.of(com.opsclear.model.OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> projectService.getDirectory(orgId, ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
+    }
+
+    @Test
+    @DisplayName("getDirectory_shouldThrowNotFoundException_whenOrgDoesNotExist")
+    void getDirectory_shouldThrow_whenOrgDoesNotExist() {
+        UUID orgId = UUID.randomUUID();
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.getDirectory(orgId, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_FOUND);
     }
 
 }

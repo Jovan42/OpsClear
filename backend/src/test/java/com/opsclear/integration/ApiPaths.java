@@ -270,6 +270,12 @@ final class ApiPaths {
         return "/api/organisations/" + orgId + "/credits/balance";
     }
 
+    // --- Project directory ---
+
+    static String projectDirectory(UUID orgId) {
+        return "/api/organisations/" + orgId + "/projects/directory";
+    }
+
     // --- Super admin feedback + credits ---
 
     static final String SUPER_ADMIN_FEEDBACK      = "/api/super-admin/feedback";

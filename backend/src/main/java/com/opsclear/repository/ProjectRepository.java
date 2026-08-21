@@ -1,5 +1,6 @@
 package com.opsclear.repository;
 
+import com.opsclear.model.ProjectDirectoryEntryModel;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +8,8 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.springframework.stereotype.Repository;
+
+import static org.jooq.impl.DSL.count;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -77,6 +80,30 @@ public class ProjectRepository {
         }
 
         return query.fetch().map(this::toModel);
+    }
+
+    public List<ProjectDirectoryEntryModel> findDirectoryByOrgId(UUID orgId) {
+        Field<Integer> memberCount = count(PROJECT_MEMBERS.USER_ID).as("member_count");
+        return dsl.select(PROJECTS.ID, PROJECTS.FRIENDLY_ID, PROJECTS.NAME, PROJECTS.OWNER_ID,
+                        OWNER_NAME, PROJECTS.STATUS, memberCount)
+                .from(PROJECTS)
+                .join(USERS).on(PROJECTS.OWNER_ID.eq(USERS.ID))
+                .leftJoin(PROJECT_MEMBERS).on(PROJECT_MEMBERS.PROJECT_ID.eq(PROJECTS.ID))
+                .where(PROJECTS.ORGANISATION_ID.eq(orgId))
+                .and(PROJECTS.DELETED_AT.isNull())
+                .groupBy(PROJECTS.ID, PROJECTS.FRIENDLY_ID, PROJECTS.NAME, PROJECTS.OWNER_ID,
+                        OWNER_NAME, PROJECTS.STATUS)
+                .orderBy(memberCount.asc())
+                .fetch()
+                .map(r -> ProjectDirectoryEntryModel.builder()
+                        .id(r.get(PROJECTS.ID))
+                        .friendlyId(r.get(PROJECTS.FRIENDLY_ID))
+                        .name(r.get(PROJECTS.NAME))
+                        .ownerId(r.get(PROJECTS.OWNER_ID))
+                        .ownerName(r.get(OWNER_NAME))
+                        .status(ProjectStatus.valueOf(r.get(PROJECTS.STATUS)))
+                        .memberCount(r.get(memberCount))
+                        .build());
     }
 
     public boolean existsByNameAndOwnerIdAndDeletedAtIsNull(String name, UUID ownerId) {
