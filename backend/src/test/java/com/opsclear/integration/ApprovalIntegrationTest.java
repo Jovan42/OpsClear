@@ -411,6 +411,82 @@ class ApprovalIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // --- GET /api/approvals/pending (cross-project, ADR-0046 / JOB-190) ---
+
+    @Test
+    @DisplayName("pendingAcrossOrgs should return oldest-first, only from projects where the caller is Owner/Admin, with project context")
+    void pendingAcrossOrgs_shouldReturnOldestFirst_onlyFromOwnerOrAdminProjects() throws Exception {
+        // project2: memberId is OWNER here (flipped from project1, where memberId is a plain MEMBER)
+        ProjectModel project2 = projectRepository.save(
+                ProjectModel.builder().name("Second Project").ownerId(memberId).organisationId(orgId).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project2.getId()).userId(memberId).role(ProjectMemberRole.OWNER).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(project2.getId()).userId(ownerId).role(ProjectMemberRole.MEMBER).build());
+        JobModel job2 = jobRepository.save(JobModel.builder()
+                .projectId(project2.getId())
+                .title("Second project job")
+                .status(JobStatus.IN_PROGRESS)
+                .assignedTo(memberId)
+                .createdBy(memberId)
+                .build());
+
+        UUID firstApprovalId = approvalRepository.insert(jobId, memberId, "First — project 1").getId();
+        approvalRepository.insert(job2.getId(), memberId, "Second — project 2").getId();
+
+        // ownerId is OWNER of project1 but only a MEMBER of project2 — should see project1's
+        // approval only, even though it was requested first (oldest-first still holds for its
+        // one visible entry).
+        mockMvc.perform(get(ApiPaths.PENDING_APPROVALS_ACROSS_ORGS)
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(firstApprovalId.toString()))
+                .andExpect(jsonPath("$[0].projectId").value(projectId.toString()))
+                .andExpect(jsonPath("$[0].projectName").value("Test Project"));
+
+        // memberId is OWNER of project2 but only a plain MEMBER of project1 — should see
+        // project2's approval only.
+        mockMvc.perform(get(ApiPaths.PENDING_APPROVALS_ACROSS_ORGS)
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].description").value("Second — project 2"))
+                .andExpect(jsonPath("$[0].projectId").value(project2.getId().toString()))
+                .andExpect(jsonPath("$[0].projectName").value("Second Project"));
+    }
+
+    @Test
+    @DisplayName("pendingAcrossOrgs should exclude already-decided approvals")
+    void pendingAcrossOrgs_shouldExcludeDecidedApprovals() throws Exception {
+        UUID decidedId = approvalRepository.insert(jobId, memberId, "Already handled").getId();
+        approvalRepository.updateDecision(
+                decidedId, ownerId, com.opsclear.model.ApprovalStatus.APPROVED, null, Instant.now());
+
+        mockMvc.perform(get(ApiPaths.PENDING_APPROVALS_ACROSS_ORGS)
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("pendingAcrossOrgs should return empty array for a caller with no Owner/Admin projects")
+    void pendingAcrossOrgs_shouldReturnEmptyArray_whenCallerHasNoOwnerOrAdminProjects() throws Exception {
+        approvalRepository.insert(jobId, memberId, "Not visible to a plain member");
+
+        mockMvc.perform(get(ApiPaths.PENDING_APPROVALS_ACROSS_ORGS)
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("pendingAcrossOrgs should return 401 without authentication")
+    void pendingAcrossOrgs_shouldReturn401_withoutAuth() throws Exception {
+        mockMvc.perform(get(ApiPaths.PENDING_APPROVALS_ACROSS_ORGS))
+                .andExpect(status().isUnauthorized());
+    }
+
     // --- completed project guard ---
 
     @Test

@@ -447,6 +447,17 @@ class ApprovalServiceTest {
                 .hasMessage("Project not found");
     }
 
+    @Test
+    @DisplayName("findPendingAcrossOrgs should return whatever the repository returns for the caller")
+    void findPendingAcrossOrgs_shouldReturnRepositoryResult() {
+        ApprovalModel crossProject = buildApproval(ApprovalStatus.PENDING);
+        when(approvalRepository.findPendingAcrossOrgs(callerId)).thenReturn(List.of(crossProject));
+
+        List<ApprovalModel> result = approvalService.findPendingAcrossOrgs(callerId);
+
+        assertThat(result).containsExactly(crossProject);
+    }
+
     // --- helpers ---
 
     private ApprovalModel buildApproval(ApprovalStatus status) {

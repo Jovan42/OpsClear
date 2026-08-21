@@ -80,6 +80,11 @@ public class ApprovalService {
         return approvalRepository.findPendingByProjectId(projectId);
     }
 
+    @Transactional(readOnly = true)
+    public List<ApprovalModel> findPendingAcrossOrgs(UUID callerId) {
+        return approvalRepository.findPendingAcrossOrgs(callerId);
+    }
+
     // --- Guards ---
 
     private ProjectModel requireProjectExists(UUID projectId) {
