@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
+import RefreshButton from '../../components/RefreshButton';
 import Skeleton from '../../components/Skeleton';
 import PriorityBadge from '../../components/PriorityBadge';
 import StatusBadge from '../../components/StatusBadge';
@@ -47,8 +49,9 @@ export default function JobDetailPage() {
   const { projectFriendlyId: projectId = '', jobFriendlyId: jobId = '' } = useParams();
   const navigate = useNavigate();
   const { userId } = useAuth();
+  const queryClient = useQueryClient();
 
-  const { data: job, isLoading, isError, refetch } = useJob(projectId, jobId);
+  const { data: job, isLoading, isError, isFetching, dataUpdatedAt, refetch } = useJob(projectId, jobId);
   const { data: project } = useProject(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
   const { data: approvals = [], isLoading: approvalsLoading } = useApprovals(projectId, jobId);
@@ -199,6 +202,11 @@ export default function JobDetailPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <RefreshButton
+              lastUpdated={dataUpdatedAt}
+              isFetching={isFetching}
+              onRefresh={() => void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId] })}
+            />
             {isOwnerOrAdmin && (
               <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)} disabled={isProjectCompleted}>
                 {t('jobDetailPage.editButton')}

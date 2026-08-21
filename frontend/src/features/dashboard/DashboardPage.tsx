@@ -8,6 +8,7 @@ import { CheckCircle2, ListTodo } from 'lucide-react';
 import EmptyState from '../../components/EmptyState';
 import Markdown from '../../components/Markdown';
 import PageError from '../../components/PageError';
+import RefreshButton from '../../components/RefreshButton';
 import Skeleton from '../../components/Skeleton';
 import UpgradeCard from '../../components/UpgradeCard';
 import { useDashboard } from './useDashboard';
@@ -319,7 +320,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);
-  const { data, isLoading, isError, refetch } = useDashboard(projectId);
+  const { data, isLoading, isError, isFetching, dataUpdatedAt, refetch } = useDashboard(projectId);
   usePageTitle(t('dashboard.pageTitle'), project?.name);
   const { prefs } = usePreferences();
   const { hasAddon } = useCurrentOrg();
@@ -359,6 +360,10 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      <div className="flex justify-end">
+        <RefreshButton lastUpdated={dataUpdatedAt} isFetching={isFetching} onRefresh={() => void refetch()} />
+      </div>
+
       {/* Completed banner */}
       {project?.status === 'COMPLETED' && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-sm text-green-800 dark:text-green-300">

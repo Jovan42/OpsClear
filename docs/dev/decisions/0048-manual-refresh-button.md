@@ -10,11 +10,13 @@ TanStack Query already refetches on window focus, covering the common case of ta
 
 ## Decision
 
-Add an explicit, user-initiated refresh control with a "Last updated Xm ago" label to Job Detail and Dashboard, rather than automatic polling.
+Add an explicit, user-initiated refresh control with a "Last updated Xm ago" label to Job Detail, Dashboard, Job List, and the per-project Approvals queue, rather than automatic polling.
+
+> **Amended 2026-08-21, after implementation:** original V1 scope was Job Detail and Dashboard only, with Job List explicitly excluded (see rejected reasoning below, kept for context). Extended during JOB-194 to also cover Job List and the Approvals queue, on direct request — same reusable control, no design change, just two more call sites.
 
 ## Product decisions
 
-- **Scope: Job detail and Dashboard for V1.** Job list isn't included — it already refetches more naturally on navigation/filter changes.
+- **Scope: Job Detail, Dashboard, Job List, and Approvals.** Originally scoped to Job Detail and Dashboard only for V1, with Job List deliberately excluded on the reasoning that it already refetches more naturally on navigation/filter changes than the other two pages (see Alternatives). That reasoning is still true, but the control was added there anyway (and to Approvals, which has the same "sit on one screen" staleness risk as Dashboard/Job Detail) since the component is a trivial reuse once built — no separate design decision, just consistency across every page that shows live team data.
 - **Visual treatment:** a small "Last updated Xm ago" label next to a refresh icon — more informative than a bare icon, since it tells the user whether the data might already be stale before they even click.
 - **Loading state while refetching:** the button shows a brief spinner/disabled state while the request is in flight, returning to normal once it resolves — prevents a user clicking again or assuming it's broken during a momentarily slow refetch.
 - **No explicit change-confirmation** after refresh — the re-rendered page with fresh data is self-evident; adding a "3 things changed" summary would be over-engineering for what's meant to be a simple escape hatch.
@@ -32,9 +34,9 @@ None — purely a frontend affordance on top of existing data-fetching.
 None.
 
 ### Frontend
-- Refresh control + "Last updated Xm ago" label in the header of Job Detail and Dashboard pages, with a loading/disabled state driven by the query's own `isFetching` state (TanStack Query already exposes this — no new state needed).
-- Triggers `queryClient.invalidateQueries()` / `refetch()` for that page's existing queries.
-- "Last updated" timestamp tracked from the query's own `dataUpdatedAt` (also already exposed).
+- Shared `RefreshButton` component (icon + "Updated Xm ago" label), reused as-is across all four pages — a dumb presentational control that takes `lastUpdated`/`isFetching`/`onRefresh` as props and ticks its own internal 30s timer to advance the label without needing fresh data. Each page wires it to its own query's `dataUpdatedAt`/`isFetching` (TanStack Query already exposes both — no new state needed) and its own `refetch`/`invalidateQueries` call.
+- Dashboard, Job List, Approvals: single query per page, so the button calls that query's own `refetch()` directly.
+- Job Detail: several queries share the page (job itself, notes, approvals, history — job status history is a separate fetch; relationships are embedded fields on the job object itself, refreshed for free). Refresh calls `queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId] })`, which prefix-matches all of them in one click rather than calling four separate `refetch()`s.
 
 ### Constraints & edge cases
 - Must not clobber in-progress edit state — refetching must not blow away an open inline-edit form's unsaved input.
@@ -69,14 +71,17 @@ Considered, since refetches are usually fast. Rejected — a momentarily slow re
 - Still just an escape hatch, not a guarantee — a user has to notice and act on it; full real-time correctness would need push-based updates (WebSocket/SSE), explicitly not being built here
 
 ### Neutral
-- Job list intentionally excluded from V1 scope
+- Job List was intentionally excluded from the original V1 scope, then added anyway during implementation (see amendment) — not a reversal of the reasoning, just a low-cost consistency extension once the shared component existed
 
 ## Implementation order
-1. Refresh control + "Last updated Xm ago" label component, with `isFetching`-driven loading state
-2. Wire into Job Detail page
+1. `RefreshButton` component, with `isFetching`-driven loading state
+2. Wire into Job Detail page (`invalidateQueries` on the `['jobs', projectId, jobId]` prefix)
 3. Wire into Dashboard page
+4. Wire into Job List page (scope expansion, see amendment above)
+5. Wire into Approvals page (scope expansion, see amendment above)
 
 ## References
 
 - JOB-181 (Maintenance, completed): addon-gated query fix this ADR's refresh behavior must respect
 - JOB-132 (Future Consideration, promoted to PRJ-010/MIL-030): original scoping notes this ADR implements
+- JOB-194 (PRJ-010, "Manual refresh button on high-churn collaborative pages"): implementation, including the scope amendment to Job List and Approvals
