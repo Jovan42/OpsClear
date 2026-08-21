@@ -132,6 +132,14 @@
     "emptyState": "All caught up — no pending approvals.",
     "jobLink": "→ Job"
   },
+  "overview": {
+    "pageTitle": "Overview",
+    "pendingApprovalsHeading": "Pending Approvals",
+    "pendingApprovalsEmptyState": "All caught up — no pending approvals across your projects.",
+    "pendingApprovalsLoadError": "Failed to load pending approvals.",
+    "requestedAt": "Requested {{date}}",
+    "showMore": "Show {{count}} more"
+  },
   "dashboard": {
     "pageTitle": "Dashboard",
     "featureName": "Dashboard",

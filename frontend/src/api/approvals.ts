@@ -29,4 +29,9 @@ export const approvalsApi = {
     apiClient
       .get<PendingApprovalResponse[]>(`/api/projects/${projectId}/approvals/pending`)
       .then((r) => r.data),
+
+  listPendingAcrossOrgs: () =>
+    apiClient
+      .get<PendingApprovalResponse[]>('/api/approvals/pending')
+      .then((r) => r.data),
 };

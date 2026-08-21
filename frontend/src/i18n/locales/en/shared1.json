@@ -6,6 +6,8 @@
   "organisation": "Organisation",
   "settings": "Settings",
   "feedback": "Feedback",
+  "overview": "Overview",
+  "accountSettings": "Account settings",
   "signOut": "Sign out",
   "projectLinks": "Project Links",
   "noLinksYet": "No links yet.",

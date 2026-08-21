@@ -166,6 +166,13 @@ export interface PendingApprovalResponse {
   requesterId: string;
   description: string;
   requestedAt: string;
+  // Only populated by the cross-project GET /api/approvals/pending endpoint
+  // (JOB-190/ADR-0046) — undefined on the per-project pending list, whose
+  // caller already knows which project/job it's looking at.
+  jobFriendlyId?: string;
+  projectId?: string;
+  projectFriendlyId?: string;
+  projectName?: string;
 }
 
 // ---- Organisations ----

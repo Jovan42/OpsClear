@@ -11,3 +11,13 @@ export function useApprovalQueue(projectId: string) {
     enabled: !!projectId && hasAddon('APPROVALS'),
   });
 }
+
+export function usePendingApprovalsAcrossOrgs() {
+  const { hasAddon } = useCurrentOrg();
+  return useQuery({
+    queryKey: ['approvals', 'pending', 'cross-org'],
+    queryFn: () => approvalsApi.listPendingAcrossOrgs(),
+    staleTime: 5 * 60 * 1000,
+    enabled: hasAddon('APPROVALS'),
+  });
+}

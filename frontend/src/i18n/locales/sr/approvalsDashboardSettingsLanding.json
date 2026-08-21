@@ -132,6 +132,14 @@
     "emptyState": "Sve je sređeno — nema odobrenja na čekanju.",
     "jobLink": "→ Posao"
   },
+  "overview": {
+    "pageTitle": "Pregled",
+    "pendingApprovalsHeading": "Odobrenja na čekanju",
+    "pendingApprovalsEmptyState": "Sve je sređeno — nema odobrenja na čekanju ni na jednom projektu.",
+    "pendingApprovalsLoadError": "Učitavanje odobrenja na čekanju nije uspelo.",
+    "requestedAt": "Zatraženo {{date}}",
+    "showMore": "Prikaži još {{count}}"
+  },
   "dashboard": {
     "pageTitle": "Kontrolna tabla",
     "featureName": "Kontrolna tabla",
