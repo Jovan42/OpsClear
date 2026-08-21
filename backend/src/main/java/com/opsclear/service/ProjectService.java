@@ -8,6 +8,8 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.OrganisationModel;
+import com.opsclear.model.OrganisationRole;
+import com.opsclear.model.ProjectDirectoryEntryModel;
 import com.opsclear.model.ProjectLinkModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -95,6 +97,12 @@ public class ProjectService {
         return project;
     }
 
+    @Transactional(readOnly = true)
+    public List<ProjectDirectoryEntryModel> getDirectory(UUID orgId, UUID callerId) {
+        requireOrgOwnerOrAdmin(orgId, callerId);
+        return projectRepository.findDirectoryByOrgId(orgId);
+    }
+
     private void attachLinks(List<ProjectModel> projects) {
         List<UUID> projectIds = projects.stream().map(ProjectModel::getId).toList();
         Map<UUID, List<ProjectLinkModel>> byProjectId = projectLinkRepository.findByProjectIds(projectIds).stream()
@@ -150,6 +158,14 @@ public class ProjectService {
         return organisationRepository.findByMember(userId)
                 .map(OrganisationModel::getId)
                 .orElseThrow(() -> new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG));
+    }
+
+    private void requireOrgOwnerOrAdmin(UUID orgId, UUID userId) {
+        OrganisationRole role = organisationRepository.findMemberRole(orgId, userId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Organisation.NOT_FOUND));
+        if (role == OrganisationRole.MEMBER) {
+            throw new ForbiddenException(ErrorMessages.Organisation.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
+        }
     }
 
     // --- Name uniqueness ---
