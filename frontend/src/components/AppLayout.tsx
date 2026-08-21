@@ -3,14 +3,15 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
-import { useProject } from '../features/projects/useProjects';
 import { useMyOrg } from '../features/org/useOrganisation';
 import { useOrgSubscription } from '../features/org/useSubscription';
 import { useCurrentOrg } from '../features/org/OrgContext';
 import UserMenu from './UserMenu';
+import ProjectSwitcher from './ProjectSwitcher';
 import ProjectNavItemView from './ProjectNavItemView';
 import { useProjectNavItems, type ProjectNavData } from '../hooks/useProjectNavItems';
 import { useTheme } from '../hooks/useTheme';
+import { recordProjectVisit } from '../hooks/useRecentProjects';
 
 function ProjectNav({ projectId, navData }: Readonly<{ projectId: string; navData: ProjectNavData }>) {
   const { items, links, canManageLinks } = navData;
@@ -93,22 +94,6 @@ function NavDrawer({
   );
 }
 
-function ProjectBreadcrumb({ projectId }: Readonly<{ projectId: string }>) {
-  const { data: project } = useProject(projectId);
-  if (!project) return null;
-  return (
-    <>
-      <span className="text-white/40 text-lg font-light">/</span>
-      <Link
-        to={`/projects/${projectId}`}
-        className="text-sm font-medium text-white/80 hover:text-white transition-colors truncate max-w-[160px] sm:max-w-xs"
-      >
-        {project.name}
-      </Link>
-    </>
-  );
-}
-
 function OrgLoader() {
   const { setOrg, setSubscription, clearOrg } = useCurrentOrg();
   const { data: myOrg } = useMyOrg();
@@ -158,6 +143,13 @@ export default function AppLayout() {
       ? segments[2]
       : null;
 
+  // ADR-0047: records every project page load for the quick switcher's recency
+  // sort — a plain project-id id (not a UUID lookup) is enough, matching what's
+  // already in the URL.
+  useEffect(() => {
+    if (projectId) recordProjectVisit(projectId);
+  }, [projectId]);
+
   // Called unconditionally (empty string when there's no project route) so this and
   // ProjectNav/NavDrawer below share one subscription instead of tripling queries.
   const navData = useProjectNavItems(projectId ?? '');
@@ -195,7 +187,7 @@ export default function AppLayout() {
             >
               OpsClear
             </Link>
-            {projectId && <ProjectBreadcrumb projectId={projectId} />}
+            {projectId && <ProjectSwitcher projectId={projectId} />}
           </div>
 
           <div className="flex items-center gap-6">
