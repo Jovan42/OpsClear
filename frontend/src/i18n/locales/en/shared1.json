@@ -9,6 +9,8 @@
   "overview": "Overview",
   "accountSettings": "Account settings",
   "signOut": "Sign out",
+  "projectSwitcherEmpty": "No other active projects",
+  "projectSwitcherNotAMember": "You're not a member of this project",
   "projectLinks": "Project Links",
   "noLinksYet": "No links yet.",
   "urlPlaceholder": "https://…",

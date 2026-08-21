@@ -9,6 +9,8 @@
   "overview": "Pregled",
   "accountSettings": "Podešavanja naloga",
   "signOut": "Odjavi se",
+  "projectSwitcherEmpty": "Nema drugih aktivnih projekata",
+  "projectSwitcherNotAMember": "Niste član ovog projekta",
   "projectLinks": "Linkovi projekta",
   "noLinksYet": "Još uvek nema linkova.",
   "urlPlaceholder": "https://…",
