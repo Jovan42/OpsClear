@@ -1,5 +1,11 @@
 import apiClient from './client';
-import type { OrgInviteResponse, OrgMemberResponse, OrgRole, OrganisationResponse } from '../types';
+import type {
+  OrgInviteResponse,
+  OrgMemberResponse,
+  OrgRole,
+  OrganisationResponse,
+  ProjectDirectoryEntryResponse,
+} from '../types';
 
 export const organisationsApi = {
   mine: () =>
@@ -46,4 +52,9 @@ export const organisationsApi = {
 
   acceptInvite: (token: string) =>
     apiClient.post<OrgInviteResponse>(`/api/invites/${token}/accept`).then((r) => r.data),
+
+  projectDirectory: (orgId: string) =>
+    apiClient
+      .get<ProjectDirectoryEntryResponse[]>(`/api/organisations/${orgId}/projects/directory`)
+      .then((r) => r.data),
 };

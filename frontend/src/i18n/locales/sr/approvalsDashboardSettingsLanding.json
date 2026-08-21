@@ -138,7 +138,19 @@
     "pendingApprovalsEmptyState": "Sve je sređeno — nema odobrenja na čekanju ni na jednom projektu.",
     "pendingApprovalsLoadError": "Učitavanje odobrenja na čekanju nije uspelo.",
     "requestedAt": "Zatraženo {{date}}",
-    "showMore": "Prikaži još {{count}}"
+    "showMore": "Prikaži još {{count}}",
+    "projectDirectoryHeading": "Direktorijum projekata",
+    "projectDirectoryEmptyState": "Još uvek nema projekata u ovoj organizaciji.",
+    "projectDirectoryLoadError": "Učitavanje direktorijuma projekata nije uspelo.",
+    "projectDirectoryColProject": "Projekat",
+    "projectDirectoryColOwner": "Vlasnik",
+    "projectDirectoryColStatus": "Status",
+    "projectDirectoryColMembers": "Članovi",
+    "projectDirectoryUnknownOwner": "Nepoznato",
+    "projectDirectoryStatus": {
+      "ACTIVE": "Aktivan",
+      "COMPLETED": "Završen"
+    }
   },
   "dashboard": {
     "pageTitle": "Kontrolna tabla",

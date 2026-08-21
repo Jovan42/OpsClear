@@ -14,6 +14,18 @@ export interface ProjectResponse {
   links: LinkResponse[];
 }
 
+// ADR-0045: org-wide project directory (Owner/Admin only), regardless of the
+// viewer's own membership — deliberately excludes job/content data.
+export interface ProjectDirectoryEntryResponse {
+  id: string;
+  friendlyId: string;
+  name: string;
+  ownerId: string;
+  ownerName: string | null;
+  status: ProjectStatus;
+  memberCount: number;
+}
+
 export interface ProjectMemberResponse {
   id: string;
   userId: string;
