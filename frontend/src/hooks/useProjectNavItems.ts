@@ -51,6 +51,7 @@ export function useProjectNavItems(projectId: string): ProjectNavData {
   const typesLocked = !hasAddon('JOB_TYPES');
   const schedulesLocked = !hasAddon('RECURRING_SCHEDULING');
   const linksLocked = !hasAddon('JOB_LINKS');
+  const approvalsLocked = !hasAddon('APPROVALS');
 
   const items: ProjectNavItem[] = [];
 
@@ -70,7 +71,7 @@ export function useProjectNavItems(projectId: string): ProjectNavData {
   if (!schedulesLocked) {
     items.push({ kind: 'link', key: 'schedules', to: `/projects/${projectId}/schedules`, label: t('nav.schedules'), locked: false });
   }
-  if (isOwnerOrAdmin) {
+  if (isOwnerOrAdmin && !approvalsLocked) {
     items.push({
       kind: 'link',
       key: 'approvals',
@@ -101,6 +102,12 @@ export function useProjectNavItems(projectId: string): ProjectNavData {
   }
   if (linksLocked) {
     items.push({ kind: 'link', key: 'links-locked', to: '/org/settings', label: t('nav.links'), locked: true });
+  }
+  // Approvals stays invisible to plain Members even when unlocked (ApprovalQueuePage
+  // itself redirects a Member away regardless of addon state) — so the locked variant
+  // is gated by isOwnerOrAdmin too, unlike every other locked item here.
+  if (isOwnerOrAdmin && approvalsLocked) {
+    items.push({ kind: 'link', key: 'approvals-locked', to: `/projects/${projectId}/approvals`, label: t('nav.approvals'), locked: true });
   }
 
   return { items, links, canManageLinks: isOwnerOrAdmin, pendingApprovalsCount: pending.length, isOwnerOrAdmin };
