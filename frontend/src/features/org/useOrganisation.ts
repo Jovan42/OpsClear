@@ -57,6 +57,14 @@ export function useOrgMembers(orgId: string | null) {
   });
 }
 
+export function useProjectDirectory(orgId: string | null) {
+  return useQuery({
+    queryKey: ['organisations', orgId, 'projects', 'directory'],
+    queryFn: () => organisationsApi.projectDirectory(orgId!),
+    enabled: !!orgId,
+  });
+}
+
 export function useAddOrgMember(orgId: string) {
   const queryClient = useQueryClient();
   return useMutation({

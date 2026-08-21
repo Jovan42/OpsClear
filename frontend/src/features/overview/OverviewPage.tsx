@@ -5,6 +5,7 @@ import { useCurrentOrg } from '../org/OrgContext';
 import { useOrgMembers } from '../org/useOrganisation';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import PendingApprovalsSection from './PendingApprovalsSection';
+import ProjectDirectorySection from './ProjectDirectorySection';
 
 export default function OverviewPage() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
@@ -32,7 +33,7 @@ export default function OverviewPage() {
       <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('overview.pageTitle')}</h1>
       <div className="space-y-10">
         <PendingApprovalsSection />
-        {/* Project Directory section (ADR-0045) is added here by JOB-188. */}
+        <ProjectDirectorySection />
       </div>
     </div>
   );

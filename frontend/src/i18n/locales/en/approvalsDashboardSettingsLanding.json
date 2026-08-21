@@ -138,7 +138,19 @@
     "pendingApprovalsEmptyState": "All caught up — no pending approvals across your projects.",
     "pendingApprovalsLoadError": "Failed to load pending approvals.",
     "requestedAt": "Requested {{date}}",
-    "showMore": "Show {{count}} more"
+    "showMore": "Show {{count}} more",
+    "projectDirectoryHeading": "Project Directory",
+    "projectDirectoryEmptyState": "No projects in this organisation yet.",
+    "projectDirectoryLoadError": "Failed to load the project directory.",
+    "projectDirectoryColProject": "Project",
+    "projectDirectoryColOwner": "Owner",
+    "projectDirectoryColStatus": "Status",
+    "projectDirectoryColMembers": "Members",
+    "projectDirectoryUnknownOwner": "Unknown",
+    "projectDirectoryStatus": {
+      "ACTIVE": "Active",
+      "COMPLETED": "Completed"
+    }
   },
   "dashboard": {
     "pageTitle": "Dashboard",
