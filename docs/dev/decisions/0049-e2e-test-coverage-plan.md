@@ -85,6 +85,9 @@ E2E backfill work against code that doesn't exist would be nonsensical busywork.
 doc (§4 below), each of these gets its E2E coverage written *alongside* its eventual
 implementation job, not before.
 
+**Plus one golden-path job, not in the table above** — a full-lifecycle integration simulation
+supplementing the 21 area jobs, not a 22nd area. See §6 below and Appendix §26.
+
 ### 2. Billing/Paddle E2E approach
 
 Not one approach — three, chosen per test case based on what it actually exercises (full
@@ -150,6 +153,72 @@ strategy, following the existing `dorny/paths-filter`-gated job pattern
   only (not on every PR), plus nightly on a schedule to catch time-sensitive regressions (cron
   DST edges, credit/discount expiry windows) that don't correlate with any specific commit.
 
+### 6. Golden-path full-lifecycle simulation (added before implementation started)
+
+A gap surfaced while scoping implementation, before any of MIL-031/032/033 had started: every case
+above, however exhaustive, is either one feature in isolation or a single-actor role-permutation
+check (log in as role X, assert 200/403 on one action). None of them tell one continuous story the
+way an actual team would use the app — org stood up, people invited and added, a project built
+out, its jobs followed through to completion by genuinely different means. This class of bug (does
+the Dashboard actually reflect a live sequence of cross-user mutations correctly; does state
+survive several actors handing a job back and forth) is structurally invisible to per-area specs
+no matter how exhaustive they are.
+
+Resolution: **one additional job** — not a 22nd feature area, a cross-cutting integration
+narrative — supplementing the 21 MIL-032 area jobs, not replacing any of them. Full scenario in
+Appendix §26.
+
+- **Cast**: Alice creates the org (becomes Owner) → invites Bob by email (accepts, becomes Admin)
+  → Alice/Bob add Carol, Dave, and a fifth member to the org (already-have-accounts path, not
+  invite) → all added as members of one new project.
+- **Real Paddle sandbox checkout as step 1**, not a fixture-level `is_internal` bypass — Alice's
+  org is genuinely unpaid until this step completes, matching "no free plan" (ADR-0044) exactly as
+  a real new customer would experience it. This is the one point in the whole catalog where the
+  golden path deliberately spends real (sandbox) checkout time, since it's the entry point every
+  later step in the story depends on.
+  - **Webhook delivery problem**: the app's checkout flow polls (`awaitingWebhook`, 2s/20s
+    timeout) waiting for Paddle's webhook to reach `POST /api/webhooks/paddle`. In CI the backend
+    runs on an ephemeral runner with no stable public address, so Paddle's sandbox cannot actually
+    deliver a webhook to it — the poll would time out on every run regardless of whether checkout
+    succeeded. Resolution, consistent with §2's (a)/(b)/(c) tagging: drive the **real** checkout
+    UI through Paddle's sandbox (proves the frontend flow genuinely works, including a real
+    test-card charge in sandbox), but the moment the UI reports `CHECKOUT_COMPLETED`, the test
+    itself fires the equivalent hand-signed webhook POST directly at the backend — the same
+    mechanism the `[b]`-tagged billing cases already use — rather than waiting on Paddle to
+    deliver it over the public internet. Gets real-UI fidelity where it matters most without new
+    CI infrastructure (e.g. a public tunnel) to make the backend reachable.
+- **Three jobs, three different real-world paths, three different assignees**:
+  - Carol's job: straightforward — New → In Progress → Completed, a note added, a link attached
+    (service-icon auto-detection exercised for free)
+  - Dave's job: friction — New → In Progress → Blocked (with reason) → unblocked → Completed, a
+    `BLOCKED_BY` relationship to another job, a note added by a *different* actor than the
+    assignee (Bob checking in)
+  - Fifth member's job: gated — New → In Progress → approval requested → Alice reviews the
+    approval queue → approves → Completed
+- **Cross-checks woven through the story, not just asserted at the end**: the Dashboard's
+  Blocked/Overdue/Pending-Approvals sections are checked as state actually changes, and role
+  boundaries are spot-checked inline as they naturally arise (Carol can't decide the pending
+  approval, can't reopen a Completed job, can't delete the project) rather than as separate
+  isolated tests — proving the boundary holds mid-flow, not just in a purpose-built permission
+  test.
+- **Runs in `e2e-smoke`, every PR**, not `e2e-full`. Unlike the exhaustive catalog (the actual
+  target of this ADR's "don't slow every PR" constraint above), this is one bounded spec, not a
+  combinatorial explosion of cases — and its purpose is specifically to catch an integration
+  regression *before* merge. Running it only post-merge/nightly would defeat that purpose.
+  - **New pre-merge dependency**: even with webhook delivery simulated, step 1 still makes a real
+    network call to Paddle's sandbox to drive the checkout UI — a sandbox outage would fail this
+    check on every PR for a reason unrelated to the PR itself. Mitigation: wrap that one step in a
+    bounded retry/backoff rather than a bare call; repeated failures here are a signal to
+    investigate Paddle sandbox health, not the PR.
+- **Dedicated fixture identities**: needs a pool of fresh Keycloak users with zero org membership
+  at test start, distinct from the standard seeded demo users (`testuser`/`alice`/`bob`/`carol`/
+  `dave`@example.com per `CLAUDE.md`) that the other 25 area specs authenticate as — those five
+  already belong to existing demo orgs/projects, so reusing them here would either skip the
+  org-creation step or corrupt their state for every other spec depending on them. `scripts/
+  seed.sh` already deletes and recreates a fixed Keycloak user set on every run; the E2E reseed
+  step (§4 above) extends the same pattern with a second, separate identity pool reserved for this
+  scenario, recreated the same way on every full reseed so the test stays idempotent across runs.
+
 ## Product decisions
 
 - **Full comprehensive coverage is the goal**, superseding JOB-186's original phased framing —
@@ -166,6 +235,9 @@ strategy, following the existing `dorny/paths-filter`-gated job pattern
 - **Not-yet-built features are explicitly excluded from backfill** (§1) — their E2E coverage is
   the responsibility of whatever implementation job eventually builds them, enforced by the new
   process doc, not retrofitted here.
+- **One additional golden-path job** (§6) — a multi-actor, full-lifecycle simulation running in
+  `e2e-smoke` (pre-merge), supplementing the 21 MIL-032 area jobs rather than replacing any of
+  them.
 
 ## Technical design
 
@@ -194,6 +266,14 @@ in the CI network context).
   container with realm import, then `npm run build` + `cypress run`.
 - `actions/setup-java`/`setup-node` versions follow whatever JOB-201's chore bump lands as, not
   duplicated here.
+- `e2e-smoke` additionally needs `PADDLE_API_KEY` (already a GitHub Actions secret, reused from
+  the `integration-tests` job) and `PADDLE_WEBHOOK_SECRET` (`paddle.api-key`/`paddle.webhook-
+  secret` properties per `application.properties`) to drive and sign the golden-path scenario's
+  checkout step (§6, Appendix §26).
+- `scripts/seed.sh`'s Keycloak delete-and-recreate pattern is extended with a second, dedicated
+  identity pool reserved for the golden-path scenario (§6) — kept separate from the standard demo
+  users so the scenario can create a genuinely fresh org without disturbing fixtures the other 25
+  specs depend on.
 
 ### Constraints & edge cases
 - Full comprehensive coverage is a genuinely large effort — three milestones (framework first,
@@ -240,6 +320,36 @@ ADR-0036's actual deliverable — the branded custom login/register/reset pages 
 verified without a real Keycloak instance rendering them. A hybrid (real Keycloak for the one
 auth-flow area, token-endpoint bypass everywhere else) gets both correctness and speed.
 
+### Golden-path scenario: fixture-level `is_internal` bypass instead of real Paddle checkout
+
+Considered, matching the pattern the other 25 area jobs use for their own fixtures. Rejected for
+this specific scenario — the whole point is maximum real-world fidelity from the very first step;
+skipping payment entirely would mean the one thing every later action in the story actually
+depends on (a paid, `hasAddon()`-unlocked org) never gets tested as a real user would hit it.
+
+### Golden-path scenario: real webhook delivery via a public tunnel (e.g. ngrok) from the CI runner
+
+Considered, to avoid simulating the webhook at all. Rejected — adds a new, separate point of CI
+flakiness (tunnel setup/teardown, another external dependency beyond Paddle itself) to solve a
+problem §2 already has a working answer for (`[b]`-tagged direct webhook simulation). Simulating
+just the webhook, while still driving the real checkout UI, gets the fidelity that matters without
+the extra infrastructure.
+
+### Golden-path scenario: running against a shared, long-lived staging environment instead of the ephemeral per-run stack
+
+Considered, since a real staging deployment is publicly reachable and wouldn't have the webhook-
+delivery problem at all. Rejected — breaks §4's test data strategy (same deterministic fixtures
+work for both local Cypress runs and CI, truncate-and-reseed once per run); a shared environment
+risks cross-run pollution between concurrent CI jobs and diverges from how every other spec in the
+catalog is set up.
+
+### Golden-path scenario placed in `e2e-full` instead of `e2e-smoke`
+
+Considered, on the reasoning that anything this broad "belongs" with the exhaustive catalog.
+Rejected — the exhaustive catalog and this scenario serve different purposes (depth vs. an
+integration story); only running it post-merge would mean a broken cross-feature interaction ships
+to `main` before anyone finds out, which is exactly backwards from why this test exists.
+
 ## Consequences
 
 ### Positive
@@ -251,6 +361,8 @@ auth-flow area, token-endpoint bypass everywhere else) gets both correctness and
   original ~14-area estimate.
 - Real-Keycloak-in-CI closes an actual coverage gap (auth pages have never been tested against a
   live IdP in any CI run to date).
+- The golden-path job (§6) closes a coverage class no per-area spec can reach — a cross-feature,
+  multi-actor integration regression — and does so pre-merge, not after.
 
 ### Negative
 - Running Keycloak in CI is new infrastructure with its own failure modes (realm import,
@@ -261,12 +373,18 @@ auth-flow area, token-endpoint bypass everywhere else) gets both correctness and
 - The smoke/full split means a regression only caught by an edge-case test won't block a PR —
   it'll surface on the next full run (merge-to-main or nightly), not immediately. Accepted
   tradeoff for not slowing down every PR.
+- The golden-path job introduces the pipeline's first pre-merge dependency on Paddle sandbox
+  reachability — a genuine new failure mode for every PR, mitigated but not eliminated by
+  retry/backoff around that one step.
 
 ### Neutral
 - Several findings below (stale ADR text, a permission-check gap, a UI dead-code branch) are
   logged here for visibility but not fixed by this ADR — they're implementation-time findings for
   whichever job ends up touching that code, or separate Bug/Chore tickets if the user wants them
   tracked now.
+- The golden-path job needs a second, dedicated pool of Keycloak fixture identities distinct from
+  the standard demo users — one more thing the E2E reseed step provisions and resets, following a
+  pattern `scripts/seed.sh` already implements for the existing demo users.
 
 ## Findings during this audit (not exhaustive, surfaced for visibility — not all necessarily need separate tickets)
 
@@ -303,7 +421,8 @@ auth-flow area, token-endpoint bypass everywhere else) gets both correctness and
    (start with a trivial placeholder spec to prove the pipeline end-to-end before backfill work
    lands on top of it)
 2. **MIL-032** — the 21 core-feature jobs, built against the framework from step 1, each scoped
-   to its row in the breakdown table and its section in the Appendix
+   to its row in the breakdown table and its section in the Appendix, plus the golden-path job
+   (§6, Appendix §26) once the dedicated fixture identity pool and Paddle CI secrets are in place
 3. **MIL-033** — the 4 billing jobs, each tagging its test cases (a)/(b)/(c) per §2 before
    implementation starts
 
@@ -315,6 +434,8 @@ auth-flow area, token-endpoint bypass everywhere else) gets both correctness and
 - [ ] MIL-031/032/033 implementation jobs created in PRJ-011 with `BLOCKED_BY` relationships
       (032/033 jobs blocked by the relevant MIL-031 framework jobs)
 - [ ] New `E2E` job type created
+- [ ] Golden-path job (§6, Appendix §26) created in MIL-032, `BLOCKED_BY` the same MIL-031
+      framework jobs as the rest of the backfill
 
 ## References
 
@@ -1198,3 +1319,58 @@ Every case tagged `[a]` browser E2E vs. Paddle sandbox, `[b]` direct webhook POS
   the credited org's users `[a]`
 - Switching feedback type after the user has hand-edited the auto-inserted template preserves
   their edits rather than overwriting them `[a]`
+
+---
+
+### MIL-032 — §26. Golden-Path Simulation: Full Project Lifecycle (pre-merge)
+
+Not a feature-area spec — one continuous narrative, multiple actors, run in `e2e-smoke` on every
+PR (see §6 for the full design rationale). Written as a single ordered script, not grouped into
+happy/error/edge, since the point is the sequence itself.
+
+**Cast**: Alice (org creator → Owner), Bob (invited → Admin), Carol / Dave / a fifth member
+(added to the org via search, then to one new project) — all drawn from a dedicated fixture
+identity pool distinct from the standard seeded demo users (§6).
+
+**Script**
+1. Alice signs up / logs in as a fresh identity with no org membership, is prompted to create an
+   organisation, creates it
+2. Alice opens the subscription picker, selects a tier + add-ons, proceeds to Paddle's real
+   sandbox inline checkout, completes it with a sandbox test card — the moment the UI reports
+   `CHECKOUT_COMPLETED`, the test fires the equivalent signed webhook POST directly (§6) rather
+   than waiting on Paddle to deliver it; the org's picker/dashboard reflects the now-active
+   subscription
+3. Alice invites Bob by email; Bob logs in as himself, opens the invite link, accepts — becomes
+   Admin
+4. Alice or Bob searches for and adds Carol, Dave, and the fifth member as org Members
+5. Alice creates a project and adds Bob (Admin) and all three Members as project members
+6. Bob defines 2-3 job types and one job template
+7. Alice creates two milestones
+8. Alice creates three jobs, one per Member, assigning milestone/type/priority — one from the
+   template (wildcard resolution exercised for free), two directly
+9. **Carol's job (straightforward path)**: Carol logs in, moves it New → In Progress, adds a
+   note, attaches a link (service-icon auto-detection exercised for free), moves it to Completed
+10. **Dave's job (friction path)**: Dave moves it New → In Progress, blocks it with a reason;
+    Bob checks in with a note (different actor than the assignee); Bob adds a `BLOCKED_BY`
+    relationship to another job; Dave unblocks it, completes it
+11. **Fifth member's job (gated path)**: they move it New → In Progress, then request approval
+    instead of completing directly; Alice opens the approval queue, sees it, approves it — job
+    flips to Completed, disappears from the queue
+12. Throughout steps 9-11, not just after: Alice's Dashboard is checked to reflect the Blocked
+    section (during step 10), the Pending Approvals section (during step 11's request), and
+    correct status counts after each completion — not asserted only once at the end
+13. Role-boundary spot checks woven in as they naturally arise: Carol cannot decide the fifth
+    member's pending approval (403, and no such control rendered); no Member can reopen a
+    Completed job (Owner/Admin-only, per §7); no Member can delete the project
+14. Alice attempts to mark the project Completed while a job is still open (if timing allows) →
+    409, correctly blocked; once all three jobs are Completed, marks it Completed → succeeds,
+    Completed banner shown
+
+**Definition of done for this spec specifically**
+- All 14 steps above pass as one continuous script, not split into independent tests that reset
+  state between them
+- Uses the dedicated golden-path fixture identity pool (§6), not the standard demo users
+- Runs in `e2e-smoke`, gated the same way as the other smoke checks, with the Paddle-sandbox step
+  wrapped in bounded retry/backoff
+- Re-runnable: a second full run against a freshly reseeded stack produces the same result, not
+  a stale-state failure from the previous run
