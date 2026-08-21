@@ -89,4 +89,15 @@ public class ApprovalController {
                 .toList();
         return ResponseEntity.ok(approvals);
     }
+
+    @RequiresAddon(AddonCode.APPROVALS)
+    @GetMapping("/api/approvals/pending")
+    public ResponseEntity<List<ApprovalResponse>> listPendingAcrossOrgs(Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        List<ApprovalResponse> approvals = approvalService.findPendingAcrossOrgs(callerId)
+                .stream()
+                .map(ApprovalResponse::from)
+                .toList();
+        return ResponseEntity.ok(approvals);
+    }
 }

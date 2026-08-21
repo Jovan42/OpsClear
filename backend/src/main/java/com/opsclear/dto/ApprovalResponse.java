@@ -21,6 +21,7 @@ public class ApprovalResponse {
     private UUID id;
     private UUID jobId;
     private String jobTitle;
+    private String jobFriendlyId;
     private UUID requesterId;
     private UUID approverId;
     private String description;
@@ -28,12 +29,16 @@ public class ApprovalResponse {
     private String comment;
     private Instant requestedAt;
     private Instant decidedAt;
+    private UUID projectId;
+    private String projectFriendlyId;
+    private String projectName;
 
     public static ApprovalResponse from(ApprovalModel model) {
         return ApprovalResponse.builder()
                 .id(model.getId())
                 .jobId(model.getJobId())
                 .jobTitle(model.getJobTitle())
+                .jobFriendlyId(model.getJobFriendlyId())
                 .requesterId(model.getRequesterId())
                 .approverId(model.getApproverId())
                 .description(model.getDescription())
@@ -41,6 +46,9 @@ public class ApprovalResponse {
                 .comment(model.getComment())
                 .requestedAt(model.getRequestedAt())
                 .decidedAt(model.getDecidedAt())
+                .projectId(model.getProjectId())
+                .projectFriendlyId(model.getProjectFriendlyId())
+                .projectName(model.getProjectName())
                 .build();
     }
 }

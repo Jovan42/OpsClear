@@ -129,6 +129,8 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/approvals/pending";
     }
 
+    static final String PENDING_APPROVALS_ACROSS_ORGS = "/api/approvals/pending";
+
     // --- Milestones ---
 
     static String milestones(UUID projectId) {
