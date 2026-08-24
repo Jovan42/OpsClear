@@ -2,8 +2,10 @@
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "types": ["cypress", "node"],
     "isolatedModules": false
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "../src/auth/e2eAuth.ts"]
 }

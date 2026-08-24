@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import keycloak from './keycloak';
+import { E2E_TOKEN_KEY, E2E_REFRESH_TOKEN_KEY, E2E_ID_TOKEN_KEY } from './e2eAuth';
 
 export interface AuthState {
   ready: boolean;
@@ -38,8 +39,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    // cy.loginAs() (JOB-204/ADR-0049 §3) fetches real tokens directly from Keycloak's
+    // token endpoint (Resource Owner Password Credentials grant) and seeds these
+    // before the app's scripts run (`cy.visit(url, { onBeforeLoad })`) — initializing
+    // with pre-obtained tokens is keycloak-js's own documented mechanism for this,
+    // and skips the check-sso iframe/redirect entirely, so a spec doesn't have to
+    // drive the real login UI on every run. Not a security bypass: the backend
+    // independently verifies the JWT's Keycloak signature on every request regardless
+    // of what's in sessionStorage — a forged value here just fails there instead.
+    const e2eToken = sessionStorage.getItem(E2E_TOKEN_KEY);
+    const initOptions = e2eToken
+      ? {
+          token: e2eToken,
+          refreshToken: sessionStorage.getItem(E2E_REFRESH_TOKEN_KEY) ?? undefined,
+          idToken: sessionStorage.getItem(E2E_ID_TOKEN_KEY) ?? undefined,
+          checkLoginIframe: false,
+        }
+      : { onLoad: 'check-sso' as const, checkLoginIframe: false };
+
     keycloak
-      .init({ onLoad: 'check-sso', checkLoginIframe: false })
+      .init(initOptions)
       .then((authenticated) => {
         setState({
           ready: true,
