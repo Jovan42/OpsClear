@@ -6,11 +6,25 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
+      # Changes to this workflow itself run the full pipeline too — a job/step edit
+      # here (e.g. e2e-smoke's Keycloak/Postgres wiring) otherwise never triggers at
+      # all, since it touches neither backend/** nor frontend/** (bit us on JOB-201's
+      # setup-java bump and JOB-205's Keycloak-in-CI job landing with zero real CI
+      # signal). Scoped to this file specifically, not the whole .github/workflows/**
+      # directory, so a deploy.yml-only change doesn't also trigger this pipeline.
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
     paths:
       - 'backend/**'
       - 'frontend/**'
+      # Changes to this workflow itself run the full pipeline too — a job/step edit
+      # here (e.g. e2e-smoke's Keycloak/Postgres wiring) otherwise never triggers at
+      # all, since it touches neither backend/** nor frontend/** (bit us on JOB-201's
+      # setup-java bump and JOB-205's Keycloak-in-CI job landing with zero real CI
+      # signal). Scoped to this file specifically, not the whole .github/workflows/**
+      # directory, so a deploy.yml-only change doesn't also trigger this pipeline.
+      - '.github/workflows/ci.yml'
 
 jobs:
   changes:
@@ -27,11 +41,16 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: filter
         with:
+          # ci.yml listed under both — every job gated on either output is exactly
+          # "everything except deploy.yml", matching a CI-workflow change needing the
+          # full pipeline exercised regardless of which specific job it touched.
           filters: |
             backend:
               - 'backend/**'
+              - '.github/workflows/ci.yml'
             frontend:
               - 'frontend/**'
+              - '.github/workflows/ci.yml'
 
   build:
     name: Build
