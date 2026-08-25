@@ -16,6 +16,7 @@ dist-ssr
 cypress/videos
 cypress/screenshots
 cypress/downloads
+cypress/results
 
 # Editor directories and files
 .vscode/*

@@ -25,10 +25,16 @@ on:
       # signal). Scoped to this file specifically, not the whole .github/workflows/**
       # directory, so a deploy.yml-only change doesn't also trigger this pipeline.
       - '.github/workflows/ci.yml'
+  # e2e-full only (ADR-0049 §5) — every other job below depends on the `changes`
+  # job, which skips entirely on a schedule run (no push/PR diff to filter on), so
+  # they all skip too rather than needing their own explicit exclusion.
+  schedule:
+    - cron: '0 3 * * *'
 
 jobs:
   changes:
     name: Detect changed paths
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
@@ -305,11 +311,22 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+  # ADR-0049 §5 two-tier split: e2e-smoke runs a small/fast set on every relevant PR;
+  # e2e-full runs the entire catalog on merge to main plus nightly. Both currently run
+  # the same full spec pattern (cypress/e2e/**/*.cy.ts) since there's no real
+  # feature-area content yet to meaningfully divide — JOB-208 onward is what actually
+  # gives smoke vs. full different substance (e.g. one happy-path test per area vs.
+  # the full per-area catalog); the pipeline shape here is what JOB-206 is scoped to
+  # build, not that content split.
   e2e-smoke:
     name: E2E Smoke
     needs: changes
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
 
     # E2E hits a real backend, not mocks, so a backend-only change can still break it
     # (ADR-0049 §5) — hence the `backend == 'true'` half of the gate above too.
@@ -332,168 +349,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
+      - uses: ./.github/actions/e2e-run
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          spec-pattern: 'cypress/e2e/**/*.cy.ts'
+          artifact-name: e2e-smoke
+          paddle-api-key: ${{ secrets.PADDLE_API_KEY }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+  e2e-full:
+    name: E2E Full
+    if: github.event_name == 'schedule' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # Run directly via `docker run`, not a `services:` entry — GitHub Actions
-      # service containers have no way to pass a command/CMD (only `image`, `env`,
-      # `ports`, and `options`, the last of which maps to `docker create` flags, not
-      # positional args), and Keycloak's image requires `start-dev` as an explicit
-      # argument to actually launch — with none given it just prints help and exits.
-      # No KC_DB env vars here (unlike docker-compose's Postgres-backed Keycloak) —
-      # `start-dev` falls back to its own ephemeral dev-file store, which is all this
-      # job needs; provisioning a second `keycloak` database on the Postgres service
-      # above just to mirror local dev exactly would add setup cost for no behavioral
-      # difference in what's being tested here.
-      - name: Start Keycloak
-        run: |
-          docker run -d --name keycloak \
-            -p 8180:8080 \
-            -e KEYCLOAK_ADMIN=admin \
-            -e KEYCLOAK_ADMIN_PASSWORD=admin \
-            quay.io/keycloak/keycloak:24.0 start-dev
-
-      - name: Wait for Keycloak
-        run: |
-          for i in $(seq 1 30); do
-            if curl -sf -X POST "http://localhost:8180/realms/master/protocol/openid-connect/token" \
-                -d "client_id=admin-cli&username=admin&password=admin&grant_type=password" -o /dev/null; then
-              echo "Keycloak is ready"
-              exit 0
-            fi
-            echo "Waiting for Keycloak... ($i/30)"
-            sleep 2
-          done
-          echo "Keycloak did not become ready in time" >&2
-          exit 1
-
-      # Realm import via the Admin REST API, not the --import-realm/volume-mount
-      # pattern docker-compose uses locally — GitHub Actions service containers start
-      # before `actions/checkout`, so there's no repo file on disk yet to bind-mount
-      # into the container at that point. This sidesteps that ordering problem
-      # entirely: both Keycloak and the checked-out repo are already available by the
-      # time this step runs. Confirmed the realm needs no CI-specific changes —
-      # `opsclear-frontend`'s redirect URIs/web origins already include
-      # `http://localhost:5173`, and every process here (Keycloak, backend, frontend)
-      # runs on the same runner's `localhost`, exactly like local dev's networking
-      # model, just without Docker Compose's service-name hostnames (JOB-205's own
-      # "confirm no local-only settings block import" check).
-      #
-      # The realm's `loginTheme: opsclear` custom theme isn't mounted here (that's
-      # local dev's `keycloak/themes` volume) — Keycloak falls back to its built-in
-      # theme when a named one isn't found, which is fine for this job (only the
-      # token-grant bypass is exercised, no login page is ever rendered). Wiring the
-      # real theme into CI is JOB-208's concern, which actually renders it.
-      - name: Import Keycloak realm
-        run: |
-          ADMIN_TOKEN=$(curl -sf -X POST "http://localhost:8180/realms/master/protocol/openid-connect/token" \
-            -d "client_id=admin-cli&username=admin&password=admin&grant_type=password" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-          curl -sf -X POST "http://localhost:8180/admin/realms" \
-            -H "Authorization: Bearer $ADMIN_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d @keycloak/realm-export.json
-
-          # The static export only seeds `testuser@example.com` — alice/bob/carol/dave
-          # are created dynamically by scripts/seed.sh's own create_kc_user, mirrored
-          # here rather than running that script wholesale (it also truncates/reseeds
-          # Postgres via `docker exec <container-name>`, which doesn't translate to a
-          # GitHub Actions service container's auto-generated name — a concern for
-          # whichever backfill job first needs real seeded org/project fixtures in CI,
-          # not this one).
-          create_kc_user() {
-            curl -sf -o /dev/null -X POST "http://localhost:8180/admin/realms/opsclear/users" \
-              -H "Authorization: Bearer $ADMIN_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "{\"username\":\"$3\",\"email\":\"$3\",\"firstName\":\"$1\",\"lastName\":\"$2\",\"enabled\":true,\"emailVerified\":true,\"credentials\":[{\"type\":\"password\",\"value\":\"password123\",\"temporary\":false}]}"
-          }
-          create_kc_user "Alice" "Webb"   "alice@example.com"
-          create_kc_user "Bob"   "Harris" "bob@example.com"
-          create_kc_user "Carol" "Marsh"  "carol@example.com"
-          create_kc_user "Dave"  "Santos" "dave@example.com"
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x backend/gradlew
-
-      - name: Start backend
-        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/opsclear
-          SPRING_DATASOURCE_USERNAME: opsclear
-          SPRING_DATASOURCE_PASSWORD: opsclear
-          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
-          PADDLE_API_KEY: ${{ secrets.PADDLE_API_KEY }}
-        run: nohup ./gradlew bootRun > backend.log 2>&1 &
+          POSTGRES_DB: opsclear
+          POSTGRES_USER: opsclear
+          POSTGRES_PASSWORD: opsclear
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-      - name: Wait for backend
-        run: |
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:8080/api/health -o /dev/null; then
-              echo "Backend is ready"
-              exit 0
-            fi
-            echo "Waiting for backend... ($i/60)"
-            sleep 2
-          done
-          echo "Backend did not become ready in time" >&2
-          cat backend/backend.log
-          exit 1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Start frontend
-        working-directory: frontend
-        run: nohup npm run dev > frontend.log 2>&1 &
-
-      - name: Wait for frontend
-        run: |
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:5173 -o /dev/null; then
-              echo "Frontend is ready"
-              exit 0
-            fi
-            echo "Waiting for frontend... ($i/30)"
-            sleep 2
-          done
-          echo "Frontend did not become ready in time" >&2
-          cat frontend/frontend.log
-          exit 1
-
-      # Only the infrastructure-proving specs for now (JOB-205's own scope) — the full
-      # feature-area catalog and the e2e-smoke/e2e-full split by trigger is JOB-206.
-      - name: Run Cypress
-        working-directory: frontend
-        run: npx cypress run --spec "cypress/e2e/smoke.cy.ts,cypress/e2e/login-as-command.cy.ts"
-
-      - name: Upload Cypress artifacts
-        uses: actions/upload-artifact@v4
-        if: failure()
+      - uses: ./.github/actions/e2e-run
         with:
-          name: cypress-e2e-smoke-artifacts
-          path: |
-            frontend/cypress/screenshots
-            frontend/cypress/videos
-          if-no-files-found: ignore
+          spec-pattern: 'cypress/e2e/**/*.cy.ts'
+          artifact-name: e2e-full
+          paddle-api-key: ${{ secrets.PADDLE_API_KEY }}
