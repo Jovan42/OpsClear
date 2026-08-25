@@ -36,7 +36,7 @@ Set BLOCKED_BY relationships: backend jobs are blocked by the DB migration job, 
 
 ### 5. Implementation
 
-One PR per job. Backend jobs include all tests — services covered by unit tests, all new endpoints covered by integration tests. Frontend jobs end with a manual testing checklist verified before the PR is opened. See [BACKEND.md](BACKEND.md) and [FRONTEND.md](FRONTEND.md) for technical conventions.
+One PR per job. Backend jobs include all tests — services covered by unit tests, all new endpoints covered by integration tests. Frontend jobs end with a manual testing checklist verified before the PR is opened, and include E2E coverage for the behavior they add, sized proportionally. See [BACKEND.md](BACKEND.md), [FRONTEND.md](FRONTEND.md), and [E2E.md](E2E.md) for technical conventions.
 
 ### 6. Deploy
 

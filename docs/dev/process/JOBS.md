@@ -10,6 +10,7 @@ Job titles follow the pattern `<Layer>: <short description>`.
 | Database migration | `DB:` | `DB: make project_id nullable, add org_id` |
 | Backend | `Backend:` | `Backend: org-level template CRUD` |
 | Frontend | `Frontend:` | `Frontend: org templates section in OrgSettingsPage` |
+| E2E | `E2E:` | `E2E: cy.loginAs() custom command via Keycloak token grant` |
 | Bug fix | `Bug:` | `Bug: 404 not returned for wrong-org template` |
 | Chore | `Chore:` | `Chore: upgrade Spring Boot to 3.4.1` |
 | Tech debt | `Tech debt:` | `Tech debt: replace raw jOOQ inserts with model builder` |
