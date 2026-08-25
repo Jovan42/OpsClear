@@ -1,5 +1,18 @@
 # Contributing to OpsClear
 
+## Process docs
+
+Day-to-day workflow, job conventions, and layer-specific technical conventions live in
+`docs/dev/process/`, not here:
+
+- [WORKFLOW.md](docs/dev/process/WORKFLOW.md) — feature/maintenance tracks, phase planning, ADR-first
+- [JOBS.md](docs/dev/process/JOBS.md) — job naming, splitting, and dependency conventions
+- [BACKEND.md](docs/dev/process/BACKEND.md) — backend technical conventions
+- [FRONTEND.md](docs/dev/process/FRONTEND.md) — frontend technical conventions
+- [E2E.md](docs/dev/process/E2E.md) — when E2E coverage is required, sizing, naming, CI tiers
+
+This file covers commit/PR/branch mechanics only.
+
 ## Commit Messages
 
 ### Format
