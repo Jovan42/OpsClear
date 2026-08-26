@@ -73,6 +73,40 @@ Cypress.Commands.overwrite(
   },
 );
 
+/**
+ * JOB-208: cleans up a real Keycloak user created by a registration spec, via the
+ * Admin API — same admin-cli/master-realm ROPC grant `scripts/seed.sh` already uses
+ * to manage seeded users, not something new to this file.
+ */
+Cypress.Commands.add('deleteKeycloakUser', (email: string) => {
+  cy.request({
+    method: 'POST',
+    url: `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
+    form: true,
+    body: {
+      client_id: 'admin-cli',
+      username: 'admin',
+      password: 'admin',
+      grant_type: 'password',
+    },
+  }).then(({ body }: { body: { access_token: string } }) => {
+    const adminToken = body.access_token;
+    cy.request({
+      method: 'GET',
+      url: `${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/users`,
+      qs: { email },
+      headers: { Authorization: `Bearer ${adminToken}` },
+    }).then(({ body: users }: { body: Array<{ id: string }> }) => {
+      if (users.length === 0) return;
+      cy.request({
+        method: 'DELETE',
+        url: `${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/users/${users[0].id}`,
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+    });
+  });
+});
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
@@ -80,6 +114,9 @@ declare global {
       /** Logs in as a seeded demo user via Keycloak's token endpoint, bypassing the
        *  login UI. Password defaults to the standard seeded demo password. */
       loginAs(email: string, password?: string): Chainable<void>;
+      /** Deletes a Keycloak user by email via the Admin API — cleanup for specs that
+       *  self-register a real, permanent user (JOB-208). No-op if not found. */
+      deleteKeycloakUser(email: string): Chainable<void>;
     }
   }
 }
