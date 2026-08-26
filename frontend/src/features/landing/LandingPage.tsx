@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
 import ProductAndPricing from './ProductAndPricing';
+import { POST_LOGIN_REDIRECT_KEY } from '../../auth/postLoginRedirect';
 
 function Hero() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
@@ -67,8 +69,22 @@ function CTAFooter() {
 export default function LandingPage() {
   const { authenticated } = useAuth();
 
+  // JOB-237: clearing the saved key is a side effect and belongs in an effect, not the
+  // render body — doing both the read and the clear inline here made this component
+  // impure, which broke under StrictMode's double-render (the first pass consumed the
+  // key, so the second pass always saw null and fell through to the default).
+  useEffect(() => {
+    if (authenticated) sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+  }, [authenticated]);
+
   // TODO MIL-012: branch on subscription state → setup wall
-  if (authenticated) return <Navigate to="/projects" replace />;
+  if (authenticated) {
+    // JOB-237: RequireAuth saved the originally-requested deep link before bouncing
+    // through Keycloak's real (full-page) login — land back there instead of always
+    // the generic default, when one was saved.
+    const savedPath = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY);
+    return <Navigate to={savedPath || '/projects'} replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
