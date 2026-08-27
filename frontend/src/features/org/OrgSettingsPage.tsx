@@ -210,7 +210,7 @@ export default function OrgSettingsPage() {
               {...register('slug')}
               onChange={(e) => {
                 const upper = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                setValue('slug', upper, { shouldValidate: true });
+                setValue('slug', upper, { shouldValidate: true, shouldDirty: true });
               }}
               disabled={!isOwner}
               maxLength={3}
