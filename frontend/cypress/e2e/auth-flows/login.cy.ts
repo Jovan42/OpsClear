@@ -61,7 +61,12 @@ describe('Login', () => {
     // contains the text "OpsClear" (so an earlier "wait for OpsClear" attempt at this
     // fix didn't actually catch it), just with no user menu to click.
     cy.url().should('include', 'localhost:5173/projects');
-    cy.get('[aria-haspopup="true"]').click();
+    // AppLayout's header is genuinely unstable for a moment right after a fresh
+    // login (org/subscription data still loading) — CI has shown the toggle button
+    // being found and then detaching mid-click within Cypress's default 4s
+    // actionability window. A longer timeout lets the click retry past that initial
+    // instability instead of failing on it.
+    cy.get('[aria-haspopup="true"]', { timeout: 15000 }).should('be.visible').click({ timeout: 15000 });
     cy.contains('Sign out').click();
     cy.visit('/projects');
     cy.url().should('include', 'localhost:5173/');
