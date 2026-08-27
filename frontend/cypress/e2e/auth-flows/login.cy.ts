@@ -25,6 +25,48 @@ function loginViaUi(email: string, password: string) {
 }
 
 describe('Login', () => {
+  // CI's fresh environment provisioning (.github/actions/e2e-run) deliberately
+  // creates no org/project fixtures — only local dev environments happen to
+  // accumulate one for testuser from manual testing. Without an org, /projects and
+  // /org/settings both bounce through OrgRequiredRoute to /onboarding instead of
+  // rendering the authenticated app shell this file's UI-driven tests need — and
+  // since that redirect depends on an async query, it raced unpredictably with the
+  // login test's own commands, showing up as three seemingly different flakes across
+  // separate CI runs (menu never found, found then detached, opened then vanished)
+  // that were really the same underlying cause every time. Ensuring the org exists
+  // up front removes the race outright, rather than making the UI interactions more
+  // resilient to a redirect that shouldn't be racing them in the first place.
+  before(() => {
+    cy.request({
+      method: 'POST',
+      url: 'http://localhost:8180/realms/opsclear/protocol/openid-connect/token',
+      form: true,
+      body: {
+        client_id: 'opsclear-frontend',
+        grant_type: 'password',
+        username: 'testuser@example.com',
+        password: 'password123',
+        scope: 'openid',
+      },
+    }).then(({ body }: { body: { access_token: string } }) => {
+      cy.request({
+        method: 'GET',
+        url: 'http://localhost:8080/api/organisations/mine',
+        headers: { Authorization: `Bearer ${body.access_token}` },
+        failOnStatusCode: false,
+      }).then((res) => {
+        if (res.status === 204) {
+          cy.request({
+            method: 'POST',
+            url: 'http://localhost:8080/api/organisations',
+            headers: { Authorization: `Bearer ${body.access_token}` },
+            body: { name: 'Auth Flows E2E Org', slug: 'AFE' },
+          });
+        }
+      });
+    });
+  });
+
   // A real UI-driven login sets a genuine Keycloak SSO session cookie on Keycloak's
   // own origin, which Cypress's default test isolation doesn't reach — without this,
   // a previous test's real login silently carries into the next test's check-sso.
