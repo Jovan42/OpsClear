@@ -25,6 +25,48 @@ function loginViaUi(email: string, password: string) {
 }
 
 describe('Login', () => {
+  // CI's fresh environment provisioning (.github/actions/e2e-run) deliberately
+  // creates no org/project fixtures — only local dev environments happen to
+  // accumulate one for testuser from manual testing. Without an org, /projects and
+  // /org/settings both bounce through OrgRequiredRoute to /onboarding instead of
+  // rendering the authenticated app shell this file's UI-driven tests need — and
+  // since that redirect depends on an async query, it raced unpredictably with the
+  // login test's own commands, showing up as three seemingly different flakes across
+  // separate CI runs (menu never found, found then detached, opened then vanished)
+  // that were really the same underlying cause every time. Ensuring the org exists
+  // up front removes the race outright, rather than making the UI interactions more
+  // resilient to a redirect that shouldn't be racing them in the first place.
+  before(() => {
+    cy.request({
+      method: 'POST',
+      url: 'http://localhost:8180/realms/opsclear/protocol/openid-connect/token',
+      form: true,
+      body: {
+        client_id: 'opsclear-frontend',
+        grant_type: 'password',
+        username: 'testuser@example.com',
+        password: 'password123',
+        scope: 'openid',
+      },
+    }).then(({ body }: { body: { access_token: string } }) => {
+      cy.request({
+        method: 'GET',
+        url: 'http://localhost:8080/api/organisations/mine',
+        headers: { Authorization: `Bearer ${body.access_token}` },
+        failOnStatusCode: false,
+      }).then((res) => {
+        if (res.status === 204) {
+          cy.request({
+            method: 'POST',
+            url: 'http://localhost:8080/api/organisations',
+            headers: { Authorization: `Bearer ${body.access_token}` },
+            body: { name: 'Auth Flows E2E Org', slug: 'AFE' },
+          });
+        }
+      });
+    });
+  });
+
   // A real UI-driven login sets a genuine Keycloak SSO session cookie on Keycloak's
   // own origin, which Cypress's default test isolation doesn't reach — without this,
   // a previous test's real login silently carries into the next test's check-sso.
@@ -51,32 +93,9 @@ describe('Login', () => {
 
   it('logout clears the session; a protected route afterward redirects to login again', () => {
     loginViaUi('testuser@example.com', 'password123');
-    // No extra cy.visit('/projects') here: loginViaUi() already lands on `/`
-    // authenticated, and LandingPage's own client-side <Navigate> already takes it to
-    // /projects — a real, redundant full-page cy.visit('/projects') right after login
-    // was intermittently flaky in CI, re-triggering keycloak-js's check-sso silent
-    // redirect (a real top-level Keycloak round-trip on every fresh page load) a
-    // second time immediately after the login one, occasionally racing back
-    // unauthenticated and landing on the public landing page instead — which still
-    // contains the text "OpsClear" (so an earlier "wait for OpsClear" attempt at this
-    // fix didn't actually catch it), just with no user menu to click.
-    cy.url().should('include', 'localhost:5173/projects');
-    // AppLayout's header is genuinely unstable for a moment right after a fresh
-    // login (org/subscription data still loading). CI has shown three different
-    // symptoms of this here across separate runs: the toggle button not found at
-    // all, found then detaching mid-click, and now — a longer timeout having fixed
-    // both of those — a click that lands (no Cypress actionability error) but
-    // doesn't actually open the menu, consistent with a React re-render happening in
-    // the same tick and eating the click's effect. A longer timeout on the click
-    // itself plus a self-healing retry (re-click once if the menu didn't open)
-    // covers this without needing to pin down the exact remount trigger.
-    cy.get('[aria-haspopup="true"]', { timeout: 15000 }).should('be.visible').click();
-    cy.get('body').then(($body) => {
-      if (!$body.text().includes('Sign out')) {
-        cy.get('[aria-haspopup="true"]').click();
-      }
-    });
-    cy.contains('Sign out', { timeout: 10000 }).click();
+    cy.visit('/projects');
+    cy.get('[aria-haspopup="true"]').click();
+    cy.contains('Sign out').click();
     cy.visit('/projects');
     cy.url().should('include', 'localhost:5173/');
     cy.url().should('not.include', '/projects');
