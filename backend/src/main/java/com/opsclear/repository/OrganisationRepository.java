@@ -76,6 +76,11 @@ public class OrganisationRepository {
                 .join(ORGANISATION_MEMBERS).on(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(ORGANISATIONS.ID))
                 .where(ORGANISATION_MEMBERS.USER_ID.eq(userId))
                 .and(ORGANISATIONS.DELETED_AT.isNull())
+                // JOB-241: deterministic ordering as defense-in-depth for any pre-existing
+                // multi-org membership from before create() blocked a second org — without
+                // an ORDER BY, which row `.limit(1)` returns is unspecified and could vary
+                // between calls.
+                .orderBy(ORGANISATION_MEMBERS.JOINED_AT.asc())
                 .limit(1)
                 .fetchOptional()
                 .map(this::toModel);

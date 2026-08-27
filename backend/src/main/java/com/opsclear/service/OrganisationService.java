@@ -30,6 +30,7 @@ public class OrganisationService {
     @Transactional
     public OrganisationModel create(CreateOrganisationRequest request, UUID callerId) {
         requireUserExists(callerId);
+        requireNoExistingOrganisation(callerId);
         requireSlugAvailable(request.getSlug());
 
         OrganisationModel org = OrganisationModel.builder()
@@ -114,6 +115,17 @@ public class OrganisationService {
                 .orElseThrow(() -> new ForbiddenException(ErrorMessages.Organisation.NOT_A_MEMBER));
         if (role != OrganisationRole.OWNER) {
             throw new ForbiddenException(ErrorMessages.Organisation.INSUFFICIENT_PERMISSIONS_OWNER);
+        }
+    }
+
+    private void requireNoExistingOrganisation(UUID callerId) {
+        // JOB-241: the rest of the app (GET /organisations/mine, OrgContext,
+        // OrgRequiredRoute) assumes exactly one org per user — without this guard a
+        // second create() silently succeeded, leaving the caller a member of two and
+        // /mine returning whichever one findByMember's unordered `.limit(1)` happened
+        // to pick.
+        if (organisationRepository.findByMember(callerId).isPresent()) {
+            throw new ConflictException(ErrorMessages.Organisation.ALREADY_IN_ORGANISATION);
         }
     }
 
