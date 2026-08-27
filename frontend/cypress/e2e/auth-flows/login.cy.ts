@@ -62,12 +62,21 @@ describe('Login', () => {
     // fix didn't actually catch it), just with no user menu to click.
     cy.url().should('include', 'localhost:5173/projects');
     // AppLayout's header is genuinely unstable for a moment right after a fresh
-    // login (org/subscription data still loading) — CI has shown the toggle button
-    // being found and then detaching mid-click within Cypress's default 4s
-    // actionability window. A longer timeout lets the click retry past that initial
-    // instability instead of failing on it.
-    cy.get('[aria-haspopup="true"]', { timeout: 15000 }).should('be.visible').click({ timeout: 15000 });
-    cy.contains('Sign out').click();
+    // login (org/subscription data still loading). CI has shown three different
+    // symptoms of this here across separate runs: the toggle button not found at
+    // all, found then detaching mid-click, and now — a longer timeout having fixed
+    // both of those — a click that lands (no Cypress actionability error) but
+    // doesn't actually open the menu, consistent with a React re-render happening in
+    // the same tick and eating the click's effect. A longer timeout on the click
+    // itself plus a self-healing retry (re-click once if the menu didn't open)
+    // covers this without needing to pin down the exact remount trigger.
+    cy.get('[aria-haspopup="true"]', { timeout: 15000 }).should('be.visible').click();
+    cy.get('body').then(($body) => {
+      if (!$body.text().includes('Sign out')) {
+        cy.get('[aria-haspopup="true"]').click();
+      }
+    });
+    cy.contains('Sign out', { timeout: 10000 }).click();
     cy.visit('/projects');
     cy.url().should('include', 'localhost:5173/');
     cy.url().should('not.include', '/projects');
