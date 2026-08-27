@@ -109,6 +109,23 @@ class OrganisationServiceTest {
                 .isInstanceOf(ConflictException.class);
     }
 
+    @Test
+    @DisplayName("create_shouldThrowConflictException_whenSaveRacesPastTheAvailabilityCheck")
+    void create_shouldThrowConflictException_whenSaveRacesPastTheAvailabilityCheck() {
+        // JOB-238: requireSlugAvailable() passing doesn't guarantee the INSERT still
+        // will — a concurrent request for the same slug can win the race. The DB's
+        // partial unique index (V039) is the real guard; this asserts that violation is
+        // translated into the same clean 409 instead of surfacing as a raw 500.
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(organisationRepository.existsBySlugAndDeletedAtIsNull("ACM")).thenReturn(false);
+        when(organisationRepository.save(any()))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
+
+        assertThatThrownBy(() -> organisationService.create(
+                new CreateOrganisationRequest("Acme", "ACM"), ownerId))
+                .isInstanceOf(ConflictException.class);
+    }
+
     // --- getById ---
 
     @Test
@@ -178,6 +195,20 @@ class OrganisationServiceTest {
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
         when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
         when(organisationRepository.existsBySlugAndIdNotAndDeletedAtIsNull("XYZ", orgId)).thenReturn(true);
+
+        assertThatThrownBy(() -> organisationService.update(
+                orgId, new UpdateOrganisationRequest("X", "XYZ"), ownerId))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    @DisplayName("update_shouldThrowConflictException_whenSaveRacesPastTheAvailabilityCheck")
+    void update_shouldThrowConflictException_whenSaveRacesPastTheAvailabilityCheck() {
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(organisationRepository.existsBySlugAndIdNotAndDeletedAtIsNull("XYZ", orgId)).thenReturn(false);
+        when(organisationRepository.save(any()))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
 
         assertThatThrownBy(() -> organisationService.update(
                 orgId, new UpdateOrganisationRequest("X", "XYZ"), ownerId))
