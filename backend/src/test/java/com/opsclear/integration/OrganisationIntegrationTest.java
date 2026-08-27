@@ -125,6 +125,26 @@ class OrganisationIntegrationTest {
     }
 
     @Test
+    @DisplayName("create_shouldReturn409_whenCallerAlreadyBelongsToAnOrganisation")
+    void create_shouldReturn409_whenCallerAlreadyBelongsToAnOrganisation() throws Exception {
+        // JOB-241: confirms the actual enforced behavior per ADR-0049 Appendix §2 —
+        // previously this succeeded with 201, leaving the caller a member of two orgs.
+        mockMvc.perform(post(ApiPaths.ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Acme Corp", "slug", "ACM"))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post(ApiPaths.ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Second Corp", "slug", "SEC"))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     @DisplayName("create_shouldReturn400_whenSlugTooLong")
     void create_shouldReturn400_whenSlugTooLong() throws Exception {
         mockMvc.perform(post(ApiPaths.ORGANISATIONS)

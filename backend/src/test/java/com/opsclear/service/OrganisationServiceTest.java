@@ -25,6 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -96,6 +97,19 @@ class OrganisationServiceTest {
         assertThatThrownBy(() -> organisationService.create(
                 new CreateOrganisationRequest("Acme", "ACM"), ownerId))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("create_shouldThrowConflictException_whenCallerAlreadyBelongsToAnOrganisation")
+    void create_shouldThrowConflictException_whenCallerAlreadyBelongsToAnOrganisation() {
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.of(org));
+
+        assertThatThrownBy(() -> organisationService.create(
+                new CreateOrganisationRequest("Second Corp", "SEC"), ownerId))
+                .isInstanceOf(ConflictException.class);
+
+        verify(organisationRepository, never()).save(any());
     }
 
     @Test
