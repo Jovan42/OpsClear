@@ -33,7 +33,15 @@ export const router = createBrowserRouter([
   { path: '/features', element: <FeaturesPage />, errorElement: <RouteErrorPage /> },
   { path: '/onboarding', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   { path: '/org/new', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
-  { path: '/invite/:token', element: <AcceptInvitePage />, errorElement: <RouteErrorPage /> },
+  {
+    // JOB-239: a bare RequireAuth wrapper, not nested under AppLayout/OrgRequiredRoute
+    // like the rest of the authenticated app below — accepting an invite is exactly
+    // how a brand-new user with no org yet joins one, so this route must not assume
+    // an org already exists.
+    element: <RequireAuth />,
+    errorElement: <RouteErrorPage />,
+    children: [{ path: 'invite/:token', element: <AcceptInvitePage /> }],
+  },
   {
     element: <RequireAuth />,
     errorElement: <RouteErrorPage />,
