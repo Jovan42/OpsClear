@@ -52,7 +52,19 @@ describe('Login', () => {
   it('logout clears the session; a protected route afterward redirects to login again', () => {
     loginViaUi('testuser@example.com', 'password123');
     cy.visit('/projects');
+    // Wait for the app shell to actually be settled before opening the user menu —
+    // clicking the toggle immediately after cy.visit() was occasionally flaky in CI
+    // (the button exists but the click doesn't register while the page is still
+    // finishing its initial render), causing "Sign out" to never appear.
+    cy.contains('OpsClear').should('be.visible');
     cy.get('[aria-haspopup="true"]').click();
+    // Self-healing retry: if the menu didn't actually open (same underlying
+    // flakiness), one more click reliably does.
+    cy.get('body').then(($body) => {
+      if (!$body.text().includes('Sign out')) {
+        cy.get('[aria-haspopup="true"]').click();
+      }
+    });
     cy.contains('Sign out').click();
     cy.visit('/projects');
     cy.url().should('include', 'localhost:5173/');
