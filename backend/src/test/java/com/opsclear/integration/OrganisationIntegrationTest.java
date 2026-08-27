@@ -245,6 +245,35 @@ class OrganisationIntegrationTest {
     }
 
     @Test
+    @DisplayName("create_shouldReturn201_whenSlugBelongedToASoftDeletedOrganisation")
+    void create_shouldReturn201_whenSlugBelongedToASoftDeletedOrganisation() throws Exception {
+        // JOB-238: a soft-deleted org's slug must actually be reusable, not just look
+        // free per requireSlugAvailable()'s non-deleted-only check and then 500 when the
+        // INSERT hits a DB constraint that didn't know about the soft-delete exclusion.
+        String createResponse = mockMvc.perform(post(ApiPaths.ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Acme Corp", "slug", "ACM"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID orgId = UUID.fromString(objectMapper.readTree(createResponse).get("id").asText());
+
+        mockMvc.perform(delete(ApiPaths.organisation(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner"))))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post(ApiPaths.ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(memberId.toString())
+                                .claim("email", "member@example.com").claim("name", "Member")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "New Corp", "slug", "ACM"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.slug").value("ACM"));
+    }
+
+    @Test
     @DisplayName("delete_shouldReturn403_whenCallerIsNotOwner")
     void delete_shouldReturn403_whenCallerIsNotOwner() throws Exception {
         String createResponse = mockMvc.perform(post(ApiPaths.ORGANISATIONS)

@@ -12,6 +12,7 @@ import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +38,15 @@ public class OrganisationService {
                 .createdBy(callerId)
                 .build();
 
-        org = organisationRepository.save(org);
+        // JOB-238: requireSlugAvailable() above is a check-then-act race — two concurrent
+        // requests for the same never-used slug can both pass it before either commits.
+        // The partial unique index (V039) is the real guard; this turns its violation into
+        // the same clean 409 instead of an uncaught DataIntegrityViolationException 500.
+        try {
+            org = organisationRepository.save(org);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(ErrorMessages.Organisation.SLUG_ALREADY_EXISTS);
+        }
         organisationRepository.saveMember(org.getId(), callerId, OrganisationRole.OWNER);
         friendlyIdService.seedForOrg(org.getId());
 
@@ -67,7 +76,11 @@ public class OrganisationService {
         org.setSlug(request.getSlug().toUpperCase());
 
         log.info("Updated organisation '{}' by user {}", orgId, callerId);
-        return organisationRepository.save(org);
+        try {
+            return organisationRepository.save(org);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(ErrorMessages.Organisation.SLUG_ALREADY_EXISTS);
+        }
     }
 
     @Transactional
