@@ -112,6 +112,21 @@ export function createOrgWithFullAccess(email: string, name: string, slug: strin
   );
 }
 
+/** Creates a project for `email` (via the real API, no add-on needed — projects are
+ *  core) and returns its friendlyId. */
+export function createProjectAs(email: string, name: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects`,
+        headers: { Authorization: `Bearer ${token}` },
+        body: { name },
+      })
+      .then(({ body }: { body: { friendlyId: string } }) => body.friendlyId),
+  );
+}
+
 /** Adds `targetUserId` to `orgId` with `role`, acting as the org's owner. */
 export function addMember(orgId: string, ownerEmail: string, targetUserId: string, role: 'MEMBER' | 'ADMIN') {
   return tokenFor(ownerEmail).then((token) =>
