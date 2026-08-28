@@ -2,7 +2,6 @@ package com.opsclear.service;
 
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
-import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.UserRepository;
@@ -26,9 +25,12 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<UserModel> searchByEmail(String emailPrefix, UUID callerId) {
-        OrganisationModel org = organisationRepository.findByMember(callerId)
+        // Caller must still belong to an org to use this at all (JOB-244 didn't touch
+        // that guard) — but the search itself is no longer scoped to that org; see
+        // UserRepository.searchByEmail()'s own comment for why.
+        organisationRepository.findByMember(callerId)
                 .orElseThrow(() -> new ForbiddenException(ErrorMessages.Organisation.NOT_IN_ORG));
-        log.debug("Searching users by email prefix '{}' within org {}", emailPrefix, org.getId());
-        return userRepository.searchByEmailWithinOrg(emailPrefix, org.getId(), SEARCH_LIMIT);
+        log.debug("Searching users by email prefix '{}'", emailPrefix);
+        return userRepository.searchByEmail(emailPrefix, SEARCH_LIMIT);
     }
 }

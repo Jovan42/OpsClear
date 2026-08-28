@@ -74,17 +74,15 @@ class UserControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("search_shouldReturnOrgMembersMatchingPrefix_whenEmailPrefixMatches")
-    void search_shouldReturnOrgMembersMatchingPrefix_whenEmailPrefixMatches() throws Exception {
+    @DisplayName("search_shouldReturnAllUsersMatchingPrefix_regardlessOfOrgMembership")
+    void search_shouldReturnAllUsersMatchingPrefix_regardlessOfOrgMembership() throws Exception {
         UUID aliceId = UUID.randomUUID();
         UUID aliciaId = UUID.randomUUID();
-        UUID bobId = UUID.randomUUID();
         userRepository.save(UserModel.builder().id(aliceId).email("alice@example.com").name("Alice").build());
         userRepository.save(UserModel.builder().id(aliciaId).email("alicia@example.com").name("Alicia").build());
-        userRepository.save(UserModel.builder().id(bobId).email("bob@example.com").name("Bob").build());
         organisationRepository.saveMember(org.getId(), aliceId, OrganisationRole.MEMBER);
-        organisationRepository.saveMember(org.getId(), aliciaId, OrganisationRole.MEMBER);
-        // bob is NOT in the org — should not appear
+        // alicia is NOT in the org — JOB-244: must still appear, since the whole point
+        // of this search is finding a genuinely new candidate to invite.
 
         mockMvc.perform(get(ApiPaths.usersSearch("ali"))
                         .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "caller@example.com"))))
@@ -95,8 +93,11 @@ class UserControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("search_shouldExcludeUsersOutsideCallerOrg")
-    void search_shouldExcludeUsersOutsideCallerOrg() throws Exception {
+    @DisplayName("search_shouldIncludeUsersOutsideCallerOrg")
+    void search_shouldIncludeUsersOutsideCallerOrg() throws Exception {
+        // JOB-244: previously excluded, which meant this search could never surface a
+        // genuinely new candidate to invite — anyone findable was, by definition,
+        // already a member. Fixed to search all users regardless of org membership.
         UUID outsideUserId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(outsideUserId).email("alice@other.com").name("Alice Other").build());
@@ -105,7 +106,8 @@ class UserControllerIntegrationTest {
         mockMvc.perform(get(ApiPaths.usersSearch("ali"))
                         .with(jwt().jwt(j -> j.subject(callerId.toString()).claim("email", "caller@example.com"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].email").value("alice@other.com"));
     }
 
     @Test
