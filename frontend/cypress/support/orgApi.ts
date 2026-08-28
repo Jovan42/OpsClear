@@ -88,6 +88,30 @@ export function createOrgWithSubscription(email: string, name: string, slug: str
   );
 }
 
+// JOB-210: every add-on-gated feature area (API Keys, Notes, Approvals, Dashboard,
+// Milestones, Job Relationships, Job Templates, Recurring Scheduling, ...) is gated
+// by real, active Paddle billing on both sides — OrgContext.hasAddon() on the
+// frontend and RequiresAddonAspect on the backend. Both explicitly short-circuit to
+// "fully unlocked" for `subscription.internal` orgs (see either one's own comments:
+// "internal account", billing does not apply) — no live Paddle checkout needed, and
+// no per-addon selection needed either, matching ADR-0049's own principle of
+// preferring a fixture over a live external dependency for anything that isn't
+// itself the subject under test. No API sets this — it's DB-only (queryDb task).
+export function makeOrgInternal(orgId: string) {
+  return cy.task('queryDb', {
+    sql: 'UPDATE org_subscriptions SET is_internal = true WHERE org_id = $1',
+    params: [orgId],
+  });
+}
+
+/** Creates an org for `email` with full (internal, all-add-ons) access — for specs
+ *  in an add-on-gated feature area whose actual subject isn't billing itself. */
+export function createOrgWithFullAccess(email: string, name: string, slug: string) {
+  return createOrgWithSubscription(email, name, slug).then((orgId) =>
+    makeOrgInternal(orgId).then(() => orgId),
+  );
+}
+
 /** Adds `targetUserId` to `orgId` with `role`, acting as the org's owner. */
 export function addMember(orgId: string, ownerEmail: string, targetUserId: string, role: 'MEMBER' | 'ADMIN') {
   return tokenFor(ownerEmail).then((token) =>
