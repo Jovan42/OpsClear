@@ -45,28 +45,32 @@ class UserServiceTest {
                 .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(callerId).build();
     }
 
+    // JOB-244: search is no longer scoped to the caller's own org (that made it
+    // impossible to ever find a genuinely new candidate to invite) — the caller must
+    // still belong to an org to use the endpoint at all, but the results themselves
+    // are unscoped.
     @Test
-    @DisplayName("searchByEmail_shouldReturnOrgScopedResults_fromRepository")
-    void searchByEmail_shouldReturnOrgScopedResults_fromRepository() {
+    @DisplayName("searchByEmail_shouldReturnResults_fromRepository")
+    void searchByEmail_shouldReturnResults_fromRepository() {
         String prefix = "ali";
         List<UserModel> expected = List.of(
                 UserModel.builder().id(UUID.randomUUID()).email("alice@example.com").name("Alice").build(),
                 UserModel.builder().id(UUID.randomUUID()).email("alicia@example.com").name("Alicia").build()
         );
         when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(org));
-        when(userRepository.searchByEmailWithinOrg(prefix, org.getId(), 10)).thenReturn(expected);
+        when(userRepository.searchByEmail(prefix, 10)).thenReturn(expected);
 
         List<UserModel> result = userService.searchByEmail(prefix, callerId);
 
         assertThat(result).isEqualTo(expected);
-        verify(userRepository).searchByEmailWithinOrg(prefix, org.getId(), 10);
+        verify(userRepository).searchByEmail(prefix, 10);
     }
 
     @Test
-    @DisplayName("searchByEmail_shouldReturnEmptyList_whenNoOrgMemberMatches")
-    void searchByEmail_shouldReturnEmptyList_whenNoOrgMemberMatches() {
+    @DisplayName("searchByEmail_shouldReturnEmptyList_whenNoMatches")
+    void searchByEmail_shouldReturnEmptyList_whenNoMatches() {
         when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(org));
-        when(userRepository.searchByEmailWithinOrg("zzz", org.getId(), 10)).thenReturn(List.of());
+        when(userRepository.searchByEmail("zzz", 10)).thenReturn(List.of());
 
         List<UserModel> result = userService.searchByEmail("zzz", callerId);
 
@@ -77,11 +81,11 @@ class UserServiceTest {
     @DisplayName("searchByEmail_shouldEnforceLimit_ofTen")
     void searchByEmail_shouldEnforceLimit_ofTen() {
         when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(org));
-        when(userRepository.searchByEmailWithinOrg("test", org.getId(), 10)).thenReturn(List.of());
+        when(userRepository.searchByEmail("test", 10)).thenReturn(List.of());
 
         userService.searchByEmail("test", callerId);
 
-        verify(userRepository).searchByEmailWithinOrg("test", org.getId(), 10);
+        verify(userRepository).searchByEmail("test", 10);
     }
 
     @Test
