@@ -1,4 +1,5 @@
 import { defineConfig } from 'cypress';
+import { Client } from 'pg';
 
 export default defineConfig({
   // cypress-multi-reporters keeps the readable terminal 'spec' output locally while
@@ -15,5 +16,32 @@ export default defineConfig({
     baseUrl: process.env.CYPRESS_BASE_URL ?? 'http://localhost:5173',
     supportFile: 'cypress/support/e2e.ts',
     specPattern: 'cypress/e2e/**/*.cy.ts',
+    setupNodeEvents(on) {
+      // JOB-209: a handful of things a spec needs (an invite's raw token, backdating
+      // an invite's expiry to test the 7-day window) have no API surface at all —
+      // this is Node-side (unlike cy.request, which can't run arbitrary SQL), so it's
+      // a task, not a command. Postgres is TCP-reachable on localhost:5432 in both
+      // local dev (docker-compose) and CI (GitHub Actions service container) with the
+      // same opsclear/opsclear credentials — same connection shape the backend's own
+      // datasource config already uses in both places.
+      on('task', {
+        async queryDb({ sql, params }: { sql: string; params?: unknown[] }) {
+          const client = new Client({
+            host: 'localhost',
+            port: 5432,
+            user: 'opsclear',
+            password: 'opsclear',
+            database: 'opsclear',
+          });
+          await client.connect();
+          try {
+            const result = await client.query(sql, params);
+            return result.rows;
+          } finally {
+            await client.end();
+          }
+        },
+      });
+    },
   },
 });

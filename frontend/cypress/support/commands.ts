@@ -15,6 +15,17 @@ interface TokenResponse {
 // them through manually on each navigation within the same test.
 let pendingTokens: TokenResponse | null = null;
 
+// JOB-209: without this, pendingTokens set by one test's cy.loginAs() silently leaked
+// into every later test's cy.visit() within the same spec file — including tests that
+// never called loginAs() themselves, e.g. a real-UI-login test running after an
+// API-driven one seeds a stale token into its cy.visit() calls, corrupting auth
+// entirely (surfaced as AuthContext's initError screen). This is a module-level
+// variable, not React state, so it doesn't reset on its own between tests the way
+// component state would.
+beforeEach(() => {
+  pendingTokens = null;
+});
+
 /**
  * ADR-0049 §3: authenticates via Keycloak's token endpoint directly (Resource Owner
  * Password Credentials grant, same request shape scripts/seed.sh already uses to
@@ -107,6 +118,61 @@ Cypress.Commands.add('deleteKeycloakUser', (email: string) => {
   });
 });
 
+/**
+ * JOB-209: creates a real, enabled, already-verified Keycloak user via the Admin API
+ * (same shape scripts/seed.sh's create_kc_user uses) — for specs that need a
+ * disposable user with a known-empty org state, since the 5 standard seed users'
+ * org membership isn't predictable (other specs, and local manual testing, can leave
+ * them already in an org). Pair with cy.deleteKeycloakUser() for cleanup.
+ */
+Cypress.Commands.add('createKeycloakUser', (email: string, firstName: string, lastName: string, password = 'password123') => {
+  cy.request({
+    method: 'POST',
+    url: `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
+    form: true,
+    body: { client_id: 'admin-cli', username: 'admin', password: 'admin', grant_type: 'password' },
+  }).then(({ body }: { body: { access_token: string } }) => {
+    cy.request({
+      method: 'POST',
+      url: `${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/users`,
+      headers: { Authorization: `Bearer ${body.access_token}` },
+      body: {
+        username: email,
+        email,
+        firstName,
+        lastName,
+        enabled: true,
+        emailVerified: true,
+        credentials: [{ type: 'password', value: password, temporary: false }],
+      },
+    });
+  });
+});
+
+/**
+ * JOB-209: a freshly-created org has no subscription, which OrgRequiredRoute gates
+ * behind SubscriptionWall — every non-billing org-management page is unreachable
+ * until one exists. Calls the real, non-Paddle subscription endpoint
+ * (PUT /organisations/{orgId}/subscription, exactly what "Save subscription" on that
+ * wall itself calls) directly, the same way a real minimal-plan owner would, rather
+ * than faking billing state — no external Paddle dependency either way, since this
+ * endpoint never talks to Paddle itself. Must be called as the org's OWNER.
+ */
+Cypress.Commands.add('setUpOrgSubscription', (orgId: string, ownerToken: string) => {
+  cy.request({
+    method: 'GET',
+    url: 'http://localhost:8080/api/subscriptions/catalog',
+    headers: { Authorization: `Bearer ${ownerToken}` },
+  }).then(({ body }: { body: { tiers: Array<{ id: string }> } }) => {
+    cy.request({
+      method: 'PUT',
+      url: `http://localhost:8080/api/organisations/${orgId}/subscription`,
+      headers: { Authorization: `Bearer ${ownerToken}` },
+      body: { tierId: body.tiers[0].id, billingCycle: 'MONTHLY', addonIds: [] },
+    });
+  });
+});
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
@@ -117,6 +183,12 @@ declare global {
       /** Deletes a Keycloak user by email via the Admin API — cleanup for specs that
        *  self-register a real, permanent user (JOB-208). No-op if not found. */
       deleteKeycloakUser(email: string): Chainable<void>;
+      /** Creates a real, enabled Keycloak user via the Admin API — for specs needing
+       *  a disposable user with predictable (empty) org state (JOB-209). */
+      createKeycloakUser(email: string, firstName: string, lastName: string, password?: string): Chainable<void>;
+      /** Gives an org a real (non-Paddle) subscription so its OWNER can get past
+       *  SubscriptionWall onto the actual org-management pages (JOB-209). */
+      setUpOrgSubscription(orgId: string, ownerToken: string): Chainable<void>;
     }
   }
 }
