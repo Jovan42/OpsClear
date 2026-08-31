@@ -88,8 +88,15 @@ function sortJobs(jobs: JobResponse[], sortKey: SortKey, sortDir: SortDir): JobR
   return jobs.slice().sort((a, b) => {
     let cmp: number;
     if (sortKey === 'deadline') {
-      const da = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-      const db = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+      const da = a.deadline ? new Date(a.deadline).getTime() : null;
+      const db = b.deadline ? new Date(b.deadline).getTime() : null;
+      // A missing deadline always sorts last regardless of direction — negating a
+      // comparison against the Infinity sentinel used to flip this, so it's handled
+      // as an unconditional early return instead of going through the shared
+      // direction negation below.
+      if (da === null && db === null) return 0;
+      if (da === null) return 1;
+      if (db === null) return -1;
       cmp = da - db;
     } else if (sortKey === 'createdAt') {
       cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
