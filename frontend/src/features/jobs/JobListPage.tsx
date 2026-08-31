@@ -423,6 +423,12 @@ export default function JobListPage() {
   const filtered = filter === 'ALL' ? activeJobs : jobs.filter((j) => j.status === filter);
   const sorted = sortJobs(filtered, sortKey, sortDir);
   const allCount = activeJobs.length;
+  // `jobs` already reflects the search/priority/milestone/type filters (server-side
+  // query params), so it reads as zero both when the project genuinely has no jobs
+  // AND when one of those filters just narrows a non-empty project to no matches.
+  // `allJobs` (fetched unfiltered for the milestone progress bars) is the only
+  // reliable signal for "this project truly has no jobs at all".
+  const isProjectEmpty = allJobs.length === 0;
 
   if (isLoading) {
     return (
@@ -550,12 +556,12 @@ export default function JobListPage() {
           message={
             debouncedSearch
               ? t('jobListPage.noResultsFor', { query: debouncedSearch })
-              : jobs.length === 0
+              : isProjectEmpty
                 ? t('jobListPage.noJobsYet')
                 : t('jobListPage.noJobsMatchFilter')
           }
           action={
-            !debouncedSearch && jobs.length === 0
+            !debouncedSearch && isProjectEmpty
               ? { label: t('jobListPage.createFirstJob'), onClick: () => setModalOpen(true) }
               : undefined
           }
