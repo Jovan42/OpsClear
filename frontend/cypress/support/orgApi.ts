@@ -127,6 +127,111 @@ export function createProjectAs(email: string, name: string) {
   );
 }
 
+/** Adds `targetUserId` to project `projectId` with a project-level `role` (distinct
+ *  from org role), acting as `ownerEmail`. */
+export function addProjectMember(
+  projectId: string,
+  ownerEmail: string,
+  targetUserId: string,
+  role: 'OWNER' | 'ADMIN' | 'MEMBER',
+) {
+  return tokenFor(ownerEmail).then((token) =>
+    cy.request({
+      method: 'POST',
+      url: `${API}/api/projects/${projectId}/members`,
+      headers: { Authorization: `Bearer ${token}` },
+      body: { userId: targetUserId, role },
+    }),
+  );
+}
+
+/** Creates a job in `projectId` for `email` and returns its friendlyId. */
+export function createJobAs(
+  email: string,
+  projectId: string,
+  body: {
+    title: string;
+    client?: string;
+    assignedTo?: string;
+    deadline?: string;
+    priority?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+    milestoneId?: string;
+    typeId?: string;
+  },
+) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects/${projectId}/jobs`,
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      })
+      .then(({ body: created }: { body: { friendlyId: string } }) => created.friendlyId),
+  );
+}
+
+/** Transitions a job's status, acting as `email` — needed to seed IN_PROGRESS/BLOCKED/
+ *  COMPLETED jobs directly rather than driving the status-change UI for fixture setup. */
+export function updateJobStatusAs(
+  email: string,
+  projectId: string,
+  jobId: string,
+  status: 'NEW' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED',
+  reason?: string,
+) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'PATCH',
+      url: `${API}/api/projects/${projectId}/jobs/${jobId}/status`,
+      headers: { Authorization: `Bearer ${token}` },
+      body: { status, ...(reason ? { reason } : {}) },
+    }),
+  );
+}
+
+/** Creates a milestone in `projectId` for `email` (requires the MILESTONES add-on —
+ *  callers should use an org created via createOrgWithFullAccess) and returns its id. */
+export function createMilestoneAs(email: string, projectId: string, name: string, deadline?: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects/${projectId}/milestones`,
+        headers: { Authorization: `Bearer ${token}` },
+        body: { name, ...(deadline ? { deadline } : {}) },
+      })
+      .then(({ body }: { body: { id: string } }) => body.id),
+  );
+}
+
+/** Creates a job type in `projectId` for `email` (requires the JOB_TYPES add-on —
+ *  callers should use an org created via createOrgWithFullAccess) and returns its id. */
+export function createJobTypeAs(email: string, projectId: string, name: string, color: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects/${projectId}/job-types`,
+        headers: { Authorization: `Bearer ${token}` },
+        body: { name, color },
+      })
+      .then(({ body }: { body: { id: string } }) => body.id),
+  );
+}
+
+/** Marks `projectId` COMPLETED, acting as `email`. */
+export function completeProjectAs(email: string, projectId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'PATCH',
+      url: `${API}/api/projects/${projectId}/status`,
+      headers: { Authorization: `Bearer ${token}` },
+      body: { status: 'COMPLETED' },
+    }),
+  );
+}
+
 /** Adds `targetUserId` to `orgId` with `role`, acting as the org's owner. */
 export function addMember(orgId: string, ownerEmail: string, targetUserId: string, role: 'MEMBER' | 'ADMIN') {
   return tokenFor(ownerEmail).then((token) =>
