@@ -38,12 +38,13 @@ function LoadingSkeleton() {
 interface TemplateRowProps {
   template: JobTemplateResponse;
   jobTypes: JobTypeResponse[];
+  canManage: boolean;
   onEdit: (t: JobTemplateResponse) => void;
   onDelete: (t: JobTemplateResponse) => void;
   onSchedule?: (t: JobTemplateResponse) => void;
 }
 
-function TemplateRow({ template, jobTypes, onEdit, onDelete, onSchedule }: Readonly<TemplateRowProps>) {
+function TemplateRow({ template, jobTypes, canManage, onEdit, onDelete, onSchedule }: Readonly<TemplateRowProps>) {
   const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const matchedType = template.defaultTypeId
     ? jobTypes.find((jt) => jt.id === template.defaultTypeId)
@@ -83,15 +84,19 @@ function TemplateRow({ template, jobTypes, onEdit, onDelete, onSchedule }: Reado
             {t('milestonesTemplatesSchedules:templatesPage.scheduleButton')}
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={() => onEdit(template)}>{t('common:edit')}</Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(template)}
-          className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          {t('common:delete')}
-        </Button>
+        {canManage && (
+          <>
+            <Button variant="ghost" size="sm" onClick={() => onEdit(template)}>{t('common:edit')}</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(template)}
+              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              {t('common:delete')}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -136,9 +141,11 @@ export default function TemplatesPage() {
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('milestonesTemplatesSchedules:templatesPage.pageHeading')}</h1>
-          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
-            {t('milestonesTemplatesSchedules:templatesPage.newButton')}
-          </Button>
+          {isOwnerOrAdmin && (
+            <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+              {t('milestonesTemplatesSchedules:templatesPage.newButton')}
+            </Button>
+          )}
         </div>
 
         {templates.length === 0 ? (
@@ -167,6 +174,7 @@ export default function TemplatesPage() {
                 key={tpl.id}
                 template={tpl}
                 jobTypes={jobTypes}
+                canManage={isOwnerOrAdmin}
                 onEdit={setEditing}
                 onDelete={(tmpl) => { setDeleting(tmpl); setDeleteError(null); }}
                 onSchedule={canSchedule ? setScheduling : undefined}
