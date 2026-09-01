@@ -1138,6 +1138,22 @@ class JobIntegrationTest {
     }
 
     @Test
+    @DisplayName("updateJob_shouldReturn409_whenProjectIsCompleted (JOB-251)")
+    void updateJob_shouldReturn409_whenProjectIsCompleted() throws Exception {
+        JobModel job = createTestJob("Some Job", memberId, JobStatus.NEW);
+        completeProject();
+
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "title": "Should not be editable" }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
     @DisplayName("updateJobStatus_shouldReturn409_whenProjectIsCompleted")
     void updateJobStatus_shouldReturn409_whenProjectIsCompleted() throws Exception {
         JobModel job = createTestJob("Some Job", memberId, JobStatus.NEW);

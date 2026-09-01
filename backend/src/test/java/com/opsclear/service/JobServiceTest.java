@@ -554,6 +554,21 @@ class JobServiceTest {
     }
 
     @Test
+    @DisplayName("update_shouldThrowConflictException_whenProjectIsCompleted")
+    void update_shouldThrowConflict_whenProjectIsCompleted() {
+        UUID jobId = UUID.randomUUID();
+        ProjectModel completed = ProjectModel.builder()
+                .id(projectId).name("Test Project").ownerId(ownerId).status(ProjectStatus.COMPLETED).build();
+        UpdateJobRequest request = UpdateJobRequest.builder().title("New title").build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(completed));
+
+        assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This project is completed and no longer accepts changes");
+    }
+
+    @Test
     @DisplayName("MEMBER should be forbidden from updating job fields")
     void update_shouldThrow_whenMemberRole() {
         UUID jobId = UUID.randomUUID();
