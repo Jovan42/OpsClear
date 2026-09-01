@@ -162,7 +162,8 @@ public class JobService {
     @Transactional
     public JobModel update(UUID projectId, UUID jobId, UpdateJobRequest request, UUID requesterId) {
         requireOrgMembership(requesterId);
-        requireProjectExistsById(projectId);
+        ProjectModel project = requireProjectExists(projectId);
+        requireProjectNotCompleted(project);
         requireOwnerOrAdmin(projectId, requesterId);
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
