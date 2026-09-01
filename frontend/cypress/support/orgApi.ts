@@ -428,3 +428,48 @@ export function getJobHistoryAs(email: string, projectId: string, jobId: string)
     }),
   );
 }
+
+/** Lists a project's members (id, userId, role), acting as `email`. */
+export function listProjectMembersAs(email: string, projectId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/members`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as Array<{ id: string; userId: string; role: string }>),
+  );
+}
+
+/** Creates a recurring schedule (requires the RECURRING_SCHEDULING add-on and a
+ *  templateId — see createTemplateAs), acting as `email`, and returns its id. */
+export function createScheduleAs(
+  email: string,
+  projectId: string,
+  body: { name: string; templateId: string; cronExpression: string; timezone: string; assigneeIds?: string[] },
+) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects/${projectId}/schedules`,
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      })
+      .then(({ body: created }: { body: { id: string } }) => created.id),
+  );
+}
+
+/** Fetches a single recurring schedule, acting as `email`. */
+export function getScheduleAs(email: string, projectId: string, scheduleId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/schedules/${scheduleId}`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as { assignees: Array<{ userId: string }>; status: string }),
+  );
+}
