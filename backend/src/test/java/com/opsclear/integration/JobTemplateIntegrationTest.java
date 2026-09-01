@@ -153,6 +153,46 @@ class JobTemplateIntegrationTest {
     }
 
     @Test
+    @DisplayName("createTemplate — a second org's first template does not collide with another org's (JOB-252 regression)")
+    void createTemplate_shouldReturn201_forSecondOrgsFirstTemplate() throws Exception {
+        mockMvc.perform(post(ApiPaths.templates(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "First org's template"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.friendlyId").value("TPL-001"));
+
+        UUID otherOwnerId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(otherOwnerId).email("other-owner@example.com").name("Other Owner").build());
+        OrganisationModel otherOrg = organisationRepository.save(
+                OrganisationModel.builder().name("Other Org").slug("OTH").createdBy(otherOwnerId).build());
+        organisationRepository.saveMember(otherOrg.getId(), otherOwnerId, OrganisationRole.OWNER);
+        friendlyIdRepository.seedForOrg(otherOrg.getId());
+        ProjectModel otherProject = projectRepository.save(
+                ProjectModel.builder().name("Other Project").ownerId(otherOwnerId).organisationId(otherOrg.getId()).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(otherProject.getId()).userId(otherOwnerId).role(ProjectMemberRole.OWNER).build());
+        UUID templateAddonId = addonRepository.findAll().stream()
+                .filter(a -> a.getKey().equals("JOB_TEMPLATES")).findFirst().orElseThrow().getId();
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        subscriptionRepository.create(otherOrg.getId(), tierId, "MONTHLY", Set.of(templateAddonId));
+        subscriptionRepository.updateFromPaddleWebhook(otherOrg.getId(), "sub_test_" + otherOrg.getId(), "ACTIVE", null, null);
+
+        // Both orgs' friendly-ID counters start independently, so the other org's
+        // first template also computes "TPL-001" — this must not 500.
+        mockMvc.perform(post(ApiPaths.templates(otherProject.getId()))
+                        .with(jwt().jwt(j -> j.subject(otherOwnerId.toString()).claim("email", "other-owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Other org's template"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.friendlyId").value("TPL-001"));
+    }
+
+    @Test
     @DisplayName("createTemplate — member receives 403")
     void createTemplate_shouldReturn403_forMember() throws Exception {
         mockMvc.perform(post(ApiPaths.templates(projectId))
