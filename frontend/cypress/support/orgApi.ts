@@ -276,3 +276,49 @@ export function expireInvite(inviteId: string) {
     params: [inviteId],
   });
 }
+
+/** Creates a project-scoped job template in `projectId` for `email` (requires the
+ *  JOB_TEMPLATES add-on — callers should use an org created via
+ *  createOrgWithFullAccess) and returns its id. */
+export function createTemplateAs(
+  email: string,
+  projectId: string,
+  body: {
+    name: string;
+    title?: string;
+    description?: string;
+    client?: string;
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    assigneeMode?: 'NONE' | 'FIXED' | 'ASK';
+    assigneeId?: string;
+    milestoneId?: string;
+    defaultTypeId?: string;
+    defaultTypeName?: string;
+    deadlineOffsetDays?: number;
+  },
+) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects/${projectId}/templates`,
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      })
+      .then(({ body: created }: { body: { id: string } }) => created.id),
+  );
+}
+
+/** Lists project-scoped job templates for `email` in `projectId` — used to read
+ *  occurrenceCount without needing a dedicated single-template GET endpoint. */
+export function listTemplatesAs(email: string, projectId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/templates`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as Array<{ id: string; occurrenceCount: number }>),
+  );
+}
