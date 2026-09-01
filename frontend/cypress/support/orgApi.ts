@@ -348,3 +348,17 @@ export function deleteBlockReasonAs(email: string, projectId: string, reasonId: 
     }),
   );
 }
+
+/** Adds a note to `jobId` in `projectId`, acting as `email`, and returns its id. */
+export function createNoteAs(email: string, projectId: string, jobId: string, content: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects/${projectId}/jobs/${jobId}/notes`,
+        headers: { Authorization: `Bearer ${token}` },
+        body: { content },
+      })
+      .then(({ body }: { body: { id: string } }) => body.id),
+  );
+}
