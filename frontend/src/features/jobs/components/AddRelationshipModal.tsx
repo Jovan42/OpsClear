@@ -30,7 +30,10 @@ export default function AddRelationshipModal({ open, onClose, projectId, jobId }
 
   const filtered = jobs.filter(
     (j) =>
-      j.id !== jobId &&
+      // `jobId` is the current job's friendlyId (from the route), not its UUID —
+      // comparing against j.id (a UUID) never matched, so the current job was
+      // never actually excluded from its own search results.
+      j.friendlyId !== jobId &&
       (search.length === 0 || j.title.toLowerCase().includes(search.toLowerCase())),
   );
 
