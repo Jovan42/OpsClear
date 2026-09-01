@@ -170,6 +170,27 @@ class JobHistoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("getHistory_shouldRecordTrimmedBlockReason_notRawPaddedInput (JOB-256)")
+    void getHistory_shouldRecordTrimmedBlockReason_notRawPaddedInput() throws Exception {
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("status", "IN_PROGRESS"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch(ApiPaths.jobStatus(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("status", "BLOCKED", "reason", "  Waiting for client  "))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(ApiPaths.jobHistory(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com").claim("name", "Owner"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[1].blockReason").value("Waiting for client"));
+    }
+
+    @Test
     @DisplayName("getHistory_shouldReturn403_whenCallerIsNotMember")
     void getHistory_shouldReturn403_whenCallerIsNotMember() throws Exception {
         UUID outsider = UUID.randomUUID();
