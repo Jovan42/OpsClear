@@ -352,12 +352,24 @@ export default function JobListPage() {
     ? (statusParam as Filter)
     : 'ALL';
   const setFilter = (key: Filter) => {
-    setSearchParams({ status: key }, { replace: true });
+    // Merge into the existing params (via the functional updater) rather than
+    // passing a plain object — setSearchParams(obj) replaces the whole query
+    // string, silently dropping any other param already present (e.g. `milestone`,
+    // set by the Milestones page's "View jobs →" link) (JOB-259).
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('status', key);
+      return next;
+    }, { replace: true });
   };
 
   useEffect(() => {
     if (!statusParam) {
-      setSearchParams({ status: prefs.defaultStatusTab }, { replace: true });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('status', prefs.defaultStatusTab);
+        return next;
+      }, { replace: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
