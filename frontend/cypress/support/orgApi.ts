@@ -322,3 +322,29 @@ export function listTemplatesAs(email: string, projectId: string) {
       .then(({ body }) => body as Array<{ id: string; occurrenceCount: number }>),
   );
 }
+
+/** Lists active (non-deleted) block reasons for `projectId`, acting as `email`. */
+export function listBlockReasonsAs(email: string, projectId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/block-reasons`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as Array<{ id: string; reason: string }>),
+  );
+}
+
+/** Deletes a block reason, acting as `email`. `failOnStatusCode: false` since this is
+ *  also used to exercise the 403/404 validation cases. */
+export function deleteBlockReasonAs(email: string, projectId: string, reasonId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'DELETE',
+      url: `${API}/api/projects/${projectId}/block-reasons/${reasonId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
