@@ -26,6 +26,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -76,5 +77,14 @@ class GlobalExceptionHandlerIntegrationTest {
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.trace").doesNotExist())
                 .andExpect(jsonPath("$.stackTrace").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("handleNoResourceFound_shouldReturn404_forAnUnmappedRoute (JOB-253)")
+    void handleNoResourceFound_shouldReturn404_forAnUnmappedRoute() throws Exception {
+        mockMvc.perform(delete("/api/projects/x/jobs/y/notes/z")
+                        .with(jwt().jwt(j -> j.subject(UUID.randomUUID().toString()).claim("email", "u@example.com"))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Not Found"));
     }
 }
