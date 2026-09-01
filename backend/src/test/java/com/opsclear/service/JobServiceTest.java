@@ -47,6 +47,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -828,6 +829,38 @@ class JobServiceTest {
         assertThat(result.getBlockedBy()).isEqualTo(ownerId);
         assertThat(result.getBlockedReasonId()).isEqualTo(reasonId);
         assertThat(result.getBlockedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("updateStatus_shouldRecordTrimmedBlockReasonInHistory_notTheRawRequestInput (JOB-256)")
+    void updateStatus_shouldRecordTrimmedBlockReasonInHistory_notTheRawRequestInput() {
+        UUID jobId = UUID.randomUUID();
+        UUID reasonId = UUID.randomUUID();
+        JobModel job = JobModel.builder()
+                .id(jobId)
+                .projectId(projectId)
+                .status(JobStatus.IN_PROGRESS)
+                .build();
+        // findOrCreate() strips the reason before persisting it — the history entry
+        // must record that same trimmed value, not the raw padded request input.
+        BlockReasonModel blockReason = BlockReasonModel.builder()
+                .id(reasonId)
+                .projectId(projectId)
+                .reason("Waiting for client sign-off")
+                .build();
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(blockReasonService.findOrCreate(projectId, "  Waiting for client sign-off  ")).thenReturn(blockReason);
+        when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "  Waiting for client sign-off  ", ownerId);
+
+        ArgumentCaptor<String> reasonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jobStatusHistoryRepository).insert(eq(jobId), eq("IN_PROGRESS"), eq("BLOCKED"), eq(ownerId), reasonCaptor.capture());
+        assertThat(reasonCaptor.getValue()).isEqualTo("Waiting for client sign-off");
     }
 
     @Test

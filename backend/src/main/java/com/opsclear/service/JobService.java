@@ -200,12 +200,14 @@ public class JobService {
         validateTransition(oldStatus, newStatus, requester, job.getAssignedTo(), requesterId);
         requireBlockReasonIfBlocking(newStatus, reason);
 
+        String historyBlockReason = null;
         if (newStatus == JobStatus.BLOCKED) {
             BlockReasonModel blockReason = blockReasonService.findOrCreate(projectId, reason);
             job.setStatus(JobStatus.BLOCKED);
             job.setBlockedBy(requesterId);
             job.setBlockedReasonId(blockReason.getId());
             job.setBlockedAt(Instant.now());
+            historyBlockReason = blockReason.getReason();
         } else if (oldStatus == JobStatus.BLOCKED) {
             job.setStatus(newStatus);
             job.setBlockedBy(null);
@@ -216,8 +218,7 @@ public class JobService {
         }
 
         JobModel updated = jobRepository.save(job);
-        jobStatusHistoryRepository.insert(jobId, oldStatus.name(), newStatus.name(), requesterId,
-                newStatus == JobStatus.BLOCKED ? reason : null);
+        jobStatusHistoryRepository.insert(jobId, oldStatus.name(), newStatus.name(), requesterId, historyBlockReason);
         log.info("Job {} status changed from {} to {} by user {}", jobId, oldStatus, newStatus, requesterId);
         return updated;
     }
