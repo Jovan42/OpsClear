@@ -90,9 +90,7 @@ describe('Milestones', () => {
     cy.deleteKeycloakUser(email);
   });
 
-  // Skipped pending JOB-259's merge (fix: JobListPage's default-status mount effect
-  // was wiping the ?milestone= param via a replace-not-merge setSearchParams call).
-  it.skip('"View jobs →" navigates to a pre-filtered flat list showing only that milestone\'s jobs', () => {
+  it('"View jobs →" navigates to a pre-filtered flat list showing only that milestone\'s jobs', () => {
     const email = uniqueEmail('view-jobs-link');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Atlas Corp', uniqueSlug());
