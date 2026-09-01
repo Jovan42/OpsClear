@@ -362,3 +362,56 @@ export function createNoteAs(email: string, projectId: string, jobId: string, co
       .then(({ body }: { body: { id: string } }) => body.id),
   );
 }
+
+/** Fetches a single job's full response (incl. relationships), acting as `email`. */
+export function getJobAs(email: string, projectId: string, jobId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/jobs/${jobId}`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body),
+  );
+}
+
+/** Creates a relationship from `jobId` to `targetJobId`, acting as `email`, and
+ *  returns its id. `targetJobId` may be a friendlyId or a raw UUID — the request
+ *  body field itself only accepts a raw UUID (no friendlyId resolution server-side,
+ *  unlike path segments elsewhere), so a friendlyId is resolved via a GET first. */
+export function createRelationshipAs(
+  email: string,
+  projectId: string,
+  jobId: string,
+  targetJobId: string,
+  type: 'BLOCKED_BY' | 'RELATED_TO' | 'DUPLICATES',
+) {
+  const isFriendlyId = /^[A-Za-z]{2,6}-\d+$/.test(targetJobId);
+  return tokenFor(email).then((token) =>
+    (isFriendlyId ? getJobAs(email, projectId, targetJobId).then((j: { id: string }) => j.id) : cy.wrap(targetJobId)).then(
+      (resolvedTargetId) =>
+        cy
+          .request({
+            method: 'POST',
+            url: `${API}/api/projects/${projectId}/jobs/${jobId}/relationships`,
+            headers: { Authorization: `Bearer ${token}` },
+            body: { targetJobId: resolvedTargetId, type },
+          })
+          .then(({ body }: { body: { id: string } }) => body.id),
+    ),
+  );
+}
+
+/** Deletes a relationship from `jobId`'s perspective, acting as `email`.
+ *  `failOnStatusCode: false` since this also exercises 403/404 validation cases. */
+export function deleteRelationshipAs(email: string, projectId: string, jobId: string, relationshipId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'DELETE',
+      url: `${API}/api/projects/${projectId}/jobs/${jobId}/relationships/${relationshipId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
