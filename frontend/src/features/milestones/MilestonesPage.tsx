@@ -50,11 +50,12 @@ interface MilestoneRowProps {
   projectId: string;
   completed: number;
   total: number;
+  canManage: boolean;
   onEdit: (milestone: MilestoneResponse) => void;
   onDelete: (milestone: MilestoneResponse) => void;
 }
 
-function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete }: Readonly<MilestoneRowProps>) {
+function MilestoneRow({ milestone, projectId, completed, total, canManage, onEdit, onDelete }: Readonly<MilestoneRowProps>) {
   const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const overdue = milestone.deadline ? isOverdue(milestone.deadline) : false;
   const { prefs } = usePreferences();
@@ -90,17 +91,21 @@ function MilestoneRow({ milestone, projectId, completed, total, onEdit, onDelete
         >
           {t('milestonesTemplatesSchedules:milestonesPage.viewJobsLink')}
         </Link>
-        <Button variant="ghost" size="sm" onClick={() => onEdit(milestone)}>
-          {t('common:edit')}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(milestone)}
-          className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          {t('common:delete')}
-        </Button>
+        {canManage && (
+          <>
+            <Button variant="ghost" size="sm" onClick={() => onEdit(milestone)}>
+              {t('common:edit')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(milestone)}
+              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              {t('common:delete')}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -141,9 +146,11 @@ export default function MilestonesPage() {
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('milestonesTemplatesSchedules:milestonesPage.pageTitle')}</h1>
-          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
-            {t('milestonesTemplatesSchedules:milestonesPage.newButton')}
-          </Button>
+          {isOwnerOrAdmin && (
+            <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+              {t('milestonesTemplatesSchedules:milestonesPage.newButton')}
+            </Button>
+          )}
         </div>
 
         {milestones.length === 0 ? (
@@ -170,6 +177,7 @@ export default function MilestonesPage() {
                   projectId={projectId}
                   completed={completedCount}
                   total={msJobs.length}
+                  canManage={isOwnerOrAdmin}
                   onEdit={setEditing}
                   onDelete={setDeleting}
                 />
