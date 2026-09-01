@@ -415,3 +415,16 @@ export function deleteRelationshipAs(email: string, projectId: string, jobId: st
     }),
   );
 }
+
+/** Fetches a job's status history (oldest-first), acting as `email`. `failOnStatusCode: false`
+ *  since this is also used to exercise the 403/404 validation cases. */
+export function getJobHistoryAs(email: string, projectId: string, jobId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'GET',
+      url: `${API}/api/projects/${projectId}/jobs/${jobId}/history`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
