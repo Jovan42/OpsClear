@@ -549,3 +549,48 @@ export function getScheduleAs(email: string, projectId: string, scheduleId: stri
       .then(({ body }) => body as { assignees: Array<{ userId: string }>; status: string }),
   );
 }
+
+/** Fetches a single project's full response (incl. links), acting as `email`. */
+export function getProjectAs(email: string, projectId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body),
+  );
+}
+
+/** Adds a link to `jobId` in `projectId`, acting as `email`, and returns its id.
+ *  `failOnStatusCode: false` since this is also used to exercise validation cases. */
+export function createJobLinkAs(email: string, projectId: string, jobId: string, url: string, label?: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects/${projectId}/jobs/${jobId}/links`,
+        headers: { Authorization: `Bearer ${token}` },
+        body: { url, label },
+        failOnStatusCode: false,
+      })
+      .then((res) => res),
+  );
+}
+
+/** Adds a link to `projectId` directly, acting as `email`, and returns its id.
+ *  `failOnStatusCode: false` since this is also used to exercise validation cases. */
+export function createProjectLinkAs(email: string, projectId: string, url: string, label?: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/projects/${projectId}/links`,
+        headers: { Authorization: `Bearer ${token}` },
+        body: { url, label },
+        failOnStatusCode: false,
+      })
+      .then((res) => res),
+  );
+}
