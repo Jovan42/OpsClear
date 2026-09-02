@@ -776,3 +776,48 @@ export function createProjectLinkAs(email: string, projectId: string, url: strin
       .then((res) => res),
   );
 }
+
+/** Lists job types for `projectId`, acting as `email`. */
+export function listJobTypesAs(email: string, projectId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/job-types`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as Array<{ id: string; name: string; color: string; displayOrder: number }>),
+  );
+}
+
+/** Updates a job type (full replace — name/color/displayOrder all required), acting
+ *  as `email`. `failOnStatusCode: false` since this also exercises validation cases. */
+export function updateJobTypeAs(
+  email: string,
+  projectId: string,
+  typeId: string,
+  body: { name: string; color: string; displayOrder: number },
+) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'PUT',
+      url: `${API}/api/projects/${projectId}/job-types/${typeId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Deletes a job type, acting as `email`. `failOnStatusCode: false` since this is
+ *  also used to exercise the 409/403/404 validation cases. */
+export function deleteJobTypeAs(email: string, projectId: string, typeId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'DELETE',
+      url: `${API}/api/projects/${projectId}/job-types/${typeId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
