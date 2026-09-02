@@ -309,8 +309,18 @@ export function createTemplateAs(
   );
 }
 
-/** Lists project-scoped job templates for `email` in `projectId` — used to read
- *  occurrenceCount without needing a dedicated single-template GET endpoint. */
+export interface TemplateListEntry {
+  id: string;
+  name: string;
+  scope: 'PROJECT' | 'ORG';
+  occurrenceCount: number;
+  defaultTypeId: string | null;
+  defaultTypeName: string | null;
+  milestoneId: string | null;
+}
+
+/** Lists project-scoped job templates for `email` in `projectId` (combined with any
+ *  visible org-scoped templates, per the real endpoint's own behavior). */
 export function listTemplatesAs(email: string, projectId: string) {
   return tokenFor(email).then((token) =>
     cy
@@ -319,7 +329,73 @@ export function listTemplatesAs(email: string, projectId: string) {
         url: `${API}/api/projects/${projectId}/templates`,
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then(({ body }) => body as Array<{ id: string; occurrenceCount: number }>),
+      .then(({ body }) => body as TemplateListEntry[]),
+  );
+}
+
+/** Lists org-scoped job templates for `email` in `orgId`. */
+export function listOrgTemplatesAs(email: string, orgId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/organisations/${orgId}/templates`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as TemplateListEntry[]),
+  );
+}
+
+/** Creates an org-scoped job template for `email` in `orgId` and returns its id. */
+export function createOrgTemplateAs(
+  email: string,
+  orgId: string,
+  body: {
+    name: string;
+    title?: string;
+    description?: string;
+    client?: string;
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    assigneeMode?: 'NONE' | 'FIXED' | 'ASK';
+    defaultTypeName?: string;
+    deadlineOffsetDays?: number;
+  },
+) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'POST',
+        url: `${API}/api/organisations/${orgId}/templates`,
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      })
+      .then(({ body: created }: { body: { id: string } }) => created.id),
+  );
+}
+
+/** Records usage of a template (project- or org-scoped, resolved via the project path),
+ *  acting as `email`. `failOnStatusCode: false` since this also exercises 403 cases. */
+export function recordTemplateUsageAs(email: string, projectId: string, templateId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'POST',
+      url: `${API}/api/projects/${projectId}/templates/${templateId}/use`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Deletes a project-scoped template, acting as `email`. `failOnStatusCode: false`
+ *  since this also exercises 403/404/409 validation cases. */
+export function deleteTemplateAs(email: string, projectId: string, templateId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'DELETE',
+      url: `${API}/api/projects/${projectId}/templates/${templateId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
   );
 }
 
