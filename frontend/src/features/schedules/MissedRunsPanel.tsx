@@ -8,9 +8,10 @@ import type { JobResponse } from '../../types';
 interface Props {
   projectId: string;
   scheduleId: string;
+  canManage: boolean;
 }
 
-export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Props>) {
+export default function MissedRunsPanel({ projectId, scheduleId, canManage }: Readonly<Props>) {
   const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
   const [open, setOpen] = useState(false);
   const [createdJob, setCreatedJob] = useState<JobResponse | null>(null);
@@ -41,7 +42,7 @@ export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Prop
 
       {open && (
         <div className="px-4 pb-3 space-y-2">
-          {count > 1 && (
+          {canManage && count > 1 && (
             <div className="flex justify-end">
               <Button
                 variant="ghost"
@@ -95,30 +96,32 @@ export default function MissedRunsPanel({ projectId, scheduleId }: Readonly<Prop
                       minute: '2-digit',
                     })}
                   </span>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        materialize.mutate(run.id, {
-                          onSuccess: (job) => setCreatedJob(job),
-                        })
-                      }
-                      loading={materialize.isPending && materialize.variables === run.id}
-                      className="text-xs"
-                    >
-                      {t('milestonesTemplatesSchedules:missedRuns.createJobButton')}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => dismiss.mutate(run.id)}
-                      loading={dismiss.isPending && dismiss.variables === run.id}
-                      className="text-xs text-gray-400 hover:text-red-500"
-                    >
-                      {t('milestonesTemplatesSchedules:missedRuns.dismiss')}
-                    </Button>
-                  </div>
+                  {canManage && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          materialize.mutate(run.id, {
+                            onSuccess: (job) => setCreatedJob(job),
+                          })
+                        }
+                        loading={materialize.isPending && materialize.variables === run.id}
+                        className="text-xs"
+                      >
+                        {t('milestonesTemplatesSchedules:missedRuns.createJobButton')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => dismiss.mutate(run.id)}
+                        loading={dismiss.isPending && dismiss.variables === run.id}
+                        className="text-xs text-gray-400 hover:text-red-500"
+                      >
+                        {t('milestonesTemplatesSchedules:missedRuns.dismiss')}
+                      </Button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
