@@ -523,7 +523,15 @@ export function listProjectMembersAs(email: string, projectId: string) {
 export function createScheduleAs(
   email: string,
   projectId: string,
-  body: { name: string; templateId: string; cronExpression: string; timezone: string; assigneeIds?: string[] },
+  body: {
+    name: string;
+    templateId: string;
+    cronExpression: string;
+    timezone: string;
+    assigneeIds?: string[];
+    pausedUntil?: string | null;
+    expiresAt?: string | null;
+  },
 ) {
   return tokenFor(email).then((token) =>
     cy
@@ -537,6 +545,23 @@ export function createScheduleAs(
   );
 }
 
+/** A recurring schedule as returned by the API — the fields this suite's tests read. */
+export interface ScheduleResponse {
+  id: string;
+  templateId: string;
+  templateName: string | null;
+  name: string;
+  cronExpression: string;
+  timezone: string;
+  pausedUntil: string | null;
+  expiresAt: string | null;
+  nextRunAt: string;
+  lastRunAt: string | null;
+  currentRotationIndex: number;
+  assignees: Array<{ userId: string; userName: string; order: number }>;
+  status: 'ACTIVE' | 'PAUSED' | 'PAUSED_NO_ASSIGNEES' | 'EXPIRED';
+}
+
 /** Fetches a single recurring schedule, acting as `email`. */
 export function getScheduleAs(email: string, projectId: string, scheduleId: string) {
   return tokenFor(email).then((token) =>
@@ -546,7 +571,164 @@ export function getScheduleAs(email: string, projectId: string, scheduleId: stri
         url: `${API}/api/projects/${projectId}/schedules/${scheduleId}`,
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then(({ body }) => body as { assignees: Array<{ userId: string }>; status: string }),
+      .then(({ body }) => body as ScheduleResponse),
+  );
+}
+
+/** Lists a project's recurring schedules, acting as `email`. */
+export function listSchedulesAs(email: string, projectId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/schedules`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as ScheduleResponse[]),
+  );
+}
+
+/** Updates (full-replace PUT) a recurring schedule, acting as `email`.
+ *  `failOnStatusCode: false` since this also exercises validation/permission cases. */
+export function updateScheduleAs(
+  email: string,
+  projectId: string,
+  scheduleId: string,
+  body: {
+    name: string;
+    templateId: string;
+    cronExpression: string;
+    timezone: string;
+    pausedUntil?: string | null;
+    expiresAt?: string | null;
+    assigneeIds: string[];
+  },
+) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'PUT',
+      url: `${API}/api/projects/${projectId}/schedules/${scheduleId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Deletes a recurring schedule, acting as `email`.
+ *  `failOnStatusCode: false` since this also exercises permission/404 cases. */
+export function deleteScheduleAs(email: string, projectId: string, scheduleId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'DELETE',
+      url: `${API}/api/projects/${projectId}/schedules/${scheduleId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Pauses a recurring schedule, acting as `email`. `until` omitted/null pauses indefinitely.
+ *  `failOnStatusCode: false` since this also exercises permission cases. */
+export function pauseScheduleAs(email: string, projectId: string, scheduleId: string, until?: string | null) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'POST',
+      url: `${API}/api/projects/${projectId}/schedules/${scheduleId}/pause`,
+      headers: { Authorization: `Bearer ${token}` },
+      body: { until: until ?? null },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Resumes a recurring schedule, acting as `email`.
+ *  `failOnStatusCode: false` since this also exercises permission cases. */
+export function resumeScheduleAs(email: string, projectId: string, scheduleId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'POST',
+      url: `${API}/api/projects/${projectId}/schedules/${scheduleId}/resume`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Lists a schedule's missed runs, acting as `email`. */
+export function listMissedRunsAs(email: string, projectId: string, scheduleId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/schedules/${scheduleId}/missed-runs`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as Array<{ id: string; expectedAt: string }>),
+  );
+}
+
+/** Inserts a `schedule_missed_runs` row directly via the DB task — the only way to produce
+ *  one without waiting for the real 60s poller to detect actual downtime. */
+export function insertMissedRunAs(scheduleId: string, expectedAt: string) {
+  return cy
+    .task('queryDb', {
+      sql: 'INSERT INTO schedule_missed_runs (id, schedule_id, expected_at) VALUES (gen_random_uuid(), $1, $2) RETURNING id',
+      params: [scheduleId, expectedAt],
+    })
+    .then((rows) => (rows as Array<{ id: string }>)[0].id);
+}
+
+/** Materializes a missed run into a real job, acting as `email`.
+ *  `failOnStatusCode: false` since this also exercises permission/404 cases. */
+export function materializeMissedRunAs(email: string, projectId: string, scheduleId: string, missedRunId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'POST',
+      url: `${API}/api/projects/${projectId}/schedules/${scheduleId}/missed-runs/${missedRunId}/materialize`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Dismisses a single missed run (no job created), acting as `email`.
+ *  `failOnStatusCode: false` since this also exercises permission/404 cases. */
+export function dismissMissedRunAs(email: string, projectId: string, scheduleId: string, missedRunId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'DELETE',
+      url: `${API}/api/projects/${projectId}/schedules/${scheduleId}/missed-runs/${missedRunId}`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Dismisses every missed run for a schedule in one call, acting as `email`.
+ *  `failOnStatusCode: false` since this also exercises permission cases. */
+export function dismissAllMissedRunsAs(email: string, projectId: string, scheduleId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'DELETE',
+      url: `${API}/api/projects/${projectId}/schedules/${scheduleId}/missed-runs`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Calls the stateless cron-preview endpoint (auth required, no project scope), acting as `email`.
+ *  `failOnStatusCode: false` since this also exercises validation cases. */
+export function previewCronAs(email: string, cronExpression: string, timezone: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'POST',
+      url: `${API}/api/schedules/preview`,
+      headers: { Authorization: `Bearer ${token}` },
+      body: { cronExpression, timezone },
+      failOnStatusCode: false,
+    }),
   );
 }
 
