@@ -140,7 +140,15 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
     if (!template) return;
     setSelectedTemplateId(templateId);
     try {
-      const ctx = { project: project?.name ?? undefined, creator: creatorName ?? undefined, occurrence: template.occurrenceCount + 1 };
+      const fixedAssignee = template.assigneeMode === 'FIXED'
+        ? members.find((m) => m.userId === template.assigneeId)
+        : undefined;
+      const ctx = {
+        project: project?.name ?? undefined,
+        creator: creatorName ?? undefined,
+        occurrence: template.occurrenceCount + 1,
+        assignee: fixedAssignee?.userName,
+      };
       const deadline = template.deadlineOffsetDays != null
         ? new Date(Date.now() + template.deadlineOffsetDays * 86_400_000).toISOString().split('T')[0]
         : '';
@@ -164,7 +172,7 @@ export default function NewJobModal({ open, onClose, projectId, job, milestones 
         deadline,
       });
       if (template.assigneeMode === 'FIXED') {
-        setAssignedTo(members.find((m) => m.userId === template.assigneeId) ?? null);
+        setAssignedTo(fixedAssignee ?? null);
       } else {
         setAssignedTo(null);
         if (template.assigneeMode === 'ASK') assigneeInputRef.current?.focus();
