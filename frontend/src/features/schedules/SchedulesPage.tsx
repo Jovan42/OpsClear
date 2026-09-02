@@ -58,6 +58,7 @@ function AssigneeAvatars({ assignees }: Readonly<{ assignees: RecurringScheduleR
 interface ScheduleRowProps {
   schedule: RecurringScheduleResponse;
   projectId: string;
+  canManage: boolean;
   onEdit: (s: RecurringScheduleResponse) => void;
   onDelete: (s: RecurringScheduleResponse) => void;
   onPause: (s: RecurringScheduleResponse) => void;
@@ -68,6 +69,7 @@ interface ScheduleRowProps {
 function ScheduleRow({
   schedule,
   projectId,
+  canManage,
   onEdit,
   onDelete,
   onPause,
@@ -103,30 +105,32 @@ function ScheduleRow({
           {schedule.assignees.length > 0 && <AssigneeAvatars assignees={schedule.assignees} />}
         </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
-        {isPaused ? (
-          <Button variant="ghost" size="sm" onClick={() => onResume(schedule)} loading={isResuming}>
-            {t('milestonesTemplatesSchedules:schedulesPage.resumeButton')}
+      {canManage && (
+        <div className="flex items-center gap-1 shrink-0">
+          {isPaused ? (
+            <Button variant="ghost" size="sm" onClick={() => onResume(schedule)} loading={isResuming}>
+              {t('milestonesTemplatesSchedules:schedulesPage.resumeButton')}
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => onPause(schedule)}>
+              {t('milestonesTemplatesSchedules:schedulesPage.pauseAction')}
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => onEdit(schedule)}>
+            {t('common:edit')}
           </Button>
-        ) : (
-          <Button variant="ghost" size="sm" onClick={() => onPause(schedule)}>
-            {t('milestonesTemplatesSchedules:schedulesPage.pauseAction')}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(schedule)}
+            className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            {t('common:delete')}
           </Button>
-        )}
-        <Button variant="ghost" size="sm" onClick={() => onEdit(schedule)}>
-          {t('common:edit')}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(schedule)}
-          className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          {t('common:delete')}
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
-    <MissedRunsPanel projectId={projectId} scheduleId={schedule.id} />
+    <MissedRunsPanel projectId={projectId} scheduleId={schedule.id} canManage={canManage} />
     </>
   );
 }
@@ -186,9 +190,11 @@ export default function SchedulesPage() {
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('milestonesTemplatesSchedules:schedulesPage.pageTitle')}</h1>
-          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
-            {t('milestonesTemplatesSchedules:schedulesPage.newButton')}
-          </Button>
+          {isOwnerOrAdmin && (
+            <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+              {t('milestonesTemplatesSchedules:schedulesPage.newButton')}
+            </Button>
+          )}
         </div>
 
         {schedules.length === 0 ? (
@@ -210,6 +216,7 @@ export default function SchedulesPage() {
                 key={s.id}
                 schedule={s}
                 projectId={projectId}
+                canManage={isOwnerOrAdmin}
                 onEdit={setEditing}
                 onDelete={setDeleting}
                 onPause={setPausing}
