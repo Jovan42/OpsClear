@@ -357,13 +357,49 @@ class ScheduleJobCreatorTest {
 
         Map<String, String> vars = creator.buildWildcardVars(assignee, date, 4, "My Project");
 
-        assertThat(vars).containsKeys("assignee", "date", "month", "year", "occurrence", "creator", "project");
+        assertThat(vars).containsKeys(
+                "assignee", "date", "day", "month", "year", "week", "quarter", "occurrence", "creator", "project");
         assertThat(vars.get("assignee")).isEqualTo("Alice");
         assertThat(vars.get("date")).isEqualTo("2026-05-11");
         assertThat(vars.get("month")).isEqualTo("May");
         assertThat(vars.get("year")).isEqualTo("2026");
         assertThat(vars.get("occurrence")).isEqualTo("5"); // occurrenceCount+1
         assertThat(vars.get("project")).isEqualTo("My Project");
+    }
+
+    @Test
+    @DisplayName("buildWildcardVars — day/week/quarter resolve, matching ADR-0034's documented wildcard set (JOB-262)")
+    void buildWildcardVars_shouldResolveDayWeekQuarter() {
+        // 2026-05-11 is ISO week 20, a Monday in Q2.
+        LocalDate date = LocalDate.parse("2026-05-11");
+
+        Map<String, String> vars = creator.buildWildcardVars(null, date, 0, "P");
+
+        assertThat(vars.get("day")).isEqualTo("11");
+        assertThat(vars.get("week")).isEqualTo("20");
+        assertThat(vars.get("quarter")).isEqualTo("Q2");
+    }
+
+    @Test
+    @DisplayName("createJob — resolves {{day}}/{{week}}/{{quarter}} in the materialized job's title (JOB-262)")
+    void createJob_shouldResolveDayWeekQuarter() {
+        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC");
+        JobTemplateModel template = buildTemplate("day={{day}} week={{week}} quarter={{quarter}}", null);
+
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
+        when(jobRepository.save(any())).thenAnswer(inv -> {
+            JobModel m = inv.getArgument(0);
+            return JobModel.builder().id(UUID.randomUUID()).title(m.getTitle())
+                    .projectId(m.getProjectId()).status(m.getStatus()).build();
+        });
+
+        // 2026-05-11 is ISO week 20, Q2.
+        creator.createJob(schedule, Instant.parse("2026-05-11T09:00:00Z"), ZoneId.of("UTC"), createdBy);
+
+        ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
+        verify(jobRepository).save(captor.capture());
+        assertThat(captor.getValue().getTitle()).isEqualTo("day=11 week=20 quarter=Q2");
     }
 
     @Test
