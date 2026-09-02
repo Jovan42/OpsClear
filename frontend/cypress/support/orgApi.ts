@@ -821,3 +821,114 @@ export function deleteJobTypeAs(email: string, projectId: string, typeId: string
     }),
   );
 }
+
+/** Requests approval on `jobId` in `projectId`, acting as `email`. `failOnStatusCode:
+ *  false` since this is also used to exercise validation/permission cases. */
+export function requestApprovalAs(email: string, projectId: string, jobId: string, description: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'POST',
+      url: `${API}/api/projects/${projectId}/jobs/${jobId}/approvals`,
+      headers: { Authorization: `Bearer ${token}` },
+      body: { description },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Approves or rejects `approvalId` on `jobId`, acting as `email`. `failOnStatusCode:
+ *  false` since this is also used to exercise the concurrent-decision-race and
+ *  permission/validation cases. */
+export function decideApprovalAs(
+  email: string,
+  projectId: string,
+  jobId: string,
+  approvalId: string,
+  status: 'APPROVED' | 'REJECTED',
+  comment?: string,
+) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'PATCH',
+      url: `${API}/api/projects/${projectId}/jobs/${jobId}/approvals/${approvalId}/status`,
+      headers: { Authorization: `Bearer ${token}` },
+      body: { status, ...(comment ? { comment } : {}) },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Lists all approvals (any status) on `jobId`, acting as `email`. */
+export function listApprovalsByJobAs(email: string, projectId: string, jobId: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/projects/${projectId}/jobs/${jobId}/approvals`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as Array<{
+        id: string; jobId: string; requesterId: string; approverId: string | null;
+        description: string; status: 'PENDING' | 'APPROVED' | 'REJECTED';
+        comment: string | null; requestedAt: string; decidedAt: string | null;
+      }>),
+  );
+}
+
+/** Lists all pending approvals across `projectId` (OWNER/ADMIN only), acting as
+ *  `email`. `failOnStatusCode: false` since this is also used to exercise the
+ *  MEMBER-403 permission case. */
+export function listPendingApprovalsAs(email: string, projectId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'GET',
+      url: `${API}/api/projects/${projectId}/approvals/pending`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Creates an org for `email` with a real (non-internal) subscription that has
+ *  `addonKey` granted, then marks the subscription PAST_DUE via a direct DB write.
+ *  `RequiresAddonAspect`'s PAST_DUE write-block is skipped entirely for internal
+ *  orgs (see `makeOrgInternal`'s own comment), so `createOrgWithFullAccess` can't be
+ *  used to test it — this grants exactly one real addon instead, non-internal.
+ *  `OrgSubscriptionRepository.hasRealBilling()` additionally requires a non-null
+ *  `paddle_subscription_id`, which the non-Paddle `PUT .../subscription` endpoint
+ *  (used by `setUpOrgSubscription`/`createOrgWithSubscription`) never sets — every
+ *  prior addon-off test happened to pass regardless, since a missing addon and
+ *  missing real billing both 403 with the same message, but PAST_DUE specifically
+ *  needs `hasRealBilling()` to actually be true. Backfills a fake, non-null
+ *  `paddle_subscription_id` via the same direct DB write for exactly that reason. */
+export function createOrgWithAddonPastDue(email: string, name: string, slug: string, addonKey: string) {
+  return tokenFor(email).then((token) =>
+    createOrgRequest(token, name, slug).then((body) => {
+      const orgId = body.id;
+      return cy
+        .request({
+          method: 'GET',
+          url: `${API}/api/subscriptions/catalog`,
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then(({ body: catalog }: { body: { tiers: Array<{ id: string }>; addons: Array<{ id: string; key: string }> } }) => {
+          const addon = catalog.addons.find((a) => a.key === addonKey)!;
+          return cy
+            .request({
+              method: 'PUT',
+              url: `${API}/api/organisations/${orgId}/subscription`,
+              headers: { Authorization: `Bearer ${token}` },
+              body: { tierId: catalog.tiers[0].id, billingCycle: 'MONTHLY', addonIds: [addon.id] },
+            })
+            .then(() =>
+              cy
+                .task('queryDb', {
+                  sql: "UPDATE org_subscriptions SET subscription_status = 'PAST_DUE', paddle_subscription_id = $2 WHERE org_id = $1",
+                  params: [orgId, `sub_e2e_pastdue_${orgId}`],
+                })
+                .then(() => orgId as string),
+            );
+        });
+    }),
+  );
+}
