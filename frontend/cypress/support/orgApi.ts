@@ -104,6 +104,24 @@ export function makeOrgInternal(orgId: string) {
   });
 }
 
+/** JOB-231: seeds a REAL (non-internal) Paddle subscription directly on
+ *  org_subscriptions — `paddle_subscription_id` + `subscription_status`, exactly the
+ *  shape a genuine webhook-driven subscription has, without needing a live sandbox
+ *  checkout or a hand-signed webhook POST. Per ADR-0049 §6's governing principle
+ *  (prefer a fixture over a live external dependency everywhere except the test
+ *  whose actual subject is that dependency) — this spec's subject is the billing
+ *  history / past-due UI rendering, not the webhook delivery mechanism itself (that's
+ *  JOB-230's job, already exhaustively covered by PaddleWebhookIntegrationTest.java's
+ *  hand-signed-HMAC tests). `status` null clears both columns back to "no real
+ *  billing yet" (the org still has a tier/add-ons staged via setUpOrgSubscription,
+ *  just not a paid one). */
+export function seedRealPaddleSubscription(orgId: string, status: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null) {
+  return cy.task('queryDb', {
+    sql: 'UPDATE org_subscriptions SET paddle_subscription_id = $1, subscription_status = $2 WHERE org_id = $3',
+    params: [status ? `sub_fixture_${orgId}` : null, status, orgId],
+  });
+}
+
 /** Creates an org for `email` with full (internal, all-add-ons) access — for specs
  *  in an add-on-gated feature area whose actual subject isn't billing itself. */
 export function createOrgWithFullAccess(email: string, name: string, slug: string) {
