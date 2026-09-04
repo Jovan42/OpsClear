@@ -19,7 +19,7 @@
 import { uniqueEmail, uniqueSlug, createOrgWithSubscription, createProjectAs } from '../../support/orgApi';
 
 describe('App Shell — Unknown Route Redirect', () => {
-  it('navigating to an unknown path under a project redirects to /projects, same no-hint-given pattern as unauthorized admin access', () => {
+  it('navigating to an unknown path under a project redirects to /projects, same no-hint-given pattern as unauthorized admin access', { tags: '@smoke' }, () => {
     const email = uniqueEmail('unknown-route');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Falcon Corp', uniqueSlug());

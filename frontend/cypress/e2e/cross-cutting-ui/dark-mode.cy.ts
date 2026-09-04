@@ -32,7 +32,7 @@
 import { uniqueEmail, uniqueSlug, createOrgWithSubscription, createProjectAs } from '../../support/orgApi';
 
 describe('Dark Mode', () => {
-  it('light/dark/system themes apply (or remove) the dark class on <html> correctly, and the choice persists across a reload', () => {
+  it('light/dark/system themes apply (or remove) the dark class on <html> correctly, and the choice persists across a reload', { tags: '@smoke' }, () => {
     const email = uniqueEmail('theme-basic');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Falcon Corp', uniqueSlug());

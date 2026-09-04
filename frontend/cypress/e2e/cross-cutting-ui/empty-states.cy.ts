@@ -44,7 +44,7 @@ function assertCreateCtaForOwnerOrAdmin(url: string, ctaText: string) {
 }
 
 describe('Empty States — Role-Gating Regression (ADR-0041)', () => {
-  it('a MEMBER viewing an empty Milestones/Schedules/Templates/OrgSettings page does NOT see the "create first X" CTA; OWNER/ADMIN does', () => {
+  it('a MEMBER viewing an empty Milestones/Schedules/Templates/OrgSettings page does NOT see the "create first X" CTA; OWNER/ADMIN does', { tags: '@smoke' }, () => {
     const ownerEmail = uniqueEmail('empty-role-owner');
     const memberEmail = uniqueEmail('empty-role-member');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Tester');
@@ -123,8 +123,10 @@ describe('Empty States — action-less by design', () => {
             cy.contains('Status history').should('be.visible');
             cy.contains('No history yet').should('not.exist'); // history auto-expands only once populated; a fresh job has 1 entry already
             // Relationships starts collapsed for a job with none yet
-            // (defaultExpanded={job.relationships.length > 0}) — expand first.
-            cy.contains('button', 'Relationships').click();
+            // (defaultExpanded={job.relationships.length > 0}) — expand first. Its
+            // toggle is a div[role="button"], not a real <button> (the nested "+ Add"
+            // trigger can't live inside a real button — invalid nested-button HTML).
+            cy.contains('div[role="button"]', 'Relationships').click();
             cy.contains('button', '+ Add').click();
             cy.get('.z-50:visible').within(() => {
               cy.get('input[type="text"]').type('zzz-no-such-job-zzz');
