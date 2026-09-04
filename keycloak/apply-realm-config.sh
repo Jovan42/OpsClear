@@ -44,6 +44,7 @@ compose exec -T keycloak /opt/keycloak/bin/kcadm.sh update realms/opsclear \
   -s loginTheme=opsclear \
   -s internationalizationEnabled=true \
   -s 'supportedLocales=["en","sr"]' \
-  -s defaultLocale=en
+  -s defaultLocale=en \
+  -s ssoSessionIdleTimeout=7200
 
-echo "Realm 'opsclear' updated: displayName=OpsClear, loginTheme=opsclear, internationalizationEnabled=true, supportedLocales=[en,sr]"
+echo "Realm 'opsclear' updated: displayName=OpsClear, loginTheme=opsclear, internationalizationEnabled=true, supportedLocales=[en,sr], ssoSessionIdleTimeout=7200 (120 min)"
