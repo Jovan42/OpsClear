@@ -932,3 +932,82 @@ export function createOrgWithAddonPastDue(email: string, name: string, slug: str
     }),
   );
 }
+
+/** Fetches the public subscription catalog (tiers + add-ons) — no auth needed, but
+ *  a token is still required to reach `tokenFor`'s Keycloak round-trip for parity
+ *  with every other helper here. */
+export function getCatalogAs(email: string) {
+  return tokenFor(email).then((token) =>
+    cy
+      .request({
+        method: 'GET',
+        url: `${API}/api/subscriptions/catalog`,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ body }) => body as {
+        tiers: Array<{ id: string; maxMembers: number; maxProjects: number | null; priceMonthly: number; priceAnnual: number; currency: string; paddlePriceIdMonthly: string | null; paddlePriceIdAnnual: string | null }>;
+        addons: Array<{ id: string; key: string; name: string; priceMonthly: number; priceAnnual: number; available: boolean; paddlePriceIdMonthly: string | null; paddlePriceIdAnnual: string | null }>;
+      }),
+  );
+}
+
+/** Fetches `orgId`'s current subscription record, acting as `email`.
+ *  `failOnStatusCode: false` since this is also used to exercise the 404-when-none-
+ *  staged-yet case. */
+export function getOrgSubscriptionAs(email: string, orgId: string) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'GET',
+      url: `${API}/api/organisations/${orgId}/subscription`,
+      headers: { Authorization: `Bearer ${token}` },
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Stages a tier + specific add-on selection via the free `PUT .../subscription`
+ *  upsert, acting as `email` — no Paddle involved, so `paddle_subscription_id`/
+ *  `subscription_status` stay null and `hasRealBilling()` stays false. This is
+ *  exactly the "staged-but-unpaid" state JOB-200 closed the gap on (a selection
+ *  alone was never supposed to grant access) — `failOnStatusCode: false` since this
+ *  is also used to exercise the owner/tier/billingCycle/downgrade validation cases. */
+export function upsertSubscriptionAs(
+  email: string,
+  orgId: string,
+  body: { tierId: string; billingCycle: string; addonIds?: string[] },
+) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'PUT',
+      url: `${API}/api/organisations/${orgId}/subscription`,
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+      failOnStatusCode: false,
+    }),
+  );
+}
+
+/** Creates an org for `email` with `addonKey` STAGED (selected via the free upsert)
+ *  but never actually paid for — `paddle_subscription_id`/`subscription_status` stay
+ *  null, so `hasRealBilling()` is false despite the addon showing as "selected".
+ *  This is the exact scenario the JOB-200 gap-closure guards against: a direct API
+ *  call bypassing the UI should still 403 on the gated endpoint. Returns the org id
+ *  and the staged addon's own id (callers need both). */
+export function createOrgWithStagedAddon(email: string, name: string, slug: string, addonKey: string) {
+  return tokenFor(email).then((token) =>
+    createOrgRequest(token, name, slug).then((body) => {
+      const orgId = body.id;
+      return getCatalogAs(email).then((catalog) => {
+        const addon = catalog.addons.find((a) => a.key === addonKey)!;
+        return cy
+          .request({
+            method: 'PUT',
+            url: `${API}/api/organisations/${orgId}/subscription`,
+            headers: { Authorization: `Bearer ${token}` },
+            body: { tierId: catalog.tiers[0].id, billingCycle: 'MONTHLY', addonIds: [addon.id] },
+          })
+          .then(() => ({ orgId: orgId as string, addonId: addon.id }));
+      });
+    }),
+  );
+}
