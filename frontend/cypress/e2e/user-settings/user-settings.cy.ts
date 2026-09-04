@@ -15,7 +15,7 @@ import { uniqueEmail, uniqueSlug, createOrgWithSubscription, createProjectAs } f
 const STORAGE_KEY = 'opsclear:preferences';
 
 describe('User Settings & Preferences', () => {
-  it('/settings is reachable via the user menu', () => {
+  it('/settings is reachable via the user menu', { tags: '@smoke' }, () => {
     const email = uniqueEmail('reach');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Reach Corp', uniqueSlug());

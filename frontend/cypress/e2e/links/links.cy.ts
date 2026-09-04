@@ -33,7 +33,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Job & Project Links', () => {
-  it('any project member adds a job-level and a project-level link; a blank label on a recognized-service URL auto-fills the service name', () => {
+  it('any project member adds a job-level and a project-level link; a blank label on a recognized-service URL auto-fills the service name', { tags: '@smoke' }, () => {
     const email = uniqueEmail('add-link');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Falcon Corp', uniqueSlug());

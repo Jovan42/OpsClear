@@ -18,6 +18,14 @@ inputs:
     description: Forwarded to the backend process — composite actions don't inherit the caller's `secrets` context automatically
     required: false
     default: ''
+  grep-tags:
+    description: >
+      Optional @cypress/grep tag filter (e.g. "@smoke"), passed through as
+      `--expose grepTags=<value>` (JOB-258). Both jobs scan the same spec-pattern —
+      this narrows which tests *inside* those specs actually run, without needing a
+      separate glob. Left empty runs every test in every matched spec, tagged or not.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -181,7 +189,12 @@ runs:
     - name: Run Cypress
       shell: bash
       working-directory: frontend
-      run: npx cypress run --spec "${{ inputs.spec-pattern }}"
+      run: |
+        if [ -n "${{ inputs.grep-tags }}" ]; then
+          npx cypress run --spec "${{ inputs.spec-pattern }}" --expose grepTags="${{ inputs.grep-tags }}"
+        else
+          npx cypress run --spec "${{ inputs.spec-pattern }}"
+        fi
 
     - name: Publish E2E test results
       uses: dorny/test-reporter@v1

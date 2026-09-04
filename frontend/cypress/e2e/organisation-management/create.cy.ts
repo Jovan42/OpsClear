@@ -15,7 +15,7 @@
 import { API, uniqueEmail, uniqueSlug, tokenFor, createOrgAs } from '../../support/orgApi';
 
 describe('Organisation Management — Create', () => {
-  it('a user with no org creates one (slug normalized to uppercase) and lands on org settings', () => {
+  it('a user with no org creates one (slug normalized to uppercase) and lands on org settings', { tags: '@smoke' }, () => {
     const email = uniqueEmail('create');
     const slug = uniqueSlug();
     cy.createKeycloakUser(email, 'E2E', 'Creator');

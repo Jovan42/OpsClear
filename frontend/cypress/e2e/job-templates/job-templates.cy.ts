@@ -51,7 +51,7 @@ function pad2(n: number): string {
 }
 
 describe('Job Templates — Project & Org-Level', () => {
-  it('creates a project-scoped template with name only, and separately fully populated', () => {
+  it('creates a project-scoped template with name only, and separately fully populated', { tags: '@smoke' }, () => {
     const email = uniqueEmail('create-template');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Falcon Corp', uniqueSlug());

@@ -11,7 +11,7 @@ describe('Registration', () => {
     cy.visit('http://localhost:8180/realms/opsclear/protocol/openid-connect/logout?client_id=opsclear-frontend&post_logout_redirect_uri=http://localhost:5173');
   });
 
-  it('self-registers with a unique email/password, redirected into the app authenticated', () => {
+  it('self-registers with a unique email/password, redirected into the app authenticated', { tags: '@smoke' }, () => {
     const email = `e2e-newuser-${Date.now()}@example.com`;
     cy.visit('/');
     cy.contains('Log in').click();

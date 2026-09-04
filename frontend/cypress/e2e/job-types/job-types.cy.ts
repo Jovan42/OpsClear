@@ -36,7 +36,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Job Types', () => {
-  it('an OWNER creates job types from the swatch picker and edits name/color', () => {
+  it('an OWNER creates job types from the swatch picker and edits name/color', { tags: '@smoke' }, () => {
     const email = uniqueEmail('create-edit');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Falcon Corp', uniqueSlug());

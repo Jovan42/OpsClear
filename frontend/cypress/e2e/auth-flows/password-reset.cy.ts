@@ -83,7 +83,7 @@ describe('Password Reset', () => {
     });
   });
 
-  it('update-password screen: sets a new password meeting policy, redirected into the app authenticated', () => {
+  it('update-password screen: sets a new password meeting policy, redirected into the app authenticated', { tags: '@smoke' }, () => {
     const email = `e2e-reset-${Date.now()}@example.com`;
     adminToken().then((token) => {
       createUserRequiringPasswordUpdate(email, token);

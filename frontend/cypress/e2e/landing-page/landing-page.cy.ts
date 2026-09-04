@@ -34,7 +34,7 @@ function setRangeValue(alias: string, value: number) {
 }
 
 describe('Public Landing Page (/)', () => {
-  it('shows the full landing page to an unauthenticated visitor', () => {
+  it('shows the full landing page to an unauthenticated visitor', { tags: '@smoke' }, () => {
     cy.visit('/');
     cy.contains("What's actually happening").should('be.visible');
     cy.contains('with your work today?').should('be.visible');

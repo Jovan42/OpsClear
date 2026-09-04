@@ -42,7 +42,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Approvals Workflow + Queue', () => {
-  it('a MEMBER requests approval on their own assigned job; an OWNER/ADMIN requests on any job', () => {
+  it('a MEMBER requests approval on their own assigned job; an OWNER/ADMIN requests on any job', { tags: '@smoke' }, () => {
     const ownerEmail = uniqueEmail('request-owner');
     const memberEmail = uniqueEmail('request-member');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Tester');

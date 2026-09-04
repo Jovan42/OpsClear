@@ -29,7 +29,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Job Status Transitions & Blocking', () => {
-  it('walks a job through its full happy-path lifecycle: NEW → IN_PROGRESS → BLOCKED → IN_PROGRESS → COMPLETED', () => {
+  it('walks a job through its full happy-path lifecycle: NEW → IN_PROGRESS → BLOCKED → IN_PROGRESS → COMPLETED', { tags: '@smoke' }, () => {
     const email = uniqueEmail('lifecycle');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Lifecycle Corp', uniqueSlug());

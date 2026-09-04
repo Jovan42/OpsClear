@@ -2,7 +2,7 @@
 // interactively (`cypress open`), against a real running dev server — no app-specific
 // assertions, that's what the feature-area specs are for (JOB-208 onward).
 describe('Cypress runner smoke test', () => {
-  it('loads the app and finds the OpsClear landing page', () => {
+  it('loads the app and finds the OpsClear landing page', { tags: '@smoke' }, () => {
     cy.visit('/');
     cy.contains('OpsClear').should('be.visible');
   });

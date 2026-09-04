@@ -1,5 +1,6 @@
 import { defineConfig } from 'cypress';
 import { Client } from 'pg';
+import { plugin as cypressGrepPlugin } from '@cypress/grep/plugin';
 
 export default defineConfig({
   // cypress-multi-reporters keeps the readable terminal 'spec' output locally while
@@ -16,7 +17,13 @@ export default defineConfig({
     baseUrl: process.env.CYPRESS_BASE_URL ?? 'http://localhost:5173',
     supportFile: 'cypress/support/e2e.ts',
     specPattern: 'cypress/e2e/**/*.cy.ts',
-    setupNodeEvents(on) {
+    setupNodeEvents(on, config) {
+      // JOB-258: lets `--env grepTags=@smoke` (or CYPRESS_grepTags=@smoke) narrow a
+      // run to only tests tagged `{ tags: '@smoke' }`, without touching specPattern —
+      // e2e-smoke passes this env var, e2e-full doesn't, so both jobs scan the same
+      // spec files but run a different subset of the tests inside them.
+      cypressGrepPlugin(config);
+
       // JOB-209: a handful of things a spec needs (an invite's raw token, backdating
       // an invite's expiry to test the 7-day window) have no API surface at all —
       // this is Node-side (unlike cy.request, which can't run arbitrary SQL), so it's
@@ -42,6 +49,8 @@ export default defineConfig({
           }
         },
       });
+
+      return config;
     },
   },
 });

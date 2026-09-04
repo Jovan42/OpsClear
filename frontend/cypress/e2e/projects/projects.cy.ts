@@ -29,7 +29,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Projects (CRUD, Lifecycle, Members)', () => {
-  it('creates a project with name only, and separately with name + description + block reasons; the creator is auto-OWNER', () => {
+  it('creates a project with name only, and separately with name + description + block reasons; the creator is auto-OWNER', { tags: '@smoke' }, () => {
     const email = uniqueEmail('create-project');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Falcon Corp', uniqueSlug());

@@ -40,7 +40,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Dashboard', () => {
-  it('/projects/:id redirects to the dashboard by default, and the happy-path summary/donut/type-breakdown render with working click-navigation', () => {
+  it('/projects/:id redirects to the dashboard by default, and the happy-path summary/donut/type-breakdown render with working click-navigation', { tags: '@smoke' }, () => {
     const email = uniqueEmail('happy-path');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Falcon Corp', uniqueSlug());
