@@ -332,6 +332,16 @@ public class PaddleWebhookService {
     }
 
     private boolean computedHashMatches(String timestamp, String rawBody, String expectedHash) {
+        // An empty secret (e.g. PADDLE_WEBHOOK_SECRET unset — application.properties
+        // defaults it to "") can never produce a signature Paddle would send, so it's
+        // treated as an automatic mismatch here. Without this check, SecretKeySpec's
+        // constructor throws IllegalArgumentException("Empty key") for a zero-length
+        // key, which — being neither InvalidKeyException nor NoSuchAlgorithmException —
+        // isn't caught by hmacSha256Hex below, so it used to propagate all the way up
+        // to a generic 500 instead of the clean 403 every other invalid signature gets.
+        if (webhookSecret.isEmpty()) {
+            return false;
+        }
         String signedPayload = timestamp + ":" + rawBody;
         String computedHash = hmacSha256Hex(signedPayload, webhookSecret);
         return MessageDigest.isEqual(

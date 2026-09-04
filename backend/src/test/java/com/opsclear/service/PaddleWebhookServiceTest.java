@@ -119,6 +119,21 @@ class PaddleWebhookServiceTest {
     }
 
     @Test
+    @DisplayName("handle rejects cleanly (403), instead of crashing (500), when the configured webhook secret "
+            + "is empty — e.g. PADDLE_WEBHOOK_SECRET unset, which application.properties defaults to \"\"")
+    void handle_shouldRejectCleanly_whenConfiguredSecretIsEmpty() {
+        PaddleWebhookService serviceWithEmptySecret = new PaddleWebhookService(
+                new ObjectMapper().findAndRegisterModules(), organisationRepository, orgSubscriptionRepository,
+                tierRepository, addonRepository, paddleClient, creditService, "");
+        String body = subscriptionEventBody("subscription.created", "active");
+        String header = signatureHeader(body, SECRET);
+
+        assertThatThrownBy(() -> serviceWithEmptySecret.handle(header, body))
+                .isInstanceOf(ForbiddenException.class);
+        verify(orgSubscriptionRepository, never()).updateFromPaddleWebhook(any(), any(), any(), any(), any());
+    }
+
+    @Test
     @DisplayName("handle rejects a header missing the ts component")
     void handle_shouldReject_whenHeaderMissingTimestamp() {
         String body = subscriptionEventBody("subscription.created", "active");
