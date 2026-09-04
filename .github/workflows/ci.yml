@@ -321,7 +321,11 @@ jobs:
   e2e-smoke:
     name: E2E Smoke
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    # e2e-full already runs the complete untagged catalog (a superset of every
+    # @smoke-tagged test) on every push to main, so also running e2e-smoke there is
+    # pure duplicate work with zero added coverage — scope this to PRs only (JOB-228,
+    # same class of redundancy JOB-258 fixed one layer up).
+    if: github.event_name == 'pull_request' && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true')
     runs-on: ubuntu-latest
     permissions:
       checks: write
