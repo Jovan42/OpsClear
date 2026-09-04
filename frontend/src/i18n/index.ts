@@ -85,4 +85,22 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
+// JOB-227: exposes the singleton i18n instance for E2E tests to inject a resource key
+// missing from one locale (proving the fallbackLng behavior against the real running
+// instance, not a reimplementation). Gated on import.meta.env.DEV rather than
+// window.Cypress — Cypress injects window.Cypress into the AUT's window, but this
+// module can evaluate before that injection lands (it's imported very early, needed
+// before anything else can render), so checking for it here is a timing race. E2E
+// always runs against the Vite dev server (never a production build), so DEV is both
+// reliable and — the property that actually matters — still never true in a real
+// production bundle.
+declare global {
+  interface Window {
+    __i18nForE2E?: typeof i18n;
+  }
+}
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  window.__i18nForE2E = i18n;
+}
+
 export default i18n;

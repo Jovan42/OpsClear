@@ -1,6 +1,8 @@
 import { defineConfig } from 'cypress';
 import { Client } from 'pg';
 import { plugin as cypressGrepPlugin } from '@cypress/grep/plugin';
+import { readdirSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 export default defineConfig({
   // cypress-multi-reporters keeps the readable terminal 'spec' output locally while
@@ -47,6 +49,41 @@ export default defineConfig({
           } finally {
             await client.end();
           }
+        },
+        // JOB-227: en/sr namespace-key parity is a static, build-time property, not a
+        // runtime UI behavior — reading both locale directories directly via Node's fs
+        // is far more direct and reliable than trying to prove "every key exists" by
+        // driving the UI through every screen.
+        readLocaleFiles() {
+          // i18next CLDR pluralization suffixes (_zero/_one/_two/_few/_many/_other) —
+          // Serbian has more grammatical plural categories than English (e.g. a
+          // Slavic-specific _few form for counts like 2-4), so a key like
+          // "missedRunsCount_few" existing only in sr is CORRECT, not a translation
+          // gap. Suffixed keys are compared by their base name, not verbatim.
+          const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
+
+          function flattenKeys(obj: Record<string, unknown>, prefix = ''): string[] {
+            return Object.entries(obj).flatMap(([key, value]) => {
+              const path = prefix ? `${prefix}.${key}` : key;
+              return typeof value === 'object' && value !== null
+                ? flattenKeys(value as Record<string, unknown>, path)
+                : [path.replace(PLURAL_SUFFIX, '')];
+            });
+          }
+
+          // __dirname isn't available here (this config file runs under Cypress's ESM
+          // loader) — process.cwd() is always the frontend/ directory this config
+          // lives in, since Cypress is always launched from there (same assumption
+          // queryDb's own baseUrl config already relies on).
+          const localesDir = join(process.cwd(), 'src/i18n/locales');
+          const namespaces = readdirSync(join(localesDir, 'en')).filter((f) => f.endsWith('.json'));
+          const result: Record<string, { en: string[]; sr: string[] }> = {};
+          for (const file of namespaces) {
+            const en = JSON.parse(readFileSync(join(localesDir, 'en', file), 'utf-8'));
+            const sr = JSON.parse(readFileSync(join(localesDir, 'sr', file), 'utf-8'));
+            result[file] = { en: flattenKeys(en), sr: flattenKeys(sr) };
+          }
+          return result;
         },
       });
 
