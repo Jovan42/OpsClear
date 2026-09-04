@@ -106,13 +106,31 @@ Two jobs in `.github/workflows/ci.yml` (JOB-206), sharing the same provisioning 
 
 | Job | Runs on | What |
 |-----|---------|------|
-| `e2e-smoke` | Every PR touching `backend/**` or `frontend/**` | Fast subset — currently the full spec set (JOB-208+ is what gives smoke a real, smaller subset to run) |
-| `e2e-full` | Push to `main`, nightly cron (03:00 UTC) | The entire catalog |
+| `e2e-smoke` | Every PR touching `backend/**` or `frontend/**` | Only tests tagged `@smoke` |
+| `e2e-full` | Push to `main`, nightly cron (03:00 UTC) | The entire catalog, tagged or not |
 
-**For new spec files you add**: nothing to configure — both jobs currently run
-`cypress/e2e/**/*.cy.ts`, so a new spec is picked up automatically by both. If a future job
-introduces a real smoke/full split (e.g. tagging one happy-path test per area for `e2e-smoke`),
-update this section then; until that exists, don't hand-pick which tier your spec runs in.
+Both jobs scan the same `cypress/e2e/**/*.cy.ts` spec-pattern — the split is a
+[`@cypress/grep`](https://github.com/cypress-io/cypress/tree/develop/npm/grep) tag filter, not a
+separate glob. `e2e-smoke` passes `--expose grepTags=@smoke` (via the `grep-tags` input on
+`.github/actions/e2e-run`); `e2e-full` doesn't pass it, so it runs everything.
+
+**For new spec files you add**: tag your single clearest happy-path test so `e2e-smoke` picks it
+up —
+
+```ts
+it('creates a widget with a name only', { tags: '@smoke' }, () => {
+  ...
+});
+```
+
+One tagged test per feature-area file is the convention (JOB-258) — not every happy-path case in
+the file, just the one that best proves the feature works end to end. Skip tagging anything that
+depends on a real multi-minute wait or other slow/flaky-under-load mechanics (see
+`auth-flows/session.cy.ts`'s file comment for a worked example — its real ~5-minute token-refresh
+wait is deliberately excluded from `@smoke` even though it's arguably that file's "happy path");
+those stay `e2e-full`-only. An untagged spec still runs fine in `e2e-full`, it just won't gate PRs
+quickly — don't leave a new feature area with zero `@smoke` coverage indefinitely, but it's not a
+hard blocker for the PR that adds it.
 
 A backend-only PR still triggers `e2e-smoke` — E2E hits the real API, not mocks, so a backend
 change can break a frontend flow with no frontend diff to show for it.

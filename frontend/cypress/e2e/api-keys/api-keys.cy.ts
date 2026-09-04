@@ -28,7 +28,7 @@ function backdateCreatedAt(keyId: string, hoursAgo: number) {
 }
 
 describe('API Keys', () => {
-  it('creates a named key: raw key shown once with a copy button, listed with prefix/name/created/never-used', () => {
+  it('creates a named key: raw key shown once with a copy button, listed with prefix/name/created/never-used', { tags: '@smoke' }, () => {
     const email = uniqueEmail('create');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Create Corp', uniqueSlug());

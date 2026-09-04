@@ -312,12 +312,12 @@ jobs:
         run: npm run build
 
   # ADR-0049 §5 two-tier split: e2e-smoke runs a small/fast set on every relevant PR;
-  # e2e-full runs the entire catalog on merge to main plus nightly. Both currently run
-  # the same full spec pattern (cypress/e2e/**/*.cy.ts) since there's no real
-  # feature-area content yet to meaningfully divide — JOB-208 onward is what actually
-  # gives smoke vs. full different substance (e.g. one happy-path test per area vs.
-  # the full per-area catalog); the pipeline shape here is what JOB-206 is scoped to
-  # build, not that content split.
+  # e2e-full runs the entire catalog on merge to main plus nightly. Both scan the same
+  # spec-pattern (cypress/e2e/**/*.cy.ts) — the difference is entirely the @smoke tag
+  # filter passed to e2e-smoke below (JOB-258): one happy-path test per feature area is
+  # tagged `{ tags: '@smoke' }`, so e2e-smoke only runs those, while e2e-full runs
+  # every test, tagged or not. New specs should tag their own single clearest
+  # happy-path test the same way — see docs/dev/process/E2E.md.
   e2e-smoke:
     name: E2E Smoke
     needs: changes
@@ -354,6 +354,7 @@ jobs:
           spec-pattern: 'cypress/e2e/**/*.cy.ts'
           artifact-name: e2e-smoke
           paddle-api-key: ${{ secrets.PADDLE_API_KEY }}
+          grep-tags: '@smoke'
 
   e2e-full:
     name: E2E Full

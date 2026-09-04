@@ -6,7 +6,7 @@
 import { API, uniqueEmail, uniqueSlug, tokenFor, userIdFor, createOrgWithSubscription, addMember } from '../../support/orgApi';
 
 describe('Organisation Management — Settings', () => {
-  it('OWNER updates the name and slug, reflected immediately with no reload', () => {
+  it('OWNER updates the name and slug, reflected immediately with no reload', { tags: '@smoke' }, () => {
     const email = uniqueEmail('owner-update');
     cy.createKeycloakUser(email, 'E2E', 'Owner');
     createOrgWithSubscription(email, 'Acme Corp', uniqueSlug());

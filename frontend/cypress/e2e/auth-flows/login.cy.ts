@@ -78,7 +78,7 @@ describe('Login', () => {
     cy.location('pathname', { timeout: 10000 }).should('eq', '/');
   });
 
-  it('logs in a seeded user and redirects back to the app authenticated', () => {
+  it('logs in a seeded user and redirects back to the app authenticated', { tags: '@smoke' }, () => {
     loginViaUi('testuser@example.com', 'password123');
     cy.url().should('include', 'localhost:5173');
   });

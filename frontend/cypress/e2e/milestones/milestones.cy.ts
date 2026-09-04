@@ -24,7 +24,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Milestones', () => {
-  it('creates a milestone with name only, and separately with name + description + deadline; the progress bar reflects already-loaded job counts', () => {
+  it('creates a milestone with name only, and separately with name + description + deadline; the progress bar reflects already-loaded job counts', { tags: '@smoke' }, () => {
     const email = uniqueEmail('create-milestone');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Falcon Corp', uniqueSlug());

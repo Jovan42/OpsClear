@@ -8,6 +8,11 @@
 // deliberately NOT covered here (also the user's decision) — a real 30+ minute test
 // is impractical for a suite that runs on every PR, and there's no reliable way to
 // fast-forward Keycloak's own session clock from the browser.
+//
+// Neither test here is tagged @smoke (JOB-258): this file's real 5+ minute wait was,
+// until this job, exactly the kind of thing silently blowing up e2e-smoke's runtime
+// on every PR (it ran the whole untagged suite). auth-flows/login.cy.ts's tagged
+// test already covers the "login works" happy path for smoke purposes.
 
 describe('Session', () => {
   beforeEach(() => {

@@ -8,7 +8,7 @@ describe('Organisation Management — Members', () => {
   // MEMBER/ADMIN". Was a real gap (JOB-244, fixed) — the search query was scoped to
   // the caller's own org, so it could only ever surface a user who ALREADY belonged
   // to your org, never someone genuinely new.
-  it('OWNER adds a genuinely new user via search, then promotes them to ADMIN', () => {
+  it('OWNER adds a genuinely new user via search, then promotes them to ADMIN', { tags: '@smoke' }, () => {
     const ownerEmail = uniqueEmail('add-owner');
     const targetEmail = uniqueEmail('add-target');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');

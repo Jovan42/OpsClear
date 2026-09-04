@@ -24,7 +24,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Job Status History', () => {
-  it('a freshly created job already has one "Created as New" entry, and the section starts expanded with no click needed', () => {
+  it('a freshly created job already has one "Created as New" entry, and the section starts expanded with no click needed', { tags: '@smoke' }, () => {
     const email = uniqueEmail('created-entry');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Created Entry Corp', uniqueSlug());

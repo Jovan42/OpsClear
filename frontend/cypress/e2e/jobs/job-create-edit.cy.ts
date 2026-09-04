@@ -44,7 +44,7 @@ function setTextareaValue(alias: string, value: string) {
 }
 
 describe('Job Create/Edit', () => {
-  it('creates a job with only a title', () => {
+  it('creates a job with only a title', { tags: '@smoke' }, () => {
     const email = uniqueEmail('minimal-create');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Minimal Create Corp', uniqueSlug());

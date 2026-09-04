@@ -40,7 +40,7 @@ function rawJobId(email: string, projectId: string, jobFriendlyId: string) {
 }
 
 describe('Job Relationships', () => {
-  it('adds a BLOCKED_BY relationship via the search modal; it shows on both jobs with a flipped label on the incoming side', () => {
+  it('adds a BLOCKED_BY relationship via the search modal; it shows on both jobs with a flipped label on the incoming side', { tags: '@smoke' }, () => {
     const email = uniqueEmail('add-relationship');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Add Relationship Corp', uniqueSlug());

@@ -55,7 +55,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Recurring Schedules (+ Missed Runs + Cron Preview)', () => {
-  it('creates a schedule via each cadence preset and Advanced raw cron; the readable translation and next-runs preview both update live', () => {
+  it('creates a schedule via each cadence preset and Advanced raw cron; the readable translation and next-runs preview both update live', { tags: '@smoke' }, () => {
     const email = uniqueEmail('presets');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Falcon Corp', uniqueSlug());

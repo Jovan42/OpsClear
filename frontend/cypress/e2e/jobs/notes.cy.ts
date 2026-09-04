@@ -23,7 +23,7 @@ import {
 const NOTE_MAX = 10000;
 
 describe('Notes', () => {
-  it('adds a note that appears at the bottom of the thread after refetch (not optimistic)', () => {
+  it('adds a note that appears at the bottom of the thread after refetch (not optimistic)', { tags: '@smoke' }, () => {
     const email = uniqueEmail('add-note');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Add Note Corp', uniqueSlug());

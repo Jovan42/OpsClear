@@ -80,7 +80,7 @@ function closeDemo() {
 }
 
 describe('/features interactive demos — trigger, overlay, and MSW isolation', () => {
-  it('all 13 cards render a real live preview on page load, not the static screenshot fallback', () => {
+  it('all 13 cards render a real live preview on page load, not the static screenshot fallback', { tags: '@smoke' }, () => {
     cy.visit('/features');
     const cardTitles = [
       'Job tracking', FEEDBACK_CARD_TITLE, 'Dashboard', APPROVALS_CARD_TITLE, NOTES_CARD_TITLE,

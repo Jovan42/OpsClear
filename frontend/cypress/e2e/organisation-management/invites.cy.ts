@@ -17,7 +17,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Organisation Management — Invites', () => {
-  it('OWNER sends an invite; it appears pending with inviter name and a 7-day expiry', () => {
+  it('OWNER sends an invite; it appears pending with inviter name and a 7-day expiry', { tags: '@smoke' }, () => {
     const ownerEmail = uniqueEmail('send-owner');
     const inviteeEmail = uniqueEmail('send-invitee');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');

@@ -20,7 +20,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Job List & Filtering', () => {
-  it('status tabs show correct counts and filter the list', () => {
+  it('status tabs show correct counts and filter the list', { tags: '@smoke' }, () => {
     const email = uniqueEmail('tabs');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Tabs Corp', uniqueSlug());

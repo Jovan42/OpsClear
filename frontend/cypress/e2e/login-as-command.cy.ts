@@ -11,7 +11,7 @@ const DEMO_USERS = [
 
 describe('cy.loginAs()', () => {
   for (const email of DEMO_USERS) {
-    it(`authenticates as ${email} with no visible login redirect`, () => {
+    it(`authenticates as ${email} with no visible login redirect`, { tags: '@smoke' }, () => {
       cy.loginAs(email);
       cy.visit('/projects');
 
