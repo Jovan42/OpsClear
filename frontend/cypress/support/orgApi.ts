@@ -1029,3 +1029,53 @@ export function createOrgWithStagedAddon(email: string, name: string, slug: stri
     }),
   );
 }
+
+/** Creates an org for `email` with a real, ACTIVE Paddle subscription (a fake but
+ *  realistic `paddle_subscription_id` and `paddle_customer_id`, DB-seeded directly —
+ *  same reasoning as `createOrgWithAddonPastDue`: `hasRealBilling()` requires a
+ *  non-null `paddle_subscription_id`, which the free `PUT .../subscription` endpoint
+ *  never sets). `tierIndex` (default 0, the cheapest catalog tier) selects which tier
+ *  to start on — callers that need to downgrade off of it (e.g. a mixed-change or
+ *  downgrade test that must move a slider *down*) should pass a higher index so
+ *  there's room to move. Returns `{ orgId, paddleSubscriptionId, paddleCustomerId }` —
+ *  both ids are useful to callers that need to identify this exact subscription
+ *  (e.g. by matching it in a signed Paddle webhook body, once JOB-266 unblocks
+ *  webhook simulation in this environment). */
+export function createOrgWithActivePaddleSubscription(email: string, name: string, slug: string, tierIndex = 0) {
+  return tokenFor(email).then((token) =>
+    createOrgRequest(token, name, slug).then((body) => {
+      const orgId = body.id;
+      return cy
+        .request({
+          method: 'GET',
+          url: `${API}/api/subscriptions/catalog`,
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then(({ body: catalog }: { body: { tiers: Array<{ id: string }> } }) =>
+          cy
+            .request({
+              method: 'PUT',
+              url: `${API}/api/organisations/${orgId}/subscription`,
+              headers: { Authorization: `Bearer ${token}` },
+              body: { tierId: catalog.tiers[tierIndex].id, billingCycle: 'MONTHLY', addonIds: [] },
+            })
+            .then(() => {
+              const paddleSubscriptionId = `sub_e2e_active_${orgId}`;
+              const paddleCustomerId = `ctm_e2e_${orgId}`;
+              return cy
+                .task('queryDb', {
+                  sql: "UPDATE org_subscriptions SET subscription_status = 'ACTIVE', paddle_subscription_id = $2 WHERE org_id = $1",
+                  params: [orgId, paddleSubscriptionId],
+                })
+                .then(() =>
+                  cy.task('queryDb', {
+                    sql: 'UPDATE organisations SET paddle_customer_id = $2 WHERE id = $1',
+                    params: [orgId, paddleCustomerId],
+                  }),
+                )
+                .then(() => ({ orgId: orgId as string, paddleSubscriptionId, paddleCustomerId }));
+            }),
+        );
+    }),
+  );
+}
