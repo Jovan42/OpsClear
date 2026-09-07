@@ -144,6 +144,39 @@ export function createOrgWithFullAccess(email: string, name: string, slug: strin
   );
 }
 
+// JOB-233 (ADR-0049 §6/§26, golden-path simulation): unlike every other spec's org, the
+// golden path's org must NOT be `is_internal` — that skips `hasAddon()`/
+// `hasRealBilling()` entirely, a materially different code path than a real paying
+// customer hits. Inserts a realistic-shaped ACTIVE `org_subscriptions` row instead — a
+// real-looking `paddle_subscription_id`, `subscription_status: 'ACTIVE'`, is_internal
+// false — which exercises the exact same gating logic a genuine subscription would,
+// with every addon linked so the golden path's own story (which touches nearly all of
+// them) never trips an upgrade wall. No live Paddle checkout anywhere. A freshly
+// created org has no `org_subscriptions` row at all yet (see `setUpOrgSubscription`'s
+// own comment in commands.ts), so this INSERTs rather than UPDATEs like
+// `makeOrgInternal` does.
+export function makeOrgRealisticSubscription(orgId: string) {
+  return cy
+    .task('queryDb', { sql: 'SELECT id FROM subscription_tiers ORDER BY display_order LIMIT 1', params: [] })
+    .then((tierRows) => {
+      const tierId = (tierRows as Array<{ id: string }>)[0].id;
+      return cy.task('queryDb', {
+        sql: `INSERT INTO org_subscriptions (org_id, tier_id, billing_cycle, is_internal, paddle_subscription_id, subscription_status)
+              VALUES ($1, $2, 'MONTHLY', false, $3, 'ACTIVE')
+              RETURNING id`,
+        params: [orgId, tierId, `sub_e2e_golden_${orgId}`],
+      });
+    })
+    .then((subRows) => {
+      const subscriptionId = (subRows as Array<{ id: string }>)[0].id;
+      return cy.task('queryDb', {
+        sql: `INSERT INTO org_subscription_addons (org_subscription_id, addon_id)
+              SELECT $1, id FROM subscription_addons`,
+        params: [subscriptionId],
+      });
+    });
+}
+
 /** Creates a project for `email` (via the real API, no add-on needed — projects are
  *  core) and returns its friendlyId. */
 export function createProjectAs(email: string, name: string) {
