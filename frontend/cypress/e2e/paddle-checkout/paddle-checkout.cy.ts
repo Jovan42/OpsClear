@@ -63,6 +63,8 @@ import {
   tokenFor,
   createOrgWithSubscription,
   createOrgWithActivePaddleSubscription,
+  getCatalogAs,
+  syncTierPriceForE2E,
   API,
 } from '../../support/orgApi';
 
@@ -83,6 +85,13 @@ describe('Paddle Checkout — opening and abandoning', () => {
   it('"Continue to payment" opens the inline checkout container with the selected item list and total; abandoning returns to the picker with no subscription created', () => {
     const email = uniqueEmail('checkout-open');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
+    // "Continue to payment" is gated on the selected tier having a Paddle price id
+    // synced (SubscriptionSection.tsx's priceNotSynced guard) — real orgs get this
+    // via a Super Admin's one-time "sync to Paddle" action, which needs live Paddle
+    // credentials this environment doesn't have. Seed it directly instead (see
+    // syncTierPriceForE2E's own comment) — without this the button stays disabled
+    // forever here, which is what broke this test on every run since JOB-230 merged.
+    getCatalogAs(email).then((catalog) => syncTierPriceForE2E(catalog.tiers[0].id));
     createOrgWithSubscription(email, 'Falcon Corp', uniqueSlug()).then((orgId) => {
       cy.loginAs(email);
       cy.visit('/org/settings');

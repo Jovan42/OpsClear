@@ -1030,6 +1030,25 @@ export function createOrgWithStagedAddon(email: string, name: string, slug: stri
   );
 }
 
+/** Seeds a fake but present Paddle price id on `tierId` directly via DB write — the
+ *  same effect a Super Admin's real "sync to Paddle" action has in production
+ *  (backed by a live PaddleClient call this environment has no credentials for, see
+ *  paddle-checkout.cy.ts's header comment). Needed anywhere a first-purchase
+ *  "Continue to payment" flow is driven without an already-active Paddle
+ *  subscription — SubscriptionSection.tsx's `priceNotSynced` guard keeps that button
+ *  disabled until a price id exists, which never happens on its own in an
+ *  environment with no live Paddle sync. `COALESCE` keeps this idempotent and never
+ *  clobbers a real price id in an environment where one genuinely exists. */
+export function syncTierPriceForE2E(tierId: string) {
+  return cy.task('queryDb', {
+    sql: `UPDATE subscription_tiers
+          SET paddle_price_id_monthly = COALESCE(paddle_price_id_monthly, $2),
+              paddle_price_id_annual  = COALESCE(paddle_price_id_annual, $3)
+          WHERE id = $1`,
+    params: [tierId, `pri_e2e_${tierId}_m`, `pri_e2e_${tierId}_a`],
+  });
+}
+
 /** Creates an org for `email` with a real, ACTIVE Paddle subscription (a fake but
  *  realistic `paddle_subscription_id` and `paddle_customer_id`, DB-seeded directly —
  *  same reasoning as `createOrgWithAddonPastDue`: `hasRealBilling()` requires a
