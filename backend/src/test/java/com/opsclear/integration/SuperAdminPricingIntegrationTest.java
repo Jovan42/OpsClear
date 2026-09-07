@@ -163,6 +163,18 @@ class SuperAdminPricingIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("updateTierPrice — missing priceMonthly returns 400")
+    void updateTierPrice_shouldReturn400_whenPriceMonthlyMissing() throws Exception {
+        mockMvc.perform(put(ApiPaths.superAdminPricingTier(tierId))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"priceAnnual": 3250}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
     // --- GET /api/super-admin/pricing/addons ---
 
     @Test
@@ -234,6 +246,18 @@ class SuperAdminPricingIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"priceMonthly": 1490, "priceAnnual": -1}
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("updateAddonPrice — missing priceAnnual returns 400")
+    void updateAddonPrice_shouldReturn400_whenPriceAnnualMissing() throws Exception {
+        mockMvc.perform(put(ApiPaths.superAdminPricingAddon("DASHBOARD"))
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"priceMonthly": 1490}
                                 """))
                 .andExpect(status().isBadRequest());
     }

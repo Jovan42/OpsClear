@@ -158,6 +158,28 @@ class FeedbackAndCreditsIntegrationTest {
     }
 
     @Test
+    @DisplayName("submit_shouldReturn400_whenTitleTooLong")
+    void submit_shouldReturn400_whenTitleTooLong() throws Exception {
+        mockMvc.perform(post(ApiPaths.FEEDBACK)
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("type", "BUG", "title", "x".repeat(256), "description", "Description"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("submit_shouldReturn400_whenDescriptionTooLong")
+    void submit_shouldReturn400_whenDescriptionTooLong() throws Exception {
+        mockMvc.perform(post(ApiPaths.FEEDBACK)
+                        .with(jwt().jwt(j -> j.subject(memberId.toString()).claim("email", "member@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("type", "BUG", "title", "Title", "description", "x".repeat(5001)))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("submit_shouldReturn404_whenCallerHasNoOrg")
     void submit_shouldReturn404_whenCallerHasNoOrg() throws Exception {
         UUID orphanId = UUID.randomUUID();
@@ -453,6 +475,28 @@ class FeedbackAndCreditsIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 Map.of("orgId", orgId, "amount", 4, "reason", "Too small to bother with"))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("grantCredit_shouldReturn400_whenReasonBlank")
+    void grantCredit_shouldReturn400_whenReasonBlank() throws Exception {
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("orgId", orgId, "amount", 500, "reason", ""))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("grantCredit_shouldReturn400_whenReasonTooLong")
+    void grantCredit_shouldReturn400_whenReasonTooLong() throws Exception {
+        mockMvc.perform(post(ApiPaths.SUPER_ADMIN_CREDITS_GRANT)
+                        .with(jwt().jwt(j -> j.subject(superUserId.toString()).claim("email", "super@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("orgId", orgId, "amount", 500, "reason", "x".repeat(1001)))))
                 .andExpect(status().isBadRequest());
     }
 
