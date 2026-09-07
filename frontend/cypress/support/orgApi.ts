@@ -49,6 +49,20 @@ export function userIdFor(email: string) {
   });
 }
 
+/** JOB-232: grants `email` super_user (V029) — gates the /admin/* console (pricing
+ *  config, feedback/credits), crosses org boundaries, so it's a `users` row flag, not
+ *  an org role. No self-service API sets this — DB-only (queryDb task), same pattern
+ *  as makeOrgInternal. Requires the `users` row to already exist (userIdFor's own
+ *  first-authenticated-request caveat applies), so this resolves it via userIdFor
+ *  itself rather than requiring the caller to sequence that first. */
+export function makeSuperUser(email: string) {
+  return userIdFor(email).then((userId) =>
+    cy
+      .task('queryDb', { sql: 'UPDATE users SET super_user = true WHERE id = $1', params: [userId] })
+      .then(() => userId as string),
+  );
+}
+
 // Slugs are only 2-3 letters (~18k possible values) and are never cleaned up by these
 // specs (soft-deleted orgs' slugs DO become reusable per JOB-238, but these tests
 // don't bother deleting), so across a full run of this suite's ~80+ org creations
