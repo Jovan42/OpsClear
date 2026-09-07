@@ -130,7 +130,7 @@ public class ProjectRepository {
                 dsl.selectOne()
                         .from(JOBS)
                         .where(JOBS.PROJECT_ID.eq(projectId))
-                        .and(JOBS.STATUS.in("IN_PROGRESS", "BLOCKED"))
+                        .and(JOBS.STATUS.ne("COMPLETED"))
                         .and(JOBS.DELETED_AT.isNull()));
     }
 
