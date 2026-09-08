@@ -96,7 +96,7 @@ export default function LinksSection({ projectId, jobId, links, members, canMana
           iconClassName="w-7 h-7 text-gray-300 dark:text-gray-600 mb-2"
           action={
             !projectCompleted
-              ? { label: t('jobsComponents:linksSection.addLink'), onClick: () => setAdding(true), canPerform: canManage }
+              ? { label: t('jobsComponents:linksSection.addLink'), onClick: () => setAdding(true) }
               : undefined
           }
         />

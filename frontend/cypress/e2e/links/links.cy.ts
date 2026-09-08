@@ -62,6 +62,40 @@ describe('Job & Project Links', () => {
     cy.deleteKeycloakUser(email);
   });
 
+  // JOB-267 regression: LinksSection's empty-state "+ Add link" CTA was gated to
+  // `canManage` (OWNER/ADMIN), even though LinkService.createForJob only requires
+  // project membership (ADR-0035: any member can add, only OWNER/ADMIN can edit/
+  // delete). A plain MEMBER could never add the FIRST link to a job through the UI —
+  // only once a link already existed did the always-visible "+ Add link" button (no
+  // canManage gate) let them add more. Found during the JOB-233 golden-path spec.
+  it('an assigned MEMBER sees and can use the "+ Add link" CTA on a job with zero links', () => {
+    const ownerEmail = uniqueEmail('member-add-first-owner');
+    const memberEmail = uniqueEmail('member-add-first-member');
+    cy.createKeycloakUser(ownerEmail, 'E2E', 'Tester');
+    cy.createKeycloakUser(memberEmail, 'E2E', 'Tester');
+    createOrgWithFullAccess(ownerEmail, 'Sparrow Corp', uniqueSlug()).then((orgId) =>
+      createProjectAs(ownerEmail, 'Sparrow Link Project').then((projectId) =>
+        userIdFor(memberEmail).then((memberId) => {
+          addMember(orgId, ownerEmail, memberId, 'MEMBER');
+          addProjectMember(projectId, ownerEmail, memberId, 'MEMBER');
+          createJobAs(ownerEmail, projectId, { title: 'Sparrow job', assignedTo: memberId }).then((jobId) => {
+            cy.loginAs(memberEmail);
+            cy.visit(`/projects/${projectId}/jobs/${jobId}`);
+            cy.get('main').contains('button', 'Links').click();
+            cy.contains('No links yet.').should('be.visible');
+            cy.contains('button', '+ Add link').click();
+            cy.get('input[placeholder="https://…"]').type('https://example.com/first-link');
+            cy.contains('button', 'Save').click();
+            cy.contains('https://example.com/first-link').should('be.visible');
+          });
+        }),
+      ),
+    );
+
+    cy.deleteKeycloakUser(ownerEmail);
+    cy.deleteKeycloakUser(memberEmail);
+  });
+
   it('an unrecognized host falls back to a favicon, then a generic icon if the favicon fails to load', () => {
     const email = uniqueEmail('favicon-fallback');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
