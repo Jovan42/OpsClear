@@ -30,6 +30,12 @@ on:
   # they all skip too rather than needing their own explicit exclusion.
   schedule:
     - cron: '0 3 * * *'
+  # Manual escape hatch for e2e-full (JOB-265) — lets a sharded run be kicked off
+  # on demand (e.g. verifying a shard-list change on a branch before merging,
+  # rather than waiting for a push to main or the nightly cron) without needing a
+  # throwaway push. `changes` still skips (same as `schedule`, no diff to filter
+  # on), which is fine — every job gated on it besides e2e-full is irrelevant here.
+  workflow_dispatch: {}
 
 jobs:
   changes:
@@ -360,10 +366,72 @@ jobs:
           paddle-api-key: ${{ secrets.PADDLE_API_KEY }}
           grep-tags: '@smoke'
 
+  # JOB-265: sharded across 4 parallel matrix jobs instead of one ~35min sequential
+  # run — each shard re-provisions its own Keycloak/backend/frontend (fixed ~3-4min
+  # cost paid once per shard, not saved by sharding), so wall-clock drops roughly
+  # 4-fold while total CI minutes consumed goes up — an accepted tradeoff, since this
+  # job never gates a PR (push-to-main/nightly only).
+  #
+  # Shards are manual, folder-based glob groups, not an auto-balancing tool like
+  # cypress-split — this repo has no Cypress Cloud recording to source historical
+  # per-test timing from, so "auto-balance by real timing" would mean hand-maintaining
+  # a timing file anyway, no simpler than hand-balancing folders directly. Balanced by
+  # line count as a proxy for weight at the time of writing (all 4 shards landed
+  # within ~2% of each other), with auth-flows/session.cy.ts's real ~5-minute
+  # token-refresh wait (JOB-258's own comment) manually weighted heavily so it
+  # wouldn't get paired with other heavy specs. A new top-level `cypress/e2e/<area>/`
+  # folder needs manually adding to one shard's glob list below (falls into no shard
+  # otherwise, silently skipping e2e-full entirely) — the acknowledged tradeoff of
+  # picking "simple" over "auto-balancing" here.
   e2e-full:
-    name: E2E Full
-    if: github.event_name == 'schedule' || github.event_name == 'push'
+    name: E2E Full (${{ matrix.shard.name }})
+    if: github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - name: shard-1
+            # `join(..., ',')` below, not a comma-space-joined string — cypress
+            # --spec splits on literal commas and does NOT trim whitespace, so a
+            # folded/space-joined list here would silently drop every pattern after
+            # the first (confirmed locally: a leading space makes a glob match
+            # nothing, and Cypress just warns and moves on rather than failing).
+            spec-pattern:
+              - cypress/e2e/*.cy.ts
+              - cypress/e2e/job-list/**/*.cy.ts
+              - cypress/e2e/job-relationships/**/*.cy.ts
+              - cypress/e2e/job-types/**/*.cy.ts
+              - cypress/e2e/jobs/**/*.cy.ts
+              - cypress/e2e/localization/**/*.cy.ts
+              - cypress/e2e/status-history/**/*.cy.ts
+          - name: shard-2
+            spec-pattern:
+              - cypress/e2e/auth-flows/**/*.cy.ts
+              - cypress/e2e/billing-history/**/*.cy.ts
+              - cypress/e2e/cross-cutting-ui/**/*.cy.ts
+              - cypress/e2e/golden-path/**/*.cy.ts
+              - cypress/e2e/milestones/**/*.cy.ts
+              - cypress/e2e/user-settings/**/*.cy.ts
+          - name: shard-3
+            spec-pattern:
+              - cypress/e2e/approvals/**/*.cy.ts
+              - cypress/e2e/landing-page/**/*.cy.ts
+              - cypress/e2e/links/**/*.cy.ts
+              - cypress/e2e/notes/**/*.cy.ts
+              - cypress/e2e/organisation-management/**/*.cy.ts
+              - cypress/e2e/paddle-checkout/**/*.cy.ts
+              - cypress/e2e/super-admin/**/*.cy.ts
+          - name: shard-4
+            spec-pattern:
+              - cypress/e2e/api-keys/**/*.cy.ts
+              - cypress/e2e/dashboard/**/*.cy.ts
+              - cypress/e2e/job-create-edit/**/*.cy.ts
+              - cypress/e2e/job-status/**/*.cy.ts
+              - cypress/e2e/job-templates/**/*.cy.ts
+              - cypress/e2e/projects/**/*.cy.ts
+              - cypress/e2e/recurring-schedules/**/*.cy.ts
+              - cypress/e2e/subscription-selection/**/*.cy.ts
     permissions:
       checks: write
       contents: read
@@ -390,6 +458,6 @@ jobs:
 
       - uses: ./.github/actions/e2e-run
         with:
-          spec-pattern: 'cypress/e2e/**/*.cy.ts'
-          artifact-name: e2e-full
+          spec-pattern: ${{ join(matrix.shard.spec-pattern, ',') }}
+          artifact-name: e2e-full-${{ matrix.shard.name }}
           paddle-api-key: ${{ secrets.PADDLE_API_KEY }}
