@@ -471,6 +471,25 @@ class ProjectIntegrationTest {
     }
 
     @Test
+    @DisplayName("JOB-268: should return 409 when completing project whose only job is still NEW (never started)")
+    void patchStatus_shouldReturn409_whenProjectHasOnlyNewJob() throws Exception {
+        ProjectModel project = createTestProject("Acme Corp", null);
+        createTestJob(project.getId(), JobStatus.NEW);
+
+        mockMvc.perform(patch(ApiPaths.projectStatus(project.getId()))
+                        .with(jwt().jwt(jwt -> jwt
+                                .subject(userId.toString())
+                                .claim("email", "testuser@example.com")
+                                .claim("name", "Test User")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "status": "COMPLETED" }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"));
+    }
+
+    @Test
     @DisplayName("Should reactivate a completed project")
     void patchStatus_shouldReactivateProject() throws Exception {
         ProjectModel project = createTestProject("Acme Corp", null);
@@ -687,10 +706,14 @@ class ProjectIntegrationTest {
     }
 
     private void createTestJob(UUID projectId) {
+        createTestJob(projectId, JobStatus.IN_PROGRESS);
+    }
+
+    private void createTestJob(UUID projectId, JobStatus status) {
         jobRepository.save(JobModel.builder()
                 .projectId(projectId)
                 .title("Test Job")
-                .status(JobStatus.IN_PROGRESS)
+                .status(status)
                 .createdBy(userId)
                 .build());
     }
