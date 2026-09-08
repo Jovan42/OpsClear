@@ -17,6 +17,7 @@ import {
   addProjectMember,
   userIdFor,
   completeProjectAs,
+  updateJobStatusAs,
   API,
 } from '../../support/orgApi';
 
@@ -235,22 +236,30 @@ describe('Notes', () => {
     createOrgWithFullAccess(email, 'Completed Project Corp', uniqueSlug());
     createProjectAs(email, 'Completed Project Project').then((projectId) => {
       createJobAs(email, projectId, { title: 'Job' }).then((jobId) => {
-        completeProjectAs(email, projectId);
-        tokenFor(email).then((token) => {
-          cy.request({
-            method: 'POST',
-            url: `${API}/api/projects/${projectId}/jobs/${jobId}/notes`,
-            headers: { Authorization: `Bearer ${token}` },
-            body: { content: 'Should not be creatable' },
-            failOnStatusCode: false,
-          }).its('status').should('eq', 409);
-        });
+        // JOB-268: a project can't complete with a job still at NEW — close it
+        // first so completeProjectAs itself succeeds. NoteThread's own gate is
+        // projectCompleted (JobDetailPage.tsx), not the job's own status, so the
+        // hidden-form assertion below still holds for the same reason as before.
+        updateJobStatusAs(email, projectId, jobId, 'IN_PROGRESS').then(() =>
+          updateJobStatusAs(email, projectId, jobId, 'COMPLETED').then(() => {
+            completeProjectAs(email, projectId);
+            tokenFor(email).then((token) => {
+              cy.request({
+                method: 'POST',
+                url: `${API}/api/projects/${projectId}/jobs/${jobId}/notes`,
+                headers: { Authorization: `Bearer ${token}` },
+                body: { content: 'Should not be creatable' },
+                failOnStatusCode: false,
+              }).its('status').should('eq', 409);
+            });
 
-        cy.loginAs(email);
-        cy.visit(`/projects/${projectId}/jobs/${jobId}`);
-        cy.contains('button', 'Notes').click();
-        cy.get('textarea').should('not.exist');
-        cy.contains('button', 'Add Note').should('not.exist');
+            cy.loginAs(email);
+            cy.visit(`/projects/${projectId}/jobs/${jobId}`);
+            cy.contains('button', 'Notes').click();
+            cy.get('textarea').should('not.exist');
+            cy.contains('button', 'Add Note').should('not.exist');
+          }),
+        );
       });
 
       cy.deleteKeycloakUser(email);

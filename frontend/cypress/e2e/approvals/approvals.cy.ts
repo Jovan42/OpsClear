@@ -38,6 +38,7 @@ import {
   decideApprovalAs,
   listApprovalsByJobAs,
   listPendingApprovalsAs,
+  updateJobStatusAs,
   API,
 } from '../../support/orgApi';
 
@@ -259,21 +260,31 @@ describe('Approvals Workflow + Queue', () => {
                 // jobB1 has no such approval at all, and belongs to a different project than jobA1's approval.
                 decideApprovalAs(email, projectIdA, jobB1, approvalId, 'APPROVED').its('status').should('eq', 404);
 
-                tokenFor(email).then((token) => {
-                  cy.request({
-                    method: 'PATCH',
-                    url: `${API}/api/projects/${projectIdA}/status`,
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: { status: 'COMPLETED' },
+                // JOB-268: a project can't complete with jobs still at NEW — close
+                // both of projectIdA's jobs first so the raw completion PATCH below
+                // itself succeeds. A PENDING approval on jobA1 doesn't block closing
+                // it (JobService has no approval coupling at all).
+                updateJobStatusAs(email, projectIdA, jobA1, 'IN_PROGRESS')
+                  .then(() => updateJobStatusAs(email, projectIdA, jobA1, 'COMPLETED'))
+                  .then(() => updateJobStatusAs(email, projectIdA, jobA2, 'IN_PROGRESS'))
+                  .then(() => updateJobStatusAs(email, projectIdA, jobA2, 'COMPLETED'))
+                  .then(() => {
+                    tokenFor(email).then((token) => {
+                      cy.request({
+                        method: 'PATCH',
+                        url: `${API}/api/projects/${projectIdA}/status`,
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: { status: 'COMPLETED' },
+                      });
+                      cy.request({
+                        method: 'PATCH',
+                        url: `${API}/api/projects/${projectIdA}/jobs/${jobA1}/approvals/${approvalId}/status`,
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: { status: 'APPROVED' },
+                        failOnStatusCode: false,
+                      }).its('status').should('eq', 409);
+                    });
                   });
-                  cy.request({
-                    method: 'PATCH',
-                    url: `${API}/api/projects/${projectIdA}/jobs/${jobA1}/approvals/${approvalId}/status`,
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: { status: 'APPROVED' },
-                    failOnStatusCode: false,
-                  }).its('status').should('eq', 409);
-                });
               }),
             ),
           ),
