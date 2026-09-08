@@ -107,12 +107,28 @@ Two jobs in `.github/workflows/ci.yml` (JOB-206), sharing the same provisioning 
 | Job | Runs on | What |
 |-----|---------|------|
 | `e2e-smoke` | Every PR touching `backend/**` or `frontend/**` | Only tests tagged `@smoke` |
-| `e2e-full` | Push to `main`, nightly cron (03:00 UTC) | The entire catalog, tagged or not |
+| `e2e-full` | Push to `main`, nightly cron (03:00 UTC) | The entire catalog, tagged or not, sharded across 4 parallel jobs |
 
 Both jobs scan the same `cypress/e2e/**/*.cy.ts` spec-pattern — the split is a
 [`@cypress/grep`](https://github.com/cypress-io/cypress/tree/develop/npm/grep) tag filter, not a
 separate glob. `e2e-smoke` passes `--expose grepTags=@smoke` (via the `grep-tags` input on
 `.github/actions/e2e-run`); `e2e-full` doesn't pass it, so it runs everything.
+
+**`e2e-full` sharding (JOB-265)**: `e2e-full` runs as a 4-job `strategy: matrix` (`E2E Full
+(shard-1)` .. `(shard-4)` in the Actions UI), each shard given its own explicit list of
+`cypress/e2e/<folder>/**/*.cy.ts` globs and provisioning its own Keycloak/backend/frontend
+stack independently — this dropped wall-clock from ~35min sequential to roughly a quarter of
+that, at the cost of ~4x the CI minutes (each shard re-pays the ~3-4min provisioning cost).
+Shards are hand-balanced by folder, not by an auto-balancing tool like `cypress-split` — this
+repo has no Cypress Cloud recording to source real historical per-test timing from, so
+"auto-balance by real timing" would mean hand-maintaining a timing file anyway, no simpler than
+hand-balancing folders directly in `ci.yml`.
+
+**Adding a new top-level spec folder** (e.g. a brand-new `cypress/e2e/some-new-area/`): it must
+be added to one shard's `spec-pattern` list in `ci.yml` by hand, or it silently never runs in
+`e2e-full` at all (a shard's glob list only matches what's explicitly listed — there's no
+catch-all "everything else" shard). Adding tests to an *existing* folder needs no change — its
+shard's `**/*.cy.ts` glob picks up new files automatically.
 
 **For new spec files you add**: tag your single clearest happy-path test so `e2e-smoke` picks it
 up —
