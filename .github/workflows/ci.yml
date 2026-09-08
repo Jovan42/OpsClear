@@ -30,6 +30,12 @@ on:
   # they all skip too rather than needing their own explicit exclusion.
   schedule:
     - cron: '0 3 * * *'
+  # Manual escape hatch for e2e-full (JOB-265) — lets a sharded run be kicked off
+  # on demand (e.g. verifying a shard-list change on a branch before merging,
+  # rather than waiting for a push to main or the nightly cron) without needing a
+  # throwaway push. `changes` still skips (same as `schedule`, no diff to filter
+  # on), which is fine — every job gated on it besides e2e-full is irrelevant here.
+  workflow_dispatch: {}
 
 jobs:
   changes:
@@ -379,7 +385,7 @@ jobs:
   # picking "simple" over "auto-balancing" here.
   e2e-full:
     name: E2E Full (${{ matrix.shard.name }})
-    if: github.event_name == 'schedule' || github.event_name == 'push'
+    if: github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
