@@ -25,6 +25,7 @@ import {
   createTemplateAs,
   listTemplatesAs,
   completeProjectAs,
+  updateJobStatusAs,
   API,
 } from '../../support/orgApi';
 
@@ -455,16 +456,22 @@ describe('Job Create/Edit', () => {
     createOrgWithSubscription(email, 'Update Completed Corp', uniqueSlug());
     createProjectAs(email, 'Update Completed Project').then((projectId) => {
       createJobAs(email, projectId, { title: 'Existing job' }).then((jobId) => {
-        completeProjectAs(email, projectId);
-        tokenFor(email).then((token) => {
-          cy.request({
-            method: 'PUT',
-            url: `${API}/api/projects/${projectId}/jobs/${jobId}`,
-            headers: { Authorization: `Bearer ${token}` },
-            body: { title: 'Should not be editable' },
-            failOnStatusCode: false,
-          }).its('status').should('eq', 409);
-        });
+        // JOB-268: a project can't complete with a job still at NEW — close it
+        // first so completeProjectAs itself succeeds.
+        updateJobStatusAs(email, projectId, jobId, 'IN_PROGRESS').then(() =>
+          updateJobStatusAs(email, projectId, jobId, 'COMPLETED').then(() => {
+            completeProjectAs(email, projectId);
+            tokenFor(email).then((token) => {
+              cy.request({
+                method: 'PUT',
+                url: `${API}/api/projects/${projectId}/jobs/${jobId}`,
+                headers: { Authorization: `Bearer ${token}` },
+                body: { title: 'Should not be editable' },
+                failOnStatusCode: false,
+              }).its('status').should('eq', 409);
+            });
+          }),
+        );
       });
 
       cy.deleteKeycloakUser(email);

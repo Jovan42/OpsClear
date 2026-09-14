@@ -27,6 +27,7 @@ import {
   addProjectMember,
   userIdFor,
   completeProjectAs,
+  updateJobStatusAs,
   API,
 } from '../../support/orgApi';
 
@@ -365,18 +366,26 @@ describe('Job Relationships', () => {
       createJobAs(email, projectId, { title: 'Job Alpha' }).then((jobA) =>
         createJobAs(email, projectId, { title: 'Job Beta' }).then((jobB) =>
           rawJobId(email, projectId, jobB).then((rawTargetId) => {
-            completeProjectAs(email, projectId);
-            tokenFor(email).then((token) =>
-              cy.request({
-                method: 'POST',
-                url: `${API}/api/projects/${projectId}/jobs/${jobA}/relationships`,
-                headers: { Authorization: `Bearer ${token}` },
-                body: { targetJobId: rawTargetId, type: 'RELATED_TO' },
-              }).then((res) => {
-                expect(res.status).to.equal(201);
-                deleteRelationshipAs(email, projectId, jobA, res.body.id as string).its('status').should('eq', 204);
-              }),
-            );
+            // JOB-268: a project can't complete with jobs still at NEW — close both
+            // first so completeProjectAs itself succeeds.
+            updateJobStatusAs(email, projectId, jobA, 'IN_PROGRESS')
+              .then(() => updateJobStatusAs(email, projectId, jobA, 'COMPLETED'))
+              .then(() => updateJobStatusAs(email, projectId, jobB, 'IN_PROGRESS'))
+              .then(() => updateJobStatusAs(email, projectId, jobB, 'COMPLETED'))
+              .then(() => {
+                completeProjectAs(email, projectId);
+                tokenFor(email).then((token) =>
+                  cy.request({
+                    method: 'POST',
+                    url: `${API}/api/projects/${projectId}/jobs/${jobA}/relationships`,
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: { targetJobId: rawTargetId, type: 'RELATED_TO' },
+                  }).then((res) => {
+                    expect(res.status).to.equal(201);
+                    deleteRelationshipAs(email, projectId, jobA, res.body.id as string).its('status').should('eq', 204);
+                  }),
+                );
+              });
           }),
         ),
       );

@@ -324,16 +324,27 @@ describe('Job Status Transitions & Blocking', () => {
       });
 
       createJobAs(email, projectId, { title: 'Job on soon-completed project' }).then((jobId) => {
-        completeProjectAs(email, projectId);
-        tokenFor(email).then((token) => {
-          cy.request({
-            method: 'PATCH',
-            url: `${API}/api/projects/${projectId}/jobs/${jobId}/status`,
-            headers: { Authorization: `Bearer ${token}` },
-            body: { status: 'IN_PROGRESS' },
-            failOnStatusCode: false,
-          }).its('status').should('eq', 409);
-        });
+        // JOB-268: a project can no longer complete with a job still sitting at NEW
+        // (only COMPLETED jobs count as "closed") — close this one first so
+        // completeProjectAs itself succeeds, matching real product behavior. The 409
+        // this test actually asserts still comes from requireProjectNotCompleted
+        // firing ahead of transition validation (JobService.updateStatus), not from
+        // the job's own status — COMPLETED → IN_PROGRESS would otherwise be a valid
+        // transition on its own.
+        updateJobStatusAs(email, projectId, jobId, 'IN_PROGRESS').then(() =>
+          updateJobStatusAs(email, projectId, jobId, 'COMPLETED').then(() => {
+            completeProjectAs(email, projectId);
+            tokenFor(email).then((token) => {
+              cy.request({
+                method: 'PATCH',
+                url: `${API}/api/projects/${projectId}/jobs/${jobId}/status`,
+                headers: { Authorization: `Bearer ${token}` },
+                body: { status: 'IN_PROGRESS' },
+                failOnStatusCode: false,
+              }).its('status').should('eq', 409);
+            });
+          }),
+        );
       });
 
       cy.deleteKeycloakUser(email);
