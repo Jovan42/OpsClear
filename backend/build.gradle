@@ -12,6 +12,8 @@ version = '0.0.1-SNAPSHOT'
 
 ext {
     set('postgresql.version', '42.7.7')
+    // 1.20.4 (Boot 3.4.1 BOM) speaks Docker API 1.32, which Docker Engine 29 rejects (JOB-310)
+    set('testcontainers.version', '1.21.4')
 }
 
 java {
