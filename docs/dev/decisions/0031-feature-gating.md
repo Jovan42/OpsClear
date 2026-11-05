@@ -160,6 +160,22 @@ Map add-on keys to URL prefixes (e.g. `/api/projects/{id}/dashboard → DASHBOAR
 8. Unit tests: aspect correctly gates methods, passes for `is_internal`, throws 403 when add-on absent.
 9. Integration tests: end-to-end per gated endpoint — 200 with active add-on, 403 without.
 
+## Amendment (2026-11-05): current add-on list
+
+The feature table above reflects May 2026. Since then two "coming soon" features shipped and two
+add-ons were added. Current state (source of truth: `AddonCode.java` and the `subscription_addons`
+migrations):
+
+| Feature | Add-on | Since |
+|---|---|---|
+| Job templates | `JOB_TEMPLATES` (no longer locked) | ADR-0032/0033, made available in V018 |
+| Recurring scheduling | `RECURRING_SCHEDULING` (no longer locked) | ADR-0034, made available in V025 |
+| Job and project links | `JOB_LINKS` (new) | ADR-0035, V024, made available in V025 |
+| Job types | `JOB_TYPES` (new) | ADR-0042, made available in V028 |
+
+All other rows are unchanged. The gating mechanism (`@RequiresAddon`, frontend `hasAddon`, lock UI)
+applies to these add-ons the same way.
+
 ## References
 
 - ADR-0025: API key authentication (one of the features being gated)

@@ -16,7 +16,7 @@ OpsClear is an operational tracking app for small/medium businesses (5-50 employ
 |-------|------------|
 | Frontend | React + Vite + TypeScript |
 | Backend | Java 21 + Spring Boot 3.x + Gradle |
-| Database | PostgreSQL 16 + Flyway migrations |
+| Database | PostgreSQL 16 + Flyway migrations + jOOQ (generated classes, no JPA) |
 | Auth | Keycloak (OAuth2 Resource Server + JWT, stateless) |
 | API Docs | SpringDoc OpenAPI |
 | Testing | JUnit 5 + Mockito + Testcontainers, Vitest, Cypress |
@@ -28,40 +28,48 @@ OpsClear is an operational tracking app for small/medium businesses (5-50 employ
 OpsClear/
 ├── backend/                # Spring Boot API (Java 21 + Gradle)
 │   ├── src/main/java/com/opsclear/
+│   │   ├── aop/            # @RequiresAddon feature gating
 │   │   ├── config/         # Security, web config
 │   │   ├── controller/     # REST controllers
 │   │   ├── service/        # Business logic
-│   │   ├── repository/     # JPA repositories
-│   │   ├── entity/         # JPA entities
+│   │   ├── repository/     # jOOQ repositories (DSLContext)
+│   │   ├── model/          # Domain models (plain classes, not JPA entities)
 │   │   ├── dto/            # Request/response DTOs
 │   │   ├── exception/      # Custom exceptions + GlobalExceptionHandler
-│   │   └── security/       # JWT filter, UserSyncFilter, UserSyncService
+│   │   ├── paddle/         # Paddle billing integration
+│   │   ├── scheduler/      # Recurring job scheduling
+│   │   └── security/       # API key + JWT auth, UserSyncFilter
 │   └── src/main/resources/
-│       ├── db/migration/   # Flyway migrations (V{n}__{description}.sql)
+│       ├── db/migration/   # Flyway migrations (V{nnn}__{description}.sql)
 │       └── application.yml
-├── frontend/               # React SPA (not yet scaffolded)
-├── docs/                   # Docusaurus documentation
-│   ├── docs/              # User-facing guides
-│   └── dev/               # Developer documentation
-├── docker-compose.yml      # Local dev environment
-├── CLAUDE.md              # This file (Claude context)
-├── TECHNICAL.md           # Technical decisions log
-└── README.md              # Project overview
+├── frontend/               # React SPA (Vite + TypeScript), Cypress E2E in frontend/cypress/
+├── docs/dev/               # Developer docs
+│   ├── decisions/          # Architecture Decision Records (ADRs)
+│   └── process/            # Dev process: WORKFLOW, JOBS, BACKEND, FRONTEND, E2E, AGENTS
+├── scripts/                # opsclear CLI (OpsClear API), seed.sh
+├── keycloak/               # Realm export, themes
+├── api/postman/            # Postman collection
+├── .claude/                # Shared Claude Code settings (permissions)
+├── docker-compose.yml      # Local infra: postgres, keycloak, pgadmin, portainer
+├── CLAUDE.md               # This file (Claude context)
+├── TECHNICAL.md            # Technical decisions log
+└── README.md               # Project overview
 ```
 
 ## Key Documents
 
 - `README.md` - Product vision, features, target users
 - `TECHNICAL.md` - All technical decisions with rationale
-- `ROADMAP.md` - Phases, modules, and tasks
-- `CONTRIBUTING.md` - **Commit messages, branching, coding standards**
+- `docs/dev/ROADMAP.md` - Points to where work is tracked (OpsClear itself: PRJ-001 Maintenance, PRJ-002 Future Considerations, one project per phase)
+- `CONTRIBUTING.md` - Commit message and PR details
+- `docs/dev/process/` - **How work is done**: WORKFLOW (tracks, branches, commit scopes), JOBS, BACKEND, FRONTEND, E2E, AGENTS
 - `docs/dev/decisions/` - Architecture Decision Records (ADRs)
 - `docs/dev/process/AGENTS.md` - Claude Code skills, agents, permissions, `scripts/opsclear` CLI and machine setup
 
 ## Domain Model (Core Entities)
 
 - **Job** - Central entity (name, client, responsible person, deadline, status)
-- **User** - Two roles: Owner (full access) and Employee (own jobs)
+- **User** - Belongs to an organisation; project roles Owner, Admin and Member
 - **Note** - Attached to jobs, immutable (audit trail)
 - **Approval** - Request from employee to owner (approve/reject)
 
@@ -82,29 +90,19 @@ OpsClear/
 
 ## Git Conventions
 
-**See `CONTRIBUTING.md` for full details.**
+Follow [docs/dev/process/WORKFLOW.md](docs/dev/process/WORKFLOW.md) (single source) and
+[CONTRIBUTING.md](CONTRIBUTING.md):
 
-**Small, focused PRs** - one module can have multiple branches/PRs.
-
-Branch naming: `feature/<phase>.<module>-<description>`
-- `feature/1.1-auth-adr` - Auth ADR only
-- `feature/1.1-auth-user-entity` - User entity + migration
-- `feature/1.1-auth-jwt` - JWT service
-
-Commit format:
-```
-<type>(<scope>): <short summary>
-
-- <change 1>
-- <change 2>
-```
-
-Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+- One OpsClear job = one branch = one PR. Never push directly to `main`.
+- Branches: `feature/JOB-123-…`, `fix/JOB-123-…`, `e2e/JOB-123-…`, `chore/JOB-123-…`
+- Commits: `<type>(<scope>): <summary> (JOB-123)` with `-` bullet body. Scope from the fixed list
+  in WORKFLOW.md (`backend` `frontend` `db` `auth` `config` `ci` `docs` `deps` `infra` `adr`).
+- No AI/tool attribution in commits or PRs.
 
 ## Commands
 
 ```bash
-# Start all services
+# Start local infra (postgres, keycloak, pgadmin, portainer); backend and frontend run on the host
 docker-compose up
 
 # Development (backend only, requires running postgres + keycloak)
@@ -126,53 +124,21 @@ cd backend && ./gradlew test --tests "com.opsclear.service.ProjectServiceTest"
 cd backend && ./gradlew test --tests "com.opsclear.service.ProjectServiceTest.create_shouldCreateProject_forExistingUser"
 ```
 
-## Backend Architecture Patterns
+## Conventions
 
-### Layering
+Technical conventions live in the process docs. Read the one for the layer you're changing:
 
-**Controllers** extract the caller's identity from the JWT: `UUID.fromString(auth.getToken().getSubject())`. Return `ResponseEntity` with explicit status codes (201 for POST, 204 for DELETE). Apply `@Valid` on request DTOs.
+- [BACKEND.md](docs/dev/process/BACKEND.md): layering, jOOQ patterns, Flyway, soft delete, feature
+  gating, error handling, unit and integration tests (`ApiPaths`, `@DisplayName`), Checkstyle
+- [FRONTEND.md](docs/dev/process/FRONTEND.md): structure, API layer, hooks, forms, add-on gating
+- [E2E.md](docs/dev/process/E2E.md): when E2E coverage is required and how much
+- [JOBS.md](docs/dev/process/JOBS.md): job naming and splitting
 
-**Services** annotate write methods `@Transactional`, reads `@Transactional(readOnly = true)`. Throw `NotFoundException` for missing records. Log with `@Slf4j`.
+## Local Setup
 
-**Repositories** extend `JpaRepository<Entity, UUID>`. All active-record queries filter soft-deleted rows via method naming: `findByIdAndDeletedAtIsNull(...)`.
-
-**DTOs** use a factory method for entity→response conversion: `ProjectResponse.from(Project entity)`. Request DTOs carry Jakarta validation annotations (`@NotBlank`, `@Size`).
-
-### Soft Delete
-
-Entities have a `deletedAt` timestamp. Active records are filtered `WHERE deleted_at IS NULL`. Services call `entity.softDelete()` instead of `repository.delete()`.
-
-### User Sync
-
-`UserSyncFilter` (runs after `BearerTokenAuthenticationFilter`) calls `UserSyncService.syncFromJwt(jwt)` on every authenticated request. It creates the user on first login or updates `lastLoginAt` on subsequent requests. The User UUID primary key matches Keycloak's `sub` claim.
-
-Name extraction fallback chain: `name` claim → `given_name + family_name` → `preferred_username` → `email`.
-
-### Error Responses
-
-`GlobalExceptionHandler` (`@RestControllerAdvice`) returns consistent JSON:
-```json
-{ "error": "Error Type", "message": "Detailed message", "timestamp": "<ISO instant>" }
-```
-`NotFoundException` → 404, `MethodArgumentNotValidException` → 400.
-
-### Security
-
-`SecurityConfig` sets up an OAuth2 Resource Server with stateless JWT validation. Public endpoints: `/api/health`, `/api-docs/**`, `/swagger-ui/**`. Keycloak issuer URI defaults to `http://localhost:8180/realms/opsclear` and is overridable via `KEYCLOAK_ISSUER_URI`.
-
-## Testing Patterns
-
-**Unit tests** use `@ExtendWith(MockitoExtension.class)`, `@Mock` for dependencies, and manually instantiate the service in `@BeforeEach`. Use AssertJ (`assertThat`, `assertThatThrownBy`) and `ArgumentCaptor`. All test classes/methods use `@DisplayName`.
-
-**Integration tests** live in `src/test/java/com/opsclear/integration/` and use:
-- `@SpringBootTest` + `@AutoConfigureMockMvc` + `@ActiveProfiles("test")`
-- `application-test.yml` activates Testcontainers PostgreSQL (Flyway disabled, Hibernate DDL `create-drop`)
-- `@BeforeEach` cleans state via `repository.deleteAll()`
-- MockMvc with mock JWT: `.with(jwt().jwt(jwt -> jwt.subject(userId.toString()).claim("email", "...")))`
-- Assertions on HTTP status + `jsonPath()` + database state after mutations
-- **URL strings**: always use `ApiPaths` helper methods — never raw string concatenation in `perform()` calls. `ApiPaths` lives in the same package so no import is needed. Add a new method there whenever a new endpoint is introduced.
-
-Test method naming convention: `methodName_shouldExpectedBehavior_whenCondition()`.
+Machine setup (OpsClear API key, `gh`, OrbStack Docker for Testcontainers, `JAVA_HOME` for
+Homebrew `openjdk@21`) is in [docs/dev/process/AGENTS.md](docs/dev/process/AGENTS.md#setup).
+For OpsClear API work use `scripts/opsclear` (same doc), not raw curl.
 
 ## Access Points (Local Dev)
 

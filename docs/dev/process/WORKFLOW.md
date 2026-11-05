@@ -66,30 +66,36 @@ Tech debt that grows large enough to need an ADR graduates to a feature phase.
 
 | Type | Pattern | Example |
 |------|---------|---------|
-| Feature | `feature/<job-id>-<short-description>` | `feature/JOB-109-org-templates-backend` |
+| Feature (incl. ADR, DB, Backend, Frontend jobs) | `feature/<job-id>-<short-description>` | `feature/JOB-109-org-templates-backend` |
 | Bug fix | `fix/<job-id>-<short-description>` | `fix/JOB-115-slug-validation` |
-| Chore | `chore/<short-description>` | `chore/update-dependencies` |
+| E2E | `e2e/<job-id>-<short-description>` | `e2e/JOB-224-approvals-flow` |
+| Chore / Tech debt | `chore/<job-id>-<short-description>` | `chore/JOB-310-testcontainers-docker29` |
+
+Every branch starts from the latest `main` and carries its OpsClear job ID.
 
 ---
 
 ## Commit format
 
 ```
-<type>(<scope>): <short summary>
+<type>(<scope>): <short summary> (JOB-123)
 ```
 
 **Types:** `feat` `fix` `docs` `refactor` `test` `chore`
 
-**Scopes (fixed list):** `backend` `frontend` `db` `auth` `config` `ci` `docs` `deps` `infra`
+**Scopes (fixed list):** `backend` `frontend` `db` `auth` `config` `ci` `docs` `deps` `infra` `adr`
 
-Scope is always the layer or area — never the feature name.
+Scope is always the layer or area — never the feature name. `adr` is for ADR documents
+(`docs(adr): …`). End the subject with the OpsClear job ID when there is one. Body bullets and
+other details: [CONTRIBUTING.md](../../../CONTRIBUTING.md#commit-messages).
 
 Examples:
 ```
-feat(backend): add org-level template CRUD
+feat(backend): add org-level template CRUD (JOB-109)
 feat(db): V020 make project_id nullable, add org_id
 feat(frontend): org templates section in OrgSettingsPage
 fix(backend): return 404 when template belongs to different org
+docs(adr): add ADR-0054 for Claude Code agents and skills (JOB-293)
 chore(deps): upgrade Spring Boot to 3.4.1
 ```
 
@@ -97,4 +103,4 @@ chore(deps): upgrade Spring Boot to 3.4.1
 
 ## Pull requests
 
-One PR per job. The PR title mirrors the commit subject. The PR description references the OpsClear job it implements and the ADR it is based on.
+One PR per job, always (never push directly to `main`). The PR title mirrors the commit subject. The PR description references the OpsClear job it implements and the ADR it is based on. Template and rules: [CONTRIBUTING.md](../../../CONTRIBUTING.md#pull-requests).
