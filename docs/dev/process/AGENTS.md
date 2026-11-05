@@ -5,9 +5,8 @@ ADR-0054 (MIL-038) set up Claude Code to run the dev process in [WORKFLOW.md](WO
 CLI** for all OpsClear API work. This doc explains what each one does, what they're allowed to do,
 and how to set up a machine to use them.
 
-> **Status (2026-11-05):** the CLI, `.claude/settings.json` and the interactive skills exist.
-> `/implement` and the agents are added by MIL-038 Chores 4–5 (JOB-306, JOB-307). Until then, the
-> agents table describes the plan. Keep it in sync when those land.
+> **Status (2026-11-05):** the CLI, `.claude/settings.json`, the interactive skills, `/implement`
+> and the implementation agents exist. `pr-reviewer` is added by Chore 5 (JOB-307).
 
 **Process rules live in the other process docs, not here.** Skills and agents link to
 [WORKFLOW.md](WORKFLOW.md), [JOBS.md](JOBS.md), [BACKEND.md](BACKEND.md), [FRONTEND.md](FRONTEND.md)
@@ -46,16 +45,38 @@ and branch, can't ask questions mid-run, and reports back once.
 | `chore-dev` | `Chore:` and `Tech debt:` jobs | Sonnet |
 | `pr-reviewer` | Reviews a PR against the process and for correctness (one comment, never approves or merges) | Opus |
 
-Every implementation agent: reads the job, its ADR and the matching process doc; branches from the
-latest `main`; implements only that job's layer; runs the checks; commits, pushes and opens the PR;
-links the PR and moves the job to In Progress; reports back.
+Agent files live in `.claude/agents/<name>.md`. `pr-reviewer` is added by Chore 5 (JOB-307).
 
-**Agents stop instead of guessing** when blockers aren't Completed, the job contradicts its ADR, a
-check fails for a reason unrelated to the job, or a decision isn't covered by the ADR. They report
-back without opening a PR.
+### The implementation loop
 
-`/implement` runs at most one `db-migration` agent at a time (migration numbers would collide) and
-never runs jobs linked by BLOCKED_BY in parallel.
+Every implementation agent follows this loop. Its own file adds only the layer-specific parts.
+
+1. **Read.** `scripts/opsclear job get <JOB>`, the ADR named in the job (`docs/dev/decisions/`),
+   and the process doc for the layer: [BACKEND.md](BACKEND.md), [FRONTEND.md](FRONTEND.md),
+   [E2E.md](E2E.md). Check every "Blocked by" job is COMPLETED.
+2. **Branch.** The agent runs in its own git worktree. Start from the latest `main`:
+   `git fetch origin && git checkout -b <branch> origin/main`, branch named per
+   [WORKFLOW.md](WORKFLOW.md#branch-naming). A fresh worktree has no `frontend/node_modules`, so run
+   `cd frontend && npm ci` before any frontend command.
+3. **Implement** only this job's scope and layer. Anything the job lists as out of scope stays out.
+4. **Check.** Backend: `cd backend && ./gradlew test checkstyleMain`. Frontend: `npm run lint` and
+   `npm run type-check` (plus Cypress specs the job adds, see E2E.md). `scripts/`:
+   `python3 scripts/opsclear_test.py`. All must pass.
+5. **Commit, push, PR.** Commit per [CONTRIBUTING.md](../../../CONTRIBUTING.md#commit-messages)
+   (`<type>(<scope>): <summary> (<JOB>)`), `git push -u origin <branch>`, `gh pr create` with
+   Summary, References (job, ADR) and a Test plan listing what was actually run. No AI attribution.
+6. **Update OpsClear.** `scripts/opsclear link add <JOB> <PR url> --label "PR #N"` and
+   `scripts/opsclear job status <JOB> IN_PROGRESS`. Never set Completed.
+7. **Report** (the agent's final message): what changed, check results, PR link, open questions.
+
+**Stop instead of guessing.** No PR, report back instead, when:
+- a blocker isn't COMPLETED
+- the job contradicts its ADR, or needs a decision the ADR doesn't cover
+- a check fails for a reason unrelated to the job
+- the work would cross into another layer or job
+
+`/implement` runs at most one `db-migration` agent at a time (migration numbers would collide, and
+they share the local database) and never runs jobs linked by BLOCKED_BY in parallel.
 
 ---
 
