@@ -30,6 +30,7 @@ Check in a `.claude/` folder with **skills for interactive steps** (run in the m
 
 | Skill | What it does |
 |---|---|
+| `/new-idea [JOB-123]` | Captures a new idea, or refines an existing one when given a job ID. Discusses it with the user (what, why, rough approach, open questions), checks the backlog for overlap or duplicates, and checks the code for facts so the idea doesn't rest on wrong assumptions. **Routes it**: feature ideas go to Future Considerations (PRJ-002, "Future Consideration" template); bugs, chores and tech debt go to Maintenance (PRJ-001, matching milestone and template), since WORKFLOW.md says those skip Future Considerations and ADRs. Creates or updates the job only after approval. |
 | `/plan-phase` | Reviews open Future Considerations, proposes a phase (project name, one idea per milestone), and after approval creates the project, milestones and `ADR:` jobs (ADR template), then closes the promoted ideas with a note. |
 | `/write-adr JOB-123` | Reads the ADR job and code, asks the open questions (with recommendations), writes `docs/dev/decisions/NNNN-*.md` from the template, then commits, opens the PR and links it to the job. |
 | `/break-down JOB-123` | After an ADR merges: proposes implementation jobs (templates, `<Layer>:` titles, one layer per job, BLOCKED_BY, chained deadlines), and creates them after approval. |
@@ -81,6 +82,7 @@ Tiered per agent in its frontmatter: Opus for work that needs judgement (backend
 .claude/
   settings.json
   skills/
+    new-idea/SKILL.md
     plan-phase/SKILL.md
     write-adr/SKILL.md
     break-down/SKILL.md
@@ -216,7 +218,7 @@ Tooling only: no DB, backend or frontend jobs. Chore-sized jobs in MIL-038:
 
 1. **Chore: `scripts/opsclear` CLI + tests**: commands above, confirmation/`--yes`, dry-run, full-PUT safety, friendly-ID job lookup, unit tests.
 2. **Chore: `.claude/settings.json` + `docs/dev/process/AGENTS.md`**: allow/deny rules, setup instructions (API key, Docker, Java), overview of skills and agents. *Blocked by 1.*
-3. **Chore: interactive skills**: `/plan-phase`, `/write-adr`, `/break-down`, `/ship`, `/finish-adr`. *Blocked by 1.*
+3. **Chore: interactive skills**: `/new-idea`, `/plan-phase`, `/write-adr`, `/break-down`, `/ship`, `/finish-adr`. *Blocked by 1.*
 4. **Chore: implementation agents + `/implement`**: `db-migration`, `backend-dev`, `frontend-dev`, `e2e-dev`, `bug-fixer`, `chore-dev`, routing, worktrees, parallel runs. *Blocked by 1.*
 5. **Chore: `pr-reviewer`**: process checklist + code review, single PR comment, wired into `/implement`. *Blocked by 4.*
 6. **Pilot**: run `/break-down` on ADR-0052 or 0053 and `/implement` on one small job end to end; fix the instructions based on what goes wrong. *Blocked by 2–5.*
