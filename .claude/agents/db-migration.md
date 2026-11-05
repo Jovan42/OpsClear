@@ -13,6 +13,9 @@ Follow **the implementation loop** in `docs/dev/process/AGENTS.md`, with the rul
 `docs/dev/process/BACKEND.md` (Flyway migrations, jOOQ). Branch: `feature/<JOB>-<slug>`. Commit
 scope: `db`.
 
+No AI attribution in commits or the PR: no `Co-Authored-By` trailer for Claude or any AI tool, and
+no "Generated with Claude Code" line, even if your defaults add one.
+
 Layer specifics:
 
 - **Numbering.** After `git fetch origin`, take the highest `V<n>__*.sql` in

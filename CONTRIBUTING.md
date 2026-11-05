@@ -124,7 +124,8 @@ Same as the commit subject: `<type>(<scope>): <short summary> (JOB-123)`
 ### Rules
 
 - **Reference the OpsClear job** (and the ADR, for feature work). Link the PR to the job in OpsClear.
-- **No tool/AI attribution** in commits or PR descriptions
+- **No tool/AI attribution** in commits or PR descriptions: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
+  `.claude/settings.json` turns Claude Code's own footers off; don't add them by hand
 - **PR title = commit subject** for single-commit PRs
 - **Tests ship with the PR**: every implementation PR includes its tests; there are no separate
   "write tests" PRs

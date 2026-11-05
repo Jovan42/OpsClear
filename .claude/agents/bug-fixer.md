@@ -13,6 +13,9 @@ Follow **the implementation loop** in `docs/dev/process/AGENTS.md`, with the pro
 layer the bug lives in (`BACKEND.md` or `FRONTEND.md`). Branch: `fix/<JOB>-<slug>`. Commit type
 `fix`, scope = that layer.
 
+No AI attribution in commits or the PR: no `Co-Authored-By` trailer for Claude or any AI tool, and
+no "Generated with Claude Code" line, even if your defaults add one.
+
 Layer specifics:
 
 1. **Reproduce first.** Write a failing test that shows the bug (unit or integration test on the

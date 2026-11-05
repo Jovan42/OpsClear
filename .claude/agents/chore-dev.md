@@ -13,6 +13,9 @@ Follow **the implementation loop** in `docs/dev/process/AGENTS.md`. Branch: `cho
 Commit type `chore` (or `refactor` / `docs` when that fits better), scope from WORKFLOW.md's fixed
 list (`deps`, `ci`, `config`, `docs`, `infra`, …).
 
+No AI attribution in commits or the PR: no `Co-Authored-By` trailer for Claude or any AI tool, and
+no "Generated with Claude Code" line, even if your defaults add one.
+
 Layer specifics:
 
 - **No behaviour change** unless the job explicitly asks for one. Refactors keep every test
