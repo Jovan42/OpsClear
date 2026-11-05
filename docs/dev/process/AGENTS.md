@@ -45,7 +45,8 @@ and branch, can't ask questions mid-run, and reports back once.
 | `chore-dev` | `Chore:` and `Tech debt:` jobs | Sonnet |
 | `pr-reviewer` | Reviews a PR against the process and for correctness (one comment, never approves or merges) | Opus |
 
-Agent files live in `.claude/agents/<name>.md`. `pr-reviewer` is added by Chore 5 (JOB-307).
+Agent files live in `.claude/agents/<name>.md`. `pr-reviewer` also works on its own: ask Claude to
+run the `pr-reviewer` agent on any PR number.
 
 ### The implementation loop
 
