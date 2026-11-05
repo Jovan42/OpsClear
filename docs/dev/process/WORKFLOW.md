@@ -2,6 +2,8 @@
 
 Two tracks cover all work: **feature work** and **maintenance work**.
 
+Claude Code skills and agents can run most of these steps for you. See [AGENTS.md](AGENTS.md).
+
 ---
 
 ## Feature track

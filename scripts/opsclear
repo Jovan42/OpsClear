@@ -1002,7 +1002,7 @@ def main(argv: Optional[List[str]] = None, env: Optional[Dict[str, str]] = None,
     except SystemExit as e:
         return int(e.code or 0)
     if not key:
-        out.warn("error: OPSCLEAR_API_KEY is not set. Create a key in OpsClear (profile > API keys) "
+        out.warn("error: OPSCLEAR_API_KEY is not set. Create a key in OpsClear (Settings > API Keys) "
                  "and export it, e.g. in ~/.zshrc.")
         return EXIT_ERROR
     api = Api(env.get("OPSCLEAR_URL") or DEFAULT_URL, key, transport)
