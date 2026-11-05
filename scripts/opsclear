@@ -1,0 +1,1021 @@
+#!/usr/bin/env python3
+"""opsclear: command-line client for the OpsClear API, used by the dev process (ADR-0054).
+
+Python 3.9+, standard library only.
+
+Configuration (environment):
+  OPSCLEAR_API_KEY   required, an API key starting with opck_ (never printed)
+  OPSCLEAR_URL       optional, default https://46-101-205-77.sslip.io:8443
+
+IDs are friendly IDs everywhere: PRJ-013, MIL-038, JOB-303, TPL-007.
+
+Common flags (on every command):
+  --json      machine-readable output
+  --yes       apply a change that needs confirmation (see below)
+  --dry-run   print the HTTP requests a write would send, send nothing
+
+Changes that need confirmation (create jobs, set a status other than IN_PROGRESS,
+change a deadline, add a note, create a project or milestone) print the plan and
+exit with code 3 unless --yes is given. Routine changes (links, BLOCKED_BY,
+moving a job to IN_PROGRESS) run directly.
+
+Exit codes: 0 ok, 1 error, 2 usage error, 3 not applied: re-run with --yes.
+"""
+from __future__ import annotations
+
+import argparse
+import contextlib
+import json
+import os
+import re
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+DEFAULT_URL = "https://46-101-205-77.sslip.io:8443"
+
+EXIT_OK = 0
+EXIT_ERROR = 1
+EXIT_USAGE = 2
+EXIT_NEEDS_CONFIRM = 3
+
+STATUSES = ("NEW", "IN_PROGRESS", "BLOCKED", "COMPLETED")
+PRIORITIES = ("LOW", "MEDIUM", "HIGH", "CRITICAL")
+MERGED_SUFFIX = "(merged)"
+LINK_LABEL_MAX = 100
+NONE_WORDS = ("none", "null", "")
+
+
+# --------------------------------------------------------------------------- errors
+
+
+class CliError(Exception):
+    """An error reported to the user as `error: <message>` with exit code 1."""
+
+
+class ApiError(CliError):
+    def __init__(self, status: int, message: str):
+        super().__init__(message)
+        self.status = status
+
+
+# --------------------------------------------------------------------------- HTTP
+
+
+@dataclass
+class Response:
+    status: int
+    body: bytes
+
+
+Transport = Callable[[str, str, Dict[str, str], Optional[bytes]], Response]
+
+
+def urllib_transport(method: str, url: str, headers: Dict[str, str], data: Optional[bytes]) -> Response:
+    req = urllib.request.Request(url, data=data, method=method, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return Response(resp.status, resp.read())
+    except urllib.error.HTTPError as e:
+        return Response(e.code, e.read())
+    except urllib.error.URLError as e:
+        raise CliError(f"cannot reach OpsClear at {url.split('/api/')[0]}: {e.reason}")
+
+
+class Api:
+    def __init__(self, base_url: str, key: str, transport: Transport = urllib_transport):
+        self.base_url = base_url.rstrip("/")
+        self.key = key
+        self.transport = transport
+
+    def url(self, path: str, query: Optional[Dict[str, str]] = None) -> str:
+        url = f"{self.base_url}{path}"
+        if query:
+            url += "?" + urllib.parse.urlencode(query)
+        return url
+
+    def request(self, method: str, path: str, body: Any = None,
+                query: Optional[Dict[str, str]] = None) -> Any:
+        headers = {"X-Api-Key": self.key, "Accept": "application/json"}
+        data = None
+        if body is not None:
+            data = json.dumps(body).encode()
+            headers["Content-Type"] = "application/json"
+        resp = self.transport(method, self.url(path, query), headers, data)
+        if resp.status == 401:
+            raise ApiError(401, "OpsClear rejected the API key (401). Check OPSCLEAR_API_KEY.")
+        if resp.status >= 400:
+            raise ApiError(resp.status, f"{method} {path} failed ({resp.status}): {_error_message(resp.body)}")
+        if not resp.body:
+            return None
+        return json.loads(resp.body)
+
+    def get(self, path: str, query: Optional[Dict[str, str]] = None) -> Any:
+        return self.request("GET", path, query=query)
+
+
+def _error_message(body: bytes) -> str:
+    try:
+        payload = json.loads(body)
+        if isinstance(payload, dict):
+            return payload.get("message") or payload.get("error") or str(payload)
+    except ValueError:
+        pass
+    return body.decode(errors="replace")[:300] or "no details"
+
+
+def quote(segment: str) -> str:
+    return urllib.parse.quote(segment, safe="")
+
+
+def job_path(project: str, job: str) -> str:
+    return f"/api/projects/{quote(project)}/jobs/{quote(job)}"
+
+
+# --------------------------------------------------------------------------- output
+
+
+class Output:
+    """Writes to stdout/stderr and redacts the API key from everything it prints."""
+
+    def __init__(self, key: str, stdout=None, stderr=None):
+        self.key = key
+        self.stdout = stdout or sys.stdout
+        self.stderr = stderr or sys.stderr
+
+    def redact(self, text: str) -> str:
+        return text.replace(self.key, "***") if self.key else text
+
+    def print(self, text: str = "") -> None:
+        self.stdout.write(self.redact(text) + "\n")
+
+    def warn(self, text: str) -> None:
+        self.stderr.write(self.redact(text) + "\n")
+
+    def json(self, data: Any) -> None:
+        self.print(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+# --------------------------------------------------------------------------- writes, plans, dry runs
+
+
+@dataclass
+class Write:
+    method: str
+    path: str
+    body: Any = None
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {"method": self.method, "path": self.path, "body": self.body}
+
+
+@dataclass
+class Ctx:
+    api: Api
+    out: Output
+    json: bool = False
+    yes: bool = False
+    dry_run: bool = False
+    today: date = field(default_factory=date.today)
+
+
+def apply(ctx: Ctx, writes: List[Write], plan: List[str], needs_confirm: bool) -> Optional[List[Any]]:
+    """Send `writes`, or show them instead. Returns the responses, or None if nothing was sent."""
+    if ctx.dry_run:
+        if ctx.json:
+            ctx.out.json({"dryRun": True, "plan": plan, "requests": [w.as_dict() for w in writes]})
+        else:
+            ctx.out.print("Dry run, nothing sent.")
+            for line in plan:
+                ctx.out.print(f"  {line}")
+            for w in writes:
+                ctx.out.print(f"{w.method} {w.path}")
+                if w.body is not None:
+                    ctx.out.print(json.dumps(w.body, indent=2, ensure_ascii=False))
+        return None
+    if needs_confirm and not ctx.yes:
+        if ctx.json:
+            ctx.out.json({"applied": False, "needsConfirmation": True, "plan": plan})
+        else:
+            ctx.out.print("Plan (not applied):")
+            for line in plan:
+                ctx.out.print(f"  {line}")
+            ctx.out.print("Re-run with --yes to apply.")
+        return None
+    return [ctx.api.request(w.method, w.path, w.body) for w in writes]
+
+
+def finish(ctx: Ctx, results: Optional[List[Any]], needs_confirm: bool) -> int:
+    """Exit code after apply(): 3 when a change was held back for confirmation."""
+    if results is None and needs_confirm and not ctx.dry_run:
+        return EXIT_NEEDS_CONFIRM
+    return EXIT_OK
+
+
+# --------------------------------------------------------------------------- parsing helpers
+
+
+FRIENDLY_RE = re.compile(r"^[A-Z]+-\d+$")
+
+
+def friendly(prefix: str) -> Callable[[str], str]:
+    def parse(value: str) -> str:
+        v = value.strip().upper()
+        if re.fullmatch(r"\d+", v):
+            v = f"{prefix}-{int(v):03d}"
+        if not FRIENDLY_RE.match(v) or not v.startswith(prefix + "-"):
+            raise argparse.ArgumentTypeError(f"expected a {prefix}-123 friendly ID, got {value!r}")
+        return v
+    parse.__name__ = f"{prefix} ID"
+    return parse
+
+
+def parse_deadline(value: str) -> Optional[str]:
+    """YYYY-MM-DD (stored as midnight UTC) or a full ISO instant; 'none' clears it."""
+    v = value.strip()
+    if v.lower() in NONE_WORDS:
+        return None
+    try:
+        return date.fromisoformat(v).isoformat() + "T00:00:00Z"
+    except ValueError:
+        pass
+    try:
+        parsed = datetime.fromisoformat(v.replace("Z", "+00:00"))
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected YYYY-MM-DD or an ISO timestamp, got {value!r}")
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def parse_date(value: str) -> Optional[str]:
+    v = value.strip()
+    if v.lower() in NONE_WORDS:
+        return None
+    try:
+        return date.fromisoformat(v).isoformat()
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected YYYY-MM-DD, got {value!r}")
+
+
+def deadline_arg(value: str) -> str:
+    """argparse type: validate now, convert with parse_deadline later ('none' must survive parsing)."""
+    parse_deadline(value)
+    return value
+
+
+def date_arg(value: str) -> str:
+    parse_date(value)
+    return value
+
+
+def choice(values: Tuple[str, ...]) -> Callable[[str], str]:
+    def parse(value: str) -> str:
+        v = value.strip().upper().replace("-", "_").replace(" ", "_")
+        if v not in values:
+            raise argparse.ArgumentTypeError(f"expected one of {', '.join(values)}, got {value!r}")
+        return v
+    return parse
+
+
+def read_text(path: str) -> str:
+    if path == "-":
+        return sys.stdin.read()
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except OSError as e:
+        raise CliError(f"cannot read {path}: {e.strerror}")
+
+
+def short_date(value: Optional[str]) -> str:
+    return value[:10] if value else "-"
+
+
+# --------------------------------------------------------------------------- lookups
+
+
+def list_projects(ctx: Ctx) -> List[Dict[str, Any]]:
+    projects = ctx.api.get("/api/projects", {"status": "ALL"}) or []
+
+    def order(p: Dict[str, Any]) -> Tuple[int, int]:
+        num = int(p["friendlyId"].split("-")[1]) if p.get("friendlyId") else 0
+        return (0 if p.get("status") == "ACTIVE" else 1, -num)
+
+    return sorted(projects, key=order)
+
+
+def find_job(ctx: Ctx, job_id: str, project: Optional[str] = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """Return (project, job). Without a project, try each project: active ones first, newest first."""
+    if project:
+        proj = ctx.api.get(f"/api/projects/{quote(project)}")
+        return proj, ctx.api.get(job_path(project, job_id))
+    for proj in list_projects(ctx):
+        try:
+            return proj, ctx.api.get(job_path(proj["friendlyId"], job_id))
+        except ApiError as e:
+            if e.status not in (403, 404):
+                raise
+    raise CliError(f"{job_id} not found in any project you can access")
+
+
+def resolve_milestone(ctx: Ctx, project: str, milestone: Optional[str]) -> Optional[Dict[str, Any]]:
+    if milestone is None:
+        return None
+    milestones = ctx.api.get(f"/api/projects/{quote(project)}/milestones") or []
+    for m in milestones:
+        if m.get("friendlyId") == milestone or m.get("id") == milestone:
+            return m
+    raise CliError(f"milestone {milestone} not found in {project}")
+
+
+def milestone_friendly_id(ctx: Ctx, project: str, milestone_id: Optional[str]) -> Optional[str]:
+    if not milestone_id:
+        return None
+    for m in ctx.api.get(f"/api/projects/{quote(project)}/milestones") or []:
+        if m.get("id") == milestone_id:
+            return m.get("friendlyId")
+    return None
+
+
+def resolve_member(ctx: Ctx, project: str, who: str) -> Dict[str, Any]:
+    """Match a project member by email, user ID, or (case-insensitive) name. 'me' isn't supported
+    because an API key has no cheap 'who am I' call; use your email."""
+    members = ctx.api.get(f"/api/projects/{quote(project)}/members") or []
+    w = who.strip().lower()
+    for key in ("userEmail", "userId"):
+        for m in members:
+            if (m.get(key) or "").lower() == w:
+                return m
+    named = [m for m in members if (m.get("userName") or "").lower() == w]
+    if len(named) == 1:
+        return named[0]
+    names = ", ".join(f"{m.get('userName')} <{m.get('userEmail')}>" for m in members)
+    raise CliError(f"no single project member matches {who!r} in {project}. Members: {names}")
+
+
+def list_templates(ctx: Ctx, project: str) -> List[Dict[str, Any]]:
+    """Project templates plus the org's templates (the API returns both)."""
+    return ctx.api.get(f"/api/projects/{quote(project)}/templates") or []
+
+
+def find_template(templates: List[Dict[str, Any]], name: str, project: str) -> Dict[str, Any]:
+    n = name.strip().lower()
+    for t in templates:
+        if (t.get("friendlyId") or "").lower() == n:
+            return t
+    matches = [t for t in templates if (t.get("name") or "").lower() == n]
+    if matches:
+        # A project template wins over an org template with the same name.
+        return sorted(matches, key=lambda t: 0 if t.get("scope") == "PROJECT" else 1)[0]
+    names = ", ".join(f"{t.get('name')!r}" for t in templates) or "none"
+    raise CliError(f"template {name!r} not found for {project}. Available: {names}")
+
+
+def resolve_template_type(ctx: Ctx, project: str, template: Dict[str, Any]) -> Optional[str]:
+    """Same rule as the UI and the template 'use' endpoint: project templates carry a type ID,
+    org templates carry a type name that is matched against the project's job types."""
+    if template.get("scope") == "PROJECT":
+        return template.get("defaultTypeId")
+    type_name = template.get("defaultTypeName")
+    if not type_name:
+        return None
+    try:
+        types = ctx.api.get(f"/api/projects/{quote(project)}/job-types") or []
+    except ApiError:
+        return None
+    for t in types:
+        if (t.get("name") or "").lower() == type_name.lower():
+            return t.get("id")
+    return None
+
+
+# --------------------------------------------------------------------------- template filling
+
+
+def template_headings(text: Optional[str]) -> List[str]:
+    return [line.strip() for line in (text or "").splitlines() if line.lstrip().startswith("#")]
+
+
+def fill_from_template(template: Dict[str, Any], *, title: str, description: Optional[str],
+                       today: date) -> Tuple[Dict[str, Any], List[str]]:
+    """Build job fields from a template, as the New Job dialog does. Returns (fields, warnings).
+
+    - title: the template's title is a prefix ("Backend:"); it's added unless the title has it
+    - description: the given text, else the template's skeleton; warns about missing template headings
+    - priority, client, milestone, deadline offset and FIXED assignee come from the template
+    """
+    warnings: List[str] = []
+    prefix = (template.get("title") or "").strip()
+    full_title = title.strip()
+    if prefix and not full_title.lower().startswith(prefix.lower()):
+        full_title = f"{prefix} {full_title}"
+
+    if description is None:
+        body = template.get("description")
+        if body:
+            warnings.append("no --description-file given: using the template's empty skeleton")
+    else:
+        body = description
+        lines = {line.strip() for line in description.splitlines()}
+        missing = [h for h in template_headings(template.get("description")) if h not in lines]
+        if missing:
+            warnings.append("description is missing template headings: " + "; ".join(missing))
+
+    fields: Dict[str, Any] = {
+        "title": full_title,
+        "description": body,
+        "client": template.get("client"),
+        "priority": template.get("priority") or "MEDIUM",
+        "milestoneId": template.get("milestoneId"),
+        "assignedTo": template.get("assigneeId") if template.get("assigneeMode") == "FIXED" else None,
+        "deadline": None,
+    }
+    offset = template.get("deadlineOffsetDays")
+    if offset is not None:
+        fields["deadline"] = (today + timedelta(days=offset)).isoformat() + "T00:00:00Z"
+    return fields, warnings
+
+
+# --------------------------------------------------------------------------- full-PUT safety
+
+
+UPDATE_FIELDS = ("title", "description", "client", "assignedTo", "deadline", "priority", "milestoneId", "typeId")
+
+
+def update_body(job: Dict[str, Any], changes: Dict[str, Any]) -> Dict[str, Any]:
+    """PUT /jobs/{id} replaces every field, so send the job's current values with `changes` applied."""
+    unknown = set(changes) - set(UPDATE_FIELDS)
+    if unknown:
+        raise ValueError(f"not updatable: {sorted(unknown)}")
+    body = {f: job.get(f) for f in UPDATE_FIELDS}
+    body.update(changes)
+    return body
+
+
+def describe_value(name: str, value: Any) -> str:
+    if value is None:
+        return "(none)"
+    if name == "description":
+        text = str(value)
+        return f"{len(text)} chars" if "\n" in text or len(text) > 60 else repr(text)
+    if name == "deadline":
+        return short_date(value)
+    return str(value)
+
+
+# --------------------------------------------------------------------------- formatting
+
+
+def relationship_label(rel: Dict[str, Any]) -> str:
+    outgoing = rel.get("direction") == "OUTGOING"
+    return {
+        "BLOCKED_BY": "Blocked by" if outgoing else "Blocks",
+        "RELATED_TO": "Related to",
+        "DUPLICATES": "Duplicates" if outgoing else "Duplicated by",
+    }.get(rel.get("type"), rel.get("type") or "?")
+
+
+def format_job(project: Dict[str, Any], job: Dict[str, Any], milestone_fid: Optional[str]) -> List[str]:
+    lines = [f"{job.get('friendlyId')}  {job.get('title')}"]
+    lines.append(f"Project:   {project.get('friendlyId')}  {project.get('name')}")
+    lines.append(f"Status:    {job.get('status')}    Priority: {job.get('priority')}")
+    if job.get("status") == "BLOCKED" and job.get("blockedReason"):
+        lines.append(f"Blocked:   {job.get('blockedReason')} (since {short_date(job.get('blockedAt'))})")
+    if job.get("milestoneName"):
+        lines.append(f"Milestone: {milestone_fid or '?'}  {job.get('milestoneName')}")
+    lines.append(f"Assignee:  {job.get('assignedToName') or '-'}")
+    lines.append(f"Deadline:  {short_date(job.get('deadline'))}")
+    if job.get("typeName"):
+        lines.append(f"Type:      {job.get('typeName')}")
+    if job.get("client"):
+        lines.append(f"Client:    {job.get('client')}")
+    links = job.get("links") or []
+    if links:
+        lines.append("Links:")
+        lines += [f"  - {link.get('label') or '(no label)'}  {link.get('url')}" for link in links]
+    rels = job.get("relationships") or []
+    if rels:
+        lines.append("Relationships:")
+        for r in rels:
+            other = r.get("job") or {}
+            lines.append(f"  - {relationship_label(r)} {other.get('friendlyId')} "
+                         f"[{other.get('status')}] {other.get('title')}")
+    if job.get("description"):
+        lines += ["", job["description"].rstrip()]
+    return lines
+
+
+def format_job_row(job: Dict[str, Any]) -> str:
+    return (f"{job.get('friendlyId', ''):<9} {job.get('status', ''):<12} {short_date(job.get('deadline')):<11} "
+            f"{(job.get('milestoneName') or '-')[:28]:<28}  {job.get('title')}")
+
+
+# --------------------------------------------------------------------------- commands: job
+
+
+def cmd_job_get(ctx: Ctx, args) -> int:
+    project, job = find_job(ctx, args.job, args.project)
+    milestone_fid = milestone_friendly_id(ctx, project["friendlyId"], job.get("milestoneId"))
+    if ctx.json:
+        ctx.out.json({**job, "project": {"friendlyId": project.get("friendlyId"), "name": project.get("name")},
+                      "milestoneFriendlyId": milestone_fid})
+    else:
+        for line in format_job(project, job, milestone_fid):
+            ctx.out.print(line)
+    return EXIT_OK
+
+
+def cmd_job_list(ctx: Ctx, args) -> int:
+    query: Dict[str, str] = {}
+    if args.milestone:
+        query["milestoneId"] = resolve_milestone(ctx, args.project, args.milestone)["id"]
+    jobs = ctx.api.get(f"/api/projects/{quote(args.project)}/jobs", query or None) or []
+    if args.status == "OPEN":
+        jobs = [j for j in jobs if j.get("status") != "COMPLETED"]
+    elif args.status != "ALL":
+        jobs = [j for j in jobs if j.get("status") == args.status]
+    jobs.sort(key=lambda j: int(j["friendlyId"].split("-")[1]) if j.get("friendlyId") else 0)
+    if ctx.json:
+        ctx.out.json(jobs)
+    elif not jobs:
+        ctx.out.print("No jobs.")
+    else:
+        for j in jobs:
+            ctx.out.print(format_job_row(j))
+    return EXIT_OK
+
+
+def cmd_job_create(ctx: Ctx, args) -> int:
+    project = args.project
+    template = find_template(list_templates(ctx, project), args.template, project)
+    description = read_text(args.description_file) if args.description_file else None
+    fields, warnings = fill_from_template(template, title=args.title, description=description, today=ctx.today)
+    fields["typeId"] = resolve_template_type(ctx, project, template)
+
+    if args.priority:
+        fields["priority"] = args.priority
+    if args.client is not None:
+        fields["client"] = args.client or None
+    if args.deadline is not None:
+        fields["deadline"] = parse_deadline(args.deadline)
+    milestone = resolve_milestone(ctx, project, args.milestone)
+    if milestone:
+        fields["milestoneId"] = milestone["id"]
+    assignee = resolve_member(ctx, project, args.assignee) if args.assignee else None
+    if assignee:
+        fields["assignedTo"] = assignee["userId"]
+    if template.get("assigneeMode") == "ASK" and not assignee:
+        warnings.append("template asks for an assignee: pass --assignee <email> (job will be unassigned)")
+    for w in warnings:
+        ctx.out.warn(f"warning: {w}")
+
+    body = {k: v for k, v in fields.items() if v is not None}
+    plan = [
+        f"Create job in {project} from template {template.get('name')!r} ({template.get('scope')})",
+        f"title:     {body['title']}",
+        f"milestone: {milestone['friendlyId'] + ' ' + milestone['name'] if milestone else '(none)'}",
+        f"priority:  {body.get('priority')}",
+        f"deadline:  {short_date(body.get('deadline'))}",
+        f"assignee:  {assignee['userName'] if assignee else '(none)'}",
+        f"type:      {template.get('defaultTypeName') if body.get('typeId') else '(none)'}",
+        f"description: {describe_value('description', body.get('description'))}",
+    ]
+    writes = [Write("POST", f"/api/projects/{quote(project)}/jobs", body)]
+    results = apply(ctx, writes, plan, needs_confirm=True)
+    if results is None:
+        return finish(ctx, results, True)
+    job = results[0]
+    try:  # Bumps the template's usage count, like the UI. Not essential.
+        ctx.api.request("POST", f"/api/projects/{quote(project)}/templates/{quote(template['id'])}/use")
+    except CliError as e:
+        ctx.out.warn(f"warning: could not record template usage: {e}")
+    if ctx.json:
+        ctx.out.json(job)
+    else:
+        ctx.out.print(f"Created {job.get('friendlyId')}  {job.get('title')}")
+    return EXIT_OK
+
+
+def cmd_job_update(ctx: Ctx, args) -> int:
+    project, job = find_job(ctx, args.job, args.project)
+    pid = project["friendlyId"]
+    changes: Dict[str, Any] = {}
+    if args.title is not None:
+        changes["title"] = args.title
+    if args.description_file is not None:
+        changes["description"] = read_text(args.description_file)
+    if args.client is not None:
+        changes["client"] = args.client or None
+    if args.priority is not None:
+        changes["priority"] = args.priority
+    if args.deadline is not None:
+        changes["deadline"] = parse_deadline(args.deadline)
+    if args.milestone is not None:
+        if args.milestone.lower() in NONE_WORDS:
+            changes["milestoneId"] = None
+        else:
+            changes["milestoneId"] = resolve_milestone(ctx, pid, friendly("MIL")(args.milestone))["id"]
+    if args.assignee is not None:
+        changes["assignedTo"] = (None if args.assignee.lower() in NONE_WORDS
+                                 else resolve_member(ctx, pid, args.assignee)["userId"])
+    changes = {k: v for k, v in changes.items() if job.get(k) != v}
+    if not changes:
+        ctx.out.print(f"{job['friendlyId']}: nothing to change.")
+        return EXIT_OK
+
+    plan = [f"Update {job['friendlyId']} ({pid}): {job.get('title')}"]
+    plan += [f"{k}: {describe_value(k, job.get(k))} -> {describe_value(k, v)}" for k, v in changes.items()]
+    needs_confirm = "deadline" in changes
+    writes = [Write("PUT", job_path(pid, job["friendlyId"]), update_body(job, changes))]
+    results = apply(ctx, writes, plan, needs_confirm)
+    if results is None:
+        return finish(ctx, results, needs_confirm)
+    if ctx.json:
+        ctx.out.json(results[0])
+    else:
+        ctx.out.print(f"Updated {job['friendlyId']}: {', '.join(changes)}")
+    return EXIT_OK
+
+
+def cmd_job_status(ctx: Ctx, args) -> int:
+    project, job = find_job(ctx, args.job, args.project)
+    pid = project["friendlyId"]
+    if args.status == "BLOCKED" and not (args.reason or "").strip():
+        raise CliError("BLOCKED needs --reason")
+    if job.get("status") == args.status:
+        ctx.out.print(f"{job['friendlyId']} is already {args.status}.")
+        return EXIT_OK
+    body: Dict[str, Any] = {"status": args.status}
+    if args.reason:
+        body["reason"] = args.reason
+    plan = [f"{job['friendlyId']} ({pid}) {job.get('status')} -> {args.status}: {job.get('title')}"]
+    if args.reason:
+        plan.append(f"reason: {args.reason}")
+    needs_confirm = args.status != "IN_PROGRESS"
+    writes = [Write("PATCH", job_path(pid, job["friendlyId"]) + "/status", body)]
+    results = apply(ctx, writes, plan, needs_confirm)
+    if results is None:
+        return finish(ctx, results, needs_confirm)
+    if ctx.json:
+        ctx.out.json(results[0])
+    else:
+        ctx.out.print(f"{job['friendlyId']}: {job.get('status')} -> {args.status}")
+    return EXIT_OK
+
+
+def cmd_job_block(ctx: Ctx, args) -> int:
+    """`job block A --by B`: A is blocked by B. The relationship belongs to A (A shows it as
+    OUTGOING "Blocked by B", B shows INCOMING "Blocks A"), so it is POSTed on A with target B."""
+    if args.job == args.by:
+        raise CliError("a job can't block itself")
+    project, blocked = find_job(ctx, args.job, args.project)
+    pid = project["friendlyId"]
+    try:
+        blocker = ctx.api.get(job_path(pid, args.by))
+    except ApiError as e:
+        if e.status == 404:
+            raise CliError(f"{args.by} is not in {pid}. BLOCKED_BY only links jobs in the same project.")
+        raise
+    for rel in blocked.get("relationships") or []:
+        if (rel.get("type") == "BLOCKED_BY" and rel.get("direction") == "OUTGOING"
+                and (rel.get("job") or {}).get("id") == blocker["id"]):
+            ctx.out.print(f"{blocked['friendlyId']} is already blocked by {blocker['friendlyId']}.")
+            return EXIT_OK
+    plan = [f"{blocked['friendlyId']} ({blocked.get('title')}) BLOCKED_BY "
+            f"{blocker['friendlyId']} ({blocker.get('title')})"]
+    writes = [Write("POST", job_path(pid, blocked["friendlyId"]) + "/relationships",
+                    {"targetJobId": blocker["id"], "type": "BLOCKED_BY"})]
+    results = apply(ctx, writes, plan, needs_confirm=False)
+    if results is None:
+        return EXIT_OK
+    if ctx.json:
+        ctx.out.json(results[0])
+    else:
+        ctx.out.print(f"{blocked['friendlyId']} is now blocked by {blocker['friendlyId']}.")
+    return EXIT_OK
+
+
+# --------------------------------------------------------------------------- commands: link, note
+
+
+def same_url(a: Optional[str], b: Optional[str]) -> bool:
+    return (a or "").strip().rstrip("/") == (b or "").strip().rstrip("/")
+
+
+def merged_label(label: Optional[str]) -> str:
+    base = (label or "").strip() or "PR"
+    if base.endswith(MERGED_SUFFIX):
+        return base
+    suffix = f" {MERGED_SUFFIX}"
+    return base[:LINK_LABEL_MAX - len(suffix)] + suffix
+
+
+def cmd_link_add(ctx: Ctx, args) -> int:
+    project, job = find_job(ctx, args.job, args.project)
+    pid = project["friendlyId"]
+    if len(args.label or "") > LINK_LABEL_MAX:
+        raise CliError(f"label is longer than {LINK_LABEL_MAX} characters")
+    for link in job.get("links") or []:
+        if same_url(link.get("url"), args.url):
+            ctx.out.print(f"{job['friendlyId']} already links {args.url} ({link.get('label')}).")
+            return EXIT_OK
+    body = {"url": args.url, "label": args.label}
+    writes = [Write("POST", job_path(pid, job["friendlyId"]) + "/links", body)]
+    results = apply(ctx, writes, [f"Add link to {job['friendlyId']}: {args.label}  {args.url}"], False)
+    if results is None:
+        return EXIT_OK
+    if ctx.json:
+        ctx.out.json(results[0])
+    else:
+        ctx.out.print(f"Linked {args.url} to {job['friendlyId']} as {args.label!r}.")
+    return EXIT_OK
+
+
+def cmd_link_merged(ctx: Ctx, args) -> int:
+    project, job = find_job(ctx, args.job, args.project)
+    pid = project["friendlyId"]
+    link = next((lk for lk in job.get("links") or [] if same_url(lk.get("url"), args.url)), None)
+    if link is None:
+        raise CliError(f"{job['friendlyId']} has no link to {args.url}")
+    label = merged_label(link.get("label"))
+    if label == link.get("label"):
+        ctx.out.print(f"{job['friendlyId']}: link is already labelled {label!r}.")
+        return EXIT_OK
+    writes = [Write("PUT", job_path(pid, job["friendlyId"]) + f"/links/{quote(link['id'])}",
+                    {"url": link["url"], "label": label})]
+    results = apply(ctx, writes, [f"Relabel {link['url']} on {job['friendlyId']}: "
+                                  f"{link.get('label')!r} -> {label!r}"], False)
+    if results is None:
+        return EXIT_OK
+    if ctx.json:
+        ctx.out.json(results[0])
+    else:
+        ctx.out.print(f"{job['friendlyId']}: link relabelled {label!r}.")
+    return EXIT_OK
+
+
+def cmd_note_add(ctx: Ctx, args) -> int:
+    content = read_text(args.file) if args.file else args.text
+    if not content or not content.strip():
+        raise CliError("note is empty")
+    project, job = find_job(ctx, args.job, args.project)
+    pid = project["friendlyId"]
+    plan = [f"Add note to {job['friendlyId']} ({pid}), notes are immutable:"]
+    plan += [f"| {line}" for line in content.rstrip().splitlines()]
+    writes = [Write("POST", job_path(pid, job["friendlyId"]) + "/notes", {"content": content})]
+    results = apply(ctx, writes, plan, needs_confirm=True)
+    if results is None:
+        return finish(ctx, results, True)
+    if ctx.json:
+        ctx.out.json(results[0])
+    else:
+        ctx.out.print(f"Note added to {job['friendlyId']}.")
+    return EXIT_OK
+
+
+# --------------------------------------------------------------------------- commands: template, project, milestone
+
+
+def cmd_template_list(ctx: Ctx, args) -> int:
+    templates = list_templates(ctx, args.project)
+    if ctx.json:
+        ctx.out.json(templates)
+        return EXIT_OK
+    for t in templates:
+        ctx.out.print(f"{t.get('friendlyId', ''):<8} {t.get('scope', ''):<8} {t.get('name')}")
+    return EXIT_OK
+
+
+def cmd_template_show(ctx: Ctx, args) -> int:
+    t = find_template(list_templates(ctx, args.project), args.name, args.project)
+    if ctx.json:
+        ctx.out.json(t)
+        return EXIT_OK
+    ctx.out.print(f"{t.get('friendlyId')}  {t.get('name')}  ({t.get('scope')})")
+    ctx.out.print(f"Title prefix: {t.get('title') or '-'}")
+    ctx.out.print(f"Priority:     {t.get('priority') or '-'}")
+    ctx.out.print(f"Type:         {t.get('defaultTypeName') or '-'}")
+    ctx.out.print(f"Assignee:     {t.get('assigneeMode')}{' ' + t['assigneeName'] if t.get('assigneeName') else ''}")
+    if t.get("milestoneName"):
+        ctx.out.print(f"Milestone:    {t.get('milestoneName')}")
+    if t.get("deadlineOffsetDays") is not None:
+        ctx.out.print(f"Deadline:     +{t.get('deadlineOffsetDays')} days")
+    ctx.out.print("")
+    ctx.out.print((t.get("description") or "(no description)").rstrip())
+    return EXIT_OK
+
+
+def cmd_project_list(ctx: Ctx, args) -> int:
+    projects = list_projects(ctx)
+    if not args.all:
+        projects = [p for p in projects if p.get("status") == "ACTIVE"]
+    if ctx.json:
+        ctx.out.json(projects)
+        return EXIT_OK
+    for p in projects:
+        ctx.out.print(f"{p.get('friendlyId', ''):<9} {p.get('status', ''):<10} {p.get('name')}")
+    return EXIT_OK
+
+
+def cmd_project_create(ctx: Ctx, args) -> int:
+    body: Dict[str, Any] = {"name": args.name}
+    if args.description_file:
+        body["description"] = read_text(args.description_file)
+    plan = [f"Create project {args.name!r}",
+            f"description: {describe_value('description', body.get('description'))}"]
+    results = apply(ctx, [Write("POST", "/api/projects", body)], plan, needs_confirm=True)
+    if results is None:
+        return finish(ctx, results, True)
+    if ctx.json:
+        ctx.out.json(results[0])
+    else:
+        ctx.out.print(f"Created {results[0].get('friendlyId')}  {results[0].get('name')}")
+    return EXIT_OK
+
+
+def cmd_milestone_list(ctx: Ctx, args) -> int:
+    milestones = ctx.api.get(f"/api/projects/{quote(args.project)}/milestones") or []
+    if ctx.json:
+        ctx.out.json(milestones)
+        return EXIT_OK
+    for m in milestones:
+        ctx.out.print(f"{m.get('friendlyId', ''):<9} {short_date(m.get('deadline')):<11} {m.get('name')}")
+    return EXIT_OK
+
+
+def cmd_milestone_create(ctx: Ctx, args) -> int:
+    body: Dict[str, Any] = {"name": args.name}
+    if args.description is not None:
+        body["description"] = args.description
+    if args.deadline is not None:
+        body["deadline"] = parse_date(args.deadline)
+    plan = [f"Create milestone {args.name!r} in {args.project}"]
+    if body.get("deadline"):
+        plan.append(f"deadline: {body['deadline']}")
+    writes = [Write("POST", f"/api/projects/{quote(args.project)}/milestones", body)]
+    results = apply(ctx, writes, plan, needs_confirm=True)
+    if results is None:
+        return finish(ctx, results, True)
+    if ctx.json:
+        ctx.out.json(results[0])
+    else:
+        ctx.out.print(f"Created {results[0].get('friendlyId')}  {results[0].get('name')}")
+    return EXIT_OK
+
+
+# --------------------------------------------------------------------------- argument parser
+
+
+def build_parser() -> argparse.ArgumentParser:
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--json", action="store_true", help="machine-readable JSON output")
+    common.add_argument("--yes", action="store_true", help="apply a change that needs confirmation")
+    common.add_argument("--dry-run", action="store_true", help="print the requests a write would send; send nothing")
+
+    def project_opt(p):
+        p.add_argument("--project", type=friendly("PRJ"),
+                       help="the job's project (skips searching every project)")
+
+    parser = argparse.ArgumentParser(
+        prog="opsclear", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    groups = parser.add_subparsers(dest="group", metavar="<command>", required=True)
+
+    def group(name, help_text):
+        g = groups.add_parser(name, help=help_text)
+        return g.add_subparsers(dest="action", metavar="<action>", required=True)
+
+    def cmd(sub, name, func, help_text):
+        p = sub.add_parser(name, parents=[common], help=help_text, description=help_text)
+        p.set_defaults(func=func)
+        return p
+
+    jobs = group("job", "read and change jobs")
+    p = cmd(jobs, "get", cmd_job_get, "show a job with its project, links and relationships")
+    p.add_argument("job", type=friendly("JOB"))
+    project_opt(p)
+
+    p = cmd(jobs, "list", cmd_job_list, "list a project's jobs (open ones by default)")
+    p.add_argument("project", type=friendly("PRJ"))
+    p.add_argument("--milestone", type=friendly("MIL"))
+    p.add_argument("--status", type=choice(STATUSES + ("ALL", "OPEN")), default="OPEN",
+                   help="OPEN (default, everything but COMPLETED), ALL, NEW, IN_PROGRESS, BLOCKED or COMPLETED")
+
+    p = cmd(jobs, "create", cmd_job_create, "create a job from a template (needs --yes)")
+    p.add_argument("project", type=friendly("PRJ"))
+    p.add_argument("--template", required=True, help="template name or TPL-ID (project or org template)")
+    p.add_argument("--title", required=True, help="the template's prefix (e.g. 'Backend:') is added if missing")
+    p.add_argument("--description-file", help="markdown following the template's sections ('-' for stdin)")
+    p.add_argument("--milestone", type=friendly("MIL"))
+    p.add_argument("--deadline", type=deadline_arg, help="YYYY-MM-DD")
+    p.add_argument("--assignee", help="project member's email or name")
+    p.add_argument("--priority", type=choice(PRIORITIES), help="overrides the template's priority")
+    p.add_argument("--client")
+
+    p = cmd(jobs, "update", cmd_job_update,
+            "change job fields, keeping all others (a deadline change needs --yes)")
+    p.add_argument("job", type=friendly("JOB"))
+    project_opt(p)
+    p.add_argument("--title")
+    p.add_argument("--description-file", help="'-' for stdin")
+    p.add_argument("--deadline", type=deadline_arg, help="YYYY-MM-DD, or 'none' to clear")
+    p.add_argument("--milestone", help="MIL-ID, or 'none' to clear")
+    p.add_argument("--assignee", help="project member's email or name, or 'none'")
+    p.add_argument("--priority", type=choice(PRIORITIES))
+    p.add_argument("--client", help="'' to clear")
+
+    p = cmd(jobs, "status", cmd_job_status,
+            "change a job's status (anything but IN_PROGRESS needs --yes)")
+    p.add_argument("job", type=friendly("JOB"))
+    p.add_argument("status", type=choice(STATUSES))
+    p.add_argument("--reason", help="required for BLOCKED")
+    project_opt(p)
+
+    p = cmd(jobs, "block", cmd_job_block, "mark JOB as blocked by another job in the same project")
+    p.add_argument("job", type=friendly("JOB"), help="the job that is blocked")
+    p.add_argument("--by", required=True, type=friendly("JOB"), help="the job that blocks it")
+    project_opt(p)
+
+    links = group("link", "job links (PRs etc.)")
+    p = cmd(links, "add", cmd_link_add, "add a link to a job")
+    p.add_argument("job", type=friendly("JOB"))
+    p.add_argument("url")
+    p.add_argument("--label", required=True, help='e.g. "PR #480"')
+    project_opt(p)
+
+    p = cmd(links, "merged", cmd_link_merged, 'relabel a job\'s link "<label> (merged)"')
+    p.add_argument("job", type=friendly("JOB"))
+    p.add_argument("url")
+    project_opt(p)
+
+    notes = group("note", "job notes (immutable)")
+    p = cmd(notes, "add", cmd_note_add, "add a note to a job (needs --yes)")
+    p.add_argument("job", type=friendly("JOB"))
+    src = p.add_mutually_exclusive_group(required=True)
+    src.add_argument("--file", help="markdown file ('-' for stdin)")
+    src.add_argument("--text")
+    project_opt(p)
+
+    templates = group("template", "job templates (project and org level)")
+    p = cmd(templates, "list", cmd_template_list, "list templates usable in a project")
+    p.add_argument("project", type=friendly("PRJ"))
+    p = cmd(templates, "show", cmd_template_show, "show a template's defaults and description skeleton")
+    p.add_argument("project", type=friendly("PRJ"))
+    p.add_argument("name", help="template name or TPL-ID")
+
+    projects = group("project", "projects")
+    p = cmd(projects, "list", cmd_project_list, "list active projects")
+    p.add_argument("--all", action="store_true", help="include completed and archived projects")
+    p = cmd(projects, "create", cmd_project_create, "create a project (needs --yes)")
+    p.add_argument("--name", required=True)
+    p.add_argument("--description-file", help="'-' for stdin")
+
+    milestones = group("milestone", "milestones")
+    p = cmd(milestones, "list", cmd_milestone_list, "list a project's milestones")
+    p.add_argument("project", type=friendly("PRJ"))
+    p = cmd(milestones, "create", cmd_milestone_create, "create a milestone (needs --yes)")
+    p.add_argument("project", type=friendly("PRJ"))
+    p.add_argument("--name", required=True)
+    p.add_argument("--description")
+    p.add_argument("--deadline", type=date_arg, help="YYYY-MM-DD")
+
+    return parser
+
+
+# --------------------------------------------------------------------------- main
+
+
+def main(argv: Optional[List[str]] = None, env: Optional[Dict[str, str]] = None,
+         transport: Transport = urllib_transport, stdout=None, stderr=None,
+         today: Optional[date] = None) -> int:
+    env = os.environ if env is None else env
+    key = (env.get("OPSCLEAR_API_KEY") or "").strip()
+    out = Output(key, stdout, stderr)
+    parser = build_parser()
+    try:
+        with contextlib.redirect_stdout(out.stdout), contextlib.redirect_stderr(out.stderr):
+            args = parser.parse_args(argv)
+    except SystemExit as e:
+        return int(e.code or 0)
+    if not key:
+        out.warn("error: OPSCLEAR_API_KEY is not set. Create a key in OpsClear (profile > API keys) "
+                 "and export it, e.g. in ~/.zshrc.")
+        return EXIT_ERROR
+    api = Api(env.get("OPSCLEAR_URL") or DEFAULT_URL, key, transport)
+    ctx = Ctx(api=api, out=out, json=args.json, yes=args.yes, dry_run=args.dry_run, today=today or date.today())
+    try:
+        return args.func(ctx, args)
+    except argparse.ArgumentTypeError as e:
+        out.warn(f"error: {e}")
+        return EXIT_USAGE
+    except CliError as e:
+        out.warn(f"error: {e}")
+        return EXIT_ERROR
+
+
+if __name__ == "__main__":
+    sys.exit(main())
