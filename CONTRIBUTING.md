@@ -27,7 +27,9 @@ This file covers commit/PR/branch mechanics only.
 
 ### Rules
 
-- **Subject line:** max 50 chars, imperative mood ("add" not "added")
+- **Subject line:** imperative mood ("add" not "added"), ideally under 72 characters including
+  the job reference
+- **Job reference:** end the subject with the OpsClear job ID when there is one: `(JOB-123)`
 - **Blank line** after subject
 - **Each `-` line:** one short sentence, one change
 - **One commit = one logical change** (bullets explain the parts)
@@ -41,100 +43,58 @@ This file covers commit/PR/branch mechanics only.
 | `docs` | Documentation |
 | `refactor` | Code restructure (no behavior change) |
 | `test` | Tests only |
-| `chore` | Config, deps, build |
+| `chore` | Config, deps, build, CI, tooling |
 
 ### Scope
 
-Use the module or area affected: `auth`, `jobs`, `projects`, `docker`, `adr`, etc.
+Use a scope from the fixed list in [WORKFLOW.md](docs/dev/process/WORKFLOW.md#commit-format). Scope is
+the layer or area, never the feature name.
 
 ### Examples
 
 ```
-feat(auth): add user registration endpoint
+feat(backend): add org-level template CRUD (JOB-109)
 
-- Create User entity with email and password fields
-- Add BCrypt password hashing in AuthService
-- Create POST /auth/register endpoint
-- Add validation for email format and password length
+- Add OrgTemplateController with list/create/update/delete
+- Add service-level org membership checks
+- Cover endpoints with integration tests
 ```
 
 ```
-fix(jobs): prevent invalid status transitions
+fix(frontend): keep job filters when switching projects (JOB-215)
 
-- Add status transition validation in JobService
-- Return 400 error for invalid transitions
-- Add unit test for transition rules
+- Store filters per project in the URL
+- Add regression test
 ```
 
 ```
-docs(adr): add authentication design decision
+docs(adr): add ADR-0054 for Claude Code agents and skills (JOB-293)
 
-- Create ADR-0002 for JWT authentication
-- Document token structure and expiration strategy
-- Add alternatives considered section
+- Document skills vs subagents split
+- Add permissions table and scripts/opsclear CLI design
 ```
 
 ```
-chore(docker): add PostgreSQL to docker-compose
+chore(deps): upgrade Testcontainers to 1.21.4 for Docker Engine 29 (JOB-310)
 
-- Configure postgres:16 with health check
-- Add persistent volume for data
-- Set default credentials for local dev
+- Override the Spring Boot BOM version
 ```
 
 ---
 
-## Branching Strategy
+## Branching
 
-### Branch Naming
+Branch naming is defined in [WORKFLOW.md](docs/dev/process/WORKFLOW.md#branch-naming)
+(`feature/JOB-123-…`, `fix/JOB-123-…`, `chore/…`).
 
-```
-<type>/<short-description>
-```
+**Everything goes through a PR**, including small docs fixes. Never push directly to `main`.
 
-Examples:
-- `feature/auth-jwt`
-- `feature/jobs-crud`
-- `fix/login-validation`
-- `docs/api-readme`
-
-### Workflow (GitHub Flow)
-
-```
-main (always deployable)
-  └── feature/1.1-auth-adr
-  └── feature/1.1-auth-user-entity
-  └── feature/1.1-auth-jwt
-  └── fix/login-validation
-```
-
-**Small, focused PRs** - one module can have multiple branches/PRs.
-
-1. Create branch from `main`
-2. Make focused changes (1-3 related tasks)
-3. Push and create PR
-4. Review (if team)
-5. Merge to `main` (squash for feature branches)
-6. Delete branch after merge
-
-### Branch Naming
-
-Pattern: `feature/<phase>.<module>-<description>`
-
-Examples for Module 1.1 (Auth):
-- `feature/1.1-auth-adr` - ADR documentation only
-- `feature/1.1-auth-user-entity` - User entity + migration
-- `feature/1.1-auth-jwt` - JWT service + filter
-- `feature/1.1-auth-endpoints` - Controller + tests
-
-Other examples:
-- `feature/2.1-jobs-entity` - Job entity + migration
-- `fix/auth-token-expiry` - Bug fix
-
-### When to Branch
-
-- **Direct to main:** Small docs fixes, typos, config tweaks
-- **Feature branch:** Any module work (always)
+1. Create a branch from the latest `main`
+2. Make the changes for one job
+3. Push and open a PR
+4. Review
+5. Squash-merge to `main` (this deploys automatically)
+6. Delete the branch
 
 ---
 
@@ -142,7 +102,7 @@ Other examples:
 
 ### Title
 
-Same format as commit messages: `<type>(<scope>): <short summary>`
+Same as the commit subject: `<type>(<scope>): <short summary> (JOB-123)`
 
 ### Body
 
@@ -152,19 +112,22 @@ Same format as commit messages: `<type>(<scope>): <short summary>`
 - <change 1>
 - <change 2>
 
+## References
+- Job: JOB-123 (PRJ-012 / MIL-034)
+- ADR: ADR-0052 (if any)
+
 ## Test plan
 
 - [ ] <manual or automated check>
-
-Closes #<issue-number>
 ```
 
 ### Rules
 
-- **Always include `Closes #<issue>`** to auto-close the GitHub issue on merge
-- **No tool/AI attribution** in PR descriptions
-- **PR title = main commit message** for single-commit PRs
-- **Tests ship with the PR** — every implementation PR must include its tests; there are no separate "write tests" PRs
+- **Reference the OpsClear job** (and the ADR, for feature work). Link the PR to the job in OpsClear.
+- **No tool/AI attribution** in commits or PR descriptions
+- **PR title = commit subject** for single-commit PRs
+- **Tests ship with the PR**: every implementation PR includes its tests; there are no separate
+  "write tests" PRs
 
 ---
 
