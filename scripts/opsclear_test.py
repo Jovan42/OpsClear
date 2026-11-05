@@ -136,6 +136,18 @@ class TemplateFillingTest(unittest.TestCase):
                                                 description=None, today=TODAY)
         self.assertEqual(fields["title"], "backend: org CRUD")
 
+    def test_numbered_layer_titles_keep_their_prefix(self):
+        fields, _ = opsclear.fill_from_template(self.TEMPLATE, title="Backend 2: project stats endpoint",
+                                                description=None, today=TODAY)
+        self.assertEqual(fields["title"], "Backend 2: project stats endpoint")
+        fields, _ = opsclear.fill_from_template(self.TEMPLATE, title="Backend2 stats", description=None,
+                                                today=TODAY)
+        self.assertEqual(fields["title"], "Backend: Backend2 stats")
+        tech_debt = dict(self.TEMPLATE, title="Tech debt: ")
+        fields, _ = opsclear.fill_from_template(tech_debt, title="Tech debt 2: split service",
+                                                description=None, today=TODAY)
+        self.assertEqual(fields["title"], "Tech debt 2: split service")
+
     def test_defaults_come_from_template(self):
         tpl = dict(self.TEMPLATE, assigneeMode="FIXED", assigneeId="u9", deadlineOffsetDays=3, client="ACME")
         fields, _ = opsclear.fill_from_template(tpl, title="x", description=None, today=TODAY)
@@ -366,6 +378,16 @@ class LinkAndNoteTest(unittest.TestCase):
         code, out, _, fake = run(["link", "add", "JOB-1", self.URL_PR, "--label", "PR #480"], job_routes(j))
         self.assertEqual(code, opsclear.EXIT_OK)
         self.assertIn("already links", out)
+        self.assertEqual(fake.writes(), [])
+
+    def test_note_list(self):
+        routes = job_routes(job("JOB-1"))
+        routes[("GET", "/api/projects/PRJ-013/jobs/JOB-1/notes")] = (200, [
+            {"id": "n1", "content": "Promoted to PRJ-013", "createdAt": "2026-11-05T10:00:00Z"}])
+        code, out, _, fake = run(["note", "list", "JOB-1"], routes)
+        self.assertEqual(code, opsclear.EXIT_OK)
+        self.assertIn("--- 2026-11-05", out)
+        self.assertIn("Promoted to PRJ-013", out)
         self.assertEqual(fake.writes(), [])
 
     def test_note_needs_yes(self):

@@ -5,9 +5,9 @@ ADR-0054 (MIL-038) set up Claude Code to run the dev process in [WORKFLOW.md](WO
 CLI** for all OpsClear API work. This doc explains what each one does, what they're allowed to do,
 and how to set up a machine to use them.
 
-> **Status (2026-11-05):** the CLI and `.claude/settings.json` exist. Skills and agents are added by
-> MIL-038 Chores 3–5 (JOB-305 to JOB-307). Until then, the tables below describe the plan. Keep them
-> in sync when those land.
+> **Status (2026-11-05):** the CLI, `.claude/settings.json` and the interactive skills exist.
+> `/implement` and the agents are added by MIL-038 Chores 4–5 (JOB-306, JOB-307). Until then, the
+> agents table describes the plan. Keep it in sync when those land.
 
 **Process rules live in the other process docs, not here.** Skills and agents link to
 [WORKFLOW.md](WORKFLOW.md), [JOBS.md](JOBS.md), [BACKEND.md](BACKEND.md), [FRONTEND.md](FRONTEND.md)
@@ -18,7 +18,8 @@ changes every agent's behaviour, so keep those docs correct.
 
 ## Skills (interactive, main session)
 
-Skills run in your Claude Code session, so they can ask you questions. Invoke them as `/<name>`.
+Skills run in your Claude Code session, so they can ask you questions. Invoke them as `/<name>`;
+Claude doesn't start them on its own. They live in `.claude/skills/<name>/SKILL.md`.
 
 | Skill | Use it when | What it does |
 |---|---|---|
@@ -137,6 +138,7 @@ scripts/opsclear job status JOB-123 IN_PROGRESS             # BLOCKED needs --re
 scripts/opsclear job block JOB-124 --by JOB-123             # JOB-124 is blocked by JOB-123
 scripts/opsclear link add JOB-123 https://github.com/Jovan42/OpsClear/pull/480 --label "PR #480"
 scripts/opsclear link merged JOB-123 https://github.com/Jovan42/OpsClear/pull/480
+scripts/opsclear note list JOB-123
 scripts/opsclear note add JOB-123 --file note.md
 scripts/opsclear template list PRJ-002
 scripts/opsclear template show PRJ-002 "Future Consideration"
@@ -151,6 +153,9 @@ scripts/opsclear milestone create PRJ-013 --name "…" --deadline 2026-12-01
   plan and exit 3.
 - `--dry-run` on any command prints the requests a write would send and sends nothing. `--json` gives
   machine-readable output.
+- `job create --template` adds the template's title prefix unless the title already has it, numbered
+  or not (`Backend 2: …` stays as is).
+- `job status` can't go NEW → COMPLETED (the API forbids it); move to IN_PROGRESS first.
 - `job get` without `--project` searches your projects (active first). Pass `--project PRJ-013` to
   skip the search.
 - Exit codes: 0 ok, 1 error, 2 usage error, 3 not applied (re-run with `--yes`).

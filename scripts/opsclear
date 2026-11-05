@@ -401,18 +401,30 @@ def template_headings(text: Optional[str]) -> List[str]:
     return [line.strip() for line in (text or "").splitlines() if line.lstrip().startswith("#")]
 
 
+def has_title_prefix(title: str, prefix: str) -> bool:
+    """True if `title` starts with the template prefix, allowing a job number: for "Backend:",
+    both "Backend: x" and "Backend 2: x" count (JOBS.md's `<Layer> N:` titles)."""
+    if title.lower().startswith(prefix.lower()):
+        return True
+    if prefix.endswith(":"):
+        layer = re.escape(prefix[:-1].strip())
+        return re.match(rf"{layer} \d+:", title, re.IGNORECASE) is not None
+    return False
+
+
 def fill_from_template(template: Dict[str, Any], *, title: str, description: Optional[str],
                        today: date) -> Tuple[Dict[str, Any], List[str]]:
     """Build job fields from a template, as the New Job dialog does. Returns (fields, warnings).
 
-    - title: the template's title is a prefix ("Backend:"); it's added unless the title has it
+    - title: the template's title is a prefix ("Backend:"); it's added unless the title already has
+      it, numbered or not ("Backend: x" and "Backend 2: x" both keep their title)
     - description: the given text, else the template's skeleton; warns about missing template headings
     - priority, client, milestone, deadline offset and FIXED assignee come from the template
     """
     warnings: List[str] = []
     prefix = (template.get("title") or "").strip()
     full_title = title.strip()
-    if prefix and not full_title.lower().startswith(prefix.lower()):
+    if prefix and not has_title_prefix(full_title, prefix):
         full_title = f"{prefix} {full_title}"
 
     if description is None:
@@ -759,6 +771,20 @@ def cmd_link_merged(ctx: Ctx, args) -> int:
     return EXIT_OK
 
 
+def cmd_note_list(ctx: Ctx, args) -> int:
+    project, job = find_job(ctx, args.job, args.project)
+    notes = ctx.api.get(job_path(project["friendlyId"], job["friendlyId"]) + "/notes") or []
+    if ctx.json:
+        ctx.out.json(notes)
+    elif not notes:
+        ctx.out.print(f"{job['friendlyId']} has no notes.")
+    else:
+        for n in notes:
+            ctx.out.print(f"--- {short_date(n.get('createdAt'))}")
+            ctx.out.print((n.get("content") or "").rstrip())
+    return EXIT_OK
+
+
 def cmd_note_add(ctx: Ctx, args) -> int:
     content = read_text(args.file) if args.file else args.text
     if not content or not content.strip():
@@ -953,6 +979,10 @@ def build_parser() -> argparse.ArgumentParser:
     project_opt(p)
 
     notes = group("note", "job notes (immutable)")
+    p = cmd(notes, "list", cmd_note_list, "show a job's notes")
+    p.add_argument("job", type=friendly("JOB"))
+    project_opt(p)
+
     p = cmd(notes, "add", cmd_note_add, "add a note to a job (needs --yes)")
     p.add_argument("job", type=friendly("JOB"))
     src = p.add_mutually_exclusive_group(required=True)
