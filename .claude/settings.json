@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew checkstyleMain:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx cypress run:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(scripts/opsclear job get:*)",
+      "Bash(scripts/opsclear job list:*)",
+      "Bash(scripts/opsclear template show:*)",
+      "Bash(scripts/opsclear link add:*)",
+      "Bash(scripts/opsclear link merged:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin HEAD:main:*)",
+      "Bash(git push origin --delete:*)",
+      "Bash(git push --delete:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(git reset --hard origin/main:*)"
+    ]
+  }
+}

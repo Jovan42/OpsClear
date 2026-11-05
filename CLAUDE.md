@@ -56,6 +56,7 @@ OpsClear/
 - `ROADMAP.md` - Phases, modules, and tasks
 - `CONTRIBUTING.md` - **Commit messages, branching, coding standards**
 - `docs/dev/decisions/` - Architecture Decision Records (ADRs)
+- `docs/dev/process/AGENTS.md` - Claude Code skills, agents, permissions, `scripts/opsclear` CLI and machine setup
 
 ## Domain Model (Core Entities)
 

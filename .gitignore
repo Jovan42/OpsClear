@@ -31,3 +31,7 @@ Thumbs.db
 IDEAS.txt
 NOTES.txt
 TODO.txt
+
+# Claude Code: personal overrides and agent worktrees (shared settings.json is checked in)
+.claude/settings.local.json
+.claude/worktrees/
