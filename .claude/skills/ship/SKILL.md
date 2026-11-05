@@ -26,7 +26,7 @@ the checks to run.
    (and Vitest/Cypress per FRONTEND.md/E2E.md), `python3 scripts/opsclear_test.py` for `scripts/`.
    If a check fails, stop and report it; don't ship.
 5. **Commit** as CONTRIBUTING.md says: `<type>(<scope>): <summary> (<JOB>)`, scope from WORKFLOW.md's
-   fixed list, `-` bullets. No AI attribution or co-author trailers.
+   fixed list, `-` bullets. No AI attribution: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
 6. **Push** with `git push -u origin <branch>`. Never push to `main` and never force-push.
 7. **Open the PR** with `gh pr create`: title = commit subject. The body uses CONTRIBUTING.md's
    template: Summary, References (job and ADR), and a Test plan listing what you actually ran.

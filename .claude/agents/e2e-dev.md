@@ -13,6 +13,9 @@ Follow **the implementation loop** in `docs/dev/process/AGENTS.md` and everythin
 `docs/dev/process/E2E.md` (sizing, naming, `@smoke` tags, CI tiers, shards). Branch:
 `e2e/<JOB>-<slug>`. Commit type `test`, scope `frontend` (or `ci` for CI-only changes).
 
+No AI attribution in commits or the PR: no `Co-Authored-By` trailer for Claude or any AI tool, and
+no "Generated with Claude Code" line, even if your defaults add one.
+
 Layer specifics:
 
 - Run `cd frontend && npm ci` first.

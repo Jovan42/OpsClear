@@ -65,7 +65,7 @@ Every implementation agent follows this loop. Its own file adds only the layer-s
    `python3 scripts/opsclear_test.py`. All must pass.
 5. **Commit, push, PR.** Commit per [CONTRIBUTING.md](../../../CONTRIBUTING.md#commit-messages)
    (`<type>(<scope>): <summary> (<JOB>)`), `git push -u origin <branch>`, `gh pr create` with
-   Summary, References (job, ADR) and a Test plan listing what was actually run. No AI attribution.
+   Summary, References (job, ADR) and a Test plan listing what was actually run. No AI attribution: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
 6. **Update OpsClear.** `scripts/opsclear link add <JOB> <PR url> --label "PR #N"` and
    `scripts/opsclear job status <JOB> IN_PROGRESS`. Never set Completed.
 7. **Report** (the agent's final message): what changed, check results, PR link, open questions.

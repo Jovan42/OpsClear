@@ -97,7 +97,8 @@ Follow [docs/dev/process/WORKFLOW.md](docs/dev/process/WORKFLOW.md) (single sour
 - Branches: `feature/JOB-123-…`, `fix/JOB-123-…`, `e2e/JOB-123-…`, `chore/JOB-123-…`
 - Commits: `<type>(<scope>): <summary> (JOB-123)` with `-` bullet body. Scope from the fixed list
   in WORKFLOW.md (`backend` `frontend` `db` `auth` `config` `ci` `docs` `deps` `infra` `adr`).
-- No AI/tool attribution in commits or PRs.
+- No AI/tool attribution in commits or PRs: no `Co-Authored-By: Claude …` trailer, no
+  "Generated with Claude Code" line.
 
 ## Commands
 

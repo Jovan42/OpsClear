@@ -39,7 +39,7 @@ For section layout and depth, follow the most recent ADRs (e.g. 0052–0054).
 7. **Ship.** From the latest `main`, on branch `feature/<JOB>-adr-<slug>`:
    - commit `docs(adr): add ADR-NNNN for <title> (<JOB>)` with `-` bullets (CONTRIBUTING.md)
    - `git push -u origin <branch>`, then `gh pr create` with Summary, References (job, source idea)
-     and a short Test plan (e.g. facts checked against code). No AI attribution.
+     and a short Test plan (e.g. facts checked against code). No AI attribution: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
    - `scripts/opsclear link add <JOB> <PR url> --label "PR #N: ADR-NNNN"`
    - `scripts/opsclear job status <JOB> IN_PROGRESS`
 8. **Report** the PR link. After it merges: `/finish-adr <JOB>`, then `/break-down <JOB>`.
