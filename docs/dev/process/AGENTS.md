@@ -5,8 +5,8 @@ ADR-0054 (MIL-038) set up Claude Code to run the dev process in [WORKFLOW.md](WO
 CLI** for all OpsClear API work. This doc explains what each one does, what they're allowed to do,
 and how to set up a machine to use them.
 
-> **Status (2026-11-05):** the CLI, `.claude/settings.json`, the interactive skills, `/implement`
-> and the implementation agents exist. `pr-reviewer` is added by Chore 5 (JOB-307).
+> **Status (2026-11-05):** the CLI, `.claude/settings.json`, the interactive skills, `/implement`,
+> the implementation agents and `pr-reviewer` exist.
 
 **Process rules live in the other process docs, not here.** Skills and agents link to
 [WORKFLOW.md](WORKFLOW.md), [JOBS.md](JOBS.md), [BACKEND.md](BACKEND.md), [FRONTEND.md](FRONTEND.md)

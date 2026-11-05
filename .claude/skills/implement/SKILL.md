@@ -42,7 +42,7 @@ Hand implementation jobs to the per-layer agents in `.claude/agents/`
    `Implement <JOB> (<PRJ>, <milestone>). Title: <title>. Follow your instructions and the implementation loop in docs/dev/process/AGENTS.md.`
    Add anything the user said about the job.
 6. **Review.** When an agent opens a PR, and `.claude/agents/pr-reviewer.md` exists, run
-   `pr-reviewer` on it (Chore 5, JOB-307). Until then, skip this step.
+   `pr-reviewer` on it. Otherwise skip this step.
 7. **Report** a table: job, agent, outcome (PR link, or stopped with the reason), check results,
    open questions from the agent. Then list what to do next (review/merge PRs; jobs that were
    waiting).
