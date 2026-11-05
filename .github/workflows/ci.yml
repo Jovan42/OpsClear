@@ -324,21 +324,13 @@ jobs:
         run: npm run build
 
   # Unit tests for the dev-process CLI (scripts/opsclear, ADR-0054). No network.
-  # 3.9 is the macOS system Python (the minimum the CLI supports); 3.x catches newer-version breakage.
-  # setup-python has no 3.9 build for ubuntu-latest (26.04), so that leg is pinned to 24.04.
+  # Python 3.9 = the macOS system Python, the oldest version the CLI supports.
+  # setup-python has no 3.9 build for ubuntu-latest (26.04), so this job is pinned to 24.04.
   scripts:
-    name: Scripts (Python ${{ matrix.python }})
+    name: Scripts
     needs: changes
     if: needs.changes.outputs.scripts == 'true'
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - python: '3.9'
-            os: ubuntu-24.04
-          - python: '3.x'
-            os: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -346,7 +338,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: ${{ matrix.python }}
+          python-version: '3.9'
 
       - name: opsclear CLI tests
         run: python scripts/opsclear_test.py
