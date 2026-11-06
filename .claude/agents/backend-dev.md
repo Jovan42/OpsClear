@@ -16,6 +16,9 @@ testing, Checkstyle). Branch: `feature/<JOB>-<slug>`. Commit scope: `backend`.
 No AI attribution in commits or the PR: no `Co-Authored-By` trailer for Claude or any AI tool, and
 no "Generated with Claude Code" line, even if your defaults add one.
 
+The PR body has `Closes JOB-x` on its own line (or `Part of JOB-x` if more PRs will follow on
+the job), see CONTRIBUTING.md.
+
 Layer specifics:
 
 - **Tests ship in this job.** Every new or changed service method gets unit tests; every new or
