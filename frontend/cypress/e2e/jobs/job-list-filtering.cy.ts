@@ -528,4 +528,24 @@ describe('Job List & Filtering', () => {
       }),
     );
   });
+  it('a job due today is not shown as overdue; one due yesterday is (deadline covers its whole UTC day)', () => {
+    const email = uniqueEmail('deadline-today');
+    cy.createKeycloakUser(email, 'E2E', 'Tester');
+    createOrgWithSubscription(email, 'Deadline Today Corp', uniqueSlug());
+    createProjectAs(email, 'Deadline Today Project').then((projectId) => {
+      // Deadlines are stored as midnight UTC of the chosen date.
+      const todayUtc = new Date().toISOString().substring(0, 10);
+      const yesterdayUtc = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+      createJobAs(email, projectId, { title: 'Due today job', deadline: `${todayUtc}T00:00:00Z` });
+      createJobAs(email, projectId, { title: 'Due yesterday job', deadline: `${yesterdayUtc}T00:00:00Z` });
+
+      cy.loginAs(email);
+      // Default deadline format preference is ABSOLUTE.
+      cy.visit(`/projects/${projectId}/jobs`);
+      cy.contains('tbody tr', 'Due today job').find('td').eq(3).should('not.have.class', 'text-red-600');
+      cy.contains('tbody tr', 'Due yesterday job').find('td').eq(3).should('have.class', 'text-red-600');
+
+      cy.deleteKeycloakUser(email);
+    });
+  });
 });
