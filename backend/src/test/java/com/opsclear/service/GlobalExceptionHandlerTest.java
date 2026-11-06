@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,5 +51,16 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().error()).isEqualTo("Bad Request");
         assertThat(response.getBody().message()).isEqualTo("Malformed request body");
+    }
+
+    @Test
+    @DisplayName("handleTypeMismatch_shouldReturn400_namingTheParameter")
+    void handleTypeMismatch_shouldReturn400_namingTheParameter() {
+        ResponseEntity<ErrorResponse> response = handler.handleTypeMismatch(
+                new MethodArgumentTypeMismatchException("abc", Integer.class, "weeks", null, null));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().error()).isEqualTo("Bad Request");
+        assertThat(response.getBody().message()).isEqualTo("Invalid value for parameter 'weeks'");
     }
 }

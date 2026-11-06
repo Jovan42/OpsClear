@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -85,6 +86,14 @@ public class GlobalExceptionHandler {
         // generic 500 handler below despite being a client error.
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of("Bad Request", "Malformed request body"));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        // A query or path parameter that can't be converted to its declared type (e.g. ?weeks=abc
+        // or ?memberId=not-a-uuid) is a client error, not a 500.
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("Bad Request", "Invalid value for parameter '" + ex.getName() + "'"));
     }
 
     @ExceptionHandler(Exception.class)

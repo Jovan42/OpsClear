@@ -202,6 +202,7 @@ public final class ErrorMessages {
 
     public static final class Stats {
         public static final String INVALID_WEEKS = "weeks must be 4, 12 or 26";
+        public static final String INVALID_TIMEZONE = "tz must be a valid IANA time zone ID, e.g. Europe/Belgrade";
         public static final String MEMBER_FILTER_NOT_ALLOWED = "Members can only view their own stats";
 
         private Stats() {

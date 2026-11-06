@@ -1,6 +1,9 @@
 package com.opsclear.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.exception.BadRequestException;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobStatsRow;
@@ -24,6 +27,8 @@ import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.SubscriptionAddonRepository;
+import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import com.opsclear.service.StatsService;
 import org.jooq.DSLContext;
@@ -35,29 +40,43 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.JOB_STATUS_HISTORY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Velocity stats (ADR-0050) against a real Postgres: JobStatsRepository's CTE query and StatsService's
- * aggregation on seeded job_status_history. Service/repository level: the endpoint is a later job.
+ * aggregation on seeded job_status_history (service level, fixed clock), and the
+ * {@code GET /api/projects/{projectId}/stats} endpoint (MockMvc, mock JWT, history seeded relative to now).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@DisplayName("Velocity stats query and service")
+@DisplayName("Velocity stats query, service and endpoint")
 class StatsIntegrationTest {
 
     private static final ZoneId UTC = ZoneId.of("UTC");
@@ -68,7 +87,10 @@ class StatsIntegrationTest {
     private static final LocalDate WEEK_2 = LocalDate.parse("2026-10-19");
     private static final LocalDate WEEK_3 = LocalDate.parse("2026-10-26");
     private static final LocalDate WEEK_4 = LocalDate.parse("2026-11-02");
+    private static final String PROJECT_FRIENDLY_ID = "PRJ-001";
 
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
     @Autowired private StatsService statsService;
     @Autowired private JobStatsRepository jobStatsRepository;
     @Autowired private DSLContext dsl;
@@ -81,11 +103,15 @@ class StatsIntegrationTest {
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private OrgSubscriptionRepository subscriptionRepository;
     @Autowired private FriendlyIdRepository friendlyIdRepository;
+    @Autowired private SubscriptionAddonRepository addonRepository;
+    @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private UserRepository userRepository;
 
     private UUID ownerId;
     private UUID memberId;
     private UUID formerId;
+    private UUID outsiderId;
+    private UUID orgId;
     private UUID projectId;
 
     @BeforeEach
@@ -98,19 +124,40 @@ class StatsIntegrationTest {
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Olivia Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Mia Member").build());
         userRepository.save(UserModel.builder().id(formerId).email("former@example.com").name("Fred Former").build());
+        // In the org but not in the project.
+        outsiderId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(outsiderId).email("outsider@example.com").name("Otto Outsider")
+                .build());
 
         OrganisationModel org = organisationRepository.save(
                 OrganisationModel.builder().name("Stats Org").slug("STA").createdBy(ownerId).build());
-        organisationRepository.saveMember(org.getId(), ownerId, OrganisationRole.OWNER);
-        friendlyIdRepository.seedForOrg(org.getId());
+        orgId = org.getId();
+        organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.MEMBER);
+        organisationRepository.saveMember(orgId, outsiderId, OrganisationRole.MEMBER);
+        friendlyIdRepository.seedForOrg(orgId);
 
-        ProjectModel project = projectRepository.save(
-                ProjectModel.builder().name("Stats Project").ownerId(ownerId).organisationId(org.getId()).build());
+        ProjectModel project = projectRepository.save(ProjectModel.builder().name("Stats Project")
+                .friendlyId(PROJECT_FRIENDLY_ID).ownerId(ownerId).organisationId(orgId).build());
         projectId = project.getId();
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build());
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        subscribe(Set.of("DASHBOARD"));
+    }
+
+    // Real (webhook-confirmed) billing with the given add-ons, as RequiresAddonAspect requires.
+    private void subscribe(Set<String> addonKeys) {
+        subscriptionRepository.deleteAll();
+        Set<UUID> addonIds = addonRepository.findAll().stream()
+                .filter(a -> addonKeys.contains(a.getKey()))
+                .map(a -> a.getId())
+                .collect(Collectors.toSet());
+        UUID tierId = tierRepository.findAll().getFirst().getId();
+        subscriptionRepository.create(orgId, tierId, "MONTHLY", addonIds);
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
     }
 
     // Subscription and other integration tests clean only some tables in their own setUp, so leave the
@@ -405,5 +452,389 @@ class StatsIntegrationTest {
     void stats_shouldThrowForbidden_forNonMember() {
         assertThatThrownBy(() -> statsService.getProjectStats(projectId, formerId, null, 4, UTC, NOW))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    // =====================================================================================================
+    // Endpoint: GET /api/projects/{projectId}/stats
+    // The endpoint uses the real clock, so history is seeded relative to now. base() is two weeks back:
+    // inside the 4-, 12- and 26-week ranges whatever the weekday, with room for a few days of history after it.
+    // =====================================================================================================
+
+    private static final Duration HOUR = Duration.ofHours(1);
+    private static final Duration DAY = Duration.ofDays(1);
+
+    private static Instant base() {
+        return Instant.now().truncatedTo(ChronoUnit.SECONDS).minus(14, ChronoUnit.DAYS);
+    }
+
+    private static String ts(Instant instant) {
+        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC).toString();
+    }
+
+    private static String mondayOf(Instant instant, ZoneId zone) {
+        return instant.atZone(zone).toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString();
+    }
+
+    // Mock JWT carrying the seeded user's email and name, so UserSyncFilter keeps them unchanged.
+    private RequestPostProcessor as(UUID userId) {
+        UserModel user = userRepository.findById(userId).orElseThrow();
+        return jwt().jwt(j -> j.subject(userId.toString())
+                .claim("email", user.getEmail())
+                .claim("name", user.getName()));
+    }
+
+    private JsonNode getStats(String url, UUID callerId) throws Exception {
+        String body = mockMvc.perform(get(url).with(as(callerId)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(body);
+    }
+
+    private static int completedInBuckets(JsonNode response) {
+        int sum = 0;
+        for (JsonNode bucket : response.get("buckets")) {
+            sum += bucket.get("completedCount").asInt();
+        }
+        return sum;
+    }
+
+    private static JsonNode bucketFor(JsonNode response, String weekStart) {
+        for (JsonNode bucket : response.get("buckets")) {
+            if (bucket.get("weekStart").asText().equals(weekStart)) {
+                return bucket;
+            }
+        }
+        throw new AssertionError("No bucket for week " + weekStart);
+    }
+
+    private static List<String> memberNames(JsonNode response) {
+        List<String> names = new ArrayList<>();
+        response.get("members").forEach(m -> names.add(m.get("name").asText()));
+        return names;
+    }
+
+    // Buckets are consecutive Mondays, oldest first, as many as requested.
+    private static void assertWeeklyBuckets(JsonNode response, int weeks) {
+        JsonNode buckets = response.get("buckets");
+        assertThat(buckets).hasSize(weeks);
+        LocalDate first = LocalDate.parse(buckets.get(0).get("weekStart").asText());
+        assertThat(first.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+        for (int i = 0; i < weeks; i++) {
+            assertThat(buckets.get(i).get("weekStart").asText()).isEqualTo(first.plusWeeks(i).toString());
+        }
+    }
+
+    // Completed job with the simplest history, timestamps as instants.
+    private UUID completedJobAt(Instant createdAt, Instant completedAt, Instant deadline, UUID assignedTo) {
+        return completedJob(ts(createdAt), ts(completedAt), deadline != null ? ts(deadline) : null, assignedTo);
+    }
+
+    private UUID addProjectMember(String name, ProjectMemberRole role) {
+        UUID id = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(id).email(id + "@example.com").name(name).build());
+        organisationRepository.saveMember(orgId, id, OrganisationRole.MEMBER);
+        projectMemberRepository.save(ProjectMemberModel.builder().projectId(projectId).userId(id).role(role).build());
+        return id;
+    }
+
+    @Test
+    @DisplayName("GET stats as OWNER with defaults: 12 weekly buckets in UTC, summary metrics and members")
+    void getStats_shouldReturnTeamStats_forOwnerWithDefaults() throws Exception {
+        Instant base = base();
+        // Member's job: 2h waiting in New, 4h blocked, completed 52h after creation, before its deadline.
+        UUID memberJob = insertJob(JobStatus.COMPLETED, ts(base), ts(base.plus(DAY.multipliedBy(3))), memberId);
+        history(memberJob, null, JobStatus.NEW, ts(base));
+        history(memberJob, JobStatus.NEW, JobStatus.IN_PROGRESS, ts(base.plus(HOUR.multipliedBy(2))));
+        history(memberJob, JobStatus.IN_PROGRESS, JobStatus.BLOCKED, ts(base.plus(HOUR.multipliedBy(26))));
+        history(memberJob, JobStatus.BLOCKED, JobStatus.IN_PROGRESS, ts(base.plus(HOUR.multipliedBy(30))));
+        Instant memberCompletedAt = base.plus(HOUR.multipliedBy(52));
+        history(memberJob, JobStatus.IN_PROGRESS, JobStatus.COMPLETED, ts(memberCompletedAt));
+        // Owner's job: started at creation, completed 24h later, 12h after its deadline (late).
+        completedJobAt(base, base.plus(DAY), base.plus(HOUR.multipliedBy(12)), ownerId);
+        int historyRows = dsl.fetchCount(JOB_STATUS_HISTORY);
+
+        JsonNode response = getStats(ApiPaths.stats(projectId), ownerId);
+
+        assertThat(response.get("weeks").asInt()).isEqualTo(12);
+        assertThat(response.get("timezone").asText()).isEqualTo("UTC");
+        assertThat(response.get("memberId").isNull()).isTrue();
+        JsonNode summary = response.get("summary");
+        assertThat(summary.get("completedCount").asInt()).isEqualTo(2);
+        assertThat(summary.get("avgLeadTimeSeconds").asLong()).isEqualTo(38 * 3600L);   // (52h + 24h) / 2
+        assertThat(summary.get("avgCycleTimeSeconds").asLong()).isEqualTo(37 * 3600L);  // (50h + 24h) / 2
+        assertThat(summary.get("avgBlockedSeconds").asLong()).isEqualTo(2 * 3600L);     // (4h + 0) / 2
+        assertThat(summary.get("completedWithDeadline").asInt()).isEqualTo(2);
+        assertThat(summary.get("completedLate").asInt()).isEqualTo(1);
+        assertThat(summary.get("lateRate").asDouble()).isEqualTo(0.5);
+        assertWeeklyBuckets(response, 12);
+        assertThat(completedInBuckets(response)).isEqualTo(2);
+        JsonNode memberWeek = bucketFor(response, mondayOf(memberCompletedAt, UTC));
+        assertThat(memberWeek.get("completedCount").asInt()).isPositive();
+        assertThat(memberNames(response)).containsExactly("Mia Member", "Olivia Owner");
+        JsonNode mia = response.get("members").get(0);
+        assertThat(mia.get("userId").asText()).isEqualTo(memberId.toString());
+        assertThat(mia.get("completedCount").asInt()).isEqualTo(1);
+        assertThat(mia.get("avgLeadTimeSeconds").asLong()).isEqualTo(52 * 3600L);
+        assertThat(mia.get("avgCycleTimeSeconds").asLong()).isEqualTo(50 * 3600L);
+        assertThat(mia.get("avgBlockedSeconds").asLong()).isEqualTo(4 * 3600L);
+        assertThat(mia.get("completedWithDeadline").asInt()).isEqualTo(1);
+        assertThat(mia.get("completedLate").asInt()).isZero();
+        assertThat(mia.get("lateRate").asDouble()).isEqualTo(0.0);
+        // Read-only: nothing written.
+        assertThat(dsl.fetchCount(JOB_STATUS_HISTORY)).isEqualTo(historyRows);
+    }
+
+    @Test
+    @DisplayName("GET stats with nothing completed: zero counts, null averages and lateRate, empty weeks as zeros")
+    void getStats_shouldReturnZerosAndNulls_whenNothingCompleted() throws Exception {
+        mockMvc.perform(get(ApiPaths.stats(projectId)).with(as(ownerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.completedCount").value(0))
+                .andExpect(jsonPath("$.summary.avgLeadTimeSeconds").value(nullValue()))
+                .andExpect(jsonPath("$.summary.avgCycleTimeSeconds").value(nullValue()))
+                .andExpect(jsonPath("$.summary.avgBlockedSeconds").value(nullValue()))
+                .andExpect(jsonPath("$.summary.lateRate").value(nullValue()))
+                .andExpect(jsonPath("$.buckets.length()").value(12))
+                .andExpect(jsonPath("$.buckets[0].completedCount").value(0))
+                .andExpect(jsonPath("$.buckets[0].avgLeadTimeSeconds").value(nullValue()))
+                .andExpect(jsonPath("$.members.length()").value(2))
+                .andExpect(jsonPath("$.members[0].completedCount").value(0))
+                .andExpect(jsonPath("$.members[0].lateRate").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("GET stats with weeks=4 and weeks=26: bucket count and range follow weeks")
+    void getStats_shouldFollowWeeks_for4And26() throws Exception {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        completedJobAt(now.minus(HOUR), now.minus(Duration.ofMinutes(1)), null, memberId);
+        // About 8.5 weeks back: outside the 4-week range, inside 26 weeks.
+        completedJobAt(now.minus(DAY.multipliedBy(61)), now.minus(DAY.multipliedBy(60)), null, memberId);
+
+        JsonNode four = getStats(ApiPaths.statsWeeks(projectId, "4"), ownerId);
+        assertThat(four.get("weeks").asInt()).isEqualTo(4);
+        assertWeeklyBuckets(four, 4);
+        assertThat(four.get("summary").get("completedCount").asInt()).isEqualTo(1);
+
+        JsonNode twentySix = getStats(ApiPaths.statsWeeks(projectId, "26"), ownerId);
+        assertThat(twentySix.get("weeks").asInt()).isEqualTo(26);
+        assertWeeklyBuckets(twentySix, 26);
+        assertThat(twentySix.get("summary").get("completedCount").asInt()).isEqualTo(2);
+        assertThat(completedInBuckets(twentySix)).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("GET stats with weeks outside 4, 12 and 26 returns 400")
+    void getStats_shouldReturn400_forInvalidWeeks() throws Exception {
+        mockMvc.perform(get(ApiPaths.statsWeeks(projectId, "5")).with(as(ownerId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.Stats.INVALID_WEEKS));
+        mockMvc.perform(get(ApiPaths.statsWeeks(projectId, "0")).with(as(ownerId)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET stats with a non-numeric weeks or a malformed memberId returns 400")
+    void getStats_shouldReturn400_forUnparseableParams() throws Exception {
+        mockMvc.perform(get(ApiPaths.statsWeeks(projectId, "abc")).with(as(ownerId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid value for parameter 'weeks'"));
+        mockMvc.perform(get(ApiPaths.stats(projectId, null, null, "not-a-uuid")).with(as(ownerId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid value for parameter 'memberId'"));
+    }
+
+    @Test
+    @DisplayName("GET stats with an invalid tz returns 400")
+    void getStats_shouldReturn400_forInvalidTimezone() throws Exception {
+        mockMvc.perform(get(ApiPaths.statsTz(projectId, "Mars/Olympus_Mons")).with(as(ownerId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.Stats.INVALID_TIMEZONE));
+        mockMvc.perform(get(ApiPaths.statsTz(projectId, "")).with(as(ownerId)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET stats validates weeks and tz before membership: a non-member with invalid params gets 400")
+    void getStats_shouldReturn400BeforeMembershipCheck_forInvalidParams() throws Exception {
+        mockMvc.perform(get(ApiPaths.statsWeeks(projectId, "5")).with(as(outsiderId)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get(ApiPaths.statsTz(projectId, "Nowhere/Land")).with(as(outsiderId)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET stats with a valid non-UTC tz echoes it back and buckets weeks in that zone")
+    void getStats_shouldEchoTimezone_andBucketInIt() throws Exception {
+        Instant base = base();
+        Instant completedAt = base.plus(DAY);
+        completedJobAt(base, completedAt, null, memberId);
+
+        JsonNode response = getStats(ApiPaths.stats(projectId, "4", "Europe/Belgrade", null), ownerId);
+
+        assertThat(response.get("timezone").asText()).isEqualTo("Europe/Belgrade");
+        assertThat(response.get("weeks").asInt()).isEqualTo(4);
+        assertWeeklyBuckets(response, 4);
+        assertThat(bucketFor(response, mondayOf(completedAt, BELGRADE)).get("completedCount").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("GET stats excludes a reopened job that is still open and counts a re-completed job once")
+    void getStats_shouldExcludeReopened_andCountRecompletedOnce() throws Exception {
+        Instant base = base();
+        UUID stillOpen = insertJob(JobStatus.IN_PROGRESS, ts(base), null, memberId);
+        history(stillOpen, null, JobStatus.NEW, ts(base));
+        history(stillOpen, JobStatus.NEW, JobStatus.IN_PROGRESS, ts(base.plus(HOUR)));
+        history(stillOpen, JobStatus.IN_PROGRESS, JobStatus.COMPLETED, ts(base.plus(DAY)));
+        history(stillOpen, JobStatus.COMPLETED, JobStatus.IN_PROGRESS, ts(base.plus(DAY.multipliedBy(2))));
+
+        UUID recompleted = insertJob(JobStatus.COMPLETED, ts(base), null, memberId);
+        history(recompleted, null, JobStatus.NEW, ts(base));
+        history(recompleted, JobStatus.NEW, JobStatus.IN_PROGRESS, ts(base.plus(HOUR)));
+        history(recompleted, JobStatus.IN_PROGRESS, JobStatus.COMPLETED, ts(base.plus(DAY)));
+        history(recompleted, JobStatus.COMPLETED, JobStatus.IN_PROGRESS, ts(base.plus(DAY.multipliedBy(2))));
+        Instant finalCompletion = base.plus(DAY.multipliedBy(5));
+        history(recompleted, JobStatus.IN_PROGRESS, JobStatus.COMPLETED, ts(finalCompletion));
+
+        JsonNode response = getStats(ApiPaths.stats(projectId), ownerId);
+
+        assertThat(response.get("summary").get("completedCount").asInt()).isEqualTo(1);
+        assertThat(response.get("summary").get("avgLeadTimeSeconds").asLong()).isEqualTo(5 * 86_400L);
+        assertThat(response.get("summary").get("avgCycleTimeSeconds").asLong()).isEqualTo(5 * 86_400L - 3600L);
+        assertThat(completedInBuckets(response)).isEqualTo(1);
+        assertThat(bucketFor(response, mondayOf(finalCompletion, UTC)).get("completedCount").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("GET stats counts an unassigned job in the summary but not in members")
+    void getStats_shouldCountUnassignedInSummaryOnly() throws Exception {
+        Instant base = base();
+        completedJobAt(base, base.plus(DAY), null, memberId);
+        completedJobAt(base, base.plus(DAY), null, null);
+
+        JsonNode response = getStats(ApiPaths.stats(projectId), ownerId);
+
+        assertThat(response.get("summary").get("completedCount").asInt()).isEqualTo(2);
+        assertThat(memberNames(response)).containsExactly("Mia Member", "Olivia Owner");
+        int attributed = 0;
+        for (JsonNode m : response.get("members")) {
+            attributed += m.get("completedCount").asInt();
+        }
+        assertThat(attributed).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("GET stats as OWNER with memberId: only that member's jobs, members null")
+    void getStats_shouldFilterByMember_forOwner() throws Exception {
+        Instant base = base();
+        completedJobAt(base, base.plus(DAY), null, memberId);
+        completedJobAt(base, base.plus(DAY), null, ownerId);
+
+        mockMvc.perform(get(ApiPaths.statsForMember(projectId, memberId)).with(as(ownerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.memberId").value(memberId.toString()))
+                .andExpect(jsonPath("$.summary.completedCount").value(1))
+                .andExpect(jsonPath("$.members").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("GET stats as ADMIN: team view with members, and filtered by memberId with members null")
+    void getStats_shouldShowTeamAndFilter_forAdmin() throws Exception {
+        UUID adminId = addProjectMember("Ada Admin", ProjectMemberRole.ADMIN);
+        Instant base = base();
+        completedJobAt(base, base.plus(DAY), null, memberId);
+        completedJobAt(base, base.plus(DAY), null, ownerId);
+
+        JsonNode team = getStats(ApiPaths.stats(projectId), adminId);
+        assertThat(team.get("summary").get("completedCount").asInt()).isEqualTo(2);
+        assertThat(memberNames(team)).containsExactly("Ada Admin", "Mia Member", "Olivia Owner");
+
+        mockMvc.perform(get(ApiPaths.statsForMember(projectId, ownerId)).with(as(adminId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.memberId").value(ownerId.toString()))
+                .andExpect(jsonPath("$.summary.completedCount").value(1))
+                .andExpect(jsonPath("$.members").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("GET stats as MEMBER without memberId: own stats only, memberId set to self, members null")
+    void getStats_shouldReturnOwnStats_forMember() throws Exception {
+        Instant base = base();
+        completedJobAt(base, base.plus(DAY), null, memberId);
+        completedJobAt(base, base.plus(DAY), null, ownerId);
+        completedJobAt(base, base.plus(DAY), null, null);
+
+        mockMvc.perform(get(ApiPaths.stats(projectId)).with(as(memberId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.memberId").value(memberId.toString()))
+                .andExpect(jsonPath("$.summary.completedCount").value(1))
+                .andExpect(jsonPath("$.buckets.length()").value(12))
+                .andExpect(jsonPath("$.members").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("GET stats as MEMBER with their own memberId returns 200")
+    void getStats_shouldReturn200_forMemberWithOwnId() throws Exception {
+        Instant base = base();
+        completedJobAt(base, base.plus(DAY), null, memberId);
+        completedJobAt(base, base.plus(DAY), null, ownerId);
+
+        mockMvc.perform(get(ApiPaths.statsForMember(projectId, memberId)).with(as(memberId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.memberId").value(memberId.toString()))
+                .andExpect(jsonPath("$.summary.completedCount").value(1))
+                .andExpect(jsonPath("$.members").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("GET stats as MEMBER with another member's id returns 403")
+    void getStats_shouldReturn403_forMemberWithOtherId() throws Exception {
+        mockMvc.perform(get(ApiPaths.statsForMember(projectId, ownerId)).with(as(memberId)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.Stats.MEMBER_FILTER_NOT_ALLOWED));
+    }
+
+    @Test
+    @DisplayName("GET stats as an org user who isn't a project member returns 403, like the dashboard")
+    void getStats_shouldReturn403_forNonMember() throws Exception {
+        mockMvc.perform(get(ApiPaths.stats(projectId)).with(as(outsiderId)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.Member.NOT_A_MEMBER));
+    }
+
+    @Test
+    @DisplayName("GET stats for an unknown project returns 404")
+    void getStats_shouldReturn404_forUnknownProject() throws Exception {
+        mockMvc.perform(get(ApiPaths.stats(UUID.randomUUID())).with(as(ownerId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.Project.NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("GET stats without the DASHBOARD add-on returns 403")
+    void getStats_shouldReturn403_withoutDashboardAddon() throws Exception {
+        subscribe(Set.of());
+
+        mockMvc.perform(get(ApiPaths.stats(projectId)).with(as(ownerId)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("DASHBOARD add-on is required to access this feature"));
+    }
+
+    @Test
+    @DisplayName("GET stats without authentication returns 401")
+    void getStats_shouldReturn401_withoutAuth() throws Exception {
+        mockMvc.perform(get(ApiPaths.stats(projectId)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("GET stats accepts the friendly project ID (PRJ-xxx)")
+    void getStats_shouldResolveFriendlyProjectId() throws Exception {
+        Instant base = base();
+        completedJobAt(base, base.plus(DAY), null, memberId);
+
+        mockMvc.perform(get(ApiPaths.stats(PROJECT_FRIENDLY_ID)).with(as(ownerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.completedCount").value(1))
+                .andExpect(jsonPath("$.members.length()").value(2));
     }
 }

@@ -298,6 +298,43 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/dashboard";
     }
 
+    // --- Stats ---
+
+    static String stats(UUID projectId) {
+        return stats(projectId.toString());
+    }
+
+    static String stats(String projectId) {
+        return "/api/projects/" + projectId + "/stats";
+    }
+
+    /** Stats with query params; {@code null} params are left out. Strings so tests can send invalid values. */
+    static String stats(UUID projectId, String weeks, String tz, String memberId) {
+        StringBuilder query = new StringBuilder();
+        appendParam(query, "weeks", weeks);
+        appendParam(query, "tz", tz);
+        appendParam(query, "memberId", memberId);
+        return stats(projectId) + query;
+    }
+
+    static String statsWeeks(UUID projectId, String weeks) {
+        return stats(projectId, weeks, null, null);
+    }
+
+    static String statsTz(UUID projectId, String tz) {
+        return stats(projectId, null, tz, null);
+    }
+
+    static String statsForMember(UUID projectId, UUID memberId) {
+        return stats(projectId, null, null, memberId.toString());
+    }
+
+    private static void appendParam(StringBuilder query, String name, String value) {
+        if (value != null) {
+            query.append(query.isEmpty() ? '?' : '&').append(name).append('=').append(value);
+        }
+    }
+
     // --- Job templates ---
 
     static String templates(UUID projectId) {
