@@ -101,3 +101,4 @@ Status is as recorded in each ADR. New ADRs: add a row here in the same PR.
 | 0052 | [Gated Completion Requiring Approval](0052-gated-completion-approval.md) | Proposed | 2026-11-04 |
 | 0053 | [Per-Project Job-Detail Section Visibility](0053-per-project-job-section-visibility.md) | Proposed | 2026-11-05 |
 | 0054 | [Claude Code Agents and Skills for the Dev Process](0054-claude-code-agents-and-skills.md) | Proposed | 2026-11-05 |
+| 0055 | [GitHub ↔ OpsClear Job Sync](0055-github-job-sync.md) | Proposed | 2026-11-06 |
