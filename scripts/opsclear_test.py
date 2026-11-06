@@ -7,6 +7,7 @@ import io
 import json
 import os
 import sys
+import tempfile
 import unittest
 from datetime import date
 from importlib.machinery import SourceFileLoader
@@ -123,6 +124,22 @@ class ArgumentParsingTest(unittest.TestCase):
         self.assertEqual(code, opsclear.EXIT_ERROR)
         self.assertIn("OPSCLEAR_API_KEY is not set", err)
         self.assertEqual(fake.calls, [])
+
+    def test_key_is_read_from_key_file_when_env_is_unset(self):
+        with tempfile.TemporaryDirectory() as home:
+            os.makedirs(os.path.join(home, ".config", "opsclear"))
+            with open(os.path.join(home, ".config", "opsclear", "api-key"), "w") as f:
+                f.write(KEY + "\n")
+            self.assertEqual(opsclear.load_key({"HOME": home}), KEY)
+            self.assertEqual(opsclear.load_key({"HOME": home, "OPSCLEAR_API_KEY": "opck_env"}), "opck_env")
+
+    def test_key_file_override(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "key")
+            with open(path, "w") as f:
+                f.write(KEY)
+            self.assertEqual(opsclear.load_key({"OPSCLEAR_KEY_FILE": path}), KEY)
+            self.assertEqual(opsclear.load_key({"OPSCLEAR_KEY_FILE": os.path.join(d, "missing")}), "")
 
 
 class TemplateFillingTest(unittest.TestCase):

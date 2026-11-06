@@ -4,7 +4,9 @@
 Python 3.9+, standard library only.
 
 Configuration (environment):
-  OPSCLEAR_API_KEY   required, an API key starting with opck_ (never printed)
+  OPSCLEAR_API_KEY   an API key starting with opck_ (never printed). If unset, the key is read
+                     from OPSCLEAR_KEY_FILE (default ~/.config/opsclear/api-key), so subagent
+                     shells that don't load ~/.zshrc still find it.
   OPSCLEAR_URL       optional, default https://46-101-205-77.sslip.io:8443
 
 IDs are friendly IDs everywhere: PRJ-013, MIL-038, JOB-303, TPL-007.
@@ -1019,11 +1021,28 @@ def build_parser() -> argparse.ArgumentParser:
 # --------------------------------------------------------------------------- main
 
 
+def load_key(env: Dict[str, str]) -> str:
+    """OPSCLEAR_API_KEY, else the first line of OPSCLEAR_KEY_FILE or ~/.config/opsclear/api-key."""
+    key = (env.get("OPSCLEAR_API_KEY") or "").strip()
+    if key:
+        return key
+    path = env.get("OPSCLEAR_KEY_FILE")
+    if not path and env.get("HOME"):
+        path = os.path.join(env["HOME"], ".config", "opsclear", "api-key")
+    if not path:
+        return ""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.readline().strip()
+    except OSError:
+        return ""
+
+
 def main(argv: Optional[List[str]] = None, env: Optional[Dict[str, str]] = None,
          transport: Transport = urllib_transport, stdout=None, stderr=None,
          today: Optional[date] = None) -> int:
     env = os.environ if env is None else env
-    key = (env.get("OPSCLEAR_API_KEY") or "").strip()
+    key = load_key(env)
     out = Output(key, stdout, stderr)
     parser = build_parser()
     try:
@@ -1032,8 +1051,8 @@ def main(argv: Optional[List[str]] = None, env: Optional[Dict[str, str]] = None,
     except SystemExit as e:
         return int(e.code or 0)
     if not key:
-        out.warn("error: OPSCLEAR_API_KEY is not set. Create a key in OpsClear (Settings > API Keys) "
-                 "and export it, e.g. in ~/.zshrc.")
+        out.warn("error: OPSCLEAR_API_KEY is not set and no key file was found. Create a key in OpsClear "
+                 "(Settings > API Keys) and put it in ~/.config/opsclear/api-key (chmod 600).")
         return EXIT_ERROR
     api = Api(env.get("OPSCLEAR_URL") or DEFAULT_URL, key, transport)
     ctx = Ctx(api=api, out=out, json=args.json, yes=args.yes, dry_run=args.dry_run, today=today or date.today())

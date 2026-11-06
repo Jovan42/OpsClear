@@ -113,14 +113,16 @@ Agents never set a job to Completed. That's always you (or a skill, after you co
 On a fresh Mac, from the repo root:
 
 1. **OpsClear API key.** In OpsClear, open **Settings > API Keys** and create a key (starts with
-   `opck_`). Add it to `~/.zshrc`, then open a new terminal:
+   `opck_`). Save it in a key file that only you can read:
    ```bash
-   export OPSCLEAR_API_KEY=opck_...
-   # optional, defaults to prod:
-   # export OPSCLEAR_URL=https://46-101-205-77.sslip.io:8443
+   mkdir -p ~/.config/opsclear
+   printf '%s\n' 'opck_...' > ~/.config/opsclear/api-key
+   chmod 600 ~/.config/opsclear/api-key
    ```
-   Use `~/.zshrc`, not `launchctl setenv`: the shell that starts Claude Code must have it. A Claude
-   Code session started before you set it won't see it, so restart Claude Code. Check with
+   `scripts/opsclear` reads `OPSCLEAR_API_KEY` first and falls back to this file. Use the file, not
+   `~/.zshrc`: Claude Code's tool shell and the implementation agents don't load `~/.zshrc`, and
+   worktree agents can't run `zsh -i`. Optional: `OPSCLEAR_KEY_FILE` points at another file, and
+   `OPSCLEAR_URL` overrides the default (prod, `https://46-101-205-77.sslip.io:8443`). Check with
    `scripts/opsclear job get JOB-293`.
 2. **GitHub CLI.** `brew install gh`, then `gh auth login` (HTTPS). Check with `gh pr list`.
 3. **Docker** (integration tests use Testcontainers). Install OrbStack and start it
