@@ -445,5 +445,329 @@ class KeyNeverPrintedTest(unittest.TestCase):
         self.assertNotIn(KEY, err)
 
 
+class PrSyncParsingTest(unittest.TestCase):
+    def refs(self, branch="", title="", body=""):
+        return opsclear.parse_pr_refs(branch, title, body)
+
+    def test_branch_and_title_refs_are_normalised(self):
+        refs, closes = self.refs("feature/job-294-adr", "docs(adr): x (JOB-295)")
+        self.assertEqual(refs, ["JOB-294", "JOB-295"])
+        self.assertEqual(closes, [])
+
+    def test_closes_and_part_of_lines(self):
+        body = "Summary\n\nCloses JOB-1, job-2\n  part of JOB-3\nsee JOB-4\n"
+        refs, closes = self.refs(body=body)
+        self.assertEqual(refs, ["JOB-1", "JOB-2", "JOB-3"])
+        self.assertEqual(closes, ["JOB-1", "JOB-2"])
+
+    def test_closes_on_separate_lines_and_dedup(self):
+        refs, closes = self.refs("chore/JOB-1-x", "t (JOB-1)", "Closes JOB-1\nCloses JOB-2\n")
+        self.assertEqual(refs, ["JOB-1", "JOB-2"])
+        self.assertEqual(closes, ["JOB-1", "JOB-2"])
+
+    def test_mid_line_mention_is_ignored(self):
+        refs, closes = self.refs(body="This also Closes JOB-9 maybe\nrelated: JOB-8")
+        self.assertEqual((refs, closes), ([], []))
+
+    def test_html_comments_are_ignored(self):
+        body = "<!-- Closes JOB-1 or\nPart of JOB-2 -->\nCloses JOB-3 <!-- x -->\n"
+        refs, closes = self.refs(body=body)
+        self.assertEqual(refs, ["JOB-3"])
+        self.assertEqual(closes, ["JOB-3"])
+
+    def test_none_body(self):
+        self.assertEqual(self.refs(body=None), ([], []))
+
+    def test_closes_wins_when_both_keywords_name_a_job(self):
+        refs, closes = self.refs(body="Part of JOB-1\nCloses JOB-1")
+        self.assertEqual((refs, closes), (["JOB-1"], ["JOB-1"]))
+
+
+class PrLabelTest(unittest.TestCase):
+    def test_closed_label(self):
+        self.assertEqual(opsclear.closed_label("PR #1: x"), "PR #1: x (closed)")
+        self.assertEqual(opsclear.closed_label("PR #1: x (closed)"), "PR #1: x (closed)")
+        self.assertEqual(opsclear.closed_label("PR #1 (merged)"), "PR #1 (merged)")
+        self.assertEqual(len(opsclear.closed_label("x" * 100)), 100)
+        self.assertTrue(opsclear.closed_label("x" * 100).endswith(" (closed)"))
+
+    def test_base_label(self):
+        self.assertEqual(opsclear.base_label("PR #1 (closed)"), "PR #1")
+        self.assertEqual(opsclear.base_label("PR #1 (merged)"), "PR #1")
+        self.assertEqual(opsclear.base_label("PR #1"), "PR #1")
+        self.assertEqual(opsclear.base_label(None), "PR")
+        self.assertEqual(opsclear.base_label("(closed)"), "PR")
+
+    def test_merged_label_replaces_closed(self):
+        self.assertEqual(opsclear.merged_label("PR #1 (closed)"), "PR #1 (merged)")
+        self.assertEqual(len(opsclear.merged_label("y" * 99 + " (closed)")), 100)
+
+
+PR_URL = "https://github.com/o/r/pull/7"
+PR_BASE = "/api/projects/PRJ-013/jobs"
+
+
+def pr_args(action, body="", merged=False, branch="feature/JOB-1-x", title="Do it (JOB-1)", extra=()):
+    path = os.path.join(tempfile.mkdtemp(), "body.md")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(body)
+    argv = ["pr", "sync", "--action", action, "--number", "7", "--url", PR_URL, "--branch", branch,
+            "--title", title, "--body-file", path, "--yes"]
+    if merged:
+        argv.append("--merged")
+    return argv + list(extra)
+
+
+def pr_routes(*jobs):
+    routes = {
+        ("GET", "/api/projects"): (200, [PRJ_NEW]),
+        ("GET", "/api/projects/PRJ-013"): (200, PRJ_NEW),
+    }
+    for j in jobs:
+        routes[("GET", f"{PR_BASE}/{j['friendlyId']}")] = (200, j)
+        routes[("POST", f"{PR_BASE}/{j['friendlyId']}/links")] = (201, {})
+        routes[("PUT", f"{PR_BASE}/{j['friendlyId']}/links/l1")] = (200, {})
+        routes[("PATCH", f"{PR_BASE}/{j['friendlyId']}/status")] = (200, {})
+    return routes
+
+
+def link(label):
+    return [{"id": "l1", "url": PR_URL, "label": label}]
+
+
+def write_summary(w):
+    return [(c["method"], c["path"].replace(PR_BASE + "/", ""), c["body"]) for c in w]
+
+
+class PrSyncTest(unittest.TestCase):
+    def sync(self, argv, *jobs, routes=None):
+        return run(argv, routes or pr_routes(*jobs))
+
+    def test_opened_adds_link_and_starts_new_job(self):
+        code, out, _, fake = self.sync(pr_args("opened"), job("JOB-1"))
+        self.assertEqual(code, 0)
+        self.assertEqual(write_summary(fake.writes()), [
+            ("POST", "JOB-1/links", {"url": PR_URL, "label": "PR #7: Do it (JOB-1)"}),
+            ("PATCH", "JOB-1/status", {"status": "IN_PROGRESS"}),
+        ])
+        self.assertIn("JOB-1: add link", out)
+
+    def test_opened_label_cut_to_100(self):
+        _, _, _, fake = self.sync(pr_args("opened", title="t" * 200 + " JOB-1"), job("JOB-1"))
+        self.assertEqual(len(fake.writes()[0]["body"]["label"]), 100)
+
+    def test_opened_keeps_existing_link_and_other_statuses(self):
+        for status in ("IN_PROGRESS", "BLOCKED", "COMPLETED"):
+            _, out, _, fake = self.sync(pr_args("opened"), job("JOB-1", status=status, links=link("mine")))
+            self.assertEqual(fake.writes(), [], status)
+        self.assertIn("already Completed", out)
+
+    def test_opened_completed_job_gets_link_only(self):
+        _, _, _, fake = self.sync(pr_args("opened"), job("JOB-1", status="COMPLETED"))
+        self.assertEqual([w["method"] for w in fake.writes()], ["POST"])
+
+    def test_edited_adds_only_missing(self):
+        body = "Closes JOB-2\n"
+        _, _, _, fake = self.sync(pr_args("edited", body=body),
+                                  job("JOB-1", status="IN_PROGRESS", links=link("a")), job("JOB-2"))
+        self.assertEqual(write_summary(fake.writes()), [
+            ("POST", "JOB-2/links", {"url": PR_URL, "label": "PR #7: Do it (JOB-1)"}),
+            ("PATCH", "JOB-2/status", {"status": "IN_PROGRESS"}),
+        ])
+
+    def test_reopened_removes_closed_suffix(self):
+        _, _, _, fake = self.sync(pr_args("reopened"),
+                                  job("JOB-1", status="IN_PROGRESS", links=link("PR #7 (closed)")))
+        self.assertEqual(write_summary(fake.writes()), [("PUT", "JOB-1/links/l1", {"url": PR_URL, "label": "PR #7"})])
+
+    def test_reopened_adds_missing_link_and_starts(self):
+        _, _, _, fake = self.sync(pr_args("reopened"), job("JOB-1"))
+        self.assertEqual([w["method"] for w in fake.writes()], ["POST", "PATCH"])
+
+    def test_merged_closes_in_progress_job(self):
+        _, _, _, fake = self.sync(pr_args("closed", "Closes JOB-1", merged=True),
+                                  job("JOB-1", status="IN_PROGRESS", links=link("PR #7")))
+        self.assertEqual(write_summary(fake.writes()), [
+            ("PUT", "JOB-1/links/l1", {"url": PR_URL, "label": "PR #7 (merged)"}),
+            ("PATCH", "JOB-1/status", {"status": "COMPLETED"}),
+        ])
+
+    def test_merged_closes_new_job_in_two_steps(self):
+        _, _, _, fake = self.sync(pr_args("closed", "Closes JOB-1", merged=True), job("JOB-1", links=link("PR #7")))
+        self.assertEqual([w["body"] for w in fake.writes() if w["method"] == "PATCH"],
+                         [{"status": "IN_PROGRESS"}, {"status": "COMPLETED"}])
+
+    def test_merged_unblocks_and_completes_blocked_job(self):
+        _, _, _, fake = self.sync(pr_args("closed", "Closes JOB-1", merged=True),
+                                  job("JOB-1", status="BLOCKED", links=link("PR #7 (closed)")))
+        self.assertEqual(write_summary(fake.writes()), [
+            ("PUT", "JOB-1/links/l1", {"url": PR_URL, "label": "PR #7 (merged)"}),
+            ("PATCH", "JOB-1/status", {"status": "IN_PROGRESS"}),
+            ("PATCH", "JOB-1/status", {"status": "COMPLETED"}),
+        ])
+
+    def test_merged_completed_job_is_noop_for_status(self):
+        _, _, _, fake = self.sync(pr_args("closed", "Closes JOB-1", merged=True),
+                                  job("JOB-1", status="COMPLETED", links=link("PR #7 (merged)")))
+        self.assertEqual(fake.writes(), [])
+
+    def test_merged_without_closes_only_starts_new_jobs(self):
+        _, _, _, fake = self.sync(pr_args("closed", "Part of JOB-1", merged=True), job("JOB-1", links=link("PR #7")))
+        self.assertEqual(write_summary(fake.writes()), [
+            ("PUT", "JOB-1/links/l1", {"url": PR_URL, "label": "PR #7 (merged)"}),
+            ("PATCH", "JOB-1/status", {"status": "IN_PROGRESS"}),
+        ])
+        for status in ("IN_PROGRESS", "BLOCKED", "COMPLETED"):
+            _, _, _, fake = self.sync(pr_args("closed", merged=True),
+                                      job("JOB-1", status=status, links=link("PR #7 (merged)")))
+            self.assertEqual(fake.writes(), [], status)
+
+    def test_merged_missing_link_is_added_merged(self):
+        _, _, _, fake = self.sync(pr_args("closed", merged=True), job("JOB-1", status="IN_PROGRESS"))
+        self.assertEqual(fake.writes()[0]["body"], {"url": PR_URL, "label": "PR #7: Do it (JOB-1) (merged)"})
+
+    def test_closed_without_merge_relabels_only(self):
+        _, _, _, fake = self.sync(pr_args("closed", "Closes JOB-1"),
+                                  job("JOB-1", status="IN_PROGRESS", links=link("PR #7")))
+        self.assertEqual(write_summary(fake.writes()), [
+            ("PUT", "JOB-1/links/l1", {"url": PR_URL, "label": "PR #7 (closed)"})])
+
+    def test_closed_without_link_does_nothing(self):
+        _, _, _, fake = self.sync(pr_args("closed"), job("JOB-1"))
+        self.assertEqual(fake.writes(), [])
+
+    def event_file(self, action, **pr):
+        data = {"action": action, "pull_request": {
+            "number": 7, "html_url": PR_URL, "title": "T (JOB-1)", "body": None,
+            "head": {"ref": "x"}, "merged": False, **pr}}
+        path = os.path.join(tempfile.mkdtemp(), "event.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        return path
+
+    def test_unknown_action_is_ignored(self):
+        code, out, _, fake = run(["pr", "sync", "--event", self.event_file("synchronize")], {})
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.calls, [])
+
+    def test_event_file_input_and_summary(self):
+        summary = os.path.join(tempfile.mkdtemp(), "summary.md")
+        argv = ["pr", "sync", "--event", self.event_file("opened"), "--summary", summary, "--yes"]
+        code, _, _, fake = self.sync(argv, job("JOB-1"))
+        self.assertEqual(code, 0)
+        self.assertEqual(len(fake.writes()), 2)
+        with open(summary, encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn("| Job | Change | Result |", text)
+        self.assertIn("| JOB-1 | status -> IN_PROGRESS | done |", text)
+
+    def test_missing_event_file_is_usage_error(self):
+        code, _, err, _ = run(["pr", "sync", "--event", "/nonexistent/event.json"], {})
+        self.assertEqual(code, opsclear.EXIT_USAGE)
+        self.assertIn("cannot read event file", err)
+
+    def test_missing_flags_is_usage_error(self):
+        code, _, err, _ = run(["pr", "sync", "--action", "opened"], {})
+        self.assertEqual(code, opsclear.EXIT_USAGE)
+        self.assertIn("--number", err)
+
+    def test_no_job_referenced(self):
+        code, out, _, fake = self.sync(pr_args("opened", branch="dependabot/x", title="Bump y"))
+        self.assertEqual(code, 0)
+        self.assertIn("references no OpsClear job", out)
+        self.assertEqual(fake.calls, [])
+
+    def test_missing_key_exits_zero(self):
+        code, out, err, fake = run(pr_args("opened"), {}, env={"HOME": "/nonexistent"})
+        self.assertEqual(code, 0)
+        self.assertIn("nothing synced", out)
+        self.assertEqual(fake.calls, [])
+
+    def test_dry_run_sends_nothing(self):
+        code, out, _, fake = self.sync(pr_args("opened", extra=["--dry-run"]), job("JOB-1"))
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.writes(), [])
+        self.assertIn("dry run", out)
+
+    def test_completion_needs_yes(self):
+        argv = [a for a in pr_args("closed", "Closes JOB-1", merged=True) if a != "--yes"]
+        code, out, _, fake = self.sync(argv, job("JOB-1", status="IN_PROGRESS", links=link("PR #7")))
+        self.assertEqual(code, 0)
+        self.assertEqual([w["method"] for w in fake.writes()], ["PUT"])
+        self.assertIn("re-run with --yes", out)
+
+    def test_completion_requested_for_gated_project(self):
+        routes = pr_routes(job("JOB-1", status="IN_PROGRESS", links=link("PR #7")))
+        routes[("PATCH", f"{PR_BASE}/JOB-1/status")] = (202, {})
+        _, out, _, _ = self.sync(pr_args("closed", "Closes JOB-1", merged=True), routes=routes)
+        self.assertIn("completion requested", out)
+
+    def test_missing_job_is_a_warning_and_others_continue(self):
+        argv = pr_args("opened", body="Closes JOB-9\nPart of JOB-1")
+        code, out, _, fake = self.sync(argv, job("JOB-1"))
+        self.assertEqual(code, 0)
+        self.assertIn("::warning::JOB-9: skipped", out)
+        self.assertEqual([w["path"] for w in fake.writes()][0], f"{PR_BASE}/JOB-1/links")
+
+    def test_failed_step_stops_that_jobs_chain_only(self):
+        routes = pr_routes(job("JOB-1", status="BLOCKED", links=link("PR #7")), job("JOB-2", status="IN_PROGRESS"))
+        routes[("PATCH", f"{PR_BASE}/JOB-1/status")] = (403, {"message": "forbidden"})
+        argv = pr_args("closed", "Closes JOB-1, JOB-2", merged=True)
+        code, out, _, fake = self.sync(argv, routes=routes)
+        self.assertEqual(code, 0)
+        self.assertIn("::warning::JOB-1: skipped", out)
+        patches = [c for c in fake.writes() if c["method"] == "PATCH"]
+        self.assertEqual([c["path"] for c in patches],
+                         [f"{PR_BASE}/JOB-1/status", f"{PR_BASE}/JOB-2/status"])
+        self.assertEqual(patches[1]["body"], {"status": "COMPLETED"})
+
+    def test_key_is_not_printed(self):
+        _, out, err, _ = self.sync(pr_args("opened"), job("JOB-1"))
+        self.assertNotIn(KEY, out + err)
+
+
+class PrSyncRetryTest(unittest.TestCase):
+    def run_with(self, script, argv):
+        """script: Responses or exceptions handed out in order; the last one repeats."""
+        calls, sleeps = [], []
+
+        def transport(method, url, headers, data):
+            calls.append((method, urlsplit(url).path))
+            item = script[min(len(calls) - 1, len(script) - 1)]
+            if isinstance(item, Exception):
+                raise item
+            return item
+
+        out, err = io.StringIO(), io.StringIO()
+        code = opsclear.main(argv, env={"OPSCLEAR_API_KEY": KEY, "OPSCLEAR_URL": URL}, transport=transport,
+                             stdout=out, stderr=err, sleep=sleeps.append, retry_delays=(1, 2, 3))
+        return code, out.getvalue(), calls, sleeps
+
+    def test_retries_connection_errors_then_succeeds(self):
+        ok = opsclear.Response(200, json.dumps([]).encode())
+        down = opsclear.CliError("cannot reach OpsClear")
+        code, out, calls, sleeps = self.run_with([down, opsclear.Response(503, b""), ok], pr_args("opened"))
+        self.assertEqual(code, 0)
+        self.assertEqual(sleeps, [1, 2])
+        self.assertIn("retrying in 1s", out)
+        self.assertIn("not found in any project", out)  # got through to the (empty) project list
+
+    def test_gives_up_after_delays_and_skips_remaining_jobs(self):
+        down = opsclear.CliError("cannot reach OpsClear")
+        code, out, calls, sleeps = self.run_with([down], pr_args("opened", body="Closes JOB-2"))
+        self.assertEqual(code, 0)
+        self.assertEqual(sleeps, [1, 2, 3])
+        self.assertEqual(len(calls), 4)
+        self.assertIn("::warning::JOB-1: OpsClear unreachable after 4 attempts", out)
+
+    def test_4xx_is_not_retried(self):
+        code, out, calls, sleeps = self.run_with([opsclear.Response(403, b"{}")], pr_args("opened"))
+        self.assertEqual(code, 0)
+        self.assertEqual(sleeps, [])
+
+    def test_default_schedule_is_about_three_minutes(self):
+        self.assertEqual(opsclear.RETRY_DELAYS, (10, 20, 40, 60, 60))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
