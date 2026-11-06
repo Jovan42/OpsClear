@@ -16,10 +16,11 @@
 // ADR-0048 shipped since ADR-0049 was written. Tested as real, working behavior
 // below, not skipped.
 //
-// The exact-millisecond "deadline == now" boundary is already precisely covered by
-// DashboardServiceTest with a controlled clock; this spec only checks the practical
-// near-boundary direction (a few minutes future vs. past), since real wall-clock E2E
-// timing can't deterministically hit an exact instant.
+// A deadline covers its whole UTC day (JOB-320): a job is overdue only once the next
+// midnight UTC has passed. The exact boundary is covered by DeadlineRulesTest and
+// DashboardServiceTest; this spec only checks the practical cases (due today vs. due
+// two days ago), with past deadlines at least one full UTC day back so wall-clock
+// timing can't flip them.
 
 import {
   uniqueEmail,
@@ -38,6 +39,14 @@ import {
   requestApprovalAs,
   API,
 } from '../../support/orgApi';
+
+/** ISO timestamp of midnight UTC `days` days before today (a date-only deadline, as the app stores it). */
+function utcMidnightDaysAgo(days: number): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString();
+}
 
 describe('Dashboard', () => {
   it('/projects/:id redirects to the dashboard by default, and the happy-path summary/donut/type-breakdown render with working click-navigation', { tags: '@smoke' }, () => {
@@ -108,7 +117,7 @@ describe('Dashboard', () => {
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Atlas Corp', uniqueSlug());
     createProjectAs(email, 'Atlas Dashboard Project').then((projectId) => {
-      const past = new Date(Date.now() - 5 * 60_000).toISOString();
+      const past = utcMidnightDaysAgo(2);
 
       // Sequential, not parallel — Cypress's command queue processes job A's full
       // create->in_progress->blocked chain before job B's starts, even though
@@ -150,8 +159,8 @@ describe('Dashboard', () => {
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Cedar Corp', uniqueSlug());
     createProjectAs(email, 'Cedar Dashboard Project').then((projectId) => {
-      const soon = new Date(Date.now() - 1 * 60_000).toISOString();
-      const longAgo = new Date(Date.now() - 10 * 60_000).toISOString();
+      const soon = utcMidnightDaysAgo(2);
+      const longAgo = utcMidnightDaysAgo(5);
 
       createJobAs(email, projectId, { title: 'Due soon', deadline: soon });
       createJobAs(email, projectId, { title: 'Due long ago', deadline: longAgo });
@@ -388,21 +397,19 @@ describe('Dashboard', () => {
     cy.deleteKeycloakUser(outsiderEmail);
   });
 
-  it('a job\'s deadline a few minutes in the future is not overdue; a few minutes in the past is', () => {
+  it('a job due today is not overdue (the deadline covers its whole UTC day); one due two days ago is', () => {
     const email = uniqueEmail('near-boundary');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Sparrow Corp', uniqueSlug());
     createProjectAs(email, 'Sparrow Dashboard Project').then((projectId) => {
-      const future = new Date(Date.now() + 5 * 60_000).toISOString();
-      const past = new Date(Date.now() - 5 * 60_000).toISOString();
-      createJobAs(email, projectId, { title: 'Future deadline', deadline: future });
-      createJobAs(email, projectId, { title: 'Past deadline', deadline: past });
+      createJobAs(email, projectId, { title: 'Due today', deadline: utcMidnightDaysAgo(0) });
+      createJobAs(email, projectId, { title: 'Past deadline', deadline: utcMidnightDaysAgo(2) });
 
       cy.loginAs(email);
       cy.visit(`/projects/${projectId}/dashboard`);
       cy.contains('h2', 'Overdue').parent().parent().within(() => {
         cy.contains('Past deadline').should('be.visible');
-        cy.contains('Future deadline').should('not.exist');
+        cy.contains('Due today').should('not.exist');
       });
     });
 

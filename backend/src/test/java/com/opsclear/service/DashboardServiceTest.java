@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.DashboardResponse;
+import com.opsclear.dto.JobSummary;
 import com.opsclear.dto.JobTypeBreakdown;
 import com.opsclear.model.ApprovalModel;
 import com.opsclear.model.ApprovalStatus;
@@ -97,7 +98,7 @@ class DashboardServiceTest {
         overdueJobLater = JobModel.builder()
                 .id(UUID.randomUUID()).projectId(projectId).title("Overdue Later")
                 .status(JobStatus.IN_PROGRESS)
-                .deadline(Instant.now().minus(1, ChronoUnit.DAYS)).build();
+                .deadline(Instant.now().minus(2, ChronoUnit.DAYS)).build();
 
         completedJob = JobModel.builder()
                 .id(UUID.randomUUID()).projectId(projectId).title("Completed Job")
@@ -106,7 +107,7 @@ class DashboardServiceTest {
         overdueButCompletedJob = JobModel.builder()
                 .id(UUID.randomUUID()).projectId(projectId).title("Overdue But Completed")
                 .status(JobStatus.COMPLETED)
-                .deadline(Instant.now().minus(1, ChronoUnit.DAYS)).build();
+                .deadline(Instant.now().minus(2, ChronoUnit.DAYS)).build();
     }
 
     @Test
@@ -172,13 +173,34 @@ class DashboardServiceTest {
     }
 
     @Test
+    @DisplayName("get — a job due today (midnight UTC) is not overdue; one due two days ago is (JOB-320)")
+    void get_shouldNotIncludeJobDueToday_inOverdueList_butIncludeJobDueTwoDaysAgo() {
+        Instant todayMidnightUtc = Instant.now().truncatedTo(ChronoUnit.DAYS);
+        JobModel dueToday = JobModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).title("Due Today")
+                .status(JobStatus.IN_PROGRESS).deadline(todayMidnightUtc).build();
+        JobModel dueTwoDaysAgo = JobModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).title("Due Two Days Ago")
+                .status(JobStatus.IN_PROGRESS).deadline(todayMidnightUtc.minus(2, ChronoUnit.DAYS)).build();
+        when(jobService.list(projectId, ownerId, null, null, null)).thenReturn(List.of(dueToday, dueTwoDaysAgo));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
+
+        DashboardResponse result = dashboardService.get(projectId, ownerId);
+
+        assertThat(result.getOverdueJobs()).extracting(JobSummary::getTitle).containsExactly("Due Two Days Ago");
+        assertThat(result.getSummary().getOverdueCount()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("get — overdue count in summary includes blocked jobs with past deadline")
     void get_shouldIncludeBlockedJobs_inOverdueCount_whenPastDeadline() {
         JobModel blockedAndOverdue = JobModel.builder()
                 .id(UUID.randomUUID()).projectId(projectId).title("Blocked And Overdue")
                 .status(JobStatus.BLOCKED).blockedReason("Stuck")
                 .blockedBy(ownerId).blockedAt(Instant.now().minus(3, ChronoUnit.DAYS))
-                .deadline(Instant.now().minus(1, ChronoUnit.DAYS)).build();
+                .deadline(Instant.now().minus(2, ChronoUnit.DAYS)).build();
 
         when(jobService.list(projectId, ownerId, null, null, null)).thenReturn(List.of(blockedAndOverdue));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))

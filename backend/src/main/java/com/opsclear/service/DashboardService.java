@@ -64,7 +64,7 @@ public class DashboardService {
 
         List<JobSummary> overdueJobs = jobs.stream()
                 .filter(j -> j.getDeadline() != null
-                        && j.getDeadline().isBefore(now)
+                        && DeadlineRules.isPastDeadline(j.getDeadline(), now)
                         && j.getStatus() != JobStatus.COMPLETED)
                 .sorted(Comparator.comparing(JobModel::getDeadline))
                 .map(JobSummary::from)
