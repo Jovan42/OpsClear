@@ -263,6 +263,21 @@ class DashboardIntegrationTest {
                 .andExpect(jsonPath("$.summary.overdueCount").value(0));
     }
 
+    @Test
+    @DisplayName("A job due today (midnight UTC) is not overdue until its day has passed; one due yesterday is (JOB-320)")
+    void getDashboard_shouldNotIncludeJobDueToday_butIncludeJobDueYesterday_inOverdueList() throws Exception {
+        Instant todayMidnightUtc = Instant.now().truncatedTo(ChronoUnit.DAYS);
+        saveJobWithDeadline("Due Today", JobStatus.IN_PROGRESS, memberId, todayMidnightUtc);
+        saveJobWithDeadline("Due Yesterday", JobStatus.BLOCKED, memberId, todayMidnightUtc.minus(1, ChronoUnit.DAYS));
+
+        mockMvc.perform(get(ApiPaths.dashboard(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.overdueJobs.length()").value(1))
+                .andExpect(jsonPath("$.overdueJobs[0].title").value("Due Yesterday"))
+                .andExpect(jsonPath("$.summary.overdueCount").value(1));
+    }
+
     // --- Pending approvals ---
 
     @Test

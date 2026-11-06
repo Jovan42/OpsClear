@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.DashboardResponse;
+import com.opsclear.dto.JobSummary;
 import com.opsclear.dto.JobTypeBreakdown;
 import com.opsclear.model.ApprovalModel;
 import com.opsclear.model.ApprovalStatus;
@@ -169,6 +170,27 @@ class DashboardServiceTest {
 
         assertThat(result.getOverdueJobs()).hasSize(1);
         assertThat(result.getOverdueJobs().getFirst().getTitle()).isEqualTo("Overdue Earlier");
+    }
+
+    @Test
+    @DisplayName("get — a job due today (midnight UTC) is not overdue; one due yesterday is (JOB-320)")
+    void get_shouldNotIncludeJobDueToday_inOverdueList_butIncludeJobDueYesterday() {
+        Instant todayMidnightUtc = Instant.now().truncatedTo(ChronoUnit.DAYS);
+        JobModel dueToday = JobModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).title("Due Today")
+                .status(JobStatus.IN_PROGRESS).deadline(todayMidnightUtc).build();
+        JobModel dueYesterday = JobModel.builder()
+                .id(UUID.randomUUID()).projectId(projectId).title("Due Yesterday")
+                .status(JobStatus.IN_PROGRESS).deadline(todayMidnightUtc.minus(1, ChronoUnit.DAYS)).build();
+        when(jobService.list(projectId, ownerId, null, null, null)).thenReturn(List.of(dueToday, dueYesterday));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalService.listPendingByProject(projectId, ownerId)).thenReturn(List.of());
+
+        DashboardResponse result = dashboardService.get(projectId, ownerId);
+
+        assertThat(result.getOverdueJobs()).extracting(JobSummary::getTitle).containsExactly("Due Yesterday");
+        assertThat(result.getSummary().getOverdueCount()).isEqualTo(1);
     }
 
     @Test

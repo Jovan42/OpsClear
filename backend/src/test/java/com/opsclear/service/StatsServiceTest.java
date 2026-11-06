@@ -299,12 +299,12 @@ class StatsServiceTest {
     void getProjectStats_shouldCountLate_excludingJobsWithoutDeadline() {
         givenCaller(memberMembership);
         givenRows(memberId, List.of(
-                // deadline before completion → late
-                row(memberId, "2026-10-13T12:00:00Z", 10, 5L, 0, Instant.parse("2026-10-13T00:00:00Z"), WEEK_1),
+                // completed the day after the deadline day → late
+                row(memberId, "2026-10-14T12:00:00Z", 10, 5L, 0, Instant.parse("2026-10-13T00:00:00Z"), WEEK_1),
                 // deadline after completion → on time
                 row(memberId, "2026-10-20T12:00:00Z", 10, 5L, 0, Instant.parse("2026-10-21T00:00:00Z"), WEEK_2),
-                // deadline equal to completion → not late (deadline < completedAt only)
-                row(memberId, "2026-10-21T00:00:00Z", 10, 5L, 0, Instant.parse("2026-10-21T00:00:00Z"), WEEK_2),
+                // completed during the deadline day → on time (the deadline covers its whole day)
+                row(memberId, "2026-10-21T15:29:00Z", 10, 5L, 0, Instant.parse("2026-10-21T00:00:00Z"), WEEK_2),
                 // no deadline → excluded from the rate
                 row(memberId, "2026-10-22T12:00:00Z", 10, 5L, 0, null, WEEK_2)));
 
@@ -318,6 +318,23 @@ class StatsServiceTest {
         assertThat(result.getBuckets().get(0).getCompletedLate()).isEqualTo(1);
         assertThat(result.getBuckets().get(1).getCompletedWithDeadline()).isEqualTo(2);
         assertThat(result.getBuckets().get(1).getCompletedLate()).isZero();
+    }
+
+    @Test
+    @DisplayName("getProjectStats — a deadline covers its whole UTC day: late only from the next midnight UTC")
+    void getProjectStats_shouldCountLate_onlyFromMidnightAfterDeadlineDay() {
+        givenCaller(memberMembership);
+        Instant deadline = Instant.parse("2026-10-20T00:00:00Z");
+        givenRows(memberId, List.of(
+                // last instant of the deadline day → on time
+                row(memberId, "2026-10-20T23:59:59Z", 10, 5L, 0, deadline, WEEK_2),
+                // first instant after the deadline day → late
+                row(memberId, "2026-10-21T00:00:00Z", 10, 5L, 0, deadline, WEEK_2)));
+
+        StatsResult result = statsService.getProjectStats(projectId, memberId, null, 4, UTC, NOW);
+
+        assertThat(result.getSummary().getCompletedWithDeadline()).isEqualTo(2);
+        assertThat(result.getSummary().getCompletedLate()).isEqualTo(1);
     }
 
     @Test
@@ -395,7 +412,7 @@ class StatsServiceTest {
     void getProjectStats_shouldListMembers_whenOwnerUnfiltered() {
         UUID formerId = UUID.randomUUID();
         givenCaller(ownerMembership);
-        JobStatsRow formerJob = row(formerId, "2026-10-13T12:00:00Z", 100, 50L, 0,
+        JobStatsRow formerJob = row(formerId, "2026-10-14T12:00:00Z", 100, 50L, 0,
                 Instant.parse("2026-10-13T00:00:00Z"), WEEK_1);
         formerJob.setAssigneeName("Fred Former");
         givenRows(null, List.of(

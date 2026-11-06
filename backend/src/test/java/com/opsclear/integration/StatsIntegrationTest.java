@@ -323,17 +323,23 @@ class StatsIntegrationTest {
     }
 
     @Test
-    @DisplayName("a job completed on its deadline day is late (midnight-UTC deadline)")
-    void stats_shouldCountCompletionOnDeadlineDayAsLate() {
-        completedJob("2026-10-19T09:00:00", "2026-10-20T15:00:00", "2026-10-20T00:00:00", memberId);
+    @DisplayName("a job completed on its deadline day is not late; completed after that day it is (JOB-320)")
+    void stats_shouldCountLate_onlyWhenCompletedAfterDeadlineDay() {
+        // completed during the deadline day (JOB-245 on prod) → on time
+        completedJob("2026-10-19T09:00:00", "2026-10-20T15:29:00", "2026-10-20T00:00:00", memberId);
+        // completed at the next midnight UTC → late
+        completedJob("2026-10-19T09:00:00", "2026-10-21T00:00:00", "2026-10-20T00:00:00", memberId);
+        // completed the day after the deadline day → late
+        completedJob("2026-10-19T09:00:00", "2026-10-21T15:00:00", "2026-10-20T00:00:00", memberId);
+        // completed before the deadline day → on time
         completedJob("2026-10-19T09:00:00", "2026-10-20T15:00:00", "2026-10-21T00:00:00", memberId);
         completedJob("2026-10-19T09:00:00", "2026-10-20T15:00:00", null, memberId);
 
         StatsResult result = ownerStats(UTC);
 
-        assertThat(result.getSummary().getCompletedCount()).isEqualTo(3);
-        assertThat(result.getSummary().getCompletedWithDeadline()).isEqualTo(2);
-        assertThat(result.getSummary().getCompletedLate()).isEqualTo(1);
+        assertThat(result.getSummary().getCompletedCount()).isEqualTo(5);
+        assertThat(result.getSummary().getCompletedWithDeadline()).isEqualTo(4);
+        assertThat(result.getSummary().getCompletedLate()).isEqualTo(2);
         assertThat(result.getSummary().getLateRate()).isEqualTo(0.5);
     }
 
@@ -549,8 +555,8 @@ class StatsIntegrationTest {
         history(memberJob, JobStatus.BLOCKED, JobStatus.IN_PROGRESS, ts(base.plus(HOUR.multipliedBy(30))));
         Instant memberCompletedAt = base.plus(HOUR.multipliedBy(52));
         history(memberJob, JobStatus.IN_PROGRESS, JobStatus.COMPLETED, ts(memberCompletedAt));
-        // Owner's job: started at creation, completed 24h later, 12h after its deadline (late).
-        completedJobAt(base, base.plus(DAY), base.plus(HOUR.multipliedBy(12)), ownerId);
+        // Owner's job: started at creation, completed 24h later, the day after its deadline day (late).
+        completedJobAt(base, base.plus(DAY), base.truncatedTo(ChronoUnit.DAYS), ownerId);
         int historyRows = dsl.fetchCount(JOB_STATUS_HISTORY);
 
         JsonNode response = getStats(ApiPaths.stats(projectId), ownerId);
