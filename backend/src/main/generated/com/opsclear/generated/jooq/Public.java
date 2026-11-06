@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq;
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
 import com.opsclear.generated.jooq.tables.FeedbackSubmissions;
+import com.opsclear.generated.jooq.tables.JobDeadlineAlerts;
 import com.opsclear.generated.jooq.tables.JobLinks;
 import com.opsclear.generated.jooq.tables.JobRelationships;
 import com.opsclear.generated.jooq.tables.JobStatusHistory;
@@ -15,6 +16,7 @@ import com.opsclear.generated.jooq.tables.JobTypes;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.Notifications;
 import com.opsclear.generated.jooq.tables.OrgCredits;
 import com.opsclear.generated.jooq.tables.OrgSequences;
 import com.opsclear.generated.jooq.tables.OrgSettings;
@@ -73,6 +75,11 @@ public class Public extends SchemaImpl {
     public final FeedbackSubmissions FEEDBACK_SUBMISSIONS = FeedbackSubmissions.FEEDBACK_SUBMISSIONS;
 
     /**
+     * The table <code>public.job_deadline_alerts</code>.
+     */
+    public final JobDeadlineAlerts JOB_DEADLINE_ALERTS = JobDeadlineAlerts.JOB_DEADLINE_ALERTS;
+
+    /**
      * External resource links attached to a job (ADR-0035)
      */
     public final JobLinks JOB_LINKS = JobLinks.JOB_LINKS;
@@ -113,6 +120,11 @@ public class Public extends SchemaImpl {
      * Immutable audit notes attached to jobs — no update or delete paths exist
      */
     public final Notes NOTES = Notes.NOTES;
+
+    /**
+     * The table <code>public.notifications</code>.
+     */
+    public final Notifications NOTIFICATIONS = Notifications.NOTIFICATIONS;
 
     /**
      * Append-only per-org credit ledger (ADR-0043) — balance is the sum of all
@@ -231,6 +243,7 @@ public class Public extends SchemaImpl {
             ApiKeys.API_KEYS,
             Approvals.APPROVALS,
             FeedbackSubmissions.FEEDBACK_SUBMISSIONS,
+            JobDeadlineAlerts.JOB_DEADLINE_ALERTS,
             JobLinks.JOB_LINKS,
             JobRelationships.JOB_RELATIONSHIPS,
             JobStatusHistory.JOB_STATUS_HISTORY,
@@ -239,6 +252,7 @@ public class Public extends SchemaImpl {
             Jobs.JOBS,
             Milestones.MILESTONES,
             Notes.NOTES,
+            Notifications.NOTIFICATIONS,
             OrgCredits.ORG_CREDITS,
             OrgSequences.ORG_SEQUENCES,
             OrgSettings.ORG_SETTINGS,
