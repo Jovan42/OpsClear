@@ -167,8 +167,8 @@ public class StatsService {
             blockedSum += row.getBlockedSeconds();
             if (row.getDeadline() != null) {
                 withDeadline++;
-                // Same comparison as the Dashboard overdue list: deadline < completedAt, as instants.
-                if (row.getDeadline().isBefore(row.getCompletedAt())) {
+                // Same rule as the Dashboard overdue list: late only once the deadline day is over.
+                if (DeadlineRules.isPastDeadline(row.getDeadline(), row.getCompletedAt())) {
                     late++;
                 }
             }

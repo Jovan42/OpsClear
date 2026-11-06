@@ -66,7 +66,7 @@ Both time metrics are shown side by side (decided): total time answers "how long
 - **Completion time = the job's last `→ COMPLETED` transition**, and the job counts only if it is **still Completed now**. A reopened job that is still open drops out of the cohort; once re-completed, it counts once, in the week of its final completion.
 - **Working time** runs from the **first** `→ IN_PROGRESS` transition ever to the last completion, so time spent after a reopen is included.
 - **Attribution = current assignee** (`jobs.assigned_to`). If a job was reassigned, earlier assignees get no credit; this is a known limitation because reassignments aren't recorded. Unassigned completed jobs count in team totals only.
-- **"Late"** uses the same comparison as the Dashboard's overdue list (`deadline < completedAt`, as instants), so the two pages never disagree about what late means. Because deadlines are stored as midnight UTC, a job completed during its deadline day counts as late. That matches today's Dashboard behaviour, and changing it is out of scope here.
+- **"Late"** uses the same comparison as the Dashboard's overdue list (`deadline < completedAt`, as instants), so the two pages never disagree about what late means. Because deadlines are stored as midnight UTC, a job completed during its deadline day counts as late. That matches today's Dashboard behaviour, and changing it is out of scope here. **Superseded by JOB-320:** a deadline now covers its whole UTC day, so a job is late (and, on the Dashboard, overdue) only at or after `deadline + 1 day`; both pages use the shared `DeadlineRules` helper.
 - Soft-deleted jobs are excluded. Jobs in a completed project still count (the page is read-only).
 
 ### What the page shows
@@ -216,7 +216,7 @@ Considered, since averages are sensitive to one very long job. Kept average for 
 
 ### Negative
 - Attribution ignores reassignment history, and "late" ignores deadline changes. Both are limits of what's recorded today. Fixing them would need new history tables (separate Future Consideration if it matters).
-- "Late" inherits the Dashboard's midnight-UTC deadline comparison, so a job finished on its deadline day counts as late.
+- "Late" inherits the Dashboard's midnight-UTC deadline comparison, so a job finished on its deadline day counts as late. (Fixed in JOB-320: finishing on the deadline day is on time.)
 - Averages can be skewed by a few very long jobs.
 
 ### Neutral
