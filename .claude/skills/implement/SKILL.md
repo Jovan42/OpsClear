@@ -41,10 +41,15 @@ Hand implementation jobs to the per-layer agents in `.claude/agents/`
    in the same message. Prompt:
    `Implement <JOB> (<PRJ>, <milestone>). Title: <title>. Follow your instructions and the implementation loop in docs/dev/process/AGENTS.md.`
    Add anything the user said about the job.
+
+   Right after launching, move each launched job to In Progress (routine, no `--yes`), so OpsClear
+   shows the work as started before the PR exists:
+   `scripts/opsclear job status <JOB> IN_PROGRESS`. If an agent later stops without a PR, say in the
+   report that the job is still In Progress so the user can move it back.
 6. **Review.** When an agent opens a PR, run the `pr-reviewer` agent on it (prompt:
    `Review PR #<N> for <JOB>.`). It posts one comment on the PR and returns a summary.
 7. **Report** a table: job, agent, outcome (PR link, or stopped with the reason), check results,
-   reviewer verdict and blockers, open questions from the agent. Then list what to do next (review/merge PRs; jobs that were
+   reviewer verdict and blockers, open questions from the agent. Then list what to do next (review/merge PRs, then `/finish <JOB>`; jobs that were
    waiting).
 
 ## Stop conditions
