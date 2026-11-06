@@ -1,0 +1,42 @@
+# Syncs pull request events to the OpsClear jobs they reference (ADR-0055).
+# Needs the repo secret OPSCLEAR_API_KEY (OpsClear API key "github-actions").
+name: Job sync
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, edited, closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: job-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # Fork PRs never get secrets, so skip them.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Backstop on top of `pr sync`'s own exit-0 rule: never fail the PR.
+    continue-on-error: true
+    steps:
+      # main's scripts/, not the PR's: a PR can't change the sync logic that
+      # runs with the secret on that same PR.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          sparse-checkout: scripts
+          # The token isn't needed after checkout; don't leave it in .git/config.
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      # PR title, body and branch are read from the event file by the script,
+      # never interpolated into this shell command (no script injection).
+      - name: Sync PR to OpsClear jobs
+        env:
+          OPSCLEAR_API_KEY: ${{ secrets.OPSCLEAR_API_KEY }}
+        run: python scripts/opsclear pr sync --event "$GITHUB_EVENT_PATH" --summary "$GITHUB_STEP_SUMMARY" --yes
