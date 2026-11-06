@@ -200,6 +200,14 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class Stats {
+        public static final String INVALID_WEEKS = "weeks must be 4, 12 or 26";
+        public static final String MEMBER_FILTER_NOT_ALLOWED = "Members can only view their own stats";
+
+        private Stats() {
+        }
+    }
+
     public static final class Paddle {
         public static final String INTERNAL_ORG_NOT_BILLED =
                 "Internal organisations are not billed and have no Paddle subscription";
