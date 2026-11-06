@@ -225,8 +225,8 @@ class DashboardIntegrationTest {
     @Test
     @DisplayName("Jobs with past deadline and non-completed status should appear in overdueJobs")
     void getDashboard_shouldIncludeOverdueJobs_whenDeadlinePastAndNotCompleted() throws Exception {
-        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
-        saveJobWithDeadline("Overdue Job", JobStatus.IN_PROGRESS, memberId, yesterday);
+        Instant twoDaysAgo = Instant.now().minus(2, ChronoUnit.DAYS);
+        saveJobWithDeadline("Overdue Job", JobStatus.IN_PROGRESS, memberId, twoDaysAgo);
 
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
@@ -239,9 +239,9 @@ class DashboardIntegrationTest {
     @Test
     @DisplayName("Completed jobs with past deadline should not appear in overdueJobs")
     void getDashboard_shouldNotIncludeCompletedJobs_inOverdueList() throws Exception {
-        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
-        saveJobWithDeadline("Completed Late Job", JobStatus.COMPLETED, memberId, yesterday);
-        saveJobWithDeadline("Overdue Job", JobStatus.IN_PROGRESS, memberId, yesterday);
+        Instant twoDaysAgo = Instant.now().minus(2, ChronoUnit.DAYS);
+        saveJobWithDeadline("Completed Late Job", JobStatus.COMPLETED, memberId, twoDaysAgo);
+        saveJobWithDeadline("Overdue Job", JobStatus.IN_PROGRESS, memberId, twoDaysAgo);
 
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
@@ -264,17 +264,18 @@ class DashboardIntegrationTest {
     }
 
     @Test
-    @DisplayName("A job due today (midnight UTC) is not overdue until its day has passed; one due yesterday is (JOB-320)")
-    void getDashboard_shouldNotIncludeJobDueToday_butIncludeJobDueYesterday_inOverdueList() throws Exception {
+    @DisplayName("A job due today (midnight UTC) is not overdue until its day has passed; one due two days ago is (JOB-320)")
+    void getDashboard_shouldNotIncludeJobDueToday_butIncludeJobDueTwoDaysAgo_inOverdueList() throws Exception {
         Instant todayMidnightUtc = Instant.now().truncatedTo(ChronoUnit.DAYS);
         saveJobWithDeadline("Due Today", JobStatus.IN_PROGRESS, memberId, todayMidnightUtc);
-        saveJobWithDeadline("Due Yesterday", JobStatus.BLOCKED, memberId, todayMidnightUtc.minus(1, ChronoUnit.DAYS));
+        saveJobWithDeadline("Due Two Days Ago", JobStatus.BLOCKED, memberId,
+                todayMidnightUtc.minus(2, ChronoUnit.DAYS));
 
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.overdueJobs.length()").value(1))
-                .andExpect(jsonPath("$.overdueJobs[0].title").value("Due Yesterday"))
+                .andExpect(jsonPath("$.overdueJobs[0].title").value("Due Two Days Ago"))
                 .andExpect(jsonPath("$.summary.overdueCount").value(1));
     }
 

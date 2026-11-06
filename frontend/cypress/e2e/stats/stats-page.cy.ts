@@ -41,14 +41,22 @@ function completeJob(email: string, projectId: string, body: Parameters<typeof c
   );
 }
 
+/** ISO timestamp of midnight UTC `days` days before today (a date-only deadline, as the app stores it). */
+function utcMidnightDaysAgo(days: number): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString();
+}
+
 describe('Stats page', () => {
   it('an owner opens Stats from the nav, sees the team tiles and weekly chart, and switching to 4 weeks updates the chart', { tags: '@smoke' }, () => {
     const email = uniqueEmail('stats-owner');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Quasar Corp', uniqueSlug());
     createProjectAs(email, 'Quasar Stats Project').then((projectId) => {
-      const past = new Date(Date.now() - 60 * 60_000).toISOString();
-      completeJob(email, projectId, { title: 'Done late', deadline: past });
+      // Late only after the deadline day ends (JOB-320), so the deadline is two UTC days back.
+      completeJob(email, projectId, { title: 'Done late', deadline: utcMidnightDaysAgo(2) });
       completeJob(email, projectId, { title: 'Done without deadline' });
 
       cy.intercept('GET', STATS_URL).as('statsFetch');
