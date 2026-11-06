@@ -632,9 +632,32 @@ class PrSyncTest(unittest.TestCase):
         self.assertEqual(write_summary(fake.writes()), [
             ("PUT", "JOB-1/links/l1", {"url": PR_URL, "label": "PR #7 (closed)"})])
 
-    def test_closed_without_link_does_nothing(self):
+    def test_closed_without_link_adds_closed_link(self):
         _, _, _, fake = self.sync(pr_args("closed"), job("JOB-1"))
-        self.assertEqual(fake.writes(), [])
+        self.assertEqual(write_summary(fake.writes()), [
+            ("POST", "JOB-1/links", {"url": PR_URL, "label": "PR #7: Do it (JOB-1) (closed)"})])
+
+    def test_edit_on_closed_pr_moves_no_status(self):
+        argv = pr_args("edited", "Closes JOB-2", extra=["--state", "closed"])
+        _, _, _, fake = self.sync(argv, job("JOB-1", links=link("PR #7 (closed)")), job("JOB-2"))
+        self.assertEqual(write_summary(fake.writes()), [
+            ("POST", "JOB-2/links", {"url": PR_URL, "label": "PR #7: Do it (JOB-1) (closed)"})])
+
+    def test_edit_on_merged_pr_labels_merged_without_status(self):
+        argv = pr_args("edited", extra=["--state", "closed", "--merged"])
+        _, _, _, fake = self.sync(argv, job("JOB-1", links=link("PR #7 (closed)")))
+        self.assertEqual(write_summary(fake.writes()), [
+            ("PUT", "JOB-1/links/l1", {"url": PR_URL, "label": "PR #7 (merged)"})])
+
+    def test_edit_on_closed_pr_from_event_file(self):
+        path = self.event_file("edited", state="closed", merged=True)
+        _, _, _, fake = self.sync(["pr", "sync", "--event", path, "--yes"], job("JOB-1", status="IN_PROGRESS"))
+        self.assertEqual([w["method"] for w in fake.writes()], ["POST"])
+        self.assertTrue(fake.writes()[0]["body"]["label"].endswith("(merged)"))
+
+    def test_bad_usage_without_key_is_usage_error(self):
+        code, _, err, _ = run(["pr", "sync", "--event", "/nonexistent/e.json"], {}, env={"HOME": "/nonexistent"})
+        self.assertEqual(code, opsclear.EXIT_USAGE)
 
     def event_file(self, action, **pr):
         data = {"action": action, "pull_request": {
@@ -759,6 +782,56 @@ class PrSyncRetryTest(unittest.TestCase):
         self.assertEqual(sleeps, [1, 2, 3])
         self.assertEqual(len(calls), 4)
         self.assertIn("::warning::JOB-1: OpsClear unreachable after 4 attempts", out)
+
+    def test_read_phase_errors_are_retried_and_never_crash(self):
+        import http.client
+        for exc in (TimeoutError("timed out"), ConnectionResetError(), http.client.RemoteDisconnected("closed")):
+            code, out, calls, sleeps = self.run_with([exc], pr_args("opened", body="Closes JOB-2"))
+            self.assertEqual(code, 0, exc)
+            self.assertEqual(sleeps, [1, 2, 3])
+            self.assertIn("::warning::JOB-1: OpsClear unreachable", out)
+            self.assertIn("::warning::JOB-2: skipped: OpsClear unreachable", out)
+
+    def test_urllib_transport_maps_read_errors(self):
+        from unittest import mock
+        with mock.patch.object(opsclear.urllib.request, "urlopen", side_effect=TimeoutError("read timed out")):
+            with self.assertRaises(opsclear.CliError):
+                opsclear.urllib_transport("GET", URL + "/api/projects", {}, None)
+
+    def test_retried_status_change_already_applied_is_done(self):
+        j = job("JOB-1", status="NEW", links=link("PR #7"))
+        state = {"patches": 0}
+        calls = []
+
+        def transport(method, url, headers, data):
+            path = urlsplit(url).path
+            calls.append((method, path))
+            if method == "GET" and path == "/api/projects":
+                return opsclear.Response(200, json.dumps([PRJ_NEW]).encode())
+            if method == "GET" and path == f"{PR_BASE}/JOB-1":
+                # after the first status PATCH the job really is IN_PROGRESS
+                cur = dict(j, status="IN_PROGRESS" if state["patches"] else "NEW")
+                return opsclear.Response(200, json.dumps(cur).encode())
+            if method == "GET":
+                return opsclear.Response(200, json.dumps(PRJ_NEW).encode())
+            if method == "PATCH":
+                state["patches"] += 1
+                if state["patches"] == 1:
+                    return opsclear.Response(504, b"")
+                if state["patches"] >= 3:
+                    return opsclear.Response(200, b"{}")
+                return opsclear.Response(400, json.dumps({"message": "illegal transition"}).encode())
+            return opsclear.Response(200, b"{}")
+
+        out, err = io.StringIO(), io.StringIO()
+        argv = pr_args("closed", "Closes JOB-1", merged=True)
+        code = opsclear.main(argv, env={"OPSCLEAR_API_KEY": KEY, "OPSCLEAR_URL": URL}, transport=transport,
+                             stdout=out, stderr=err, sleep=lambda s: None, retry_delays=(1,))
+        self.assertEqual(code, 0)
+        self.assertIn("done (applied by an earlier attempt)", out.getvalue())
+        self.assertNotIn("::warning::", out.getvalue())
+        # the chain went on: IN_PROGRESS (504, then 400 treated as done), then COMPLETED
+        self.assertEqual(state["patches"], 3)
 
     def test_4xx_is_not_retried(self):
         code, out, calls, sleeps = self.run_with([opsclear.Response(403, b"{}")], pr_args("opened"))

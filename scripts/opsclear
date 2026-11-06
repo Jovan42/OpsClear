@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import http.client
 import json
 import os
 import re
@@ -86,9 +87,15 @@ def urllib_transport(method: str, url: str, headers: Dict[str, str], data: Optio
         with urllib.request.urlopen(req, timeout=30) as resp:
             return Response(resp.status, resp.read())
     except urllib.error.HTTPError as e:
-        return Response(e.code, e.read())
+        try:
+            return Response(e.code, e.read())
+        except (OSError, http.client.HTTPException) as err:
+            raise CliError(f"connection to OpsClear failed while reading the response: {err!r}")
     except urllib.error.URLError as e:
         raise CliError(f"cannot reach OpsClear at {url.split('/api/')[0]}: {e.reason}")
+    except (OSError, http.client.HTTPException) as e:
+        # timeouts, resets and dropped connections while reading the response are not wrapped by urllib
+        raise CliError(f"connection to OpsClear failed: {e!r}")
 
 
 class Api:
@@ -943,6 +950,7 @@ class PrEvent:
     body: str
     branch: str
     merged: bool = False
+    state: str = "open"  # the PR's state when the event fired: open or closed
 
 
 def strip_html_comments(text: Optional[str]) -> str:
@@ -1008,7 +1016,16 @@ def plan_job_changes(event: PrEvent, project_id: str, job: Dict[str, Any], close
         steps.append(Step(f"status -> {target}", Write("PATCH", base + "/status", {"status": target}),
                           needs_confirm=target != "IN_PROGRESS"))
 
-    if event.action in ("opened", "edited", "reopened"):
+    # An edit to a PR that is already closed or merged only keeps its link label right: no status moves.
+    edited_after_close = event.action == "edited" and event.state != "open"
+    if edited_after_close:
+        label = merged_label if event.merged else closed_label
+        suffix = MERGED_SUFFIX if event.merged else CLOSED_SUFFIX
+        if link is None:
+            add_link(with_suffix(pr_link_label(event), suffix))
+        else:
+            relabel(label(link.get("label")))
+    elif event.action in ("opened", "edited", "reopened"):
         if link is None:
             add_link(pr_link_label(event))
         elif event.action == "reopened":
@@ -1031,7 +1048,7 @@ def plan_job_changes(event: PrEvent, project_id: str, job: Dict[str, Any], close
             move("IN_PROGRESS")
     elif event.action == "closed":
         if link is None:
-            steps.append(Step("no link to relabel (closed)", note=True))
+            add_link(with_suffix(pr_link_label(event), CLOSED_SUFFIX))
         else:
             relabel(closed_label(link.get("label")))
     return steps
@@ -1054,8 +1071,8 @@ def retrying_transport(inner: Transport, delays: Tuple[float, ...], sleep: Calla
                 failure = f"HTTP {resp.status}"
             except Unreachable:
                 raise
-            except CliError as e:
-                failure = str(e)
+            except (CliError, OSError, http.client.HTTPException) as e:
+                failure = str(e) or repr(e)
             if attempt >= len(delays):
                 raise Unreachable(f"OpsClear unreachable after {attempt + 1} attempts: {failure}")
             on_retry(failure, delays[attempt])
@@ -1079,14 +1096,22 @@ def read_pr_event(args) -> PrEvent:
         return PrEvent(
             action=str(data.get("action") or ""), number=int(pr.get("number") or 0),
             url=str(pr.get("html_url") or ""), title=str(pr.get("title") or ""), body=str(pr.get("body") or ""),
-            branch=str((pr.get("head") or {}).get("ref") or ""), merged=bool(pr.get("merged")))
+            branch=str((pr.get("head") or {}).get("ref") or ""), merged=bool(pr.get("merged")),
+            state=str(pr.get("state") or "open").lower())
     missing = [f for f in ("action", "number", "url") if not getattr(args, f)]
     if missing:
         raise argparse.ArgumentTypeError("pr sync needs --event, or --action, --number and --url: missing "
                                          + ", ".join("--" + m for m in missing))
     return PrEvent(action=args.action, number=args.number, url=args.url, title=args.title or "",
                    body=read_text(args.body_file) if args.body_file else "", branch=args.branch or "",
-                   merged=args.merged)
+                   merged=args.merged, state=args.state)
+
+
+def applied_already(ctx: Ctx, write: Write) -> bool:
+    """After a retried status PATCH got 400: did an earlier attempt already apply it? Re-reads the job."""
+    target = (write.body or {}).get("status")
+    current = ctx.api.get(write.path.rsplit("/status", 1)[0]).get("status")
+    return current == target or (current == "COMPLETED" and target == "IN_PROGRESS")
 
 
 def md_cell(text: str) -> str:
@@ -1100,6 +1125,7 @@ def cmd_pr_sync(ctx: Ctx, args) -> int:
         out.print(f"Nothing to sync: PR action {event.action!r} is not one of {', '.join(PR_ACTIONS)}.")
         return EXIT_OK
     refs, closes = parse_pr_refs(event.branch, event.title, event.body)
+    retries = [0]
     rows: List[Tuple[str, str, str]] = []
 
     def record(job_id: str, change: str, result: str) -> None:
@@ -1118,7 +1144,7 @@ def cmd_pr_sync(ctx: Ctx, args) -> int:
     else:
         ctx.api.transport = retrying_transport(
             ctx.api.transport, ctx.retry_delays, ctx.sleep,
-            lambda why, delay: out.print(f"OpsClear not answering ({why}), retrying in {delay:g}s"))
+            lambda why, delay: (retries.__setitem__(0, retries[0] + 1), out.print(f"OpsClear not answering ({why}), retrying in {delay:g}s")))
     for index, job_id in enumerate(refs):
         try:
             project, job = find_job(ctx, job_id)
@@ -1134,13 +1160,21 @@ def cmd_pr_sync(ctx: Ctx, args) -> int:
                     record(job_id, step.text, "not applied, re-run with --yes")
                     break
                 else:
-                    ctx.api.request(step.write.method, step.write.path, step.write.body)
+                    before = retries[0]
+                    try:
+                        ctx.api.request(step.write.method, step.write.path, step.write.body)
+                    except ApiError as e:
+                        if not (e.status == 400 and retries[0] > before and step.write.method == "PATCH"
+                                and applied_already(ctx, step.write)):
+                            raise
+                        record(job_id, step.text, "done (applied by an earlier attempt)")
+                        continue
                     requested = step.text.endswith("COMPLETED") and ctx.api.last_status == 202
                     record(job_id, step.text, "completion requested" if requested else "done")
         except Unreachable as e:
             warn(job_id, f"{e}. Skipping this and the remaining jobs.")
             for rest in refs[index + 1:]:
-                rows.append((rest, "skipped", "OpsClear unreachable"))
+                warn(rest, "skipped: OpsClear unreachable")
             break
         except CliError as e:
             warn(job_id, f"skipped: {e}")
@@ -1250,6 +1284,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--summary", help="append a Markdown table here ($GITHUB_STEP_SUMMARY)")
     p.add_argument("--action", choices=PR_ACTIONS, help="without --event: the PR action")
     p.add_argument("--merged", action="store_true", help="without --event: the PR was merged")
+    p.add_argument("--state", choices=("open", "closed"), default="open",
+                   help="without --event: the PR's state (an edit to a closed PR moves no status)")
     p.add_argument("--number", type=int, help="without --event: the PR number")
     p.add_argument("--url", help="without --event: the PR URL")
     p.add_argument("--branch", help="without --event: the PR's head branch")
@@ -1328,6 +1364,11 @@ def main(argv: Optional[List[str]] = None, env: Optional[Dict[str, str]] = None,
     except SystemExit as e:
         return int(e.code or 0)
     if not key and getattr(args, "group", "") == "pr":
+        try:
+            read_pr_event(args)
+        except (argparse.ArgumentTypeError, CliError) as e:
+            out.warn(f"error: {e}")
+            return EXIT_USAGE
         out.print("::notice::OPSCLEAR_API_KEY is not set, nothing synced.")
         return EXIT_OK
     if not key:
