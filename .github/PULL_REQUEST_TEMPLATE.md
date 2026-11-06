@@ -15,11 +15,11 @@
 
 ## OpsClear job
 
-<!-- Keep "Closes JOB-x" when merging this PR finishes the job (the usual case). -->
+<!-- Replace JOB-___ with this PR's job ID. Keep "Closes" when merging this PR finishes the job (the usual case). -->
 <!-- List several as "Closes JOB-1, JOB-2". -->
 <!-- For a partial PR (more PRs follow on the job), replace it with "Part of JOB-x". -->
 
-Closes JOB-
+Closes JOB-___
 
 ## ADR
 

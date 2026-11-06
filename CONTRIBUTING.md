@@ -128,10 +128,12 @@ Closes JOB-123
 
 - **Reference the OpsClear job** (and the ADR, for feature work). Link the PR to the job in OpsClear.
 - **`Closes` / `Part of`**: put `Closes JOB-123` on its own line in the PR body when merging the PR
-  finishes the job (the default, since one job = one PR). Several jobs: `Closes JOB-1, JOB-2`. Use
-  `Part of JOB-123` instead when more PRs follow on the same job. A job mentioned only in the
-  branch name or title counts as `Part of`. Other mentions in the body (e.g. "see JOB-123") are
-  not references. The keywords are read when the PR merges (ADR-0055)
+  finishes the job (the default, since one job = one PR). Several jobs: `Closes JOB-1, JOB-2`
+  (comma-separated) or one `Closes` line per job. Use `Part of JOB-123` instead when more PRs
+  follow on the same job. A job mentioned only in the branch name or title counts as `Part of`.
+  Other mentions in the body (e.g. "see JOB-123") are not references. The keywords are read from
+  the body lines at merge time, so adding one after opening the PR works. Text inside
+  `<!-- -->` comments is ignored (ADR-0055)
 - **No tool/AI attribution** in commits or PR descriptions: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
   `.claude/settings.json` turns Claude Code's own footers off; don't add them by hand
 - **PR title = commit subject** for single-commit PRs

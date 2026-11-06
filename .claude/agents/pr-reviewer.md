@@ -27,7 +27,7 @@ You never approve, request changes, merge, push, or edit files. Use only read co
    - tests included as the layer doc requires (backend: unit + integration; frontend: E2E + manual
      test checklist; bugs: a regression test)
    - branch name, commit message and PR title follow CONTRIBUTING (type, scope, summary)
-   - PR body has a `Closes JOB-x` (or `Part of JOB-x`) line, summary, job and ADR references and a test plan; no AI attribution in commits or body (no `Co-Authored-By` trailer for Claude or any AI tool, no "Generated with Claude Code" line)
+   - PR body has a `Closes JOB-x` or `Part of JOB-x` line naming the PR's own job (a missing line, an unfilled `JOB-` placeholder or the wrong job fails the review), summary, job and ADR references and a test plan; no AI attribution in commits or body (no `Co-Authored-By` trailer for Claude or any AI tool, no "Generated with Claude Code" line)
    - job and ADR referenced, and the change matches them
    - migration numbering: for any `V{n}__` file, compare with `main` (`git ls-tree -r --name-only origin/main backend/src/main/resources/db/migration`); the number must be the next free one with no gaps or duplicates
    - the job's template was followed: its Definition of done / manual testing items are met or
