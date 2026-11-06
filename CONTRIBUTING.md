@@ -9,6 +9,7 @@ Day-to-day workflow, job conventions, and layer-specific technical conventions l
 - [JOBS.md](docs/dev/process/JOBS.md) — job naming, splitting, and dependency conventions
 - [BACKEND.md](docs/dev/process/BACKEND.md) — backend technical conventions
 - [FRONTEND.md](docs/dev/process/FRONTEND.md) — frontend technical conventions
+- [DEV-GUIDE.md](docs/dev/process/DEV-GUIDE.md) — one-page guide to dev with Claude Code skills and agents (start here)
 - [E2E.md](docs/dev/process/E2E.md) — when E2E coverage is required, sizing, naming, CI tiers
 
 This file covers commit/PR/branch mechanics only.
