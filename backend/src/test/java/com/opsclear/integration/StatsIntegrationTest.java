@@ -1,6 +1,8 @@
 package com.opsclear.integration;
 
+import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ForbiddenException;
+import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobStatsRow;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.OrganisationModel;
@@ -38,6 +40,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -314,6 +318,92 @@ class StatsIntegrationTest {
         assertThat(result.getSummary().getCompletedCount()).isEqualTo(1);
         assertThat(result.getMembers()).isNull();
         assertThatThrownBy(() -> statsService.getProjectStats(projectId, memberId, ownerId, 4, UTC, NOW))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("a job completed without going through In Progress has a lead time but no cycle time")
+    void stats_shouldSkipCycleTime_forJobNeverInProgress() {
+        UUID direct = insertJob(JobStatus.COMPLETED, "2026-10-19T09:00:00", null, memberId);
+        history(direct, null, JobStatus.NEW, "2026-10-19T09:00:00");
+        history(direct, JobStatus.NEW, JobStatus.COMPLETED, "2026-10-20T09:00:00");
+
+        StatsResult onlyDirect = ownerStats(UTC);
+
+        assertThat(onlyDirect.getSummary().getCompletedCount()).isEqualTo(1);
+        assertThat(onlyDirect.getSummary().getAvgLeadTimeSeconds()).isEqualTo(86_400L);
+        assertThat(onlyDirect.getSummary().getAvgCycleTimeSeconds()).isNull();
+
+        // Started 2 days before completion: the cycle average counts only this job.
+        completedJob("2026-10-18T09:00:00", "2026-10-20T09:00:00", null, memberId);
+
+        StatsResult mixed = ownerStats(UTC);
+
+        assertThat(mixed.getSummary().getCompletedCount()).isEqualTo(2);
+        assertThat(mixed.getSummary().getAvgCycleTimeSeconds()).isEqualTo(172_800L);
+    }
+
+    @Test
+    @DisplayName("an OWNER can filter by a member: only that member's jobs, no members list")
+    void stats_shouldFilterByMember_forOwner() {
+        completedJob("2026-10-19T09:00:00", "2026-10-20T09:00:00", null, memberId);
+        completedJob("2026-10-19T09:00:00", "2026-10-20T09:00:00", null, ownerId);
+
+        StatsResult result = statsService.getProjectStats(projectId, ownerId, memberId, 4, UTC, NOW);
+
+        assertThat(result.getMemberId()).isEqualTo(memberId);
+        assertThat(result.getSummary().getCompletedCount()).isEqualTo(1);
+        assertThat(result.getMembers()).isNull();
+    }
+
+    @Test
+    @DisplayName("a MEMBER may pass their own memberId")
+    void stats_shouldAllowMemberToPassOwnId() {
+        completedJob("2026-10-19T09:00:00", "2026-10-20T09:00:00", null, memberId);
+        completedJob("2026-10-19T09:00:00", "2026-10-20T09:00:00", null, ownerId);
+
+        StatsResult result = statsService.getProjectStats(projectId, memberId, memberId, 4, UTC, NOW);
+
+        assertThat(result.getMemberId()).isEqualTo(memberId);
+        assertThat(result.getSummary().getCompletedCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("as of now, with no weeks or zone: 12 weeks in UTC, current week last")
+    void stats_shouldUseDefaults_asOfNow() {
+        // Completed at the current second, so it's in the current week even just after Monday 00:00 UTC.
+        Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        String completedAt = LocalDateTime.ofInstant(now, ZoneOffset.UTC).toString();
+        String createdAt = LocalDateTime.ofInstant(now.minus(1, ChronoUnit.HOURS), ZoneOffset.UTC).toString();
+        completedJob(createdAt, completedAt, null, memberId);
+
+        StatsResult result = statsService.getProjectStats(projectId, ownerId, null, null, null);
+
+        assertThat(result.getWeeks()).isEqualTo(12);
+        assertThat(result.getTimezone()).isEqualTo("UTC");
+        assertThat(result.getBuckets()).hasSize(12);
+        assertThat(result.getSummary().getCompletedCount()).isEqualTo(1);
+        assertThat(result.getBuckets().get(11).getCompletedCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("weeks outside 4, 12 and 26 are rejected")
+    void stats_shouldRejectInvalidWeeks() {
+        assertThatThrownBy(() -> statsService.getProjectStats(projectId, ownerId, null, 5, UTC, NOW))
+                .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    @DisplayName("an unknown project is not found")
+    void stats_shouldThrowNotFound_forUnknownProject() {
+        assertThatThrownBy(() -> statsService.getProjectStats(UUID.randomUUID(), ownerId, null, 4, UTC, NOW))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("a user who isn't a project member is forbidden")
+    void stats_shouldThrowForbidden_forNonMember() {
+        assertThatThrownBy(() -> statsService.getProjectStats(projectId, formerId, null, 4, UTC, NOW))
                 .isInstanceOf(ForbiddenException.class);
     }
 }
