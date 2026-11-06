@@ -112,8 +112,7 @@ references: [WORKFLOW.md](WORKFLOW.md#github-job-sync) and the ADR.
   2. `gh secret set OPSCLEAR_API_KEY --repo Jovan42/OpsClear` (it prompts for the value; never
      paste the key into chat, files or a command line).
   3. Revoke the old key. GitHub masks the secret as `***` in logs.
-- **Manual run.** `scripts/opsclear pr sync` also takes `--action`, `--number` and `--url` instead
-  of `--event`, with `--dry-run` to preview. See `scripts/opsclear pr sync --help`.
+- **Manual run.** Without `--event`, `scripts/opsclear pr sync` takes the PR as flags: `--action` (`opened`/`edited`/`reopened`/`closed`), `--number`, `--url`, and `--branch`, `--title`, `--body-file` (jobs are read only from these three, so leave them out and nothing syncs). For a merge add `--merged` (without it, `closed` means closed without merge). For an edit to an already closed PR add `--state closed`. `--dry-run` previews; status moves past In Progress need `--yes`. Example merge preview: `scripts/opsclear pr sync --action closed --merged --number N --url <PR url> --branch <branch> --title '<title>' --body-file body.txt --dry-run`. See `scripts/opsclear pr sync --help`.
 
 ---
 

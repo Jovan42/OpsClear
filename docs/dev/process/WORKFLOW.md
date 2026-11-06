@@ -111,9 +111,10 @@ A workflow (`.github/workflows/job-sync.yml`) keeps the OpsClear jobs in step wi
 
 | PR event | Link | Job status |
 |---|---|---|
-| Opened, reopened, or newly referenced by an edit | `PR #N: <title>` added (reopen removes `(closed)`) | NEW → In Progress |
-| Merged, job in `Closes` | Relabelled `(merged)` | Completed (NEW and Blocked go through In Progress) |
-| Merged, job not in `Closes` | Relabelled `(merged)` | NEW → In Progress, otherwise untouched |
-| Closed without merge | Relabelled `(closed)` | Untouched |
+| Opened, reopened or edited (PR open) | `PR #N: <title>` added if missing (reopen removes `(closed)`) | NEW → In Progress; others untouched (a Completed job stays Completed) |
+| Merged, job in `Closes` | Relabelled `(merged)`, or added as `PR #N: <title> (merged)` | Completed (NEW and Blocked go through In Progress) |
+| Merged, job not in `Closes` | Relabelled or added `(merged)` | NEW → In Progress, otherwise untouched |
+| Closed without merge | Relabelled `(closed)`, or added as `PR #N: <title> (closed)` | Untouched |
+| Edited after close or merge | Added or relabelled with `(closed)` / `(merged)` | Untouched |
 
 It never fails the PR and isn't a required check. If it didn't run or missed something, `/finish` and `/finish-adr` do the step. Setup, key and fallback rules: [AGENTS.md](AGENTS.md#github-job-sync).

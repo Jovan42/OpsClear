@@ -1,6 +1,6 @@
 ---
 name: finish-adr
-description: Close out an ADR job after its PR merges. Relabel the PR link "(merged)", add the closing note on the source Future Consideration, and complete the ADR job after confirmation.
+description: Close out an ADR job after its PR merges. Relabel the PR link "(merged)" (skipping what the job sync already did), add the closing note on the source Future Consideration, and complete the ADR job after confirmation.
 argument-hint: "JOB-123"
 disable-model-invocation: true
 ---
@@ -17,10 +17,10 @@ completes the job on merge already, so this skill **checks first and only does w
 ## Steps
 
 1. **Check the merge.** `scripts/opsclear job get <ID>` and find its ADR PR link
-   (`PR #N: ADR-NNNN`). Run `gh pr view <N> --json state,mergedAt`. If it isn't `MERGED`, stop.
+   (the link whose label starts `PR #N` and whose URL is the ADR PR; the sync usually labels it
+   `PR #N: <PR title>`). Run `gh pr view <N> --json state,mergedAt`. If it isn't `MERGED`, stop.
 2. **Relabel the link** unless it already ends in `(merged)` (the sync did it; say so and skip):
-   `scripts/opsclear link merged <ID> <PR url>`. Its label becomes
-   `PR #N: ADR-NNNN (merged)`.
+   `scripts/opsclear link merged <ID> <PR url>`. Its label becomes `<label> (merged)`.
 3. **Note the source idea.** If the description says `Promoted from JOB-x`, run
    `scripts/opsclear note list <JOB-x>`. If no note mentions this ADR yet, propose:
    `ADR-NNNN merged (PR #N). Implementation is tracked in <PRJ> / <MIL>.`

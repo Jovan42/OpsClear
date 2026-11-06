@@ -1,6 +1,6 @@
 ---
 name: finish
-description: Close out an implementation, bug or chore job after its PR merges. Relabel the PR link "(merged)", check the Definition of done, complete the job, sync main and suggest the jobs it unblocked.
+description: Close out an implementation, bug or chore job after its PR merges. Relabel the PR link "(merged)" (skipping what the job sync already did), check the Definition of done, complete the job, sync main and suggest the jobs it unblocked.
 argument-hint: "JOB-123"
 disable-model-invocation: true
 ---
@@ -17,11 +17,10 @@ Bookkeeping after a job's PR merges. The closing step for `/implement` and `/shi
 
 1. **Read the job:** `scripts/opsclear job get <ID>`. If the title starts with `ADR:`, stop and
    suggest `/finish-adr <ID>` instead (it also notes the source Future Consideration).
-2. **Check the merge.** Find the job's PR link (`PR #N`). Run `gh pr view <N> --json state,mergedAt`
+2. **Check the merge.** Find the job's PR link (label starting `PR #N`). Run `gh pr view <N> --json state,mergedAt`
    as its own command. If it isn't `MERGED`, stop. Don't relabel anything first.
-3. **Relabel the link** unless it already ends in `(merged)` (the GitHub job sync, ADR-0055, did
-   it; say so and skip): `scripts/opsclear link merged <ID> <PR url>`. Its label becomes
-   `PR #N (merged)`.
+3. **Relabel the link** unless the label of that URL's link already ends in `(merged)` (the GitHub job sync, ADR-0055, did
+   it; say so and skip): `scripts/opsclear link merged <ID> <PR url>`. Its label becomes `<label> (merged)`.
 4. **Check the Definition of done.** Go through each item in the job description against the PR
    (diff, checks, description). List any item that isn't met or can't be verified from here (e.g.
    a manual check), and ask the user about it before completing.
