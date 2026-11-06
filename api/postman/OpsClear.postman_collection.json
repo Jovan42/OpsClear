@@ -375,6 +375,93 @@
 			"name": "Dashboard",
 			"item": [],
 			"description": "Dashboard aggregation endpoints"
+		},
+		{
+			"name": "Stats",
+			"item": [
+				{
+					"name": "Get Project Stats (default)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Stats returned\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"12 weekly buckets by default\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.weeks).to.eql(12);",
+									"    pm.expect(jsonData.buckets).to.have.lengthOf(12);",
+									"    pm.expect(jsonData).to.have.property('summary');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "stats"]
+						},
+						"description": "Job completion velocity stats for the project (ADR-0050): last 12 weeks in UTC. Requires the DASHBOARD add-on. Owner/Admin get team totals plus `members`; a Member gets only their own stats (`members` is null). Durations are in seconds."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Project Stats (4 weeks, time zone)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/stats?weeks=4&tz=Europe/Belgrade",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "stats"],
+							"query": [
+								{
+									"key": "weeks",
+									"value": "4",
+									"description": "4, 12 or 26 (default 12). Anything else returns 400."
+								},
+								{
+									"key": "tz",
+									"value": "Europe/Belgrade",
+									"description": "IANA time zone for week bucketing (default UTC). Invalid returns 400."
+								}
+							]
+						},
+						"description": "Last 4 weeks, bucketed into ISO weeks (Monday start) in the given time zone."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Project Stats (member filter)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/stats?memberId={{memberId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "stats"],
+							"query": [
+								{
+									"key": "memberId",
+									"value": "{{memberId}}",
+									"description": "User ID. Owner/Admin: any member. Member: only their own ID, anything else returns 403."
+								}
+							]
+						},
+						"description": "Stats for one member's jobs (current assignee). `members` is null in the response."
+					},
+					"response": []
+				}
+			],
+			"description": "Job completion velocity stats (ADR-0050)"
 		}
 	],
 	"auth": {
