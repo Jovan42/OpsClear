@@ -8,6 +8,9 @@ and how to set up a machine to use them.
 > **Status (2026-11-05):** the CLI, `.claude/settings.json`, the interactive skills, `/implement`,
 > the implementation agents and `pr-reviewer` exist.
 
+**New here?** Start with [DEV-GUIDE.md](DEV-GUIDE.md), a one-page walkthrough of the flow. This
+doc is the reference.
+
 **Process rules live in the other process docs, not here.** Skills and agents link to
 [WORKFLOW.md](WORKFLOW.md), [JOBS.md](JOBS.md), [BACKEND.md](BACKEND.md), [FRONTEND.md](FRONTEND.md)
 and [E2E.md](E2E.md) instead of copying them, and read them at run time. Changing a process doc

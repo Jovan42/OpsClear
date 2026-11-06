@@ -45,7 +45,7 @@ OpsClear/
 ├── frontend/               # React SPA (Vite + TypeScript), Cypress E2E in frontend/cypress/
 ├── docs/dev/               # Developer docs
 │   ├── decisions/          # Architecture Decision Records (ADRs)
-│   └── process/            # Dev process: WORKFLOW, JOBS, BACKEND, FRONTEND, E2E, AGENTS
+│   └── process/            # Dev process: WORKFLOW, JOBS, BACKEND, FRONTEND, E2E, AGENTS, DEV-GUIDE
 ├── scripts/                # opsclear CLI (OpsClear API), seed.sh
 ├── keycloak/               # Realm export, themes
 ├── api/postman/            # Postman collection
@@ -64,6 +64,7 @@ OpsClear/
 - `CONTRIBUTING.md` - Commit message and PR details
 - `docs/dev/process/` - **How work is done**: WORKFLOW (tracks, branches, commit scopes), JOBS, BACKEND, FRONTEND, E2E, AGENTS
 - `docs/dev/decisions/` - Architecture Decision Records (ADRs)
+- `docs/dev/process/DEV-GUIDE.md` - **Start here:** one-page guide to doing dev with the skills and agents
 - `docs/dev/process/AGENTS.md` - Claude Code skills, agents, permissions, `scripts/opsclear` CLI and machine setup
 
 ## Domain Model (Core Entities)
