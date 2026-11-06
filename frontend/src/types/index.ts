@@ -486,3 +486,52 @@ export interface DashboardResponse {
   pendingApprovals: PendingApprovalResponse[];
   typeBreakdown: JobTypeBreakdown[];
 }
+
+// ---- Stats (ADR-0050) ----
+
+export type StatsWeeks = 4 | 12 | 26;
+
+/** Averages are null when no job in the set has the value; lateRate is null when no job has a deadline. */
+export interface StatsSummary {
+  completedCount: number;
+  avgLeadTimeSeconds: number | null;
+  avgCycleTimeSeconds: number | null;
+  avgBlockedSeconds: number | null;
+  completedWithDeadline: number;
+  completedLate: number;
+  lateRate: number | null;
+}
+
+export interface StatsBucket {
+  /** Monday of the ISO week, as an ISO date (YYYY-MM-DD). */
+  weekStart: string;
+  completedCount: number;
+  avgLeadTimeSeconds: number | null;
+  avgCycleTimeSeconds: number | null;
+  avgBlockedSeconds: number | null;
+  completedWithDeadline: number;
+  completedLate: number;
+}
+
+export interface StatsMember {
+  userId: string;
+  name: string;
+  completedCount: number;
+  avgLeadTimeSeconds: number | null;
+  avgCycleTimeSeconds: number | null;
+  avgBlockedSeconds: number | null;
+  completedWithDeadline: number;
+  completedLate: number;
+  lateRate: number | null;
+}
+
+export interface StatsResponse {
+  weeks: StatsWeeks;
+  timezone: string;
+  memberId: string | null;
+  summary: StatsSummary;
+  /** Exactly `weeks` entries, oldest first; the last one is the current (partial) week. */
+  buckets: StatsBucket[];
+  /** Only for Owner/Admin without a memberId filter; null otherwise. */
+  members: StatsMember[] | null;
+}

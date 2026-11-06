@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { History } from 'lucide-react';
 import { useJobHistory } from '../useJobs';
-import { formatDuration } from '../utils/statusHistoryUtils';
+import { formatDuration } from '../../../utils/formatDuration';
 import EmptyState from '../../../components/EmptyState';
 import StatusBadge from '../../../components/StatusBadge';
 import type { JobHistoryEntry, JobStatus } from '../../../types';

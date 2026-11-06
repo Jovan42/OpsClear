@@ -42,6 +42,7 @@
   "defaultPlaceholder": "Write something… (markdown supported)",
   "nav": {
     "dashboard": "Dashboard",
+    "stats": "Stats",
     "jobs": "Jobs",
     "milestones": "Milestones",
     "templates": "Templates",

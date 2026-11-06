@@ -42,6 +42,7 @@
   "defaultPlaceholder": "Napišite nešto… (podržan markdown)",
   "nav": {
     "dashboard": "Kontrolna tabla",
+    "stats": "Statistika",
     "jobs": "Poslovi",
     "milestones": "Etape",
     "templates": "Šabloni",
