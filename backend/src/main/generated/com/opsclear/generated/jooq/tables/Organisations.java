@@ -4,6 +4,7 @@
 package com.opsclear.generated.jooq.tables;
 
 
+import com.opsclear.generated.jooq.Indexes;
 import com.opsclear.generated.jooq.Keys;
 import com.opsclear.generated.jooq.Public;
 import com.opsclear.generated.jooq.tables.records.OrganisationsRecord;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
@@ -123,13 +125,13 @@ public class Organisations extends TableImpl<OrganisationsRecord> {
     }
 
     @Override
-    public UniqueKey<OrganisationsRecord> getPrimaryKey() {
-        return Keys.ORGANISATIONS_PKEY;
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.UK_ORGANISATIONS_SLUG_ACTIVE);
     }
 
     @Override
-    public List<UniqueKey<OrganisationsRecord>> getUniqueKeys() {
-        return Arrays.asList(Keys.ORGANISATIONS_SLUG_KEY);
+    public UniqueKey<OrganisationsRecord> getPrimaryKey() {
+        return Keys.ORGANISATIONS_PKEY;
     }
 
     @Override

@@ -14,8 +14,10 @@ import com.opsclear.generated.jooq.tables.JobTypes;
 import com.opsclear.generated.jooq.tables.Jobs;
 import com.opsclear.generated.jooq.tables.Milestones;
 import com.opsclear.generated.jooq.tables.Notes;
+import com.opsclear.generated.jooq.tables.Notifications;
 import com.opsclear.generated.jooq.tables.OrgCredits;
 import com.opsclear.generated.jooq.tables.OrganisationInvites;
+import com.opsclear.generated.jooq.tables.Organisations;
 import com.opsclear.generated.jooq.tables.ProjectBlockReasons;
 import com.opsclear.generated.jooq.tables.ProjectLinks;
 import com.opsclear.generated.jooq.tables.ProjectMembers;
@@ -57,6 +59,9 @@ public class Indexes {
     public static final Index IDX_JOBS_STATUS = Internal.createIndex(DSL.name("idx_jobs_status"), Jobs.JOBS, new OrderField[] { Jobs.JOBS.PROJECT_ID, Jobs.JOBS.STATUS }, false);
     public static final Index IDX_MILESTONES_PROJECT = Internal.createIndex(DSL.name("idx_milestones_project"), Milestones.MILESTONES, new OrderField[] { Milestones.MILESTONES.PROJECT_ID }, false);
     public static final Index IDX_NOTES_JOB_ID = Internal.createIndex(DSL.name("idx_notes_job_id"), Notes.NOTES, new OrderField[] { Notes.NOTES.JOB_ID }, false);
+    public static final Index IDX_NOTIFICATIONS_CREATED = Internal.createIndex(DSL.name("idx_notifications_created"), Notifications.NOTIFICATIONS, new OrderField[] { Notifications.NOTIFICATIONS.CREATED_AT }, false);
+    public static final Index IDX_NOTIFICATIONS_RECIPIENT_CREATED = Internal.createIndex(DSL.name("idx_notifications_recipient_created"), Notifications.NOTIFICATIONS, new OrderField[] { Notifications.NOTIFICATIONS.RECIPIENT_ID, Notifications.NOTIFICATIONS.CREATED_AT.desc() }, false);
+    public static final Index IDX_NOTIFICATIONS_RECIPIENT_UNREAD = Internal.createIndex(DSL.name("idx_notifications_recipient_unread"), Notifications.NOTIFICATIONS, new OrderField[] { Notifications.NOTIFICATIONS.RECIPIENT_ID }, false);
     public static final Index IDX_ORG_CREDITS_ORG = Internal.createIndex(DSL.name("idx_org_credits_org"), OrgCredits.ORG_CREDITS, new OrderField[] { OrgCredits.ORG_CREDITS.ORG_ID }, false);
     public static final Index IDX_ORG_CREDITS_PADDLE_DISCOUNT_ID = Internal.createIndex(DSL.name("idx_org_credits_paddle_discount_id"), OrgCredits.ORG_CREDITS, new OrderField[] { OrgCredits.ORG_CREDITS.PADDLE_DISCOUNT_ID }, false);
     public static final Index IDX_ORGANISATION_INVITES_EMAIL = Internal.createIndex(DSL.name("idx_organisation_invites_email"), OrganisationInvites.ORGANISATION_INVITES, new OrderField[] { OrganisationInvites.ORGANISATION_INVITES.EMAIL }, false);
@@ -75,5 +80,6 @@ public class Indexes {
     public static final Index RECURRING_SCHEDULES_PROJECT_ID_IDX = Internal.createIndex(DSL.name("recurring_schedules_project_id_idx"), RecurringSchedules.RECURRING_SCHEDULES, new OrderField[] { RecurringSchedules.RECURRING_SCHEDULES.PROJECT_ID }, false);
     public static final Index SCHEDULE_ASSIGNEES_POSITION_IDX = Internal.createIndex(DSL.name("schedule_assignees_position_idx"), ScheduleAssignees.SCHEDULE_ASSIGNEES, new OrderField[] { ScheduleAssignees.SCHEDULE_ASSIGNEES.SCHEDULE_ID, ScheduleAssignees.SCHEDULE_ASSIGNEES.ORDER }, true);
     public static final Index SCHEDULE_MISSED_RUNS_SCHEDULE_ID_IDX = Internal.createIndex(DSL.name("schedule_missed_runs_schedule_id_idx"), ScheduleMissedRuns.SCHEDULE_MISSED_RUNS, new OrderField[] { ScheduleMissedRuns.SCHEDULE_MISSED_RUNS.SCHEDULE_ID }, false);
+    public static final Index UK_ORGANISATIONS_SLUG_ACTIVE = Internal.createIndex(DSL.name("uk_organisations_slug_active"), Organisations.ORGANISATIONS, new OrderField[] { Organisations.ORGANISATIONS.SLUG }, true);
     public static final Index UK_PROJECTS_NAME_OWNER_ACTIVE = Internal.createIndex(DSL.name("uk_projects_name_owner_active"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.NAME, Projects.PROJECTS.OWNER_ID }, true);
 }
