@@ -57,6 +57,8 @@ export function useProjectNavItems(projectId: string): ProjectNavData {
 
   if (!dashboardLocked) {
     items.push({ kind: 'link', key: 'dashboard', to: `/projects/${projectId}/dashboard`, label: t('nav.dashboard'), locked: false });
+    // Stats (ADR-0050) shares the DASHBOARD add-on, so it sits right after Dashboard.
+    items.push({ kind: 'link', key: 'stats', to: `/projects/${projectId}/stats`, label: t('nav.stats'), locked: false });
   }
   items.push({ kind: 'link', key: 'jobs', to: `/projects/${projectId}/jobs`, label: t('nav.jobs'), locked: false });
   if (!milestonesLocked) {
@@ -87,6 +89,7 @@ export function useProjectNavItems(projectId: string): ProjectNavData {
   }
   if (dashboardLocked) {
     items.push({ kind: 'link', key: 'dashboard-locked', to: `/projects/${projectId}/dashboard`, label: t('nav.dashboard'), locked: true });
+    items.push({ kind: 'link', key: 'stats-locked', to: `/projects/${projectId}/stats`, label: t('nav.stats'), locked: true });
   }
   if (milestonesLocked) {
     items.push({ kind: 'link', key: 'milestones-locked', to: `/projects/${projectId}/milestones`, label: t('nav.milestones'), locked: true });

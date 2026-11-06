@@ -457,6 +457,7 @@ jobs:
               - cypress/e2e/job-templates/**/*.cy.ts
               - cypress/e2e/projects/**/*.cy.ts
               - cypress/e2e/recurring-schedules/**/*.cy.ts
+              - cypress/e2e/stats/**/*.cy.ts
               - cypress/e2e/subscription-selection/**/*.cy.ts
     permissions:
       checks: write

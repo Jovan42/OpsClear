@@ -184,6 +184,32 @@
     "noJobs": "No jobs yet.",
     "createFirstJob": "Create the first job →"
   },
+  "stats": {
+    "pageTitle": "Stats",
+    "featureName": "Stats",
+    "teamTitle": "Team stats",
+    "yourTitle": "Your stats",
+    "rangeLabel": "Range",
+    "range": {
+      "4": "4 weeks",
+      "12": "12 weeks",
+      "26": "26 weeks"
+    },
+    "tiles": {
+      "completed": "Completed",
+      "avgLeadTime": "Avg. total time",
+      "avgCycleTime": "Avg. working time",
+      "avgBlocked": "Avg. blocked time",
+      "lateRate": "Completed late",
+      "lateDetail": "{{late}} of {{total}} with a deadline"
+    },
+    "chartHeading": "Completed per week",
+    "chartWeekOf": "Week of {{date}}",
+    "chartCompleted": "Completed",
+    "empty": "No jobs were completed in this range.",
+    "emptyDescription": "Completed jobs show up here in the week they were finished.",
+    "loadError": "Failed to load stats."
+  },
   "landing": {
     "logIn": "Log in",
     "goToApp": "Go to my projects →",

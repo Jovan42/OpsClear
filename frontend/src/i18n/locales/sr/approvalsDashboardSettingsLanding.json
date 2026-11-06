@@ -184,6 +184,32 @@
     "noJobs": "Još nema poslova.",
     "createFirstJob": "Kreiraj prvi posao →"
   },
+  "stats": {
+    "pageTitle": "Statistika",
+    "featureName": "Statistika",
+    "teamTitle": "Statistika tima",
+    "yourTitle": "Vaša statistika",
+    "rangeLabel": "Period",
+    "range": {
+      "4": "4 nedelje",
+      "12": "12 nedelja",
+      "26": "26 nedelja"
+    },
+    "tiles": {
+      "completed": "Završeno",
+      "avgLeadTime": "Prosečno ukupno vreme",
+      "avgCycleTime": "Prosečno radno vreme",
+      "avgBlocked": "Prosečno vreme blokade",
+      "lateRate": "Završeno sa zakašnjenjem",
+      "lateDetail": "{{late}} od {{total}} sa rokom"
+    },
+    "chartHeading": "Završeno po nedeljama",
+    "chartWeekOf": "Nedelja od {{date}}",
+    "chartCompleted": "Završeno",
+    "empty": "Nijedan posao nije završen u ovom periodu.",
+    "emptyDescription": "Završeni poslovi se ovde prikazuju u nedelji u kojoj su završeni.",
+    "loadError": "Učitavanje statistike nije uspelo."
+  },
   "landing": {
     "logIn": "Prijava",
     "goToApp": "Idi na moje projekte →",

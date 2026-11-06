@@ -11,6 +11,7 @@ import JobListPage from './features/jobs/JobListPage';
 import JobDetailPage from './features/jobs/JobDetailPage';
 import ApprovalQueuePage from './features/approvals/ApprovalQueuePage';
 import DashboardPage from './features/dashboard/DashboardPage';
+import StatsPage from './features/stats/StatsPage';
 import MilestonesPage from './features/milestones/MilestonesPage';
 import TemplatesPage from './features/templates/TemplatesPage';
 import JobTypesPage from './features/jobTypes/JobTypesPage';
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
               { path: 'projects', element: <ProjectListPage /> },
               { path: 'projects/:projectFriendlyId', element: <ProjectRedirect /> },
               { path: 'projects/:projectFriendlyId/dashboard', element: <DashboardPage /> },
+              { path: 'projects/:projectFriendlyId/stats', element: <StatsPage /> },
               { path: 'projects/:projectFriendlyId/jobs', element: <JobListPage /> },
               { path: 'projects/:projectFriendlyId/jobs/:jobFriendlyId', element: <JobDetailPage /> },
               { path: 'projects/:projectFriendlyId/milestones', element: <MilestonesPage /> },
