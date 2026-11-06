@@ -104,3 +104,17 @@ chore(deps): upgrade Spring Boot to 3.4.1
 ## Pull requests
 
 One PR per job, always (never push directly to `main`). The PR title mirrors the commit subject. The PR description references the OpsClear job it implements and the ADR it is based on. The body has a `Closes JOB-x` line (merging finishes the job; the default) or `Part of JOB-x` (more PRs follow on the job). Several jobs: `Closes JOB-1, JOB-2` (comma-separated) or one line per job. The keywords are read from body lines at merge time; text inside `<!-- -->` is ignored. See [ADR-0055](../decisions/0055-github-job-sync.md). Template and rules: [CONTRIBUTING.md](../../../CONTRIBUTING.md#pull-requests).
+
+### GitHub job sync
+
+A workflow (`.github/workflows/job-sync.yml`) keeps the OpsClear jobs in step with the PR, per [ADR-0055](../decisions/0055-github-job-sync.md). A PR references the jobs in its branch name, title and `Closes` / `Part of` lines. For each one:
+
+| PR event | Link | Job status |
+|---|---|---|
+| Opened, reopened or edited (PR open) | `PR #N: <title>` added if missing (reopen removes `(closed)`) | NEW → In Progress; others untouched (a Completed job stays Completed) |
+| Merged, job in `Closes` | Relabelled `(merged)`, or added as `PR #N: <title> (merged)` | Completed (NEW and Blocked go through In Progress) |
+| Merged, job not in `Closes` | Relabelled or added `(merged)` | NEW → In Progress, otherwise untouched |
+| Closed without merge | Relabelled `(closed)`, or added as `PR #N: <title> (closed)` | Untouched |
+| Edited after close or merge | Added or relabelled with `(closed)` / `(merged)` | Untouched |
+
+It never fails the PR and isn't a required check. If it didn't run or missed something, `/finish` and `/finish-adr` do the step. Setup, key and fallback rules: [AGENTS.md](AGENTS.md#github-job-sync).

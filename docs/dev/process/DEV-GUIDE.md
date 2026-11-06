@@ -31,6 +31,8 @@ Step-by-step commands: [AGENTS.md § Setup](AGENTS.md#setup). Check it works:
 | 7. Review | — | — | Read the PR and the reviewer comment, merge |
 | 8. Close | `/finish JOB-a` | Checks it's merged and the done list is met, completes the job, syncs `main`, says what's unblocked | Confirm anything unmet |
 
+The GitHub job sync (ADR-0055) usually links the PR and, for `Closes JOB-x`, completes the job on merge already. `/finish` and `/finish-adr` skip what it did, and still sync `main` and show what's unblocked. See [WORKFLOW.md](WORKFLOW.md#github-job-sync) and [AGENTS.md](AGENTS.md#github-job-sync).
+
 Bugs and chores skip steps 2–5: `/new-idea`, then `/implement`, review, `/finish`.
 
 ## Examples
