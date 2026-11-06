@@ -45,7 +45,7 @@ class StatsServiceTest {
 
     // Wednesday; with UTC and 4 weeks the buckets are 2026-10-12, 10-19, 10-26 and 11-02 (current, partial).
     private static final ZoneId UTC = ZoneId.of("UTC");
-    private static final Instant NOW =Instant.parse("2026-11-04T10:00:00Z");
+    private static final Instant NOW = Instant.parse("2026-11-04T10:00:00Z");
     private static final LocalDate WEEK_1 = LocalDate.parse("2026-10-12");
     private static final LocalDate WEEK_2 = LocalDate.parse("2026-10-19");
     private static final LocalDate WEEK_3 = LocalDate.parse("2026-10-26");
