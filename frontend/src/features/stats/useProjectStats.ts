@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { statsApi } from '../../api/stats';
 import { useCurrentOrg } from '../org/OrgContext';
 import type { StatsWeeks } from '../../types';
@@ -16,7 +16,9 @@ export function useProjectStats(projectId: string, weeks: StatsWeeks, memberId?:
     queryFn: () => statsApi.get(projectId, { weeks, tz, memberId }),
     staleTime: 30 * 1000,
     // Keep the previous range on screen while a new one loads, instead of flashing skeletons.
-    placeholderData: keepPreviousData,
+    // Only within the same project: after a project switch, show the skeleton, not the old project's numbers.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[1] === projectId ? previous : undefined,
     enabled: !!projectId && hasAddon('DASHBOARD'),
   });
 }

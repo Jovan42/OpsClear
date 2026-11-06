@@ -145,7 +145,7 @@ describe('Stats page', () => {
       });
 
       cy.visit(`/projects/${projectId}/stats`);
-      cy.contains('Stats').should('be.visible');
+      cy.contains('h2', 'Stats').should('be.visible');
       cy.contains('button, a', 'Upgrade').should('exist');
       cy.get('@statsFetch.all').should('have.length', 0);
     });
