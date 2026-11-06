@@ -29,6 +29,8 @@ jobs:
         with:
           ref: main
           sparse-checkout: scripts
+          # The token isn't needed after checkout; don't leave it in .git/config.
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
