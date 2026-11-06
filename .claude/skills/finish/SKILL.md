@@ -19,12 +19,14 @@ Bookkeeping after a job's PR merges. The closing step for `/implement` and `/shi
    suggest `/finish-adr <ID>` instead (it also notes the source Future Consideration).
 2. **Check the merge.** Find the job's PR link (`PR #N`). Run `gh pr view <N> --json state,mergedAt`
    as its own command. If it isn't `MERGED`, stop. Don't relabel anything first.
-3. **Relabel the link:** `scripts/opsclear link merged <ID> <PR url>`. Its label becomes
+3. **Relabel the link** unless it already ends in `(merged)` (the GitHub job sync, ADR-0055, did
+   it; say so and skip): `scripts/opsclear link merged <ID> <PR url>`. Its label becomes
    `PR #N (merged)`.
 4. **Check the Definition of done.** Go through each item in the job description against the PR
    (diff, checks, description). List any item that isn't met or can't be verified from here (e.g.
    a manual check), and ask the user about it before completing.
-5. **Complete the job:** `scripts/opsclear job status <ID> COMPLETED`. This prints the plan.
+5. **Complete the job** unless it is already COMPLETED (the sync did it; say so and skip). Still
+   run step 4 and report any unmet done item: `scripts/opsclear job status <ID> COMPLETED`. This prints the plan.
    Re-run with `--yes` after the user confirms, or directly if they've said to complete jobs once
    their PR is merged and every done item is met. A job still NEW must go to IN_PROGRESS first.
 6. **Sync locally:** `git checkout main`, `git pull`, then `git branch -d <branch>` for the merged

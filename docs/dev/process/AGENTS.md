@@ -31,8 +31,8 @@ Claude doesn't start them on its own. They live in `.claude/skills/<name>/SKILL.
 | `/break-down JOB-123` | An ADR has merged | Proposes implementation jobs (templates, `<Layer>:` titles, one layer per job, BLOCKED_BY, deadlines) and creates them after approval. |
 | `/implement JOB-123 [JOB-124 …]` | Implementation jobs are unblocked | Checks blockers are Completed, runs the matching agent in its own worktree and moves the job to In Progress, then runs `pr-reviewer` on the PR. Unblocked jobs run in parallel. |
 | `/ship` | You did the work in the main session | Commits (CONTRIBUTING format), pushes, opens the PR, links it to the job, moves the job to In Progress. |
-| `/finish JOB-123` | An implementation, bug or chore PR has merged | Relabels the PR link "(merged)", checks the Definition of done, (after you confirm) completes the job, syncs `main` and suggests the jobs it unblocked. |
-| `/finish-adr JOB-123` | An ADR PR has merged | Relabels the PR link "(merged)", adds the closing note on the source Future Consideration, and (after you confirm) completes the ADR job. |
+| `/finish JOB-123` | An implementation, bug or chore PR has merged | Skips what the [job sync](#github-job-sync) already did, else relabels the PR link "(merged)", checks the Definition of done, (after you confirm) completes the job, syncs `main` and suggests the jobs it unblocked. |
+| `/finish-adr JOB-123` | An ADR PR has merged | Skips what the [job sync](#github-job-sync) already did, else relabels the PR link "(merged)", adds the closing note on the source Future Consideration, and (after you confirm) completes the ADR job. |
 
 ## Agents (implementation, own worktree)
 
@@ -70,7 +70,9 @@ Every implementation agent follows this loop. Its own file adds only the layer-s
 5. **Commit, push, PR.** Commit per [CONTRIBUTING.md](../../../CONTRIBUTING.md#commit-messages)
    (`<type>(<scope>): <summary> (<JOB>)`), `git push -u origin <branch>`, `gh pr create` with
    `Closes JOB-x` on its own line (or `Part of JOB-x` for a partial PR), Summary, References (job, ADR) and a Test plan listing what was actually run. No AI attribution: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
-6. **Update OpsClear.** `scripts/opsclear link add <JOB> <PR url> --label "PR #N"`, and
+6. **Update OpsClear.** The [job sync](#github-job-sync) normally does this when the PR opens, so
+   this step is an idempotent fallback (a harmless no-op if the sync already ran).
+   `scripts/opsclear link add <JOB> <PR url> --label "PR #N"`, and
    `scripts/opsclear job status <JOB> IN_PROGRESS` if the job isn't In Progress yet (`/implement`
    sets it at launch). Never set Completed.
 7. **Report** (the agent's final message): what changed, check results, PR link, open questions.
@@ -83,6 +85,35 @@ Every implementation agent follows this loop. Its own file adds only the layer-s
 
 `/implement` runs at most one `db-migration` agent at a time (migration numbers would collide, and
 they share the local database) and never runs jobs linked by BLOCKED_BY in parallel.
+
+---
+
+## GitHub job sync
+
+ADR-0055 ([0055-github-job-sync.md](../decisions/0055-github-job-sync.md)) automates the PR
+bookkeeping from GitHub. `.github/workflows/job-sync.yml` runs `scripts/opsclear pr sync` on pull
+request events against `main` (opened, reopened, edited, closed). It links the PR to each job it
+references, moves NEW jobs to In Progress, and on merge relabels the link "(merged)" and completes
+the jobs named with `Closes JOB-x` (not `Part of`). What each event does, and which jobs a PR
+references: [WORKFLOW.md](WORKFLOW.md#github-job-sync) and the ADR.
+
+- **Skills and agents are the fallback.** `/finish`, `/finish-adr`, `/ship` and the agents' "Update
+  OpsClear" step stay, and are idempotent: they check first and skip what the sync already did. They
+  still do it when the sync didn't (OpsClear outage, missing `Closes`, no secret, fork PR). Notes on
+  source Future Considerations stay manual (immutable).
+- **Never a required check.** The workflow is `continue-on-error`, always exits 0, and skips fork
+  PRs. Check the run summary on the PR's Checks tab to see what it did.
+- **Runs `main`'s `scripts/`**, not the PR's, so a PR can't change the sync logic that runs with the
+  secret. A change to `pr sync` takes effect after it merges.
+- **Key and secret.** The OpsClear API key is named `github-actions`, on the maintainer's account
+  (Owner/Admin on the projects the repo's jobs live in), stored as the repo secret
+  `OPSCLEAR_API_KEY`. To create or rotate it:
+  1. In OpsClear, **Settings > API Keys**, create a key named `github-actions`.
+  2. `gh secret set OPSCLEAR_API_KEY --repo Jovan42/OpsClear` (it prompts for the value; never
+     paste the key into chat, files or a command line).
+  3. Revoke the old key. GitHub masks the secret as `***` in logs.
+- **Manual run.** `scripts/opsclear pr sync` also takes `--action`, `--number` and `--url` instead
+  of `--event`, with `--dry-run` to preview. See `scripts/opsclear pr sync --help`.
 
 ---
 
