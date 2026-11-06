@@ -26,7 +26,7 @@ Claude doesn't start them on its own. They live in `.claude/skills/<name>/SKILL.
 | `/plan-phase` | Starting a new phase | Proposes a project from open Future Considerations (one idea per milestone). After approval, creates the project, milestones and `ADR:` jobs, and closes the promoted ideas. |
 | `/write-adr JOB-123` | An `ADR:` job is next | Asks the open questions (with recommendations), writes `docs/dev/decisions/NNNN-*.md`, commits, opens the PR, links it to the job. |
 | `/break-down JOB-123` | An ADR has merged | Proposes implementation jobs (templates, `<Layer>:` titles, one layer per job, BLOCKED_BY, deadlines) and creates them after approval. |
-| `/implement JOB-123 [JOB-124 …]` | Implementation jobs are unblocked | Checks blockers are Completed, runs the matching agent in its own worktree, then runs `pr-reviewer` on the PR. Unblocked jobs run in parallel. |
+| `/implement JOB-123 [JOB-124 …]` | Implementation jobs are unblocked | Checks blockers are Completed, runs the matching agent in its own worktree and moves the job to In Progress, then runs `pr-reviewer` on the PR. Unblocked jobs run in parallel. |
 | `/ship` | You did the work in the main session | Commits (CONTRIBUTING format), pushes, opens the PR, links it to the job, moves the job to In Progress. |
 | `/finish-adr JOB-123` | An ADR PR has merged | Relabels the PR link "(merged)", adds the closing note on the source Future Consideration, and (after you confirm) completes the ADR job. |
 
@@ -66,8 +66,9 @@ Every implementation agent follows this loop. Its own file adds only the layer-s
 5. **Commit, push, PR.** Commit per [CONTRIBUTING.md](../../../CONTRIBUTING.md#commit-messages)
    (`<type>(<scope>): <summary> (<JOB>)`), `git push -u origin <branch>`, `gh pr create` with
    Summary, References (job, ADR) and a Test plan listing what was actually run. No AI attribution: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
-6. **Update OpsClear.** `scripts/opsclear link add <JOB> <PR url> --label "PR #N"` and
-   `scripts/opsclear job status <JOB> IN_PROGRESS`. Never set Completed.
+6. **Update OpsClear.** `scripts/opsclear link add <JOB> <PR url> --label "PR #N"`, and
+   `scripts/opsclear job status <JOB> IN_PROGRESS` if the job isn't In Progress yet (`/implement`
+   sets it at launch). Never set Completed.
 7. **Report** (the agent's final message): what changed, check results, PR link, open questions.
 
 **Stop instead of guessing.** No PR, report back instead, when:
