@@ -201,7 +201,7 @@
       "avgCycleTime": "Avg. working time",
       "avgBlocked": "Avg. blocked time",
       "lateRate": "Completed late",
-      "lateDetail": "{{late}} of {{total}} with a deadline"
+      "lateDetail": "{{late}} late out of {{total}} with a deadline"
     },
     "chartHeading": "Completed per week",
     "chartWeekOf": "Week of {{date}}",

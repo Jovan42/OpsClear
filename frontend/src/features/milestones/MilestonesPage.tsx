@@ -7,6 +7,7 @@ import { useJobList } from '../jobs/useJobs';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePreferences } from '../../hooks/usePreferences';
+import { isPastDeadline } from '../../utils/deadline';
 import MilestoneFormModal from './MilestoneFormModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
@@ -23,10 +24,6 @@ function formatDeadline(iso: string): string {
     month: 'short',
     year: 'numeric',
   });
-}
-
-function isOverdue(deadline: string): boolean {
-  return new Date(deadline) < new Date(new Date().toDateString());
 }
 
 function LoadingSkeleton() {
@@ -57,7 +54,7 @@ interface MilestoneRowProps {
 
 function MilestoneRow({ milestone, projectId, completed, total, canManage, onEdit, onDelete }: Readonly<MilestoneRowProps>) {
   const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
-  const overdue = milestone.deadline ? isOverdue(milestone.deadline) : false;
+  const overdue = milestone.deadline ? isPastDeadline(milestone.deadline) : false;
   const { prefs } = usePreferences();
 
   return (

@@ -65,7 +65,7 @@ describe('Stats page', () => {
       cy.contains('h1', 'Team stats').should('be.visible');
       tileValue('Completed').should('have.text', '2');
       tileValue('Completed late').should('have.text', '100%');
-      cy.contains('1 of 1 with a deadline').should('be.visible');
+      cy.contains('1 late out of 1 with a deadline').should('be.visible');
       cy.get('[data-testid="stats-chart"]').should('have.attr', 'data-weeks', '12');
       cy.get('[data-testid="stats-chart"] .recharts-surface').should('be.visible');
       cy.contains('No jobs were completed in this range.').should('not.exist');

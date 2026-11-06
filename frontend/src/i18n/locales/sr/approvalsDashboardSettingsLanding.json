@@ -201,7 +201,7 @@
       "avgCycleTime": "Prosečno radno vreme",
       "avgBlocked": "Prosečno vreme blokade",
       "lateRate": "Završeno sa zakašnjenjem",
-      "lateDetail": "{{late}} od {{total}} sa rokom"
+      "lateDetail": "Kasno: {{late}} od {{total}} sa rokom"
     },
     "chartHeading": "Završeno po nedeljama",
     "chartWeekOf": "Nedelja od {{date}}",
