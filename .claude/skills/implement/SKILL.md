@@ -49,7 +49,7 @@ Hand implementation jobs to the per-layer agents in `.claude/agents/`
 6. **Review.** When an agent opens a PR, run the `pr-reviewer` agent on it (prompt:
    `Review PR #<N> for <JOB>.`). It posts one comment on the PR and returns a summary.
 7. **Report** a table: job, agent, outcome (PR link, or stopped with the reason), check results,
-   reviewer verdict and blockers, open questions from the agent. Then list what to do next (review/merge PRs; jobs that were
+   reviewer verdict and blockers, open questions from the agent. Then list what to do next (review/merge PRs, then `/finish <JOB>`; jobs that were
    waiting).
 
 ## Stop conditions

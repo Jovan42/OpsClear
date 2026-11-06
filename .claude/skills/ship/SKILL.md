@@ -38,4 +38,4 @@ the checks to run.
 ## Stop conditions
 
 - No job, failing checks, or changes spanning several layers/jobs: stop and ask.
-- Never merge the PR or complete the job. After the user merges it, the job is completed separately.
+- Never merge the PR or complete the job. After the user merges it, finish with `/finish <JOB>`.

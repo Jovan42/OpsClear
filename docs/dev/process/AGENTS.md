@@ -28,6 +28,7 @@ Claude doesn't start them on its own. They live in `.claude/skills/<name>/SKILL.
 | `/break-down JOB-123` | An ADR has merged | Proposes implementation jobs (templates, `<Layer>:` titles, one layer per job, BLOCKED_BY, deadlines) and creates them after approval. |
 | `/implement JOB-123 [JOB-124 …]` | Implementation jobs are unblocked | Checks blockers are Completed, runs the matching agent in its own worktree and moves the job to In Progress, then runs `pr-reviewer` on the PR. Unblocked jobs run in parallel. |
 | `/ship` | You did the work in the main session | Commits (CONTRIBUTING format), pushes, opens the PR, links it to the job, moves the job to In Progress. |
+| `/finish JOB-123` | An implementation, bug or chore PR has merged | Relabels the PR link "(merged)", checks the Definition of done, (after you confirm) completes the job, syncs `main` and suggests the jobs it unblocked. |
 | `/finish-adr JOB-123` | An ADR PR has merged | Relabels the PR link "(merged)", adds the closing note on the source Future Consideration, and (after you confirm) completes the ADR job. |
 
 ## Agents (implementation, own worktree)
