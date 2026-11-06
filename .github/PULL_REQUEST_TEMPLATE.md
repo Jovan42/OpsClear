@@ -13,12 +13,13 @@
 - [ ] `test` - Adding or updating tests
 - [ ] `chore` - Maintenance (dependencies, config, etc.)
 
-## Closes
+## OpsClear job
 
-<!-- Link the issue(s) this PR closes. Use "Closes #123" to auto-close on merge. -->
-<!-- If no issue exists, write N/A -->
+<!-- Replace JOB-___ with this PR's job ID. Keep "Closes" when merging this PR finishes the job (the usual case). -->
+<!-- List several as "Closes JOB-1, JOB-2". -->
+<!-- For a partial PR (more PRs follow on the job), replace it with "Part of JOB-x". -->
 
-Closes #
+Closes JOB-___
 
 ## ADR
 

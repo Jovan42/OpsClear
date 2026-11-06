@@ -103,4 +103,4 @@ chore(deps): upgrade Spring Boot to 3.4.1
 
 ## Pull requests
 
-One PR per job, always (never push directly to `main`). The PR title mirrors the commit subject. The PR description references the OpsClear job it implements and the ADR it is based on. Template and rules: [CONTRIBUTING.md](../../../CONTRIBUTING.md#pull-requests).
+One PR per job, always (never push directly to `main`). The PR title mirrors the commit subject. The PR description references the OpsClear job it implements and the ADR it is based on. The body has a `Closes JOB-x` line (merging finishes the job; the default) or `Part of JOB-x` (more PRs follow on the job). Several jobs: `Closes JOB-1, JOB-2` (comma-separated) or one line per job. The keywords are read from body lines at merge time; text inside `<!-- -->` is ignored. See [ADR-0055](../decisions/0055-github-job-sync.md). Template and rules: [CONTRIBUTING.md](../../../CONTRIBUTING.md#pull-requests).

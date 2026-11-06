@@ -29,7 +29,9 @@ the checks to run.
    fixed list, `-` bullets. No AI attribution: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
 6. **Push** with `git push -u origin <branch>`. Never push to `main` and never force-push.
 7. **Open the PR** with `gh pr create`: title = commit subject. The body uses CONTRIBUTING.md's
-   template: Summary, References (job and ADR), and a Test plan listing what you actually ran.
+   template:
+   a `Closes JOB-x` line (or `Part of JOB-x` for a partial PR), Summary, References (job and ADR),
+   and a Test plan listing what you actually ran.
 8. **Update OpsClear:**
    - `scripts/opsclear link add <JOB> <PR url> --label "PR #N"`
    - `scripts/opsclear job status <JOB> IN_PROGRESS` (skip if already In Progress)
