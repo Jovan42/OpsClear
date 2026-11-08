@@ -423,6 +423,26 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/links/" + linkId;
     }
 
+    // --- Notifications ---
+
+    static final String NOTIFICATIONS = "/api/notifications";
+    static final String NOTIFICATIONS_UNREAD_COUNT = "/api/notifications/unread-count";
+    static final String NOTIFICATIONS_READ_ALL = "/api/notifications/read-all";
+    static final String NOTIFICATION_SETTINGS = "/api/user/notification-settings";
+
+    /** List with a raw query string, e.g. {@code "unread=true&page=0&size=10"}. */
+    static String notifications(String query) {
+        return "/api/notifications?" + query;
+    }
+
+    static String notification(UUID notificationId) {
+        return "/api/notifications/" + notificationId;
+    }
+
+    static String notification(String notificationId) {
+        return "/api/notifications/" + notificationId;
+    }
+
     private ApiPaths() {
     }
 }

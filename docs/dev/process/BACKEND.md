@@ -46,6 +46,13 @@ Spring Boot 3.x · Java 21 · jOOQ · Flyway · PostgreSQL 16
 - Request DTOs: same Lombok stack, Jakarta validation with inline messages (`@NotBlank(message = "Title is required")`)
 - Response DTOs: static factory method `public static XxxResponse from(XxxModel model)`, builder-based construction inside it
 
+### Pagination
+- Paginated list endpoints take `page` and `size` query params and return
+  `{ items, page, size, totalElements, totalPages }` (first used by `GET /api/notifications`, JOB-275)
+- `page` is zero-based, default `0`; negative → 400
+- `size` defaults to `20` and must be 1–100, anything else → 400
+- Validate both in the service with `ErrorMessages` constants; `totalElements` counts every row matching the filters
+
 ---
 
 ## jOOQ patterns

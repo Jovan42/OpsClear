@@ -462,6 +462,239 @@
 				}
 			],
 			"description": "Job completion velocity stats (ADR-0050)"
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "List Notifications",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Notifications returned\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('items');",
+									"    pm.expect(jsonData).to.have.property('totalElements');",
+									"    if (jsonData.items.length > 0) {",
+									"        pm.environment.set(\"notificationId\", jsonData.items[0].id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Zero-based page (default 0). Negative returns 400."
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Page size 1 to 100 (default 20). Anything else returns 400."
+								}
+							]
+						},
+						"description": "The caller's notifications, newest first (ADR-0051). Paginated: `{ items, page, size, totalElements, totalPages }`, page zero-based. Project-scoped notifications only show while the caller is still a member of that project. Not add-on gated."
+					},
+					"response": []
+				},
+				{
+					"name": "List Unread Notifications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications?unread=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "unread",
+									"value": "true",
+									"description": "true returns only unread notifications."
+								},
+								{
+									"key": "type",
+									"value": "JOB_BLOCKED",
+									"description": "Optional notification type, e.g. JOB_BLOCKED, NOTE_ADDED. Unknown returns 400.",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Only unread notifications, optionally filtered by type."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unread Count",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Count returned\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json()).to.have.property('count');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/unread-count",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"unread-count"
+							]
+						},
+						"description": "`{ \"count\": 7 }`: the caller's unread notifications (visibility filter applied)."
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification Read",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"read\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/{{notificationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"{{notificationId}}"
+							]
+						},
+						"description": "Mark one notification read (`true`) or unread (`false`). Returns the notification. Another user's or an unknown ID returns 404. `notificationId` is set by List Notifications."
+					},
+					"response": []
+				},
+				{
+					"name": "Mark All Notifications Read",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"All marked read\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/read-all",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"read-all"
+							]
+						},
+						"description": "Marks all of the caller's unread notifications read. Returns 204."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notification Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/notification-settings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"notification-settings"
+							]
+						},
+						"description": "The caller's muted notification types: `{ \"muted\": [...] }`. Empty by default."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Notification Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"muted\": [\n    \"JOB_STATUS_CHANGED\",\n    \"NOTE_ADDED\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/notification-settings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"notification-settings"
+							]
+						},
+						"description": "Replaces the caller's muted types (muted types aren't created for the caller). `SUBSCRIPTION_PAST_DUE` can't be muted (400); an unknown type returns 400."
+					},
+					"response": []
+				}
+			],
+			"description": "In-app notification centre (ADR-0051)"
 		}
 	],
 	"auth": {

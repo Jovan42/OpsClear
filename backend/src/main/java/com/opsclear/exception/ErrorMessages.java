@@ -209,6 +209,18 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class Notification {
+        public static final String NOT_FOUND = "Notification not found";
+        public static final String INVALID_PAGE = "page must be 0 or greater";
+        public static final String INVALID_SIZE = "size must be between 1 and %d";
+        public static final String UNKNOWN_TYPE = "Unknown notification type: %s";
+        public static final String CANNOT_MUTE_SUBSCRIPTION_PAST_DUE =
+                "SUBSCRIPTION_PAST_DUE notifications can't be muted";
+
+        private Notification() {
+        }
+    }
+
     public static final class Paddle {
         public static final String INTERNAL_ORG_NOT_BILLED =
                 "Internal organisations are not billed and have no Paddle subscription";

@@ -1,6 +1,6 @@
 # ADR-0051: In-App Notification Centre
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-11-04
 **Author:** Jovan Manojlovic
 
@@ -172,7 +172,7 @@ CREATE TABLE job_deadline_alerts (
 | `PUT` | `/api/user/notification-settings` | Replace muted list. `SUBSCRIPTION_PAST_DUE` → 400. |
 
 - All endpoints act only on the caller's own notifications. Another user's ID → 404, not 403, so existence isn't revealed.
-- The list endpoint also applies the **visibility filter** at read time: project-scoped notifications are only returned while the caller is still a member of that project.
+- The list endpoint also applies the **visibility filter** at read time: notifications are only returned while the caller is still a member of the notification's organisation, and project-scoped ones only while the caller is still a member of that project and the project isn't deleted. The unread count, mark read and mark all read apply the same filter.
 - **Not add-on gated.** The notification centre is core: it's a delivery channel for actions that are themselves gated. *Open to change in review* if it should be sold as an add-on.
 
 Notification response shape:
@@ -315,12 +315,15 @@ Not chosen for V1. Notifications deliver events from features that are already g
 
 1. **DB**: `V041__notifications.sql` (`notifications` table, check constraint, indexes, `job_deadline_alerts`).
 2. **Backend 1: notification store and REST API**: `NotificationService` (list, count, mark read/all, visibility filter), `NotificationController`, settings endpoints in `users.preferences`, `NotificationCleanupJob`. Unit + integration tests. *Blocked by DB.*
-3. **Backend 2: job event fan-out**: `AsyncConfig` + `notificationExecutor`, `NotificationEventListener`, recipient rules, de-duplication, mutes, payload snapshots, and events from Approval/Job/Note services: approval requested/decided, assigned (incl. on create), status changed, blocked, blocker cleared, job updated, job deleted, note added. Integration tests per type (actor exclusion, de-duplication, Member visibility, mutes). *Blocked by Backend 1.*
-4. **Backend 3: scheduled, project and org event fan-out**: `DeadlineAlertJob` (deadline soon / overdue with `job_deadline_alerts`), schedule-created assigned jobs, missed runs, project member added, invite accepted, feedback resolved, subscription past-due. Integration tests per type. *Blocked by Backend 2.*
-5. **Backend 4: SSE stream**: `NotificationStreamRegistry`, `/stream` endpoint, heartbeat, 30-minute timeout, 5-stream cap, `read-state` events, nginx block. Tests for registry behaviour and the stream endpoint. *Blocked by Backend 2.*
-6. **Frontend 1: bell, dropdown and notifications page**: REST-driven (count, list, mark read/all), `NotificationItem` renderers for all 16 types, i18n, empty states, E2E. *Blocked by Backend 1.*
-7. **Frontend 2: live updates**: `useNotificationStream` (fetch-based SSE, reconnect/backoff, cache updates, cross-tab read state), E2E. *Blocked by Backend 4 and Frontend 1.*
-8. **Frontend 3: notification settings**: Account settings toggles, E2E. *Blocked by Backend 1 and Frontend 1.*
+3. **Backend 2–5: event fan-out** (split into four jobs): `AsyncConfig` + `notificationExecutor`, `NotificationEventListener`, recipient rules, de-duplication, mutes and payload snapshots, then the events per trigger. Integration tests per type (actor exclusion, de-duplication, Member visibility, mutes).
+   - **Backend 2** (JOB-276): fan-out core, approval and note events. *Blocked by Backend 1.*
+   - **Backend 3** (JOB-277): job lifecycle events (assigned, status changed, blocked, blocker cleared, updated, deleted). *Blocked by Backend 2.*
+   - **Backend 4** (JOB-278): `DeadlineAlertJob` (with `job_deadline_alerts`), schedule-created assigned jobs, missed runs. *Blocked by Backend 2 and 3.*
+   - **Backend 5** (JOB-279): project member added, invite accepted, feedback resolved, subscription past-due. *Blocked by Backend 2.*
+4. **Backend 6: SSE stream** (JOB-280): `NotificationStreamRegistry`, `/stream` endpoint, heartbeat, 30-minute timeout, 5-stream cap, `read-state` events, nginx block. Tests for registry behaviour and the stream endpoint. *Blocked by Backend 2.*
+5. **Frontend 1: bell, dropdown and notifications page**: REST-driven (count, list, mark read/all), `NotificationItem` renderers for all 16 types, i18n, empty states, E2E. *Blocked by Backend 1.*
+6. **Frontend 2: live updates**: `useNotificationStream` (fetch-based SSE, reconnect/backoff, cache updates, cross-tab read state), E2E. *Blocked by Backend 6 and Frontend 1.*
+7. **Frontend 3: notification settings**: Account settings toggles, E2E. *Blocked by Backend 1 and Frontend 1.*
 
 ## API Changes Checklist
 
