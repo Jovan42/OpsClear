@@ -40,6 +40,7 @@ import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.NOTIFICATIONS;
+import static com.opsclear.generated.jooq.Tables.PROJECTS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
@@ -394,6 +395,60 @@ class NotificationIntegrationTest {
         assertThat(dsl.fetchCount(NOTIFICATIONS, NOTIFICATIONS.ID.eq(projectScoped))).isEqualTo(1);
     }
 
+    @Test
+    @DisplayName("a user removed from the org (still in project_members) sees and marks nothing from it")
+    void visibility_shouldHideEverything_afterOrgRemoval() throws Exception {
+        UUID orgLevel = seedOrgLevel(callerId, 10, null);
+        UUID projectScoped = seedProject(callerId, projectId, NotificationType.JOB_ASSIGNED, 5, null);
+        organisationRepository.deleteMember(orgId, callerId);
+        assertThat(projectMemberRepository.existsByProjectIdAndUserId(projectId, callerId)).isTrue();
+
+        mockMvc.perform(get(ApiPaths.NOTIFICATIONS).with(as(callerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(0)))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(get(ApiPaths.NOTIFICATIONS_UNREAD_COUNT).with(as(callerId)))
+                .andExpect(jsonPath("$.count").value(0));
+        mockMvc.perform(patch(ApiPaths.notification(orgLevel)).with(as(callerId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(new MarkReadRequest(true))))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(patch(ApiPaths.notification(projectScoped)).with(as(callerId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(new MarkReadRequest(true))))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post(ApiPaths.NOTIFICATIONS_READ_ALL).with(as(callerId)))
+                .andExpect(status().isNoContent());
+
+        assertThat(readAtInDb(orgLevel)).isNull();
+        assertThat(readAtInDb(projectScoped)).isNull();
+    }
+
+    @Test
+    @DisplayName("notifications of a soft-deleted project are hidden from list, count, PATCH and read-all")
+    void visibility_shouldHideSoftDeletedProjectNotifications() throws Exception {
+        UUID orgLevel = seedOrgLevel(callerId, 10, null);
+        UUID deletedProjects = seedProject(callerId, projectId, NotificationType.NOTE_ADDED, 5, null);
+        dsl.update(PROJECTS).set(PROJECTS.DELETED_AT, LocalDateTime.now()).where(PROJECTS.ID.eq(projectId)).execute();
+
+        mockMvc.perform(get(ApiPaths.NOTIFICATIONS).with(as(callerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.items[0].id").value(orgLevel.toString()))
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(get(ApiPaths.NOTIFICATIONS_UNREAD_COUNT).with(as(callerId)))
+                .andExpect(jsonPath("$.count").value(1));
+        mockMvc.perform(patch(ApiPaths.notification(deletedProjects)).with(as(callerId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(new MarkReadRequest(true))))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post(ApiPaths.NOTIFICATIONS_READ_ALL).with(as(callerId)))
+                .andExpect(status().isNoContent());
+
+        assertThat(readAtInDb(orgLevel)).isNotNull();
+        assertThat(readAtInDb(deletedProjects)).isNull();
+    }
+
     // --- Mark read / unread ---
 
     @Test
@@ -495,10 +550,13 @@ class NotificationIntegrationTest {
         UUID alreadyRead = seedOrgLevel(callerId, 120, earlier);
         LocalDateTime alreadyReadAt = readAtInDb(alreadyRead);
         UUID others = seedProject(otherId, projectId, NotificationType.NOTE_ADDED, 2, null);
+        // Hidden by the visibility filter (caller isn't in this project), so read-all must leave it alone.
+        UUID hidden = seedProject(callerId, leftProjectId, NotificationType.PROJECT_MEMBER_ADDED, 4, null);
 
         mockMvc.perform(post(ApiPaths.NOTIFICATIONS_READ_ALL).with(as(callerId)))
                 .andExpect(status().isNoContent());
 
+        assertThat(readAtInDb(hidden)).isNull();
         assertThat(readAtInDb(a)).isNotNull();
         assertThat(readAtInDb(b)).isNotNull();
         assertThat(readAtInDb(alreadyRead)).isEqualTo(alreadyReadAt);

@@ -1,6 +1,5 @@
 package com.opsclear.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -77,16 +76,14 @@ public class NotificationSettingsService {
         return types;
     }
 
-    // Stored preferences are a JSON object by schema default; anything else is treated as empty.
+    // Stored preferences are a JSON object by schema default; anything else is treated as empty. The column is
+    // JSONB, so it always holds valid JSON: @SneakyThrows avoids an unreachable catch for JsonProcessingException.
+    @lombok.SneakyThrows
     private ObjectNode readPreferences(UUID userId) {
         String json = userRepository.findPreferences(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
-        try {
-            JsonNode node = objectMapper.readTree(json);
-            return node instanceof ObjectNode object ? object : objectMapper.createObjectNode();
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException(ErrorMessages.Notification.PREFERENCES_UNREADABLE, e);
-        }
+        JsonNode node = objectMapper.readTree(json);
+        return node instanceof ObjectNode object ? object : objectMapper.createObjectNode();
     }
 
     private static Optional<NotificationType> parseType(String name) {

@@ -17,9 +17,9 @@ import java.util.UUID;
 
 /**
  * Notification centre (ADR-0051), read side: list, unread count, mark read/unread, mark all read. Every method acts
- * only on the caller's own notifications, and the repository applies the read-time visibility filter (project-scoped
- * notifications only while the caller is still a project member). Fan-out (creating notifications) is added by
- * Backend 2.
+ * only on the caller's own notifications, and the repository applies the read-time visibility filter (still a member
+ * of the notification's organisation; for project-scoped ones, still a project member and the project not deleted).
+ * Fan-out (creating notifications) is added by Backend 2.
  */
 @Service
 @RequiredArgsConstructor
@@ -71,7 +71,7 @@ public class NotificationService {
         return requireOwnNotification(callerId, id);
     }
 
-    /** Marks all of the caller's unread notifications read. Returns how many changed. */
+    /** Marks all of the caller's visible unread notifications read. Returns how many changed. */
     @Transactional
     public int markAllRead(UUID callerId) {
         int updated = notificationRepository.markAllRead(callerId);

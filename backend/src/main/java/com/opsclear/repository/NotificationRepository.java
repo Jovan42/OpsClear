@@ -1,5 +1,6 @@
 package com.opsclear.repository;
 
+import com.opsclear.generated.jooq.tables.Projects;
 import com.opsclear.generated.jooq.tables.records.NotificationsRecord;
 import com.opsclear.model.NotificationModel;
 import com.opsclear.model.NotificationType;
@@ -23,14 +24,15 @@ import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.NOTIFICATIONS;
+import static com.opsclear.generated.jooq.Tables.ORGANISATION_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.PROJECTS;
 import static com.opsclear.generated.jooq.Tables.PROJECT_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 
 /**
- * Notifications store (ADR-0051). Every read applies the visibility filter: a project-scoped notification is
- * returned (and counted) only while its recipient is still a member of that project; org-level ones
- * ({@code project_id} null) always show.
+ * Notifications store (ADR-0051). Every read, and mark-all-read, applies the visibility filter: a notification is
+ * visible only while its recipient is still a member of its organisation, and a project-scoped one only while the
+ * recipient is still a member of that project and the project isn't soft-deleted.
  */
 @Repository
 @RequiredArgsConstructor
@@ -40,6 +42,8 @@ public class NotificationRepository {
     private static final Field<String> PROJECT_FRIENDLY_ID = PROJECTS.FRIENDLY_ID.as("project_friendly_id");
     private static final Field<String> JOB_FRIENDLY_ID = JOBS.FRIENDLY_ID.as("job_friendly_id");
     private static final String EMPTY_PAYLOAD = "{}";
+    // Aliased so the visibility subquery doesn't clash with the outer LEFT JOIN on projects.
+    private static final Projects VISIBLE_PROJECT = PROJECTS.as("visible_project");
 
     private final DSLContext dsl;
 
@@ -112,11 +116,11 @@ public class NotificationRepository {
                 .execute();
     }
 
-    /** Marks every unread notification of the recipient read. Returns the number of rows changed. */
+    /** Marks every visible unread notification of the recipient read. Returns the number of rows changed. */
     public int markAllRead(UUID recipientId) {
         return dsl.update(NOTIFICATIONS)
                 .set(NOTIFICATIONS.READ_AT, LocalDateTime.now(ZoneOffset.UTC))
-                .where(NOTIFICATIONS.RECIPIENT_ID.eq(recipientId))
+                .where(visibleTo(recipientId))
                 .and(NOTIFICATIONS.READ_AT.isNull())
                 .execute();
     }
@@ -183,13 +187,21 @@ public class NotificationRepository {
                 .leftJoin(JOBS).on(NOTIFICATIONS.JOB_ID.eq(JOBS.ID));
     }
 
+    // A notification is visible while its recipient is still a member of the notification's organisation and, for a
+    // project-scoped one, still a member of that project and the project isn't soft-deleted.
     private static Condition visibleTo(UUID recipientId) {
         return NOTIFICATIONS.RECIPIENT_ID.eq(recipientId)
+                .and(DSL.exists(DSL.selectOne()
+                        .from(ORGANISATION_MEMBERS)
+                        .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(NOTIFICATIONS.ORG_ID))
+                        .and(ORGANISATION_MEMBERS.USER_ID.eq(NOTIFICATIONS.RECIPIENT_ID))))
                 .and(NOTIFICATIONS.PROJECT_ID.isNull()
                         .or(DSL.exists(DSL.selectOne()
                                 .from(PROJECT_MEMBERS)
+                                .join(VISIBLE_PROJECT).on(VISIBLE_PROJECT.ID.eq(PROJECT_MEMBERS.PROJECT_ID))
                                 .where(PROJECT_MEMBERS.PROJECT_ID.eq(NOTIFICATIONS.PROJECT_ID))
-                                .and(PROJECT_MEMBERS.USER_ID.eq(NOTIFICATIONS.RECIPIENT_ID)))));
+                                .and(PROJECT_MEMBERS.USER_ID.eq(NOTIFICATIONS.RECIPIENT_ID))
+                                .and(VISIBLE_PROJECT.DELETED_AT.isNull()))));
     }
 
     private static Condition filters(boolean unreadOnly, NotificationType type) {

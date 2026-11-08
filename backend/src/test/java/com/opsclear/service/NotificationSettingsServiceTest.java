@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.exception.BadRequestException;
@@ -98,13 +99,12 @@ class NotificationSettingsServiceTest {
     }
 
     @Test
-    @DisplayName("getMutedTypes fails with IllegalStateException when stored preferences aren't JSON")
+    @DisplayName("getMutedTypes propagates the parse error when stored preferences aren't JSON")
     void getMutedTypes_shouldThrow_whenPreferencesUnreadable() {
         when(userRepository.findPreferences(userId)).thenReturn(Optional.of("not json"));
 
         assertThatThrownBy(() -> service.getMutedTypes(userId))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage(ErrorMessages.Notification.PREFERENCES_UNREADABLE);
+                .isInstanceOf(JsonProcessingException.class);
     }
 
     // --- replaceMutedTypes ---

@@ -216,7 +216,6 @@ public final class ErrorMessages {
         public static final String UNKNOWN_TYPE = "Unknown notification type: %s";
         public static final String CANNOT_MUTE_SUBSCRIPTION_PAST_DUE =
                 "SUBSCRIPTION_PAST_DUE notifications can't be muted";
-        public static final String PREFERENCES_UNREADABLE = "Stored user preferences are not valid JSON";
 
         private Notification() {
         }
