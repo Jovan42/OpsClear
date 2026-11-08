@@ -1,5 +1,7 @@
 package com.opsclear.service;
 
+import com.opsclear.event.ApprovalDecidedEvent;
+import com.opsclear.event.ApprovalRequestedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -33,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +46,7 @@ class ApprovalServiceTest {
     @Mock private JobRepository jobRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private ApprovalService approvalService;
 
@@ -57,7 +62,7 @@ class ApprovalServiceTest {
     @BeforeEach
     void setUp() {
         approvalService = new ApprovalService(
-                approvalRepository, jobRepository, projectRepository, projectMemberRepository);
+                approvalRepository, jobRepository, projectRepository, projectMemberRepository, eventPublisher);
 
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();
@@ -109,6 +114,8 @@ class ApprovalServiceTest {
         assertThat(result.getId()).isEqualTo(expected.getId());
         assertThat(result.getStatus()).isEqualTo(ApprovalStatus.PENDING);
         verify(approvalRepository).insert(jobId, callerId, "Need transformer");
+        verify(eventPublisher).publishEvent(
+                new ApprovalRequestedEvent(approvalId, projectId, jobId, callerId, "Need transformer"));
     }
 
     @Test
@@ -162,6 +169,7 @@ class ApprovalServiceTest {
         assertThatThrownBy(() -> approvalService.request(projectId, jobId, "Need approval", callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Access denied: you are not assigned to this job");
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -236,6 +244,7 @@ class ApprovalServiceTest {
     void decide_shouldApproveApproval_forOwner() {
         ApprovalModel pending = buildApproval(ApprovalStatus.PENDING);
         ApprovalModel approved = buildApproval(ApprovalStatus.APPROVED);
+        approved.setComment("Approved");
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
@@ -251,6 +260,8 @@ class ApprovalServiceTest {
                 projectId, jobId, approvalId, ApprovalStatus.APPROVED, "Approved", callerId);
 
         assertThat(result.getStatus()).isEqualTo(ApprovalStatus.APPROVED);
+        verify(eventPublisher).publishEvent(new ApprovalDecidedEvent(
+                approvalId, projectId, jobId, callerId, callerId, ApprovalStatus.APPROVED, "Approved"));
     }
 
     @Test
@@ -273,6 +284,8 @@ class ApprovalServiceTest {
                 projectId, jobId, approvalId, ApprovalStatus.REJECTED, null, callerId);
 
         assertThat(result.getStatus()).isEqualTo(ApprovalStatus.REJECTED);
+        verify(eventPublisher).publishEvent(new ApprovalDecidedEvent(
+                approvalId, projectId, jobId, callerId, callerId, ApprovalStatus.REJECTED, null));
     }
 
     @Test
@@ -306,6 +319,7 @@ class ApprovalServiceTest {
                 projectId, jobId, approvalId, ApprovalStatus.APPROVED, null, callerId))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("This approval has already been decided");
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test

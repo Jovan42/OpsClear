@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.event.NoteAddedEvent;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -29,6 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +41,7 @@ class NoteServiceTest {
     @Mock private JobRepository jobRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private NoteService noteService;
 
@@ -50,7 +54,8 @@ class NoteServiceTest {
 
     @BeforeEach
     void setUp() {
-        noteService = new NoteService(noteRepository, jobRepository, projectRepository, projectMemberRepository);
+        noteService = new NoteService(
+                noteRepository, jobRepository, projectRepository, projectMemberRepository, eventPublisher);
 
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();
@@ -99,6 +104,7 @@ class NoteServiceTest {
         assertThat(result.getId()).isEqualTo(expected.getId());
         assertThat(result.getContent()).isEqualTo("Client confirmed deadline.");
         verify(noteRepository).insert(jobId, callerId, "Client confirmed deadline.");
+        verify(eventPublisher).publishEvent(new NoteAddedEvent(expected.getId(), projectId, jobId, callerId));
     }
 
     @Test
@@ -171,6 +177,7 @@ class NoteServiceTest {
         assertThatThrownBy(() -> noteService.create(projectId, jobId, "content", callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("You are not a member of this project");
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test

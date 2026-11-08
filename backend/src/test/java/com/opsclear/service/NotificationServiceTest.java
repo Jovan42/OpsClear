@@ -1,12 +1,18 @@
 package com.opsclear.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.NotificationModel;
 import com.opsclear.model.NotificationPage;
 import com.opsclear.model.NotificationType;
+import com.opsclear.repository.JobRepository;
+import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.NotificationRepository;
+import com.opsclear.repository.ProjectMemberRepository;
+import com.opsclear.repository.ProjectRepository;
+import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +43,12 @@ import static org.mockito.Mockito.when;
 class NotificationServiceTest {
 
     @Mock private NotificationRepository notificationRepository;
+    @Mock private NotificationSettingsService notificationSettingsService;
+    @Mock private JobRepository jobRepository;
+    @Mock private ProjectRepository projectRepository;
+    @Mock private ProjectMemberRepository projectMemberRepository;
+    @Mock private NoteRepository noteRepository;
+    @Mock private UserRepository userRepository;
 
     private NotificationService notificationService;
 
@@ -45,7 +57,9 @@ class NotificationServiceTest {
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(notificationRepository);
+        notificationService = new NotificationService(notificationRepository, notificationSettingsService,
+                jobRepository, projectRepository, projectMemberRepository, noteRepository, userRepository,
+                new ObjectMapper());
         callerId = UUID.randomUUID();
         notificationId = UUID.randomUUID();
     }
