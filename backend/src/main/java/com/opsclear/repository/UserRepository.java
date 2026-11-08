@@ -3,6 +3,7 @@ package com.opsclear.repository;
 import com.opsclear.model.UserModel;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.JSONB;
 import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
@@ -88,6 +89,22 @@ public class UserRepository {
                 .set(USERS.LAST_LOGIN_AT, toLocalDateTime(now))
                 .execute();
         return findById(user.getId()).orElseThrow();
+    }
+
+    /** The user's {@code preferences} JSONB as a raw JSON object string, or empty if the user doesn't exist. */
+    public Optional<String> findPreferences(UUID id) {
+        return dsl.select(USERS.PREFERENCES)
+                .from(USERS)
+                .where(USERS.ID.eq(id))
+                .fetchOptional(r -> r.value1().data());
+    }
+
+    /** Replaces the user's whole {@code preferences} JSONB with {@code preferencesJson}. */
+    public void updatePreferences(UUID id, String preferencesJson) {
+        dsl.update(USERS)
+                .set(USERS.PREFERENCES, JSONB.valueOf(preferencesJson))
+                .where(USERS.ID.eq(id))
+                .execute();
     }
 
     // Every integration test class ends its own cleanup chain with this call, but
