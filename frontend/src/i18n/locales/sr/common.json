@@ -18,5 +18,16 @@
   "create": "Kreiraj",
   "submit": "Pošalji",
   "required": "Obavezno",
-  "none": "Ništa"
+  "none": "Ništa",
+  "duration": {
+    "day_one": "{{count}} dan",
+    "day_few": "{{count}} dana",
+    "day_other": "{{count}} dana",
+    "hour_one": "{{count}} sat",
+    "hour_few": "{{count}} sata",
+    "hour_other": "{{count}} sati",
+    "minute_one": "{{count}} minut",
+    "minute_few": "{{count}} minuta",
+    "minute_other": "{{count}} minuta"
+  }
 }

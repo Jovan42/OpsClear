@@ -203,6 +203,18 @@
       "lateRate": "Završeno sa zakašnjenjem",
       "lateDetail": "Kasno: {{late}} od {{total}} sa rokom"
     },
+    "view": {
+      "label": "Prikaz",
+      "team": "Tim",
+      "members": "Po članu"
+    },
+    "members": {
+      "colMember": "Član",
+      "showMember": "Prikaži statistiku za {{name}}",
+      "showing": "Prikazano: {{name}}",
+      "backToTeam": "Nazad na tim",
+      "formerMember": "Bivši član"
+    },
     "chartHeading": "Završeno po nedeljama",
     "chartWeekOf": "Nedelja od {{date}}",
     "chartCompleted": "Završeno",
