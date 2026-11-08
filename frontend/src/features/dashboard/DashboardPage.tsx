@@ -16,6 +16,7 @@ import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from '../org/OrgContext';
 import { JOB_TYPE_HEX } from '../../utils/jobTypeColors';
+import { SUMMARY_VALUE_CLASSES } from '../../utils/statusColors';
 import i18n from '../../i18n';
 import type { DashboardSummary, JobSummary, JobTypeBreakdown, PendingApprovalResponse } from '../../types';
 
@@ -136,37 +137,37 @@ function SummaryCards({
         <SummaryCard
           label={t('dashboard.statusLabels.new')}
           value={summary.newCount}
-          colorClass="text-amber-600"
+          colorClass={SUMMARY_VALUE_CLASSES.NEW}
           onClick={() => goToJobs('NEW')}
         />
         <SummaryCard
           label={t('dashboard.statusLabels.inProgress')}
           value={summary.inProgressCount}
-          colorClass="text-blue-600"
+          colorClass={SUMMARY_VALUE_CLASSES.IN_PROGRESS}
           onClick={() => goToJobs('IN_PROGRESS')}
         />
         <SummaryCard
           label={t('dashboard.statusLabels.blocked')}
           value={summary.blockedCount}
-          colorClass="text-red-600"
+          colorClass={SUMMARY_VALUE_CLASSES.BLOCKED}
           onClick={() => goToJobs('BLOCKED')}
         />
         <SummaryCard
           label={t('dashboard.statusLabels.completed')}
           value={summary.completedCount}
-          colorClass="text-green-600"
+          colorClass={SUMMARY_VALUE_CLASSES.COMPLETED}
           onClick={() => goToJobs('COMPLETED')}
         />
         <SummaryCard
           label={t('dashboard.statusLabels.overdue')}
           value={summary.overdueCount}
-          colorClass="text-orange-600"
+          colorClass={SUMMARY_VALUE_CLASSES.OVERDUE}
         />
         {isOwnerOrAdmin && (
           <SummaryCard
             label={t('dashboard.statusLabels.pendingApprovals')}
             value={summary.pendingApprovalsCount}
-            colorClass="text-purple-600"
+            colorClass={SUMMARY_VALUE_CLASSES.PENDING_APPROVALS}
             onClick={() => navigate(`/projects/${projectId}/approvals`)}
           />
         )}

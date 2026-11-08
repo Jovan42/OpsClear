@@ -73,6 +73,7 @@ Both time metrics are shown side by side (decided): total time answers "how long
 
 - **Range selector** (4 / 12 / 26 weeks).
 - **Summary tiles** for the whole range: Completed, Avg. total time, Avg. working time, Avg. blocked time, Completed late %.
+  - **Tile colours** (JOB-322): one fixed colour per tile, matching the Dashboard summary card for the status the metric measures: Completed green (Completed), Avg. total time amber (New), Avg. working time blue (In Progress), Avg. blocked time red (Blocked), Completed late orange (Overdue). A "—" (no value) stays neutral gray. Not value-based (no thresholds or good/bad colouring): it keeps the two pages consistent and avoids a leaderboard feel. The members table stays plain.
 - **Weekly chart**: bars for jobs completed per week. Empty weeks show as zero, not gaps.
 - **Owner/Admin only**: a **Team / By member** toggle. *By member* shows a table with one row per member (same five metrics). Clicking a row filters the whole page to that member, with a clear "Showing: <name> · back to team" indicator.
 - **Member**: the same tiles and chart titled "Your stats". No toggle.

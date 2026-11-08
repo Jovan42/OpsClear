@@ -13,7 +13,8 @@ import { useProject, useProjectMembers, useProjectRole } from '../projects/usePr
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from '../org/OrgContext';
 import { useProjectStats } from './useProjectStats';
-import { formatAvg, formatLateRate } from './statsFormat';
+import { EMPTY, formatAvg, formatLateRate } from './statsFormat';
+import { SUMMARY_VALUE_CLASSES, SUMMARY_VALUE_NEUTRAL_CLASS } from '../../utils/statusColors';
 import StatsMembersTable from './StatsMembersTable';
 import type { StatsBucket, StatsMember, StatsResponse, StatsSummary, StatsWeeks } from '../../types';
 
@@ -116,13 +117,32 @@ function MemberFilterIndicator({ name, onBack }: Readonly<{ name: string; onBack
 
 // ---- Summary tiles ----
 
-function Tile({ label, value, detail }: Readonly<{ label: string; value: string; detail?: string }>) {
+/**
+ * One fixed colour per metric, matching the Dashboard status it measures (ADR-0050, JOB-322).
+ * Not value-based: no thresholds, no good/bad colouring.
+ */
+const TILE_COLORS = {
+  completed: SUMMARY_VALUE_CLASSES.COMPLETED,
+  avgLeadTime: SUMMARY_VALUE_CLASSES.NEW,
+  avgCycleTime: SUMMARY_VALUE_CLASSES.IN_PROGRESS,
+  avgBlocked: SUMMARY_VALUE_CLASSES.BLOCKED,
+  lateRate: SUMMARY_VALUE_CLASSES.OVERDUE,
+} as const;
+
+function Tile({
+  label,
+  value,
+  colorClass,
+  detail,
+}: Readonly<{ label: string; value: string; colorClass: string; detail?: string }>) {
+  // A missing metric ("—") stays neutral so it doesn't look coloured.
+  const valueClass = value === EMPTY ? SUMMARY_VALUE_NEUTRAL_CLASS : colorClass;
   return (
     <div
       data-testid="stats-tile"
       className="flex flex-col px-4 py-3 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
     >
-      <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</span>
+      <span className={`text-2xl font-bold ${valueClass}`}>{value}</span>
       <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</span>
       {detail && <span className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{detail}</span>}
     </div>
@@ -138,11 +158,11 @@ function SummaryTiles({ summary }: Readonly<{ summary: StatsSummary }>) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-      <Tile label={t('stats.tiles.completed')} value={String(summary.completedCount)} />
-      <Tile label={t('stats.tiles.avgLeadTime')} value={formatAvg(summary.avgLeadTimeSeconds)} />
-      <Tile label={t('stats.tiles.avgCycleTime')} value={formatAvg(summary.avgCycleTimeSeconds)} />
-      <Tile label={t('stats.tiles.avgBlocked')} value={formatAvg(summary.avgBlockedSeconds)} />
-      <Tile label={t('stats.tiles.lateRate')} value={lateRate} detail={lateDetail} />
+      <Tile label={t('stats.tiles.completed')} value={String(summary.completedCount)} colorClass={TILE_COLORS.completed} />
+      <Tile label={t('stats.tiles.avgLeadTime')} value={formatAvg(summary.avgLeadTimeSeconds)} colorClass={TILE_COLORS.avgLeadTime} />
+      <Tile label={t('stats.tiles.avgCycleTime')} value={formatAvg(summary.avgCycleTimeSeconds)} colorClass={TILE_COLORS.avgCycleTime} />
+      <Tile label={t('stats.tiles.avgBlocked')} value={formatAvg(summary.avgBlockedSeconds)} colorClass={TILE_COLORS.avgBlocked} />
+      <Tile label={t('stats.tiles.lateRate')} value={lateRate} colorClass={TILE_COLORS.lateRate} detail={lateDetail} />
     </div>
   );
 }
