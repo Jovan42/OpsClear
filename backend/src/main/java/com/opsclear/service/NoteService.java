@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.event.NoteAddedEvent;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
@@ -13,6 +14,7 @@ import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class NoteService {
     private final JobRepository jobRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public NoteModel create(UUID projectId, UUID jobId, String content, UUID callerId) {
@@ -38,6 +41,7 @@ public class NoteService {
 
         NoteModel note = noteRepository.insert(jobId, callerId, content.strip());
         log.info("Note {} added to job {} in project {} by user {}", note.getId(), jobId, projectId, callerId);
+        eventPublisher.publishEvent(new NoteAddedEvent(note.getId(), projectId, jobId, callerId));
         return note;
     }
 

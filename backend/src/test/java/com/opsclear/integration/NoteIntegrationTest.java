@@ -14,6 +14,7 @@ import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.NoteRepository;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -22,6 +23,7 @@ import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,6 +63,7 @@ class NoteIntegrationTest {
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private UUID ownerId;
     private UUID memberId;
@@ -68,8 +71,10 @@ class NoteIntegrationTest {
     private UUID jobId;
     private UUID orgId;
 
-    @BeforeEach
-    void setUp() {
+    // Notes create notifications (JOB-276): leave nothing behind for other classes.
+    @AfterEach
+    void cleanUp() {
+        notificationRepository.deleteAll();
         noteRepository.deleteAll();
         jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
@@ -80,6 +85,11 @@ class NoteIntegrationTest {
         subscriptionRepository.deleteAll();
         organisationRepository.deleteAll();
         userRepository.deleteAll();
+    }
+
+    @BeforeEach
+    void setUp() {
+        cleanUp();
 
         ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();

@@ -1,5 +1,7 @@
 package com.opsclear.service;
 
+import com.opsclear.event.ApprovalDecidedEvent;
+import com.opsclear.event.ApprovalRequestedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
@@ -17,6 +19,7 @@ import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +36,7 @@ public class ApprovalService {
     private final JobRepository jobRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ApprovalModel request(UUID projectId, UUID jobId, String description, UUID callerId) {
@@ -45,6 +49,8 @@ public class ApprovalService {
         ApprovalModel approval = approvalRepository.insert(jobId, callerId, description.strip());
         log.info("Approval {} requested on job {} in project {} by user {}",
                 approval.getId(), jobId, projectId, callerId);
+        eventPublisher.publishEvent(new ApprovalRequestedEvent(
+                approval.getId(), projectId, jobId, callerId, approval.getDescription()));
         return approval;
     }
 
@@ -62,7 +68,10 @@ public class ApprovalService {
         requireDecisionApplied(rows);
 
         log.info("Approval {} on job {} {} by user {}", approvalId, jobId, status, callerId);
-        return approvalRepository.findByIdAndJobId(approvalId, jobId).orElseThrow();
+        ApprovalModel decided = approvalRepository.findByIdAndJobId(approvalId, jobId).orElseThrow();
+        eventPublisher.publishEvent(new ApprovalDecidedEvent(
+                approvalId, projectId, jobId, callerId, decided.getRequesterId(), status, decided.getComment()));
+        return decided;
     }
 
     @Transactional(readOnly = true)

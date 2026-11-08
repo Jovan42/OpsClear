@@ -62,6 +62,14 @@ public class NoteRepository {
                 .map(this::toModel);
     }
 
+    /** Everyone who has written a note on the job, each once (NOTE_ADDED thread participants, ADR-0051). */
+    public List<UUID> findDistinctAuthorIdsByJobId(UUID jobId) {
+        return dsl.selectDistinct(NOTES.AUTHOR_ID)
+                .from(NOTES)
+                .where(NOTES.JOB_ID.eq(jobId))
+                .fetch(NOTES.AUTHOR_ID);
+    }
+
     public void deleteAll() {
         dsl.deleteFrom(NOTES).execute();
     }

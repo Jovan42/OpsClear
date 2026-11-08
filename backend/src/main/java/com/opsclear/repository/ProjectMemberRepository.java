@@ -48,6 +48,16 @@ public class ProjectMemberRepository {
                 .map(this::toModel);
     }
 
+    /** User IDs of the project's Owners and Admins (notification recipients and job visibility, ADR-0051). */
+    public List<UUID> findOwnerAndAdminUserIds(UUID projectId) {
+        return dsl.select(PROJECT_MEMBERS.USER_ID)
+                .from(PROJECT_MEMBERS)
+                .where(PROJECT_MEMBERS.PROJECT_ID.eq(projectId))
+                .and(PROJECT_MEMBERS.ROLE.in(ProjectMemberRole.OWNER.name(), ProjectMemberRole.ADMIN.name()))
+                .orderBy(PROJECT_MEMBERS.JOINED_AT.asc())
+                .fetch(PROJECT_MEMBERS.USER_ID);
+    }
+
     public boolean existsByProjectIdAndUserId(UUID projectId, UUID userId) {
         return dsl.fetchExists(
                 dsl.selectOne()
