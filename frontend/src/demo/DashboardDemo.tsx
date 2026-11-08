@@ -4,6 +4,7 @@ import DashboardPage from '../features/dashboard/DashboardPage';
 import JobListPage from '../features/jobs/JobListPage';
 import JobDetailPage from '../features/jobs/JobDetailPage';
 import ApprovalQueuePage from '../features/approvals/ApprovalQueuePage';
+import StatsPage from '../features/stats/StatsPage';
 import type { DemoSlide } from './types';
 
 /**
@@ -16,6 +17,10 @@ import type { DemoSlide } from './types';
  * approvals) navigates in-app rather than being a dead link, so the jobs list, job
  * detail, and approvals routes all need registering alongside dashboard itself —
  * same reasoning as ApprovalsDemo's job-link route.
+ *
+ * The second slide is the real Stats page (ADR-0050, part of the same DASHBOARD add-on),
+ * served sample trends by the `/stats` mock handler (mockStats.ts). The demo persona is the
+ * project Owner, so the Team / By member toggle and the per-member drill-down work too.
  */
 export const slides: DemoSlide[] = [
   {
@@ -29,6 +34,15 @@ export const slides: DemoSlide[] = [
           { path: '/projects/:projectFriendlyId/approvals', element: <ApprovalQueuePage /> },
         ]}
         initialEntry={`/projects/${DEMO_PROJECT_ID}/dashboard`}
+      />
+    ),
+  },
+  {
+    labelKey: 'featuresPage.demo.slideLabels.stats',
+    render: () => (
+      <DemoRouteWrapper
+        routes={[{ path: '/projects/:projectFriendlyId/stats', element: <StatsPage /> }]}
+        initialEntry={`/projects/${DEMO_PROJECT_ID}/stats`}
       />
     ),
   },

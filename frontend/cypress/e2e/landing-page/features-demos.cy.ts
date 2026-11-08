@@ -232,6 +232,28 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
     });
   });
 
+  it("the Dashboard demo's second slide is the Stats page with sample tiles, chart and per-member drill-down (JOB-319)", () => {
+    cy.visit('/features');
+    openDemo('Dashboard', 'Status distribution');
+    cy.get('@overlay').contains('1/2').should('be.visible');
+    cy.get('@overlay').find('button[aria-label="Next example"]').click();
+    cy.get('@overlay').contains('Stats: completion trends').should('be.visible');
+    cy.get('@overlay').contains('2/2').should('be.visible');
+
+    cy.get('@overlay').find('[data-testid="stats-tile"]', { timeout: 10000 }).should('have.length', 5);
+    cy.get('@overlay').find('[data-testid="stats-tile"]').first().invoke('text').should('match', /^[1-9]\d*Completed/);
+    cy.get('@overlay').find('[data-testid="stats-chart"]').should('have.attr', 'data-weeks', '12');
+    cy.get('@overlay').contains(/late out of \d+ with a deadline/).should('be.visible');
+
+    cy.get('@overlay').contains('button', '4 weeks').click();
+    cy.get('@overlay').find('[data-testid="stats-chart"]').should('have.attr', 'data-weeks', '4');
+
+    cy.get('@overlay').contains('button', 'By member').click();
+    cy.get('@overlay').find('[data-testid="stats-member-row"]').should('have.length', 3);
+    cy.get('@overlay').find('button[aria-label="Show stats for Jane Smith"]').click();
+    cy.get('@overlay').find('[data-testid="stats-member-filter"]').should('contain.text', 'Jane Smith');
+  });
+
   it('resetDemoData() on close then immediately reopening produces an identical baseline every time', () => {
     cy.visit('/features');
     openDemo(NOTES_CARD_TITLE, 'First pass is up on staging');
