@@ -18,5 +18,13 @@
   "create": "Create",
   "submit": "Submit",
   "required": "Required",
-  "none": "None"
+  "none": "None",
+  "duration": {
+    "day_one": "{{count}} day",
+    "day_other": "{{count}} days",
+    "hour_one": "{{count}} hour",
+    "hour_other": "{{count}} hours",
+    "minute_one": "{{count}} minute",
+    "minute_other": "{{count}} minutes"
+  }
 }
