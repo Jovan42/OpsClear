@@ -9,6 +9,7 @@ import {
   type DemoApproval,
 } from './mockData';
 import { detectPreset, parseCronParams } from '../utils/cron';
+import { isPastDeadline } from '../utils/deadline';
 import type {
   ApiKeyResponse,
   ApprovalResponse,
@@ -201,8 +202,8 @@ export const demoHandlers = [
   }),
 
   http.get(`${base}/dashboard`, () => {
-    const now = Date.now();
-    const isOverdue = (j: JobResponse) => j.status !== 'COMPLETED' && !!j.deadline && new Date(j.deadline).getTime() < now;
+    const now = new Date();
+    const isOverdue = (j: JobResponse) => j.status !== 'COMPLETED' && !!j.deadline && isPastDeadline(j.deadline, now);
     const toSummary = (j: JobResponse) => ({
       id: j.id,
       title: j.title,
