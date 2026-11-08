@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BarChart3 } from 'lucide-react';
@@ -8,22 +9,20 @@ import PageError from '../../components/PageError';
 import RefreshButton from '../../components/RefreshButton';
 import Skeleton from '../../components/Skeleton';
 import UpgradeCard from '../../components/UpgradeCard';
-import { useProject, useProjectRole } from '../projects/useProjects';
+import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from '../org/OrgContext';
-import { formatSeconds } from '../../utils/formatDuration';
 import { useProjectStats } from './useProjectStats';
-import type { StatsBucket, StatsSummary, StatsWeeks } from '../../types';
+import { formatAvg, formatLateRate } from './statsFormat';
+import StatsMembersTable from './StatsMembersTable';
+import type { StatsBucket, StatsMember, StatsResponse, StatsSummary, StatsWeeks } from '../../types';
+
+type StatsView = 'team' | 'members';
 
 const RANGES: StatsWeeks[] = [4, 12, 26];
 const DEFAULT_RANGE: StatsWeeks = 12;
 /** Same green the Dashboard's donut uses for Completed. */
 const COMPLETED_COLOR = '#22c55e';
-const EMPTY = '—';
-
-function formatAvg(seconds: number | null): string {
-  return seconds === null ? EMPTY : formatSeconds(seconds);
-}
 
 /** `weekStart` is a plain ISO date (the week's Monday in the viewer's zone), so parse it as a local date. */
 function formatWeek(weekStart: string, locale: string): string {
@@ -31,34 +30,86 @@ function formatWeek(weekStart: string, locale: string): string {
   return new Date(y, m - 1, d).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 }
 
-// ---- Range selector ----
+// ---- Segmented controls (range, Team / By member) ----
 
-function RangeSelector({ value, onChange }: Readonly<{ value: StatsWeeks; onChange: (w: StatsWeeks) => void }>) {
-  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+function Segmented<T extends string | number>({
+  label,
+  options,
+  value,
+  onChange,
+}: Readonly<{ label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }>) {
   return (
     <div
       role="group"
-      aria-label={t('stats.rangeLabel')}
+      aria-label={label}
       className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5"
     >
-      {RANGES.map((w) => {
-        const active = w === value;
+      {options.map((o) => {
+        const active = o.value === value;
         return (
           <button
-            key={w}
+            key={o.value}
             type="button"
             aria-pressed={active}
-            onClick={() => onChange(w)}
+            onClick={() => onChange(o.value)}
             className={`px-3 py-1 text-xs font-medium rounded-md cursor-pointer transition-colors ${
               active
                 ? 'bg-brand text-white'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
-            {t(`stats.range.${w}`)}
+            {o.label}
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function RangeSelector({ value, onChange }: Readonly<{ value: StatsWeeks; onChange: (w: StatsWeeks) => void }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  return (
+    <Segmented
+      label={t('stats.rangeLabel')}
+      options={RANGES.map((w) => ({ value: w, label: t(`stats.range.${w}`) }))}
+      value={value}
+      onChange={onChange}
+    />
+  );
+}
+
+function ViewToggle({ value, onChange }: Readonly<{ value: StatsView; onChange: (v: StatsView) => void }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  return (
+    <Segmented
+      label={t('stats.view.label')}
+      options={[
+        { value: 'team' as const, label: t('stats.view.team') },
+        { value: 'members' as const, label: t('stats.view.members') },
+      ]}
+      value={value}
+      onChange={onChange}
+    />
+  );
+}
+
+/** "Showing: <name> · Back to team", shown while the page is drilled down to one member. */
+function MemberFilterIndicator({ name, onBack }: Readonly<{ name: string; onBack: () => void }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  return (
+    <div
+      data-testid="stats-member-filter"
+      className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-brand/30 bg-brand-light/40 dark:bg-brand/10 px-3 py-1.5 text-sm"
+    >
+      <span className="text-gray-800 dark:text-gray-200">{t('stats.members.showing', { name })}</span>
+      <span aria-hidden="true" className="text-gray-400">·</span>
+      <button
+        type="button"
+        onClick={onBack}
+        className="font-medium text-brand hover:underline cursor-pointer"
+      >
+        {t('stats.members.backToTeam')}
+      </button>
     </div>
   );
 }
@@ -80,7 +131,7 @@ function Tile({ label, value, detail }: Readonly<{ label: string; value: string;
 
 function SummaryTiles({ summary }: Readonly<{ summary: StatsSummary }>) {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
-  const lateRate = summary.lateRate === null ? EMPTY : `${Math.round(summary.lateRate * 100)}%`;
+  const lateRate = formatLateRate(summary.lateRate);
   const lateDetail = summary.completedWithDeadline > 0
     ? t('stats.tiles.lateDetail', { late: summary.completedLate, total: summary.completedWithDeadline })
     : undefined;
@@ -144,12 +195,46 @@ export default function StatsPage() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
+  const { data: projectMembers, isLoading: membersLoading } = useProjectMembers(projectId);
   const role = useProjectRole(projectId);
   const { hasAddon } = useCurrentOrg();
+  const queryClient = useQueryClient();
   const [weeks, setWeeks] = useState<StatsWeeks>(DEFAULT_RANGE);
-  // memberId stays undefined here; the per-member breakdown (Frontend 2) sets it.
-  const { data, isLoading, isError, isFetching, dataUpdatedAt, refetch } = useProjectStats(projectId, weeks);
+
+  // View and drill-down live in the URL (?view=members&member=<id>) so refresh and back keep them.
+  // Only Owner/Admin get the breakdown (ADR-0050); a Member's stale link just shows their own stats.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const canBreakdown = role === 'OWNER' || role === 'ADMIN';
+  const memberParam = searchParams.get('member');
+  const memberId = canBreakdown && memberParam ? memberParam : undefined;
+  const view: StatsView = canBreakdown && (memberId || searchParams.get('view') === 'members') ? 'members' : 'team';
+
+  // Hold a drill-down link until the role is known, so it doesn't load the team totals first.
+  const { data, isPending, isError, isFetching, dataUpdatedAt, refetch } = useProjectStats(
+    projectId,
+    weeks,
+    memberId,
+    !(memberParam && membersLoading),
+  );
   usePageTitle(t('stats.pageTitle'), project?.name);
+
+  const selectMember = (m: StatsMember) => setSearchParams({ view: 'members', member: m.userId });
+  const backToTeam = () => setSearchParams({});
+  const changeView = (v: StatsView) => setSearchParams(v === 'members' ? { view: 'members' } : {});
+
+  /**
+   * The filtered response has no `members`, so the name comes from the project members, or, for a
+   * former member who still shows up as an assignee, from any cached team response of this project.
+   */
+  function memberName(id: string): string {
+    const current = projectMembers?.find((m) => m.userId === id)?.userName;
+    if (current) return current;
+    for (const [, cached] of queryClient.getQueriesData<StatsResponse>({ queryKey: ['projects', projectId, 'stats'] })) {
+      const name = cached?.members?.find((m) => m.userId === id)?.name;
+      if (name) return name;
+    }
+    return t('stats.members.formerMember');
+  }
 
   if (!hasAddon('DASHBOARD')) return <UpgradeCard featureName={t('stats.featureName')} />;
 
@@ -160,7 +245,8 @@ export default function StatsPage() {
   else if (role) title = t('stats.teamTitle');
 
   let content;
-  if (isLoading) {
+  // isPending, not isLoading: a held drill-down request is pending without fetching.
+  if (isPending) {
     content = <StatsSkeleton />;
   } else if (isError || !data) {
     content = <PageError message={t('stats.loadError')} onRetry={() => void refetch()} />;
@@ -168,6 +254,12 @@ export default function StatsPage() {
     content = (
       <>
         <SummaryTiles summary={data.summary} />
+        {view === 'members' && !memberId && (
+          // `members` is null on a filtered response kept as placeholder while the team one loads.
+          data.members
+            ? <StatsMembersTable members={data.members} onSelect={selectMember} />
+            : <Skeleton className="h-40 rounded-xl" />
+        )}
         <WeeklyChart buckets={data.buckets} />
         {data.summary.completedCount === 0 && (
           <EmptyState icon={BarChart3} message={t('stats.empty')} description={t('stats.emptyDescription')} className="py-8" />
@@ -185,6 +277,11 @@ export default function StatsPage() {
           {data && <RefreshButton lastUpdated={dataUpdatedAt} isFetching={isFetching} onRefresh={() => void refetch()} />}
         </div>
       </div>
+      {canBreakdown && (
+        memberId
+          ? <MemberFilterIndicator name={memberName(memberId)} onBack={backToTeam} />
+          : <ViewToggle value={view} onChange={changeView} />
+      )}
       {content}
     </div>
   );

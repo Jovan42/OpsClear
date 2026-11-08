@@ -203,6 +203,18 @@
       "lateRate": "Completed late",
       "lateDetail": "{{late}} late out of {{total}} with a deadline"
     },
+    "view": {
+      "label": "View",
+      "team": "Team",
+      "members": "By member"
+    },
+    "members": {
+      "colMember": "Member",
+      "showMember": "Show stats for {{name}}",
+      "showing": "Showing: {{name}}",
+      "backToTeam": "Back to team",
+      "formerMember": "Former member"
+    },
     "chartHeading": "Completed per week",
     "chartWeekOf": "Week of {{date}}",
     "chartCompleted": "Completed",

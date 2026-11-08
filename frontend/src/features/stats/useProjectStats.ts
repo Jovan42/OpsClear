@@ -8,17 +8,21 @@ function browserTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 }
 
-export function useProjectStats(projectId: string, weeks: StatsWeeks, memberId?: string) {
+/**
+ * `memberId` filters to one member (Owner/Admin drill-down, ADR-0050). Pass `enabled: false` to hold
+ * the request, e.g. until the page knows whether the viewer may use the filter at all.
+ */
+export function useProjectStats(projectId: string, weeks: StatsWeeks, memberId?: string, enabled = true) {
   const { hasAddon } = useCurrentOrg();
   const tz = browserTimeZone();
   return useQuery({
     queryKey: ['projects', projectId, 'stats', weeks, tz, memberId],
     queryFn: () => statsApi.get(projectId, { weeks, tz, memberId }),
     staleTime: 30 * 1000,
-    // Keep the previous range on screen while a new one loads, instead of flashing skeletons.
+    // Keep the previous range/member on screen while a new one loads, instead of flashing skeletons.
     // Only within the same project: after a project switch, show the skeleton, not the old project's numbers.
     placeholderData: (previous, previousQuery) =>
       previousQuery?.queryKey[1] === projectId ? previous : undefined,
-    enabled: !!projectId && hasAddon('DASHBOARD'),
+    enabled: enabled && !!projectId && hasAddon('DASHBOARD'),
   });
 }
