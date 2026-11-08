@@ -133,6 +133,10 @@ describe('Stats page', () => {
       tileValue('Avg. working time').should('have.text', '—');
       tileValue('Avg. blocked time').should('have.text', '—');
       tileValue('Completed late').should('have.text', '—');
+      // Fixed per-metric colours (JOB-322): a number keeps its colour, a "—" stays neutral.
+      tileValue('Completed').should('have.class', 'text-green-600');
+      tileValue('Avg. total time').should('not.have.class', 'text-amber-600');
+      tileValue('Completed late').should('not.have.class', 'text-orange-600');
       cy.get('[data-testid="stats-chart"]').should('have.attr', 'data-weeks', '12');
     });
 
