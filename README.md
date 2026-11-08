@@ -98,7 +98,7 @@ Three sections, visible at a glance:
 - One screen
 - No filters
 - Shows: What's late, What's blocked, What's waiting
-- Plus a per-project Stats tab (same add-on) for the trend: jobs completed per week, average total, working and blocked time, and the late rate, for the team or per member. One fixed page, not a report builder
+- Plus a per-project Stats tab (same add-on) for the trend: jobs completed per week, average time to finish, time spent working and time lost to blocking, and the late rate, for the team or per member. One fixed page, not a report builder
 
 ---
 
