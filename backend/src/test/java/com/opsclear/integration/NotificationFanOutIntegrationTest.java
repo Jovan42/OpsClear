@@ -49,6 +49,7 @@ import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.NOTIFICATIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -88,8 +89,10 @@ class NotificationFanOutIntegrationTest {
     private UUID adminId;
     private UUID assigneeId;
     private UUID formerId;
+    private UUID outsiderId;
     private UUID projectId;
     private UUID jobId;
+    private UUID assigneeMembershipId;
     // The user sync filter overwrites email and name from the JWT, so requests carry the real ones.
     private final Map<UUID, UserModel> users = new HashMap<>();
 
@@ -101,6 +104,7 @@ class NotificationFanOutIntegrationTest {
         adminId = user("admin@example.com", "Adam Admin");
         assigneeId = user("assignee@example.com", "Ann Assignee");
         formerId = user("former@example.com", "Fred Former");
+        outsiderId = user("outsider@example.com", "Oscar Outsider");
 
         OrganisationModel org = organisationRepository.save(
                 OrganisationModel.builder().name("Fan-out Org").slug("FAN").createdBy(ownerId).build());
@@ -109,12 +113,14 @@ class NotificationFanOutIntegrationTest {
         organisationRepository.saveMember(orgId, adminId, OrganisationRole.MEMBER);
         organisationRepository.saveMember(orgId, assigneeId, OrganisationRole.MEMBER);
         organisationRepository.saveMember(orgId, formerId, OrganisationRole.MEMBER);
+        // In the organisation but not in the project.
+        organisationRepository.saveMember(orgId, outsiderId, OrganisationRole.MEMBER);
 
         projectId = projectRepository.save(ProjectModel.builder().name("Website Redesign")
                 .friendlyId("PRJ-276").ownerId(ownerId).organisationId(orgId).build()).getId();
         addMember(ownerId, ProjectMemberRole.OWNER);
         addMember(adminId, ProjectMemberRole.ADMIN);
-        addMember(assigneeId, ProjectMemberRole.MEMBER);
+        assigneeMembershipId = addMember(assigneeId, ProjectMemberRole.MEMBER);
         addMember(formerId, ProjectMemberRole.MEMBER);
 
         jobId = jobRepository.save(JobModel.builder().friendlyId("JOB-276").projectId(projectId)
@@ -245,6 +251,20 @@ class NotificationFanOutIntegrationTest {
                 .andExpect(jsonPath("$.totalElements").value(0));
     }
 
+    @Test
+    @DisplayName("An assignee removed from the project (job still assigned to them) gets no notification row")
+    void noteAdded_shouldSkipAssignee_removedFromProject() throws Exception {
+        noteRepository.insert(jobId, ownerId, "Client wants it by Friday");
+        mockMvc.perform(delete(ApiPaths.member(projectId, assigneeMembershipId)).with(as(ownerId)))
+                .andExpect(status().isNoContent());
+        assertThat(jobRepository.findByIdAndDeletedAtIsNull(jobId).orElseThrow().getAssignedTo())
+                .isEqualTo(assigneeId);
+
+        addNote(adminId, "Found the cause");
+
+        assertThat(recipients(NotificationType.NOTE_ADDED)).containsExactly(ownerId);
+    }
+
     // --- Mutes ---
 
     @Test
@@ -275,6 +295,32 @@ class NotificationFanOutIntegrationTest {
                 .andExpect(status().isBadRequest());
 
         assertThat(notificationRepository.countVisibleByRecipient(ownerId, false, null)).isZero();
+        assertThat(allNotificationCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("A note by someone outside the project (403) creates no notification")
+    void noteByNonMember_shouldCreateNothing() throws Exception {
+        noteRepository.insert(jobId, ownerId, "Prior note");
+
+        mockMvc.perform(post(ApiPaths.notes(projectId, jobId))
+                        .with(as(outsiderId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(Map.of("content", "Let me in"))))
+                .andExpect(status().isForbidden());
+
+        assertThat(allNotificationCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("An approval request by someone outside the project (403) creates no notification")
+    void approvalByNonMember_shouldCreateNothing() throws Exception {
+        mockMvc.perform(post(ApiPaths.approvals(projectId, jobId))
+                        .with(as(outsiderId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(Map.of("description", "Let me in"))))
+                .andExpect(status().isForbidden());
+
         assertThat(allNotificationCount()).isZero();
     }
 
@@ -343,9 +389,9 @@ class NotificationFanOutIntegrationTest {
         return id;
     }
 
-    private void addMember(UUID userId, ProjectMemberRole role) {
-        projectMemberRepository.save(ProjectMemberModel.builder()
-                .projectId(projectId).userId(userId).role(role).build());
+    private UUID addMember(UUID userId, ProjectMemberRole role) {
+        return projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(userId).role(role).build()).getId();
     }
 
     private UUID addonId(String key) {

@@ -93,6 +93,9 @@ class NotificationServiceFanOutTest {
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findOwnerAndAdminUserIds(projectId)).thenReturn(List.of(ownerId, adminId));
+        if (job.getAssignedTo() != null) {
+            when(projectMemberRepository.existsByProjectIdAndUserId(projectId, job.getAssignedTo())).thenReturn(true);
+        }
     }
 
     private void givenActor(UUID actorId, String name) {
@@ -266,6 +269,24 @@ class NotificationServiceFanOutTest {
     }
 
     @Test
+    @DisplayName("An assignee who was removed from the project (still assigned) is not notified")
+    void notifyNoteAdded_shouldSkipAssignee_whoIsNoLongerProjectMember() {
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findOwnerAndAdminUserIds(projectId)).thenReturn(List.of(ownerId, adminId));
+        when(projectMemberRepository.existsByProjectIdAndUserId(projectId, assigneeId)).thenReturn(false);
+        givenActor(adminId, "Adam Admin");
+        when(noteRepository.findDistinctAuthorIdsByJobId(jobId)).thenReturn(List.of(assigneeId, ownerId));
+        givenNoMutes(ownerId);
+        givenInsertReturnsInput();
+
+        notificationService.notifyNoteAdded(new NoteAddedEvent(UUID.randomUUID(), projectId, jobId, adminId));
+
+        assertThat(captureBatch()).extracting(NotificationModel::getRecipientId).containsExactly(ownerId);
+        verify(notificationSettingsService, never()).getMutedTypes(assigneeId);
+    }
+
+    @Test
     @DisplayName("NOTE_ADDED on an unassigned job notifies only visible participants")
     void notifyNoteAdded_shouldIgnoreMissingAssignee() {
         job.setAssignedTo(null);
@@ -378,8 +399,6 @@ class NotificationServiceFanOutTest {
                 .put(NotificationPayload.COMMENT, null)
                 .put(NotificationPayload.DECISION, "APPROVED");
 
-        assertThat(payload.values()).containsOnlyKeys("jobFriendlyId", "jobTitle", "projectFriendlyId",
-                "projectName", "decision");
         assertThat(payload.toJson(objectMapper)).isEqualTo("{\"jobFriendlyId\":\"JOB-245\",\"jobTitle\":\"Fix login\","
                 + "\"projectFriendlyId\":\"PRJ-012\",\"projectName\":\"Website Redesign\",\"decision\":\"APPROVED\"}");
     }

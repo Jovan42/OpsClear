@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.ProjectModel;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -45,10 +44,6 @@ final class NotificationPayload {
             values.put(key, value);
         }
         return this;
-    }
-
-    Map<String, Object> values() {
-        return Collections.unmodifiableMap(values);
     }
 
     String toJson(ObjectMapper objectMapper) {

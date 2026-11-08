@@ -174,9 +174,21 @@ public class NotificationService {
             log.info("Skipped {} notifications: job {} or its project no longer exists", type, jobId);
             return List.of();
         }
-        JobScope scope = new JobScope(job.get(), project.get(),
-                projectMemberRepository.findOwnerAndAdminUserIds(project.get().getId()));
+        List<UUID> ownerAndAdminIds = projectMemberRepository.findOwnerAndAdminUserIds(project.get().getId());
+        JobScope scope = new JobScope(job.get(), project.get(), ownerAndAdminIds,
+                visibleUserIds(job.get(), ownerAndAdminIds));
         return fanOut(type, scope, request.apply(scope));
+    }
+
+    // Who can currently see the job: Owners/Admins plus the assignee. Removing a member doesn't unassign their jobs,
+    // so the assignee only counts while still a project member.
+    private Set<UUID> visibleUserIds(JobModel job, List<UUID> ownerAndAdminIds) {
+        Set<UUID> visible = new LinkedHashSet<>(ownerAndAdminIds);
+        UUID assigneeId = job.getAssignedTo();
+        if (assigneeId != null && projectMemberRepository.existsByProjectIdAndUserId(job.getProjectId(), assigneeId)) {
+            visible.add(assigneeId);
+        }
+        return visible;
     }
 
     /**
@@ -219,16 +231,12 @@ public class NotificationService {
         return userRepository.findById(actorId).map(UserModel::getName).orElse(null);
     }
 
-    /** The job a notification is about, its project, and who can see it: Owners/Admins plus the current assignee. */
-    private record JobScope(JobModel job, ProjectModel project, List<UUID> ownerAndAdminIds) {
-
-        Set<UUID> visibleUserIds() {
-            Set<UUID> visible = new LinkedHashSet<>(ownerAndAdminIds);
-            if (job.getAssignedTo() != null) {
-                visible.add(job.getAssignedTo());
-            }
-            return visible;
-        }
+    /**
+     * The job a notification is about, its project, its Owners/Admins, and who can currently see it (Owners/Admins
+     * plus the assignee while they're still a project member).
+     */
+    private record JobScope(JobModel job, ProjectModel project, List<UUID> ownerAndAdminIds,
+                            Set<UUID> visibleUserIds) {
 
         NotificationPayload payload(String actorName) {
             return NotificationPayload.forJob(job, project, actorName);
