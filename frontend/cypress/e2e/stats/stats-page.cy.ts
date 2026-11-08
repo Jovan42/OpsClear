@@ -72,7 +72,9 @@ describe('Stats page', () => {
 
       cy.contains('h1', 'Team stats').should('be.visible');
       tileValue('Completed').should('have.text', '2');
-      tileValue('Completed late').should('have.text', '100%');
+      tileValue('Completed late').should('have.text', '100%').and('have.class', 'text-orange-600');
+      tileValue('Avg. total time').should('have.class', 'text-amber-600');
+      tileValue('Avg. working time').should('have.class', 'text-blue-600');
       cy.contains('1 late out of 1 with a deadline').should('be.visible');
       cy.get('[data-testid="stats-chart"]').should('have.attr', 'data-weeks', '12');
       cy.get('[data-testid="stats-chart"] .recharts-surface').should('be.visible');
@@ -135,8 +137,9 @@ describe('Stats page', () => {
       tileValue('Completed late').should('have.text', '—');
       // Fixed per-metric colours (JOB-322): a number keeps its colour, a "—" stays neutral.
       tileValue('Completed').should('have.class', 'text-green-600');
-      tileValue('Avg. total time').should('not.have.class', 'text-amber-600');
-      tileValue('Completed late').should('not.have.class', 'text-orange-600');
+      // "—" stays neutral gray, not the tile's colour.
+      tileValue('Avg. total time').should('have.class', 'text-gray-900').and('not.have.class', 'text-amber-600');
+      tileValue('Completed late').should('have.class', 'text-gray-900').and('not.have.class', 'text-orange-600');
       cy.get('[data-testid="stats-chart"]').should('have.attr', 'data-weeks', '12');
     });
 
