@@ -19,10 +19,11 @@ export function useProjectStats(projectId: string, weeks: StatsWeeks, memberId?:
     queryKey: ['projects', projectId, 'stats', weeks, tz, memberId],
     queryFn: () => statsApi.get(projectId, { weeks, tz, memberId }),
     staleTime: 30 * 1000,
-    // Keep the previous range/member on screen while a new one loads, instead of flashing skeletons.
-    // Only within the same project: after a project switch, show the skeleton, not the old project's numbers.
+    // Keep the previous range on screen while a new one loads, instead of flashing skeletons.
+    // Only for the same project and member: after switching either, show the skeleton, so the
+    // "Showing: <name>" banner never sits above someone else's numbers.
     placeholderData: (previous, previousQuery) =>
-      previousQuery?.queryKey[1] === projectId ? previous : undefined,
+      previousQuery?.queryKey[1] === projectId && previousQuery?.queryKey[5] === memberId ? previous : undefined,
     enabled: enabled && !!projectId && hasAddon('DASHBOARD'),
   });
 }
