@@ -244,7 +244,7 @@
   },
   "productPricing": {
     "addonTaglines": {
-      "DASHBOARD": "Pregled poslovanja na jednom ekranu",
+      "DASHBOARD": "Pregled poslovanja i trendovi završavanja",
       "APPROVALS": "Tok odobrenja sa zabeleženim odlukama",
       "NOTES": "Nepromenljiv trag revizije na svakom poslu",
       "JOB_STATUS_HISTORY": "Potpuna hronološka istorija statusa",
@@ -301,6 +301,7 @@
         "history": "Istorija statusa posla",
         "relationships": "Povezanost poslova",
         "dashboard": "Kontrolna tabla",
+        "stats": "Statistika: trendovi završavanja",
         "templates": "Šabloni poslova",
         "recurring": "Ponavljajući rasporedi",
         "apiKeys": "API ključevi",
@@ -321,7 +322,7 @@
       },
       "dashboard": {
         "name": "Kontrolna tabla",
-        "description": "Raspodela statusa, zakasneli poslovi i odobrenja na čekanju na jednom ekranu. Otvorite kontrolnu tablu i tačno znate gde je projekat."
+        "description": "Raspodela statusa, zakasneli poslovi i odobrenja na čekanju na jednom ekranu. Otvorite kontrolnu tablu i tačno znate gde je projekat. Kartica Statistika dodaje trend: završeni poslovi po nedelji, prosečno vreme do završetka, vreme izgubljeno na blokade i koliko često se posao završi sa zakašnjenjem, za ceo tim ili po članu."
       },
       "approvals": {
         "name": "Odobrenja",

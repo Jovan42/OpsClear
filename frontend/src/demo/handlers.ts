@@ -8,6 +8,7 @@ import {
   ORG_NAME,
   type DemoApproval,
 } from './mockData';
+import { buildDemoStats } from './mockStats';
 import { detectPreset, parseCronParams } from '../utils/cron';
 import { isPastDeadline } from '../utils/deadline';
 import type {
@@ -35,6 +36,7 @@ import type {
   PendingApprovalResponse,
   RecurringScheduleResponse,
   ScheduleStatus,
+  StatsWeeks,
 } from '../types';
 
 /**
@@ -244,6 +246,14 @@ export const demoHandlers = [
     };
 
     return HttpResponse.json(response);
+  }),
+
+  // Stats (ADR-0050): fixed sample trends, see mockStats.ts for why they aren't derived from demoStore.jobs.
+  http.get(`${base}/stats`, ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const requested = Number(params.get('weeks'));
+    const weeks: StatsWeeks = requested === 4 || requested === 26 ? requested : 12;
+    return HttpResponse.json(buildDemoStats(weeks, params.get('tz') ?? 'UTC', params.get('memberId')));
   }),
 
   http.get(`${base}/templates`, () => HttpResponse.json(demoStore.templates)),
