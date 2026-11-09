@@ -37,6 +37,7 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors cursor-pointer"
+        aria-label={t('userMenu')}
         aria-expanded={open}
         aria-haspopup="true"
       >

@@ -45,7 +45,7 @@
 
 import { uniqueEmail, uniqueSlug, createOrgWithSubscription, createProjectAs } from '../../support/orgApi';
 
-const NAMESPACES_EXPECTED_COUNT = 13;
+const NAMESPACES_EXPECTED_COUNT = 14; // + notifications (JOB-281)
 
 describe('Localization (i18n) — Smoke Coverage', () => {
   it('every locale namespace file has matching keys between en and sr', () => {

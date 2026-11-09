@@ -438,6 +438,7 @@ jobs:
               - cypress/e2e/cross-cutting-ui/**/*.cy.ts
               - cypress/e2e/golden-path/**/*.cy.ts
               - cypress/e2e/milestones/**/*.cy.ts
+              - cypress/e2e/notifications/**/*.cy.ts
               - cypress/e2e/user-settings/**/*.cy.ts
           - name: shard-3
             spec-pattern:

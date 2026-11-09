@@ -1,0 +1,107 @@
+{
+  "title": "Obaveštenja",
+  "system": "OpsClear",
+  "markAllRead": "Označi sve kao pročitano",
+  "markRead": "Označi kao pročitano",
+  "markUnread": "Označi kao nepročitano",
+  "viewAll": "Prikaži sve",
+  "unreadMarker": "Nepročitano",
+  "notClickable": "Ovaj posao je obrisan",
+  "loadError": "Učitavanje obaveštenja nije uspelo.",
+  "bell": {
+    "label": "Obaveštenja",
+    "labelUnread": "Obaveštenja, nepročitanih: {{count}}"
+  },
+  "empty": {
+    "all": "Još nema obaveštenja.",
+    "unread": "Nema nepročitanih obaveštenja.",
+    "type": "Nema obaveštenja ove vrste."
+  },
+  "filter": {
+    "all": "Sva",
+    "unread": "Nepročitana",
+    "typeLabel": "Filtriraj po vrsti",
+    "allTypes": "Sve vrste"
+  },
+  "pagination": {
+    "previous": "Prethodna",
+    "next": "Sledeća",
+    "pageOf": "Strana {{page}} od {{total}}"
+  },
+  "fallback": {
+    "someone": "Neko",
+    "job": "posao",
+    "project": "projekat",
+    "org": "vašu organizaciju",
+    "feedback": "vaš predlog"
+  },
+  "type": {
+    "APPROVAL_REQUESTED": "Zatraženo odobrenje",
+    "APPROVAL_DECIDED": "Odluka o odobrenju",
+    "JOB_ASSIGNED": "Dodeljen posao",
+    "JOB_STATUS_CHANGED": "Promenjen status",
+    "JOB_BLOCKED": "Posao blokiran",
+    "BLOCKER_CLEARED": "Blokada uklonjena",
+    "JOB_UPDATED": "Promenjen rok ili prioritet",
+    "JOB_DELETED": "Posao obrisan",
+    "NOTE_ADDED": "Dodata beleška",
+    "JOB_DEADLINE_SOON": "Rok je sutra",
+    "JOB_OVERDUE": "Rok je prošao",
+    "PROJECT_MEMBER_ADDED": "Dodavanje u projekat",
+    "SCHEDULE_RUN_MISSED": "Propušteno pokretanje rasporeda",
+    "INVITE_ACCEPTED": "Pozivnica prihvaćena",
+    "FEEDBACK_RESOLVED": "Predlog obrađen",
+    "SUBSCRIPTION_PAST_DUE": "Pretplata nije plaćena"
+  },
+  "text": {
+    "APPROVAL_REQUESTED": "Zatraženo odobrenje za {{job}}",
+    "APPROVAL_DECIDED": {
+      "approved": "Vaš zahtev za {{job}} je odobren",
+      "rejected": "Vaš zahtev za {{job}} je odbijen",
+      "decided": "Doneta je odluka o vašem zahtevu za {{job}}"
+    },
+    "JOB_ASSIGNED": "Dodeljen vam je posao {{job}}",
+    "JOB_STATUS_CHANGED": {
+      "fromTo": "Status posla {{job}} promenjen iz „{{from}}“ u „{{to}}“",
+      "to": "Status posla {{job}} promenjen u „{{to}}“",
+      "generic": "Promenjen je status posla {{job}}"
+    },
+    "JOB_BLOCKED": "Posao {{job}} je blokiran",
+    "BLOCKER_CLEARED": {
+      "named": "{{blocker}} je završen, pa {{job}} više ne čeka na njega",
+      "generic": "Završen je posao koji je blokirao {{job}}"
+    },
+    "JOB_UPDATED": "Izmenjen je posao {{job}}",
+    "JOB_DELETED": "Obrisan je posao {{job}}",
+    "NOTE_ADDED": "Dodata je beleška na posao {{job}}",
+    "JOB_DEADLINE_SOON": "Rok za {{job}} je sutra",
+    "JOB_OVERDUE": "Rok za {{job}} je prošao",
+    "PROJECT_MEMBER_ADDED": {
+      "withRole": "Dodati ste u projekat {{project}} kao {{role}}",
+      "generic": "Dodati ste u projekat {{project}}"
+    },
+    "SCHEDULE_RUN_MISSED": {
+      "named": "Raspored „{{schedule}}“ je propustio pokretanje u projektu {{project}}",
+      "generic": "Ponavljajući raspored je propustio pokretanje u projektu {{project}}"
+    },
+    "INVITE_ACCEPTED": "Prihvaćena je vaša pozivnica za {{org}}",
+    "FEEDBACK_RESOLVED": {
+      "creditedAmount": "Za predlog „{{title}}“ dobili ste kredit od {{amount}}",
+      "credited": "Za predlog „{{title}}“ dobili ste kredit",
+      "declined": "Predlog „{{title}}“ je razmotren i odbijen",
+      "generic": "Predlog „{{title}}“ je razmotren"
+    },
+    "SUBSCRIPTION_PAST_DUE": "Plaćanje pretplate za {{org}} kasni"
+  },
+  "detail": {
+    "due": "Rok: {{date}}",
+    "wasDue": "Rok je bio {{date}}",
+    "newDeadline": "Novi rok: {{date}}",
+    "deadlineRemoved": "Rok je uklonjen",
+    "priority": "Prioritet: {{priority}}",
+    "reason": "Razlog: {{reason}}",
+    "missedAt": "Propušteno pokretanje: {{date}}",
+    "updatePayment": "Ažurirajte način plaćanja u odeljku za naplatu da biste zadržali pristup.",
+    "askOwnerToUpdatePayment": "Zamolite vlasnika organizacije da ažurira način plaćanja."
+  }
+}

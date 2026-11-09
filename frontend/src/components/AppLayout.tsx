@@ -7,6 +7,7 @@ import { useMyOrg } from '../features/org/useOrganisation';
 import { useOrgSubscription } from '../features/org/useSubscription';
 import { useCurrentOrg } from '../features/org/OrgContext';
 import UserMenu from './UserMenu';
+import NotificationBell from '../features/notifications/NotificationBell';
 import ProjectSwitcher from './ProjectSwitcher';
 import ProjectNavItemView from './ProjectNavItemView';
 import { useProjectNavItems, type ProjectNavData } from '../hooks/useProjectNavItems';
@@ -190,12 +191,13 @@ export default function AppLayout() {
             {projectId && <ProjectSwitcher projectId={projectId} />}
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             {projectId && (
               <div className="hidden md:block">
                 <ProjectNav projectId={projectId} navData={navData} />
               </div>
             )}
+            <NotificationBell />
             <UserMenu name={name ?? ''} />
           </div>
         </div>
