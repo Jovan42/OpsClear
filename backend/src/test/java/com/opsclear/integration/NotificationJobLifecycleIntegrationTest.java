@@ -509,7 +509,7 @@ class NotificationJobLifecycleIntegrationTest {
     @Test
     @DisplayName("JOB_ASSIGNED is skipped when the job was reassigned to someone else before fan-out")
     void staleJobAssigned_shouldNotifyNoOne() {
-        publish(new JobAssignedEvent(jobId, projectId, ownerId, memberId));
+        publish(new JobAssignedEvent(jobId, projectId, ownerId, adminId));
 
         assertThat(allNotificationCount()).isZero();
     }
