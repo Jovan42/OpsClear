@@ -63,10 +63,12 @@ function patchOrRefetch<T>(queryClient: QueryClient, key: QueryKey, update: (dat
  * rather than patched. An item already in any cached list (e.g. the list was refetched
  * after it was created) is ignored, so it's never shown or counted twice. A first page or
  * count that's fetching or just fetched is refetched instead (see patchOrRefetch).
+ *
+ * Returns false for such a duplicate, true otherwise (the caller chimes only for new ones).
  */
-export function applyNewNotification(queryClient: QueryClient, notification: NotificationResponse) {
+export function applyNewNotification(queryClient: QueryClient, notification: NotificationResponse): boolean {
   const lists = cachedLists(queryClient);
-  if (lists.some((l) => l.data.items.some((item) => item.id === notification.id))) return;
+  if (lists.some((l) => l.data.items.some((item) => item.id === notification.id))) return false;
 
   for (const { key, filters, page, size } of lists) {
     const matches =
@@ -90,6 +92,7 @@ export function applyNewNotification(queryClient: QueryClient, notification: Not
   if (!notification.read) {
     patchOrRefetch<number>(queryClient, UNREAD_COUNT_KEY, (count) => count + 1);
   }
+  return true;
 }
 
 function withRead(item: NotificationResponse, read: boolean): NotificationResponse {

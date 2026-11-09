@@ -1,9 +1,12 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationsApi, withPayload } from '../../api/notifications';
 import { useAuth } from '../../auth/AuthContext';
+import { usePreferences } from '../../hooks/usePreferences';
 import type { NotificationResponse } from '../../types';
 import { backoffDelay, nextFailureCount } from './backoff';
+import { playChime } from './notificationChime';
+import { createNotificationSound, isActiveTab } from './notificationSound';
 import { applyNewNotification, applyReadState, invalidateAfterConnect, type ReadStateEvent } from './notificationCache';
 import { createSseParser, type SseEvent } from './sseParser';
 import { readStream } from './streamReader';
@@ -136,16 +139,28 @@ function runStream({ onOpen, onEvent }: StreamHandlers): () => void {
  * Live notification updates (ADR-0051): one stream per tab, mounted once in AppLayout for
  * authenticated users. `notification` and `read-state` events update the TanStack Query
  * caches in place; every (re)connect refetches the count and lists, because the server
- * doesn't replay what was sent while disconnected. Heartbeat comments are skipped by the
+ * doesn't replay what was sent while disconnected. A new unread `notification` also plays a
+ * chime in the active tab (notificationSound.ts). Heartbeat comments are skipped by the
  * parser. The stream is aborted on unmount. Logout (`keycloak.logout()`) leaves the page,
  * which closes it with everything else.
  */
 export function useNotificationStream() {
   const { authenticated } = useAuth();
   const queryClient = useQueryClient();
+  const { prefs } = usePreferences();
+  // Read through a ref, so toggling the sound doesn't reconnect the stream.
+  const soundEnabled = useRef(prefs.notificationSound);
+  useEffect(() => {
+    soundEnabled.current = prefs.notificationSound;
+  }, [prefs.notificationSound]);
 
   useEffect(() => {
     if (!authenticated) return;
+    const sound = createNotificationSound({
+      play: playChime,
+      isEnabled: () => soundEnabled.current,
+      isActiveTab: () => isActiveTab(),
+    });
 
     function onEvent({ event, data }: SseEvent) {
       let parsed: unknown;
@@ -155,7 +170,9 @@ export function useNotificationStream() {
         return;
       }
       if (event === 'notification') {
-        applyNewNotification(queryClient, withPayload(parsed as NotificationResponse));
+        const notification = withPayload(parsed as NotificationResponse);
+        const isNew = applyNewNotification(queryClient, notification);
+        sound.onNotification(notification, isNew);
       } else if (event === 'read-state') {
         applyReadState(queryClient, parsed as ReadStateEvent);
       }

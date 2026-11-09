@@ -95,6 +95,15 @@
         "percentage": "Percentage"
       }
     },
+    "notificationsSection": {
+      "heading": "Notifications",
+      "sound": {
+        "label": "Notification sound",
+        "description": "Play a short sound when a new notification arrives in the tab you're using.",
+        "on": "On",
+        "off": "Off"
+      }
+    },
     "apiKeysFeatureName": "API Keys"
   },
   "apiKeySection": {

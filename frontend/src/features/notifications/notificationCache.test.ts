@@ -75,14 +75,20 @@ describe('applyNewNotification', () => {
     expect(isStale(listKey(ALL, 1))).toBe(true);
   });
 
-  it('ignores a notification that is already cached', () => {
+  it('ignores a notification that is already cached, and reports it as not new', () => {
     seed(UNREAD_COUNT_KEY, 1);
     seed(listKey(ALL), page([n('a')]));
 
-    applyNewNotification(qc, n('a'));
+    expect(applyNewNotification(qc, n('a'))).toBe(false);
 
     expect(list(ALL)!.items).toHaveLength(1);
     expect(count()).toBe(1);
+  });
+
+  it('reports a notification that is not cached as new', () => {
+    seed(listKey(ALL), page([n('a')]));
+
+    expect(applyNewNotification(qc, n('b'))).toBe(true);
   });
 });
 

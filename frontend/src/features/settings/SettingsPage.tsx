@@ -146,6 +146,11 @@ export default function SettingsPage() {
     { value: 'PERCENTAGE', label: t('settings.milestonesSection.progressFormat.percentage') },
   ];
 
+  const SOUND_OPTIONS: { value: 'true' | 'false'; label: string }[] = [
+    { value: 'true', label: t('settings.notificationsSection.sound.on') },
+    { value: 'false', label: t('settings.notificationsSection.sound.off') },
+  ];
+
   return (
     <div className="max-w-lg mx-auto px-4 py-10 space-y-8">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('settings.pageTitle')}</h1>
@@ -246,6 +251,22 @@ export default function SettingsPage() {
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
           <SettingRow label={t('settings.milestonesSection.progressFormat.label')} description={t('settings.milestonesSection.progressFormat.description')}>
             <SegmentedControl value={prefs.milestoneProgressFormat} options={PROGRESS_FORMAT_OPTIONS} onChange={(v) => update({ milestoneProgressFormat: v })} />
+          </SettingRow>
+        </div>
+      </section>
+
+      {/* Notifications */}
+      <section>
+        <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+          {t('settings.notificationsSection.heading')}
+        </h2>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+          <SettingRow label={t('settings.notificationsSection.sound.label')} description={t('settings.notificationsSection.sound.description')}>
+            <SegmentedControl
+              value={prefs.notificationSound ? 'true' : 'false'}
+              options={SOUND_OPTIONS}
+              onChange={(v) => update({ notificationSound: v === 'true' })}
+            />
           </SettingRow>
         </div>
       </section>

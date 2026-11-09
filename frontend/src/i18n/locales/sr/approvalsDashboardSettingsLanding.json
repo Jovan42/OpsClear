@@ -95,6 +95,15 @@
         "percentage": "Procenat"
       }
     },
+    "notificationsSection": {
+      "heading": "Obaveštenja",
+      "sound": {
+        "label": "Zvuk obaveštenja",
+        "description": "Pusti kratak zvuk kada novo obaveštenje stigne u karticu koju koristite.",
+        "on": "Uključen",
+        "off": "Isključen"
+      }
+    },
     "apiKeysFeatureName": "API ključevi"
   },
   "apiKeySection": {
