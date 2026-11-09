@@ -27,20 +27,18 @@ public class JobDeadlineAlertRepository {
         return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 
-    public boolean exists(UUID jobId, DeadlineAlertKind kind, Instant deadline) {
-        return dsl.fetchExists(JOB_DEADLINE_ALERTS,
-                JOB_DEADLINE_ALERTS.JOB_ID.eq(jobId)
-                        .and(JOB_DEADLINE_ALERTS.KIND.eq(kind.name()))
-                        .and(JOB_DEADLINE_ALERTS.DEADLINE.eq(toLocalDateTime(deadline))));
-    }
-
-    public void insert(UUID jobId, DeadlineAlertKind kind, Instant deadline) {
-        dsl.insertInto(JOB_DEADLINE_ALERTS)
+    /**
+     * Records the alert unless a row for this job, kind and deadline already exists ({@code ON CONFLICT DO NOTHING}),
+     * so overlapping runs can't both record it. Returns whether this call inserted the row.
+     */
+    public boolean insertIfAbsent(UUID jobId, DeadlineAlertKind kind, Instant deadline) {
+        return dsl.insertInto(JOB_DEADLINE_ALERTS)
                 .set(JOB_DEADLINE_ALERTS.JOB_ID, jobId)
                 .set(JOB_DEADLINE_ALERTS.KIND, kind.name())
                 .set(JOB_DEADLINE_ALERTS.DEADLINE, toLocalDateTime(deadline))
                 .set(JOB_DEADLINE_ALERTS.SENT_AT, LocalDateTime.now(ZoneOffset.UTC))
-                .execute();
+                .onConflictDoNothing()
+                .execute() == 1;
     }
 
     public void deleteAll() {

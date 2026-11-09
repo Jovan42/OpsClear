@@ -26,7 +26,8 @@ import java.util.List;
  * </ul>
  * Open means not Completed and not deleted, in a project that is neither completed nor deleted. Each alert is sent
  * once per job, kind and deadline value ({@code job_deadline_alerts}), so a moved deadline alerts again. The alert
- * row and its event commit together; {@code NotificationService} fans the event out after the commit.
+ * row (an idempotent insert) and its event commit together, in a transaction per job; {@code NotificationService} fans
+ * the event out after the commit.
  */
 @Component
 @Slf4j
@@ -57,22 +58,28 @@ public class DeadlineAlertJob {
         return soon + overdue;
     }
 
+    // One transaction per job, and a failing job is logged and skipped: it can't roll back or stop the others. Its
+    // alert isn't recorded, so the next run retries it while the deadline still qualifies.
     private int alert(DeadlineAlertKind kind, List<JobModel> jobs) {
         int sent = 0;
         for (JobModel job : jobs) {
-            if (Boolean.TRUE.equals(transactionTemplate.execute(status -> alertOnce(kind, job)))) {
-                sent++;
+            try {
+                if (Boolean.TRUE.equals(transactionTemplate.execute(status -> alertOnce(kind, job)))) {
+                    sent++;
+                }
+            } catch (RuntimeException e) {
+                log.error("Failed to send {} alert for job {}: {}", kind, job.getId(), e.getMessage(), e);
             }
         }
         return sent;
     }
 
-    // Skips a job already alerted for this kind and deadline; otherwise records the alert and publishes its event.
+    // Records the alert and publishes its event, unless a row for this kind and deadline already exists (an earlier
+    // or overlapping run sent it).
     private boolean alertOnce(DeadlineAlertKind kind, JobModel job) {
-        if (alertRepository.exists(job.getId(), kind, job.getDeadline())) {
+        if (!alertRepository.insertIfAbsent(job.getId(), kind, job.getDeadline())) {
             return false;
         }
-        alertRepository.insert(job.getId(), kind, job.getDeadline());
         eventPublisher.publishEvent(new DeadlineAlertEvent(job.getId(), job.getProjectId(), kind, job.getDeadline()));
         log.info("Recorded {} alert for job {} (deadline {})", kind, job.getId(), job.getDeadline());
         return true;

@@ -21,8 +21,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -62,6 +60,11 @@ class DeadlineAlertJobTest {
                 .thenReturn(List.of(jobs));
     }
 
+    // The alert row didn't exist yet, so insertIfAbsent records it.
+    private void givenNewAlert(JobModel job, DeadlineAlertKind kind) {
+        when(alertRepository.insertIfAbsent(job.getId(), kind, job.getDeadline())).thenReturn(true);
+    }
+
     private void givenOverdue(JobModel... jobs) {
         when(jobRepository.findOpenInActiveProjectsWithDeadlineBefore(START_OF_TODAY)).thenReturn(List.of(jobs));
     }
@@ -87,11 +90,13 @@ class DeadlineAlertJobTest {
         JobModel dueTomorrow = job(START_OF_TOMORROW);
         givenDueTomorrow(dueTomorrow);
         givenOverdue();
+        givenNewAlert(dueTomorrow, DeadlineAlertKind.DEADLINE_SOON);
 
         int sent = deadlineAlertJob.checkDeadlines(NOW);
 
         assertThat(sent).isEqualTo(1);
-        verify(alertRepository).insert(dueTomorrow.getId(), DeadlineAlertKind.DEADLINE_SOON, START_OF_TOMORROW);
+        verify(alertRepository)
+                .insertIfAbsent(dueTomorrow.getId(), DeadlineAlertKind.DEADLINE_SOON, START_OF_TOMORROW);
         verify(eventPublisher).publishEvent(new DeadlineAlertEvent(
                 dueTomorrow.getId(), projectId, DeadlineAlertKind.DEADLINE_SOON, START_OF_TOMORROW));
         // The alert row and its event commit together, in their own transaction.
@@ -105,30 +110,30 @@ class DeadlineAlertJobTest {
         JobModel overdue = job(yesterday);
         givenDueTomorrow();
         givenOverdue(overdue);
+        givenNewAlert(overdue, DeadlineAlertKind.OVERDUE);
 
         int sent = deadlineAlertJob.checkDeadlines(NOW);
 
         assertThat(sent).isEqualTo(1);
-        verify(alertRepository).insert(overdue.getId(), DeadlineAlertKind.OVERDUE, yesterday);
         verify(eventPublisher).publishEvent(
                 new DeadlineAlertEvent(overdue.getId(), projectId, DeadlineAlertKind.OVERDUE, yesterday));
     }
 
     @Test
-    @DisplayName("A job already alerted for this kind and deadline is skipped; the others are still alerted")
+    @DisplayName("A job whose alert row already exists (earlier or overlapping run) gets no event; others still do")
     void checkDeadlines_shouldSkipAlreadyAlerted() {
         Instant lastWeek = Instant.parse("2026-11-03T00:00:00Z");
         JobModel alerted = job(lastWeek);
         JobModel fresh = job(lastWeek);
         givenDueTomorrow();
         givenOverdue(alerted, fresh);
-        when(alertRepository.exists(alerted.getId(), DeadlineAlertKind.OVERDUE, lastWeek)).thenReturn(true);
+        // insertIfAbsent hits the existing row (ON CONFLICT DO NOTHING) and reports nothing inserted.
+        when(alertRepository.insertIfAbsent(alerted.getId(), DeadlineAlertKind.OVERDUE, lastWeek)).thenReturn(false);
+        givenNewAlert(fresh, DeadlineAlertKind.OVERDUE);
 
         int sent = deadlineAlertJob.checkDeadlines(NOW);
 
         assertThat(sent).isEqualTo(1);
-        verify(alertRepository, never()).insert(eq(alerted.getId()), any(), any());
-        verify(alertRepository).insert(fresh.getId(), DeadlineAlertKind.OVERDUE, lastWeek);
         verify(eventPublisher, times(1)).publishEvent(any(Object.class));
         verify(eventPublisher).publishEvent(
                 new DeadlineAlertEvent(fresh.getId(), projectId, DeadlineAlertKind.OVERDUE, lastWeek));
@@ -137,17 +142,57 @@ class DeadlineAlertJobTest {
     @Test
     @DisplayName("A moved deadline alerts again: the check is keyed on the current deadline value")
     void checkDeadlines_shouldAlertAgain_whenDeadlineMoved() {
-        // Alerted earlier for an older deadline; exists() is asked about the current one, which has no row.
+        // Alerted earlier for an older deadline; the insert is keyed on the current one, which has no row yet.
         JobModel moved = job(START_OF_TOMORROW);
         givenDueTomorrow(moved);
         givenOverdue();
-        when(alertRepository.exists(moved.getId(), DeadlineAlertKind.DEADLINE_SOON, START_OF_TOMORROW))
-                .thenReturn(false);
+        givenNewAlert(moved, DeadlineAlertKind.DEADLINE_SOON);
 
         int sent = deadlineAlertJob.checkDeadlines(NOW);
 
         assertThat(sent).isEqualTo(1);
-        verify(alertRepository).insert(moved.getId(), DeadlineAlertKind.DEADLINE_SOON, START_OF_TOMORROW);
+        verify(alertRepository).insertIfAbsent(moved.getId(), DeadlineAlertKind.DEADLINE_SOON, START_OF_TOMORROW);
+        verify(eventPublisher).publishEvent(new DeadlineAlertEvent(
+                moved.getId(), projectId, DeadlineAlertKind.DEADLINE_SOON, START_OF_TOMORROW));
+    }
+
+    @Test
+    @DisplayName("A job that fails is logged and skipped; the next job is still alerted and committed")
+    void checkDeadlines_shouldContinue_whenOneJobFails() {
+        Instant lastWeek = Instant.parse("2026-11-03T00:00:00Z");
+        JobModel failing = job(lastWeek);
+        JobModel next = job(lastWeek);
+        givenDueTomorrow();
+        givenOverdue(failing, next);
+        when(alertRepository.insertIfAbsent(failing.getId(), DeadlineAlertKind.OVERDUE, lastWeek))
+                .thenThrow(new IllegalStateException("DB error"));
+        givenNewAlert(next, DeadlineAlertKind.OVERDUE);
+
+        int sent = deadlineAlertJob.checkDeadlines(NOW);
+
+        assertThat(sent).isEqualTo(1);
+        verify(eventPublisher, times(1)).publishEvent(any(Object.class));
+        verify(eventPublisher).publishEvent(
+                new DeadlineAlertEvent(next.getId(), projectId, DeadlineAlertKind.OVERDUE, lastWeek));
+        // Each job has its own transaction: the failing one rolls back, the next one commits.
+        verify(transactionManager).rollback(any());
+        verify(transactionManager).commit(any());
+    }
+
+    @Test
+    @DisplayName("A failure in the due-tomorrow pass doesn't stop the overdue pass")
+    void checkDeadlines_shouldRunOverduePass_whenSoonJobFails() {
+        JobModel failing = job(START_OF_TOMORROW);
+        JobModel overdue = job(Instant.parse("2026-11-01T00:00:00Z"));
+        givenDueTomorrow(failing);
+        givenOverdue(overdue);
+        when(alertRepository.insertIfAbsent(failing.getId(), DeadlineAlertKind.DEADLINE_SOON, START_OF_TOMORROW))
+                .thenThrow(new IllegalStateException("DB error"));
+        givenNewAlert(overdue, DeadlineAlertKind.OVERDUE);
+
+        assertThat(deadlineAlertJob.checkDeadlines(NOW)).isEqualTo(1);
+        verify(eventPublisher).publishEvent(new DeadlineAlertEvent(
+                overdue.getId(), projectId, DeadlineAlertKind.OVERDUE, overdue.getDeadline()));
     }
 
     @Test
@@ -157,6 +202,8 @@ class DeadlineAlertJobTest {
         JobModel overdue = job(Instant.parse("2026-11-01T00:00:00Z"));
         givenDueTomorrow(dueTomorrow);
         givenOverdue(overdue);
+        givenNewAlert(dueTomorrow, DeadlineAlertKind.DEADLINE_SOON);
+        givenNewAlert(overdue, DeadlineAlertKind.OVERDUE);
 
         int sent = deadlineAlertJob.checkDeadlines(NOW);
 

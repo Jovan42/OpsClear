@@ -222,6 +222,21 @@ class NotificationScheduledEventsIntegrationTest {
     // --- JOB_OVERDUE ---
 
     @Test
+    @DisplayName("An alert row recorded first by an overlapping run: no duplicate notification and no error")
+    void alertRowAlreadyRecorded_shouldNotNotifyAgain() {
+        // The assignee would otherwise get JOB_DEADLINE_SOON (see dueTomorrow_shouldNotifyAssigneeOnce).
+        UUID jobId = job("JOB-001", "Fix login", JobStatus.IN_PROGRESS, assigneeId, TOMORROW);
+        // A concurrent run inserted the row (and sent its own notification) between our query and our insert.
+        assertThat(alertRepository.insertIfAbsent(jobId, DeadlineAlertKind.DEADLINE_SOON, TOMORROW)).isTrue();
+
+        assertThat(alertRepository.insertIfAbsent(jobId, DeadlineAlertKind.DEADLINE_SOON, TOMORROW)).isFalse();
+        assertThat(deadlineAlertJob.checkDeadlines(NOW)).isZero();
+
+        assertThat(allNotificationCount()).isZero();
+        assertThat(alertRows()).containsExactly(tuple(jobId, "DEADLINE_SOON", TOMORROW));
+    }
+
+    @Test
     @DisplayName("Due today: no JOB_OVERDUE yet (and no JOB_DEADLINE_SOON)")
     void dueToday_shouldNotAlertYet() {
         // The assignee and Owners/Admins would receive JOB_OVERDUE (see the due-yesterday test).
