@@ -158,6 +158,48 @@ describe('applyReadState', () => {
   });
 });
 
+describe('bursts of events', () => {
+  /** Counts count fetches. The first never resolves (a fetch in flight); later ones take 20ms. */
+  function countingCountFetch(result: number) {
+    let calls = 0;
+    qc.setQueryDefaults(UNREAD_COUNT_KEY, {
+      queryFn: () => {
+        calls++;
+        if (calls === 1) return new Promise<number>(() => {});
+        return new Promise<number>((resolve) => setTimeout(() => resolve(result), 20));
+      },
+    });
+    return () => calls;
+  }
+
+  it('patches back-to-back events on a settled count without refetching', () => {
+    const calls = countingCountFetch(99);
+    seed(UNREAD_COUNT_KEY, 3);
+
+    applyNewNotification(qc, n('x'));
+    applyNewNotification(qc, n('y'));
+
+    expect(count()).toBe(5);
+    expect(calls()).toBe(0);
+    expect(qc.getQueryState(UNREAD_COUNT_KEY)?.fetchStatus).toBe('idle');
+  });
+
+  it('turns a burst during a fetch in flight into one replacement fetch plus at most one trailing fetch', async () => {
+    const calls = countingCountFetch(13);
+    seed(UNREAD_COUNT_KEY, 3);
+    void qc.fetchQuery({ queryKey: UNREAD_COUNT_KEY }).catch(() => undefined);
+    expect(calls()).toBe(1);
+
+    for (let i = 0; i < 10; i++) applyNewNotification(qc, n(`burst-${i}`));
+
+    await vi.waitFor(() => expect(count()).toBe(13));
+    await vi.waitFor(() => expect(qc.getQueryState(UNREAD_COUNT_KEY)?.fetchStatus).toBe('idle'));
+    // 1 = the fetch that was in flight; then at most 2 event refetches instead of 10.
+    expect(calls() - 1).toBeLessThanOrEqual(2);
+    expect(count()).toBe(13);
+  });
+});
+
 describe('races between events and fetches', () => {
   it('refetches instead of incrementing a count fetched moments ago (it may already include the event)', async () => {
     // Only the count is cached (dropdown closed) and was just refetched after a reconnect:

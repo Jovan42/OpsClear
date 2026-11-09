@@ -1,4 +1,4 @@
-import type { QueryClient, QueryKey } from '@tanstack/react-query';
+import { hashKey, type QueryClient, type QueryKey } from '@tanstack/react-query';
 import type { NotificationListFilters, NotificationPageResponse, NotificationResponse } from '../../types';
 
 // TanStack Query keys of the notification hooks (useNotifications.ts). Lists are
@@ -39,22 +39,53 @@ function invalidateExact(queryClient: QueryClient, key: QueryKey) {
  */
 export const SETTLE_MS = 5_000;
 
+// Event-triggered refetches in flight, per client and query. While one runs, further
+// events only mark it dirty, so a burst costs one replacement fetch plus at most one
+// trailing fetch per query, not one cancelled-and-restarted fetch per event.
+const eventRefetches = new WeakMap<QueryClient, Map<string, { dirty: boolean }>>();
+
+function refetchForEvent(queryClient: QueryClient, key: QueryKey) {
+  let running = eventRefetches.get(queryClient);
+  if (!running) {
+    running = new Map();
+    eventRefetches.set(queryClient, running);
+  }
+  const hash = hashKey(key);
+  const current = running.get(hash);
+  if (current) {
+    // Our refetch started when an earlier event arrived. This event's change may have been
+    // committed after that fetch read, so fetch once more when it ends.
+    current.dirty = true;
+    return;
+  }
+  const entry = { dirty: false };
+  running.set(hash, entry);
+  // refetchType 'all': inactive queries too. Cancels a fetch already in flight, which may
+  // predate the event.
+  void queryClient.invalidateQueries({ queryKey: key, exact: true, refetchType: 'all' }).finally(() => {
+    running.delete(hash);
+    if (entry.dirty) refetchForEvent(queryClient, key);
+  });
+}
+
 /**
  * Patches a query in place only when its data is settled: not being fetched, and older
  * than {@link SETTLE_MS}. Otherwise patching could count an event twice (the fetched
  * data already includes it) or be lost (an older in-flight fetch lands on top of it),
  * and nothing would correct that until the next reconnect. Those queries are refetched
- * instead, inactive ones too, cancelling a fetch already in flight, so the server value
- * wins.
+ * instead (coalesced, see refetchForEvent), so the server value wins.
+ *
+ * A patch keeps the query's `dataUpdatedAt`, so only real fetches count as fresh.
+ * Otherwise the first patch would send every later event of a burst down the refetch path.
  */
 function patchOrRefetch<T>(queryClient: QueryClient, key: QueryKey, update: (data: T) => T) {
   const state = queryClient.getQueryState<T>(key);
   if (!state || state.data === undefined) return;
   if (state.fetchStatus === 'fetching' || Date.now() - state.dataUpdatedAt < SETTLE_MS) {
-    void queryClient.invalidateQueries({ queryKey: key, exact: true, refetchType: 'all' });
+    refetchForEvent(queryClient, key);
     return;
   }
-  queryClient.setQueryData<T>(key, update(state.data));
+  queryClient.setQueryData<T>(key, update(state.data), { updatedAt: state.dataUpdatedAt });
 }
 
 /**

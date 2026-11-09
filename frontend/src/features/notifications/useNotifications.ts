@@ -19,7 +19,7 @@ export function useUnreadCount() {
   const streamConnected = useNotificationStreamConnected();
   return useQuery({
     queryKey: ['notifications', 'unread-count'],
-    queryFn: notificationsApi.unreadCount,
+    queryFn: ({ signal }) => notificationsApi.unreadCount(signal),
     refetchOnWindowFocus: !streamConnected,
   });
 }
@@ -34,7 +34,8 @@ export function useNotifications(
   const streamConnected = useNotificationStreamConnected();
   return useQuery({
     queryKey: ['notifications', 'list', filters, page, size],
-    queryFn: () => notificationsApi.list({ unread: filters.unread, type: filters.type, page, size }),
+    queryFn: ({ signal }) =>
+      notificationsApi.list({ unread: filters.unread, type: filters.type, page, size }, signal),
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: !streamConnected,
     enabled,

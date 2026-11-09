@@ -17,7 +17,9 @@ export function withPayload(n: NotificationResponse): NotificationResponse {
 }
 
 export const notificationsApi = {
-  list: ({ unread, type, page, size }: NotificationListParams) =>
+  // `signal` (from TanStack Query) aborts the request when the query is cancelled, e.g.
+  // when a stream event replaces a fetch that may predate it.
+  list: ({ unread, type, page, size }: NotificationListParams, signal?: AbortSignal) =>
     apiClient
       .get<NotificationPageResponse>('/api/notifications', {
         params: {
@@ -26,11 +28,14 @@ export const notificationsApi = {
           page,
           size,
         },
+        signal,
       })
       .then((r) => ({ ...r.data, items: r.data.items.map(withPayload) })),
 
-  unreadCount: () =>
-    apiClient.get<{ count: number }>('/api/notifications/unread-count').then((r) => r.data.count),
+  unreadCount: (signal?: AbortSignal) =>
+    apiClient
+      .get<{ count: number }>('/api/notifications/unread-count', { signal })
+      .then((r) => r.data.count),
 
   markRead: (id: string, read: boolean) =>
     apiClient

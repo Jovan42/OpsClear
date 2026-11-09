@@ -47,6 +47,9 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // A request aborted on purpose (e.g. TanStack Query cancelling a fetch) isn't an error
+    // to show the user.
+    if (axios.isCancel(error)) return Promise.reject(error);
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const method = error.config?.method?.toLowerCase();
