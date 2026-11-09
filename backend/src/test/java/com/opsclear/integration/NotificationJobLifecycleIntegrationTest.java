@@ -1,6 +1,8 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.event.BlockerClearedEvent;
+import com.opsclear.event.JobAssignedEvent;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobRelationshipModel;
@@ -31,18 +33,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.NOTIFICATIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -73,6 +80,8 @@ class NotificationJobLifecycleIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private DSLContext dsl;
+    @Autowired private ApplicationEventPublisher eventPublisher;
+    @Autowired private TransactionTemplate transactionTemplate;
     @Autowired private NotificationRepository notificationRepository;
     @Autowired private JobRelationshipRepository jobRelationshipRepository;
     @Autowired private JobStatusHistoryRepository jobStatusHistoryRepository;
@@ -493,6 +502,43 @@ class NotificationJobLifecycleIntegrationTest {
         assertThat(allNotificationCount()).isZero();
     }
 
+    // --- State changed between the action and the fan-out ---
+    // Fan-out is async in production, so it can see newer data than the event. Publishing the event directly with
+    // stale data reproduces that.
+
+    @Test
+    @DisplayName("JOB_ASSIGNED is skipped when the job was reassigned to someone else before fan-out")
+    void staleJobAssigned_shouldNotifyNoOne() {
+        publish(new JobAssignedEvent(jobId, projectId, ownerId, memberId));
+
+        assertThat(allNotificationCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("BLOCKER_CLEARED is skipped when the blocker was reopened before fan-out")
+    void blockerReopenedBeforeFanOut_shouldNotifyNoOne() {
+        UUID waitingId = job("JOB-301", "Deploy release", JobStatus.NEW, memberId);
+        blockedBy(waitingId, jobId);
+
+        // The blocker is IN_PROGRESS, i.e. it was completed and reopened before the fan-out ran.
+        publish(new BlockerClearedEvent(jobId, projectId, ownerId, List.of(waitingId)));
+
+        assertThat(allNotificationCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("BLOCKER_CLEARED is skipped when the blocker was deleted before fan-out")
+    void blockerDeletedBeforeFanOut_shouldNotifyNoOne() {
+        UUID waitingId = job("JOB-301", "Deploy release", JobStatus.NEW, memberId);
+        blockedBy(waitingId, jobId);
+        dsl.update(JOBS).set(JOBS.STATUS, JobStatus.COMPLETED.name())
+                .set(JOBS.DELETED_AT, LocalDateTime.now(ZoneOffset.UTC)).where(JOBS.ID.eq(jobId)).execute();
+
+        publish(new BlockerClearedEvent(jobId, projectId, ownerId, List.of(waitingId)));
+
+        assertThat(allNotificationCount()).isZero();
+    }
+
     // --- Helpers ---
 
     private UUID user(String email, String name) {
@@ -585,6 +631,10 @@ class NotificationJobLifecycleIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body(Map.of("muted", muted))))
                 .andExpect(status().isOk());
+    }
+
+    private void publish(Object event) {
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
     }
 
     private List<UUID> recipients(NotificationType type) {
