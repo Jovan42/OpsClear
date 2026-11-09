@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Bell, BellOff } from 'lucide-react';
@@ -9,6 +9,7 @@ import NotificationItem from './NotificationItem';
 import type { NotificationListFilters } from '../../types';
 import { DROPDOWN_SIZE, useMarkAllRead, useNotifications, useUnreadCount } from './useNotifications';
 import { formatBadge } from './notificationContent';
+import { useNotificationStreamConnected } from './useNotificationStream';
 
 const ALL: NotificationListFilters = { unread: false, type: null };
 
@@ -18,12 +19,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  const { pathname } = useLocation();
-
-  // Without live updates (Frontend 2), refresh a stale count when the user navigates.
-  useEffect(() => {
-    void queryClient.refetchQueries({ queryKey: ['notifications', 'unread-count'], stale: true });
-  }, [pathname, queryClient]);
+  const streamConnected = useNotificationStreamConnected();
 
   const { data: unreadCount = 0 } = useUnreadCount();
   // Fetched only while open; the badge comes from the cheaper count endpoint.
@@ -49,8 +45,9 @@ export default function NotificationBell() {
 
   const close = () => setOpen(false);
   function toggle() {
-    // Opening always shows fresh data: the cached count or list may be up to 30s old.
-    if (!open) void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    // The stream keeps the cache current. While it's down, opening fetches fresh data
+    // instead, since the cached count or list may be out of date.
+    if (!open && !streamConnected) void queryClient.invalidateQueries({ queryKey: ['notifications'] });
     setOpen((v) => !v);
   }
 
@@ -64,6 +61,9 @@ export default function NotificationBell() {
         aria-expanded={open}
         aria-haspopup="dialog"
         data-testid="notification-bell"
+        // Test and diagnostic hook only (not styled): "true" while the notification
+        // stream is open. The E2E specs wait on it before acting.
+        data-live={streamConnected}
       >
         <Bell className="w-5 h-5" strokeWidth={2} aria-hidden />
         {unreadCount > 0 && (

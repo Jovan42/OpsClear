@@ -8,6 +8,7 @@ import { useOrgSubscription } from '../features/org/useSubscription';
 import { useCurrentOrg } from '../features/org/OrgContext';
 import UserMenu from './UserMenu';
 import NotificationBell from '../features/notifications/NotificationBell';
+import { useNotificationStream } from '../features/notifications/useNotificationStream';
 import ProjectSwitcher from './ProjectSwitcher';
 import ProjectNavItemView from './ProjectNavItemView';
 import { useProjectNavItems, type ProjectNavData } from '../hooks/useProjectNavItems';
@@ -135,6 +136,8 @@ export default function AppLayout() {
   useTheme();
   const { name } = useAuth();
   const location = useLocation();
+  // Live notification updates for the bell and the Notifications page (ADR-0051).
+  useNotificationStream();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { t } = useTranslation('shared1');
 

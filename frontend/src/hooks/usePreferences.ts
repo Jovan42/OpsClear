@@ -26,6 +26,8 @@ export interface Preferences {
   defaultProjectPage: ProjectPage;
   deadlineFormat: DeadlineFormat;
   milestoneProgressFormat: ProgressFormat;
+  /** Chime for new live notifications (JOB-282). */
+  notificationSound: boolean;
 }
 
 export const defaults: Preferences = {
@@ -42,6 +44,7 @@ export const defaults: Preferences = {
   defaultProjectPage: 'DASHBOARD',
   deadlineFormat: 'ABSOLUTE',
   milestoneProgressFormat: 'FRACTION',
+  notificationSound: true,
 };
 
 export const PREFERENCES_STORAGE_KEY = STORAGE_KEY;

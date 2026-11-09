@@ -14,20 +14,32 @@ const ERROR_CATEGORY_KEYS: Record<string, string> = {
   'Internal Server Error': 'errors:internalServerError',
 };
 
+export const API_BASE_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
+
+/**
+ * A fresh access token for an API call, or null when not logged in. Refreshes the token
+ * if it expires within 30s; if that fails, the session is gone and Keycloak's login page
+ * takes over. Also used by fetch-based calls that can't go through axios (the
+ * notification stream).
+ */
+export async function getAccessToken(): Promise<string | null> {
+  if (!keycloak.authenticated) return null;
+  try {
+    await keycloak.updateToken(30);
+  } catch {
+    keycloak.login();
+  }
+  return keycloak.token ?? null;
+}
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8080',
+  baseURL: API_BASE_URL,
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  if (keycloak.authenticated) {
-    try {
-      await keycloak.updateToken(30);
-    } catch {
-      keycloak.login();
-    }
-    if (keycloak.token) {
-      config.headers['Authorization'] = `Bearer ${keycloak.token}`;
-    }
+  const token = await getAccessToken();
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });
@@ -35,6 +47,9 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // A request aborted on purpose (e.g. TanStack Query cancelling a fetch) isn't an error
+    // to show the user.
+    if (axios.isCancel(error)) return Promise.reject(error);
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const method = error.config?.method?.toLowerCase();
