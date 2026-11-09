@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.AddMemberRequest;
+import com.opsclear.event.ProjectMemberAddedEvent;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
@@ -12,6 +13,7 @@ import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class ProjectMemberService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final RecurringScheduleService recurringScheduleService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<ProjectMemberModel> listMembers(UUID projectId, UUID requesterId) {
@@ -51,6 +54,8 @@ public class ProjectMemberService {
 
         ProjectMemberModel saved = projectMemberRepository.save(member);
         log.info("Added user {} as {} to project {}", request.getUserId(), request.getRole(), projectId);
+        eventPublisher.publishEvent(
+                new ProjectMemberAddedEvent(projectId, request.getUserId(), request.getRole(), requesterId));
         return saved;
     }
 

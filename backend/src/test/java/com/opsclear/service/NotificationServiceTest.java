@@ -10,6 +10,7 @@ import com.opsclear.model.NotificationType;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.NotificationRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -49,6 +50,7 @@ class NotificationServiceTest {
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private NoteRepository noteRepository;
     @Mock private UserRepository userRepository;
+    @Mock private OrganisationRepository organisationRepository;
 
     private NotificationService notificationService;
 
@@ -59,7 +61,7 @@ class NotificationServiceTest {
     void setUp() {
         notificationService = new NotificationService(notificationRepository, notificationSettingsService,
                 jobRepository, projectRepository, projectMemberRepository, noteRepository, userRepository,
-                new ObjectMapper());
+                new ObjectMapper(), organisationRepository);
         callerId = UUID.randomUUID();
         notificationId = UUID.randomUUID();
     }

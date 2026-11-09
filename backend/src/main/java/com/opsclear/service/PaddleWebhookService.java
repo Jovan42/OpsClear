@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.event.SubscriptionPastDueEvent;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.model.OrgSubscriptionModel;
@@ -16,6 +17,7 @@ import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -103,6 +105,7 @@ public class PaddleWebhookService {
             "canceled", "CANCELED",
             "paused", "CANCELED");
 
+    private static final String LOCAL_STATUS_PAST_DUE = "PAST_DUE";
     private static final String SCHEDULED_CHANGE_ACTION_CANCEL = "cancel";
     private static final String BILLING_CYCLE_ANNUAL = "ANNUAL";
     private static final String BILLING_CYCLE_MONTHLY = "MONTHLY";
@@ -115,6 +118,7 @@ public class PaddleWebhookService {
     private final PaddleClient paddleClient;
     private final CreditService creditService;
     private final String webhookSecret;
+    private final ApplicationEventPublisher eventPublisher;
 
     public PaddleWebhookService(ObjectMapper objectMapper,
                                  OrganisationRepository organisationRepository,
@@ -123,7 +127,8 @@ public class PaddleWebhookService {
                                  SubscriptionAddonRepository addonRepository,
                                  PaddleClient paddleClient,
                                  CreditService creditService,
-                                 @Value("${paddle.webhook-secret}") String webhookSecret) {
+                                 @Value("${paddle.webhook-secret}") String webhookSecret,
+                                 ApplicationEventPublisher eventPublisher) {
         this.objectMapper = objectMapper;
         this.organisationRepository = organisationRepository;
         this.orgSubscriptionRepository = orgSubscriptionRepository;
@@ -132,6 +137,7 @@ public class PaddleWebhookService {
         this.paddleClient = paddleClient;
         this.creditService = creditService;
         this.webhookSecret = webhookSecret;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -169,8 +175,11 @@ public class PaddleWebhookService {
 
         Optional<OrgSubscriptionModel> existing = orgSubscriptionRepository.findByOrgId(orgId.get());
         if (existing.isEmpty()) {
-            createFirstSubscriptionFromWebhook(
+            boolean created = createFirstSubscriptionFromWebhook(
                     orgId.get(), event, localStatus, scheduledCancellationAt, currentPeriodStartsAt);
+            if (created) {
+                publishIfEnteredPastDue(orgId.get(), null, localStatus);
+            }
             return;
         }
 
@@ -184,6 +193,19 @@ public class PaddleWebhookService {
         } else {
             log.info("Paddle event {} ({}) synced subscription_status={} for org {}",
                     event.eventId(), event.eventType(), localStatus, orgId.get());
+            publishIfEnteredPastDue(orgId.get(), existing.get().getSubscriptionStatus(), localStatus);
+        }
+    }
+
+    // ADR-0051 SUBSCRIPTION_PAST_DUE: only on the transition into PAST_DUE. Paddle
+    // redelivers events and can send several subscription.* events while dunning is
+    // in progress, so a webhook for an org that was already PAST_DUE notifies no one.
+    // Published inside this @Transactional method, so the listener (AFTER_COMMIT)
+    // runs only once the status change has committed.
+    private void publishIfEnteredPastDue(UUID orgId, String previousStatus, String newStatus) {
+        if (LOCAL_STATUS_PAST_DUE.equals(newStatus) && !LOCAL_STATUS_PAST_DUE.equals(previousStatus)) {
+            log.info("Org {} subscription entered PAST_DUE (was {})", orgId, previousStatus);
+            eventPublisher.publishEvent(new SubscriptionPastDueEvent(orgId));
         }
     }
 
@@ -191,13 +213,14 @@ public class PaddleWebhookService {
     // catalog — this is the org's very first successful checkout, so nothing here
     // is trusted from the client; Paddle's own confirmed item list is the sole
     // source of truth for what was actually paid for.
-    private void createFirstSubscriptionFromWebhook(UUID orgId, PaddleWebhookEvent event, String localStatus,
+    // Returns whether the row was created.
+    private boolean createFirstSubscriptionFromWebhook(UUID orgId, PaddleWebhookEvent event, String localStatus,
             Instant scheduledCancellationAt, Instant currentPeriodStartsAt) {
         List<PaddleWebhookSubscriptionItem> items = event.data().items();
         if (items == null || items.isEmpty()) {
             log.warn("Paddle event {} ({}) has no items to resolve a plan from for org {} — ignoring",
                     event.eventId(), event.eventType(), orgId);
-            return;
+            return false;
         }
 
         SubscriptionTierModel tier = null;
@@ -218,13 +241,14 @@ public class PaddleWebhookService {
         if (tier == null) {
             log.warn("Paddle event {} ({}) items didn't resolve to a known tier for org {} — ignoring",
                     event.eventId(), event.eventType(), orgId);
-            return;
+            return false;
         }
 
         orgSubscriptionRepository.createFromPaddleWebhook(orgId, tier.getId(), billingCycle, addonIds,
                 event.data().id(), localStatus, scheduledCancellationAt, currentPeriodStartsAt);
         log.info("Created org_subscriptions row for org {} from Paddle event {} ({}): tier={}, addons={}",
                 orgId, event.eventId(), event.eventType(), tier.getId(), addonIds.size());
+        return true;
     }
 
     // Detaches a one-time credit discount the moment it's actually consumed — see the

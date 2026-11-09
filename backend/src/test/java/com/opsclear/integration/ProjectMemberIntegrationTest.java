@@ -15,6 +15,7 @@ import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.MilestoneRepository;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.ScheduleAssigneeRepository;
@@ -22,6 +23,7 @@ import com.opsclear.repository.UserRepository;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -85,9 +87,19 @@ class ProjectMemberIntegrationTest {
     @Autowired
     private JobTemplateRepository jobTemplateRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
     private UUID ownerId;
     private UUID project1Id;
     private UUID orgId;
+
+    // Adding a project member creates a notification (JOB-279): leave none behind, or they block
+    // other classes from deleting organisations, projects and users.
+    @AfterEach
+    void deleteNotifications() {
+        notificationRepository.deleteAll();
+    }
 
     @BeforeEach
     void setUp() {

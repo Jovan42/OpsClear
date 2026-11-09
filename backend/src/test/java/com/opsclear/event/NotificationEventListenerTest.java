@@ -1,6 +1,8 @@
 package com.opsclear.event;
 
 import com.opsclear.model.ApprovalStatus;
+import com.opsclear.model.FeedbackStatus;
+import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -57,5 +59,48 @@ class NotificationEventListenerTest {
         listener.onNoteAdded(event);
 
         verify(notificationService).notifyNoteAdded(event);
+    }
+
+    @Test
+    @DisplayName("hands PROJECT_MEMBER_ADDED events to the fan-out")
+    void onProjectMemberAdded_shouldFanOut() {
+        ProjectMemberAddedEvent event = new ProjectMemberAddedEvent(UUID.randomUUID(), UUID.randomUUID(),
+                ProjectMemberRole.MEMBER, UUID.randomUUID());
+
+        listener.onProjectMemberAdded(event);
+
+        verify(notificationService).notifyProjectMemberAdded(event);
+    }
+
+    @Test
+    @DisplayName("hands INVITE_ACCEPTED events to the fan-out")
+    void onInviteAccepted_shouldFanOut() {
+        InviteAcceptedEvent event = new InviteAcceptedEvent(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID());
+
+        listener.onInviteAccepted(event);
+
+        verify(notificationService).notifyInviteAccepted(event);
+    }
+
+    @Test
+    @DisplayName("hands FEEDBACK_RESOLVED events to the fan-out")
+    void onFeedbackResolved_shouldFanOut() {
+        FeedbackResolvedEvent event = new FeedbackResolvedEvent(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), "Idea", FeedbackStatus.CREDITED, 500);
+
+        listener.onFeedbackResolved(event);
+
+        verify(notificationService).notifyFeedbackResolved(event);
+    }
+
+    @Test
+    @DisplayName("hands SUBSCRIPTION_PAST_DUE events to the fan-out")
+    void onSubscriptionPastDue_shouldFanOut() {
+        SubscriptionPastDueEvent event = new SubscriptionPastDueEvent(UUID.randomUUID());
+
+        listener.onSubscriptionPastDue(event);
+
+        verify(notificationService).notifySubscriptionPastDue(event);
     }
 }

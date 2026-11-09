@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.JobModel;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectModel;
 
 import java.util.LinkedHashMap;
@@ -22,6 +23,14 @@ final class NotificationPayload {
     static final String DESCRIPTION = "description";
     static final String DECISION = "decision";
     static final String COMMENT = "comment";
+    // Project, organisation and billing types (JOB-279)
+    static final String ORG_NAME = "orgName";
+    static final String ROLE = "role";
+    static final String MEMBER_NAME = "memberName";
+    static final String MEMBER_EMAIL = "memberEmail";
+    static final String FEEDBACK_TITLE = "feedbackTitle";
+    static final String OUTCOME = "outcome";
+    static final String CREDIT_AMOUNT = "creditAmount";
 
     private final Map<String, Object> values = new LinkedHashMap<>();
 
@@ -35,6 +44,21 @@ final class NotificationPayload {
                 .put(JOB_TITLE, job.getTitle())
                 .put(PROJECT_FRIENDLY_ID, project.getFriendlyId())
                 .put(PROJECT_NAME, project.getName())
+                .put(ACTOR_NAME, actorName);
+    }
+
+    /** Snapshot for project-level types without a job: project friendly ID and name, actor. */
+    static NotificationPayload forProject(ProjectModel project, String actorName) {
+        return new NotificationPayload()
+                .put(PROJECT_FRIENDLY_ID, project.getFriendlyId())
+                .put(PROJECT_NAME, project.getName())
+                .put(ACTOR_NAME, actorName);
+    }
+
+    /** Snapshot for organisation-level types (no project): organisation name, actor. */
+    static NotificationPayload forOrganisation(OrganisationModel organisation, String actorName) {
+        return new NotificationPayload()
+                .put(ORG_NAME, organisation.getName())
                 .put(ACTOR_NAME, actorName);
     }
 

@@ -9,6 +9,7 @@ import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleDiscount;
 import com.opsclear.paddle.PaddlePrice;
 import com.opsclear.paddle.PaddleProduct;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
@@ -17,6 +18,7 @@ import com.opsclear.repository.UserRepository;
 import com.opsclear.service.CreditService;
 import com.opsclear.service.PaddleSubscriptionService;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -92,6 +94,7 @@ class PaddleWebhookIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
     @Autowired private CreditService creditService;
+    @Autowired private NotificationRepository notificationRepository;
     @MockitoBean private PaddleClient paddleClient;
 
     @Value("${paddle.webhook-secret}")
@@ -101,6 +104,13 @@ class PaddleWebhookIntegrationTest {
     private UUID orgId;
     private UUID tierId;
     private String customerId;
+
+    // A webhook moving a subscription into PAST_DUE creates a notification (JOB-279): leave none behind, or they block
+    // other classes from deleting organisations, projects and users.
+    @AfterEach
+    void deleteNotifications() {
+        notificationRepository.deleteAll();
+    }
 
     @BeforeEach
     void setUp() throws Exception {

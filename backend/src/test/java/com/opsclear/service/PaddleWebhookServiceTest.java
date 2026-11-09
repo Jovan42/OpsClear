@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.event.SubscriptionPastDueEvent;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.model.OrgSubscriptionModel;
 import com.opsclear.model.SubscriptionAddonModel;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -53,6 +55,7 @@ class PaddleWebhookServiceTest {
     @Mock private SubscriptionAddonRepository addonRepository;
     @Mock private PaddleClient paddleClient;
     @Mock private CreditService creditService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private PaddleWebhookService service;
     private UUID orgId;
@@ -68,7 +71,7 @@ class PaddleWebhookServiceTest {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         service = new PaddleWebhookService(
                 objectMapper, organisationRepository, orgSubscriptionRepository, tierRepository, addonRepository,
-                paddleClient, creditService, SECRET);
+                paddleClient, creditService, SECRET, eventPublisher);
         orgId = UUID.randomUUID();
     }
 
@@ -124,7 +127,7 @@ class PaddleWebhookServiceTest {
     void handle_shouldRejectCleanly_whenConfiguredSecretIsEmpty() {
         PaddleWebhookService serviceWithEmptySecret = new PaddleWebhookService(
                 new ObjectMapper().findAndRegisterModules(), organisationRepository, orgSubscriptionRepository,
-                tierRepository, addonRepository, paddleClient, creditService, "");
+                tierRepository, addonRepository, paddleClient, creditService, "", eventPublisher);
         String body = subscriptionEventBody("subscription.created", "active");
         String header = signatureHeader(body, SECRET);
 
@@ -489,6 +492,96 @@ class PaddleWebhookServiceTest {
 
         verify(orgSubscriptionRepository, never()).createFromPaddleWebhook(
                 any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    // --- SUBSCRIPTION_PAST_DUE notification (ADR-0051, JOB-279) ---
+
+    private void givenOrgResolvesToSubscriptionWithStatus(String status) {
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.of(
+                OrgSubscriptionModel.builder().id(UUID.randomUUID()).orgId(orgId).subscriptionStatus(status).build()));
+    }
+
+    @Test
+    @DisplayName("handle publishes SubscriptionPastDueEvent when an ACTIVE subscription enters PAST_DUE")
+    void handle_shouldPublishPastDue_onTransitionIntoPastDue() {
+        String body = subscriptionEventBody("subscription.past_due", "past_due");
+        givenOrgResolvesToSubscriptionWithStatus("ACTIVE");
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "PAST_DUE", null, null))
+                .thenReturn(1);
+
+        service.handle(signatureHeader(body, SECRET), body);
+
+        verify(eventPublisher).publishEvent(new SubscriptionPastDueEvent(orgId));
+    }
+
+    @Test
+    @DisplayName("handle doesn't publish again for a webhook while the subscription is already PAST_DUE")
+    void handle_shouldNotPublishPastDue_whenAlreadyPastDue() {
+        String body = subscriptionEventBody("subscription.past_due", "past_due");
+        givenOrgResolvesToSubscriptionWithStatus("PAST_DUE");
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "PAST_DUE", null, null))
+                .thenReturn(1);
+
+        service.handle(signatureHeader(body, SECRET), body);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    @DisplayName("handle doesn't publish when a PAST_DUE subscription recovers to ACTIVE")
+    void handle_shouldNotPublishPastDue_whenLeavingPastDue() {
+        String body = subscriptionEventBody("subscription.updated", "active");
+        givenOrgResolvesToSubscriptionWithStatus("PAST_DUE");
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "ACTIVE", null, null))
+                .thenReturn(1);
+
+        service.handle(signatureHeader(body, SECRET), body);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    @DisplayName("handle doesn't publish when the PAST_DUE update affected no rows")
+    void handle_shouldNotPublishPastDue_whenUpdateAffectsNoRows() {
+        String body = subscriptionEventBody("subscription.past_due", "past_due");
+        givenOrgResolvesToSubscriptionWithStatus("ACTIVE");
+        when(orgSubscriptionRepository.updateFromPaddleWebhook(orgId, "sub_123", "PAST_DUE", null, null))
+                .thenReturn(0);
+
+        service.handle(signatureHeader(body, SECRET), body);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    @DisplayName("handle publishes SubscriptionPastDueEvent when the first webhook creates a PAST_DUE row")
+    void handle_shouldPublishPastDue_whenFirstWebhookCreatesPastDueRow() {
+        UUID tierId = UUID.randomUUID();
+        SubscriptionTierModel tier = SubscriptionTierModel.builder()
+                .id(tierId).paddlePriceIdMonthly("pri_tier_monthly").paddlePriceIdAnnual("pri_tier_annual").build();
+        String body = subscriptionEventBodyWithItems("subscription.past_due", "past_due", List.of("pri_tier_monthly"));
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+        when(tierRepository.findByPaddlePriceId("pri_tier_monthly")).thenReturn(Optional.of(tier));
+
+        service.handle(signatureHeader(body, SECRET), body);
+
+        verify(orgSubscriptionRepository).createFromPaddleWebhook(
+                orgId, tierId, "MONTHLY", Set.of(), "sub_123", "PAST_DUE", null, null);
+        verify(eventPublisher).publishEvent(new SubscriptionPastDueEvent(orgId));
+    }
+
+    @Test
+    @DisplayName("handle doesn't publish when a PAST_DUE first webhook is ignored (no items)")
+    void handle_shouldNotPublishPastDue_whenFirstWebhookIgnored() {
+        String body = subscriptionEventBody("subscription.past_due", "past_due");
+        when(organisationRepository.findIdByPaddleCustomerId("ctm_123")).thenReturn(Optional.of(orgId));
+        when(orgSubscriptionRepository.findByOrgId(orgId)).thenReturn(Optional.empty());
+
+        service.handle(signatureHeader(body, SECRET), body);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     // --- non-subscription events ---

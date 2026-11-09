@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.SendInviteRequest;
+import com.opsclear.event.InviteAcceptedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
@@ -14,6 +15,7 @@ import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ public class OrgInviteService {
     private final OrganisationRepository organisationRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public OrgInviteModel sendInvite(UUID orgId, UUID callerId, SendInviteRequest request) {
@@ -103,6 +106,8 @@ public class OrgInviteService {
         organisationRepository.saveMember(invite.getOrganisationId(), callerId, OrganisationRole.MEMBER);
         orgInviteRepository.markAccepted(invite.getId());
         log.info("Invite {} accepted by user {} ({})", invite.getId(), callerId, callerEmail);
+        eventPublisher.publishEvent(new InviteAcceptedEvent(
+                invite.getId(), invite.getOrganisationId(), callerId, invite.getInvitedBy()));
 
         return orgInviteRepository.findById(invite.getId()).orElseThrow();
     }
