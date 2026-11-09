@@ -1,6 +1,9 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.event.ProjectMemberAddedEvent;
+import com.opsclear.event.SubscriptionPastDueEvent;
+import com.opsclear.model.NotificationModel;
 import com.opsclear.model.NotificationType;
 import com.opsclear.model.OrgInviteModel;
 import com.opsclear.model.OrganisationModel;
@@ -19,6 +22,7 @@ import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
+import com.opsclear.service.NotificationService;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,15 +32,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -47,6 +55,8 @@ import java.util.UUID;
 
 import static com.opsclear.generated.jooq.Tables.NOTIFICATIONS;
 import static com.opsclear.generated.jooq.Tables.ORGANISATIONS;
+import static com.opsclear.generated.jooq.Tables.PROJECTS;
+import static com.opsclear.generated.jooq.Tables.PROJECT_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -84,6 +94,9 @@ class NotificationOrgEventsIntegrationTest {
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private NotificationService notificationService;
+    @Autowired private ApplicationEventPublisher eventPublisher;
+    @Autowired private TransactionTemplate transactionTemplate;
 
     @Value("${paddle.webhook-secret}")
     private String webhookSecret;
@@ -366,6 +379,70 @@ class NotificationOrgEventsIntegrationTest {
         assertThat(allNotificationCount()).isZero();
     }
 
+    // --- Stale data at fan-out time ---
+    // Fan-out runs after the action commits (asynchronously in production), so the data it reads may have changed.
+    // The deleted-project and deleted-org cases call the fan-out directly: through the listener, a missing guard
+    // would only throw inside @Async (logged and swallowed), so asserting "empty result, no exception" is what
+    // actually pins the guard.
+
+    @Test
+    @DisplayName("PROJECT_MEMBER_ADDED notifies no one when the project was deleted before the fan-out")
+    void memberAdded_shouldNotifyNoOne_whenProjectDeletedBeforeFanOut() {
+        // A current, unmuted project member who isn't the actor: notified if the project still existed.
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+        dsl.update(PROJECTS).set(PROJECTS.DELETED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .where(PROJECTS.ID.eq(projectId)).execute();
+
+        List<NotificationModel> saved = notificationService.notifyProjectMemberAdded(
+                new ProjectMemberAddedEvent(projectId, memberId, ProjectMemberRole.MEMBER, ownerId));
+
+        assertThat(saved).isEmpty();
+        assertThat(allNotificationCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("PROJECT_MEMBER_ADDED notifies no one when the user was removed from the project before the fan-out")
+    void memberAdded_shouldNotifyNoOne_whenUserRemovedBeforeFanOut() throws Exception {
+        addProjectMember(ownerId, memberId, "MEMBER").andExpect(status().isCreated());
+        assertThat(recipients(NotificationType.PROJECT_MEMBER_ADDED)).containsExactly(memberId);
+        notificationRepository.deleteAll();
+        // Removed again (e.g. right after being added), then the stale event is handled.
+        dsl.deleteFrom(PROJECT_MEMBERS).where(PROJECT_MEMBERS.PROJECT_ID.eq(projectId))
+                .and(PROJECT_MEMBERS.USER_ID.eq(memberId)).execute();
+
+        publish(new ProjectMemberAddedEvent(projectId, memberId, ProjectMemberRole.MEMBER, ownerId));
+
+        assertThat(allNotificationCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("Org-level types notify no one when the organisation was deleted before the fan-out")
+    void orgEvent_shouldNotifyNoOne_whenOrgDeletedBeforeFanOut() {
+        // Owner and Admin are still org members, unmuted, and there's no actor: notified if the org still existed.
+        dsl.update(ORGANISATIONS).set(ORGANISATIONS.DELETED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .where(ORGANISATIONS.ID.eq(orgId)).execute();
+
+        List<NotificationModel> saved = notificationService.notifySubscriptionPastDue(
+                new SubscriptionPastDueEvent(orgId));
+
+        assertThat(saved).isEmpty();
+        assertThat(allNotificationCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("Control: the same direct fan-out calls notify when nothing is stale")
+    void directFanOut_shouldNotify_whenNothingStale() {
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+
+        assertThat(notificationService.notifyProjectMemberAdded(
+                new ProjectMemberAddedEvent(projectId, memberId, ProjectMemberRole.MEMBER, ownerId))).hasSize(1);
+        assertThat(notificationService.notifySubscriptionPastDue(new SubscriptionPastDueEvent(orgId))).hasSize(2);
+        assertThat(recipients(NotificationType.PROJECT_MEMBER_ADDED)).containsExactly(memberId);
+        assertThat(recipients(NotificationType.SUBSCRIPTION_PAST_DUE)).containsExactlyInAnyOrder(ownerId, adminId);
+    }
+
     // --- Helpers ---
 
     private UUID user(String email, String name) {
@@ -461,6 +538,11 @@ class NotificationOrgEventsIntegrationTest {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    // Publishes in a committed transaction, so the after-commit listener handles it (synchronously in tests).
+    private void publish(Object event) {
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
     }
 
     private List<UUID> recipients(NotificationType type) {
