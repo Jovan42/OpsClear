@@ -94,13 +94,16 @@ describe('Live notification updates', () => {
 
   it('reconnects with backoff after the stream fails and refetches what it missed', () => {
     setUpOwnerAndMember('reconnect').then(({ ownerEmail, memberEmail, projectId, jobId }) => {
-      // The first 3 attempts fail (at ~0s, then backoff 1s and 2s); the 4th (~4s later,
-      // ±20%) gets through. Limited with `times` rather than replaced by a pass-through
-      // handler, because Cypress buffers the response of a handled request, which would
-      // hold back the stream.
+      // The first 4 attempts get a 503 (at ~0s, then backoff 1s, 2s and 4s); the 5th comes
+      // 8s after the 4th, so ≥ 12s after the first even with -20% jitter. That's ample
+      // time to create the notification while disconnected. A 503, not
+      // `forceNetworkError`: Chrome silently retries a GET after a network error, so one
+      // attempt would use up an unpredictable number of `times`. Limited with `times`
+      // rather than replaced by a pass-through handler, because Cypress buffers the
+      // response of a handled request, which would hold back the stream.
       cy.intercept(
-        { method: 'GET', pathname: '/api/notifications/stream', times: 3 },
-        { forceNetworkError: true },
+        { method: 'GET', pathname: '/api/notifications/stream', times: 4 },
+        { statusCode: 503, body: '' },
       ).as('streamDown');
 
       cy.loginAs(ownerEmail);
@@ -113,10 +116,13 @@ describe('Live notification updates', () => {
       // reconnect can show it (focus refetch isn't triggered and nothing navigates).
       requestApprovalAs(memberEmail, projectId, jobId, 'Rent a generator').its('status').should('eq', 201);
       waitForUnreadCount(ownerEmail, 1);
+      // Still disconnected now that it exists, so it can't arrive as a pushed event.
+      bell().should('have.attr', 'data-live', 'false');
+      badge().should('not.exist');
 
-      bell({ timeout: 20000 }).should('have.attr', 'data-live', 'true');
+      bell({ timeout: 40000 }).should('have.attr', 'data-live', 'true');
       badge().should('have.text', '1');
-      cy.get('@streamDown.all').should('have.length', 3);
+      cy.get('@streamDown.all').should('have.length', 4);
 
       cleanUpUsers(ownerEmail, memberEmail);
     });

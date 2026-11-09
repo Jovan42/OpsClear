@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import type { NotificationListFilters, NotificationPageResponse, NotificationResponse } from '../../types';
-import { applyNewNotification, applyReadState, UNREAD_COUNT_KEY } from './notificationCache';
+import { applyNewNotification, applyReadState, SETTLE_MS, UNREAD_COUNT_KEY } from './notificationCache';
 
 const ALL: NotificationListFilters = { unread: false, type: null };
 const UNREAD: NotificationListFilters = { unread: true, type: null };
@@ -33,15 +33,28 @@ const list = (filters: NotificationListFilters, p = 0, size = 20) =>
   qc.getQueryData<NotificationPageResponse>(listKey(filters, p, size));
 const isStale = (key: unknown[]) => qc.getQueryState(key)?.isInvalidated;
 
+/** Settled cache data: fetched well before the event, nothing in flight. */
+function seed(key: readonly unknown[], data: unknown) {
+  qc.setQueryData(key, data, { updatedAt: Date.now() - 60_000 });
+}
+
+// What a count refetch returns. Unset: a fetch that never resolves (stays in flight).
+let serverCount: number | undefined;
+
 beforeEach(() => {
-  qc = new QueryClient();
+  qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  serverCount = undefined;
+  qc.setQueryDefaults(UNREAD_COUNT_KEY, {
+    queryFn: () => (serverCount === undefined ? new Promise<number>(() => {}) : Promise.resolve(serverCount)),
+  });
+  qc.setQueryDefaults(['notifications', 'list'], { queryFn: () => new Promise(() => {}) });
 });
 
 describe('applyNewNotification', () => {
   it('prepends to matching first pages, trims to the page size and increments the count', () => {
-    qc.setQueryData(UNREAD_COUNT_KEY, 2);
-    qc.setQueryData(listKey(ALL, 0, 2), page([n('a'), n('b')], 2, 2));
-    qc.setQueryData(listKey(UNREAD), page([n('a')]));
+    seed(UNREAD_COUNT_KEY, 2);
+    seed(listKey(ALL, 0, 2), page([n('a'), n('b')], 2, 2));
+    seed(listKey(UNREAD), page([n('a')]));
 
     applyNewNotification(qc, n('new'));
 
@@ -53,8 +66,8 @@ describe('applyNewNotification', () => {
   });
 
   it('skips lists filtered to another type and invalidates later pages', () => {
-    qc.setQueryData(listKey(APPROVALS), page([n('x', false, 'APPROVAL_REQUESTED')]));
-    qc.setQueryData(listKey(ALL, 1), { ...page([n('b')], 21), page: 1 });
+    seed(listKey(APPROVALS), page([n('x', false, 'APPROVAL_REQUESTED')]));
+    seed(listKey(ALL, 1), { ...page([n('b')], 21), page: 1 });
 
     applyNewNotification(qc, n('new'));
 
@@ -63,8 +76,8 @@ describe('applyNewNotification', () => {
   });
 
   it('ignores a notification that is already cached', () => {
-    qc.setQueryData(UNREAD_COUNT_KEY, 1);
-    qc.setQueryData(listKey(ALL), page([n('a')]));
+    seed(UNREAD_COUNT_KEY, 1);
+    seed(listKey(ALL), page([n('a')]));
 
     applyNewNotification(qc, n('a'));
 
@@ -75,10 +88,10 @@ describe('applyNewNotification', () => {
 
 describe('applyReadState', () => {
   it('patches read flags in every non-unread list and decrements the count', () => {
-    qc.setQueryData(UNREAD_COUNT_KEY, 3);
-    qc.setQueryData(listKey(ALL), page([n('a'), n('b'), n('c')]));
-    qc.setQueryData(listKey(APPROVALS), page([n('a', false, 'APPROVAL_REQUESTED')]));
-    qc.setQueryData(listKey(UNREAD), page([n('a'), n('b'), n('c')]));
+    seed(UNREAD_COUNT_KEY, 3);
+    seed(listKey(ALL), page([n('a'), n('b'), n('c')]));
+    seed(listKey(APPROVALS), page([n('a', false, 'APPROVAL_REQUESTED')]));
+    seed(listKey(UNREAD), page([n('a'), n('b'), n('c')]));
 
     applyReadState(qc, { ids: ['a', 'b'], read: true });
 
@@ -89,8 +102,8 @@ describe('applyReadState', () => {
   });
 
   it('does not change the count again when the cache already has the new state', () => {
-    qc.setQueryData(UNREAD_COUNT_KEY, 1);
-    qc.setQueryData(listKey(ALL), page([n('a', true), n('b')]));
+    seed(UNREAD_COUNT_KEY, 1);
+    seed(listKey(ALL), page([n('a', true), n('b')]));
 
     applyReadState(qc, { ids: ['a'], read: true });
 
@@ -98,8 +111,8 @@ describe('applyReadState', () => {
   });
 
   it('increments the count when marking unread', () => {
-    qc.setQueryData(UNREAD_COUNT_KEY, 0);
-    qc.setQueryData(listKey(ALL), page([n('a', true)]));
+    seed(UNREAD_COUNT_KEY, 0);
+    seed(listKey(ALL), page([n('a', true)]));
 
     applyReadState(qc, { ids: ['a'], read: false });
 
@@ -108,8 +121,8 @@ describe('applyReadState', () => {
   });
 
   it('never makes the count negative', () => {
-    qc.setQueryData(UNREAD_COUNT_KEY, 0);
-    qc.setQueryData(listKey(ALL), page([n('a'), n('b')]));
+    seed(UNREAD_COUNT_KEY, 0);
+    seed(listKey(ALL), page([n('a'), n('b')]));
 
     applyReadState(qc, { ids: ['a', 'b'], read: true });
 
@@ -117,8 +130,8 @@ describe('applyReadState', () => {
   });
 
   it('refetches the count when an ID is not cached', () => {
-    qc.setQueryData(UNREAD_COUNT_KEY, 4);
-    qc.setQueryData(listKey(ALL), page([n('a')]));
+    seed(UNREAD_COUNT_KEY, 4);
+    seed(listKey(ALL), page([n('a')]));
 
     applyReadState(qc, { ids: ['a', 'unknown'], read: true });
 
@@ -127,14 +140,63 @@ describe('applyReadState', () => {
   });
 
   it('marks everything read and zeroes the count on {all: true}', () => {
-    qc.setQueryData(UNREAD_COUNT_KEY, 5);
-    qc.setQueryData(listKey(ALL), page([n('a'), n('b', true)]));
-    qc.setQueryData(listKey(UNREAD), page([n('a')]));
+    seed(UNREAD_COUNT_KEY, 5);
+    seed(listKey(ALL), page([n('a'), n('b', true)]));
+    seed(listKey(UNREAD), page([n('a')]));
 
     applyReadState(qc, { all: true });
 
     expect(list(ALL)!.items.every((i) => i.read)).toBe(true);
     expect(isStale(listKey(UNREAD))).toBe(true);
     expect(count()).toBe(0);
+  });
+});
+
+describe('races between events and fetches', () => {
+  it('refetches instead of incrementing a count fetched moments ago (it may already include the event)', async () => {
+    // Only the count is cached (dropdown closed) and was just refetched after a reconnect:
+    // the notification was committed before that fetch, but its event arrives after it.
+    qc.setQueryData(UNREAD_COUNT_KEY, 3, { updatedAt: Date.now() - (SETTLE_MS - 1000) });
+    serverCount = 3;
+
+    applyNewNotification(qc, n('new'));
+
+    expect(count()).toBe(3);
+    await vi.waitFor(() => expect(qc.getQueryState(UNREAD_COUNT_KEY)?.fetchStatus).toBe('idle'));
+    expect(count()).toBe(3);
+  });
+
+  it('replaces a count fetch already in flight instead of patching under it', async () => {
+    seed(UNREAD_COUNT_KEY, 3);
+    // A fetch that started before the notification was committed (never resolves here).
+    void qc.fetchQuery({ queryKey: UNREAD_COUNT_KEY }).catch(() => undefined);
+    expect(qc.getQueryState(UNREAD_COUNT_KEY)?.fetchStatus).toBe('fetching');
+    serverCount = 4;
+
+    applyNewNotification(qc, n('new'));
+
+    // Not patched to 4 locally: the stale fetch is cancelled and a new one brings the server value.
+    expect(count()).toBe(3);
+    await vi.waitFor(() => expect(count()).toBe(4));
+  });
+
+  it('refetches a first page with a fetch in flight instead of prepending to it', () => {
+    seed(listKey(ALL), page([n('a')]));
+    void qc.fetchQuery({ queryKey: listKey(ALL) }).catch(() => undefined);
+
+    applyNewNotification(qc, n('new'));
+
+    expect(list(ALL)!.items.map((i) => i.id)).toEqual(['a']);
+    expect(qc.getQueryState(listKey(ALL))?.fetchStatus).toBe('fetching');
+  });
+
+  it('refetches instead of patching read-state onto a just-fetched count', () => {
+    seed(listKey(ALL), page([n('a')]));
+    qc.setQueryData(UNREAD_COUNT_KEY, 1, { updatedAt: Date.now() });
+
+    applyReadState(qc, { ids: ['a'], read: true });
+
+    expect(count()).toBe(1);
+    expect(qc.getQueryState(UNREAD_COUNT_KEY)?.fetchStatus).toBe('fetching');
   });
 });

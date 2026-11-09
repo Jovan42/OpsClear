@@ -34,16 +34,41 @@ function invalidateExact(queryClient: QueryClient, key: QueryKey) {
 }
 
 /**
+ * Cached data younger than this may already include the event: the server pushes after
+ * the commit, asynchronously, so a fetch can see the change before its event arrives.
+ */
+export const SETTLE_MS = 5_000;
+
+/**
+ * Patches a query in place only when its data is settled: not being fetched, and older
+ * than {@link SETTLE_MS}. Otherwise patching could count an event twice (the fetched
+ * data already includes it) or be lost (an older in-flight fetch lands on top of it),
+ * and nothing would correct that until the next reconnect. Those queries are refetched
+ * instead, inactive ones too, cancelling a fetch already in flight, so the server value
+ * wins.
+ */
+function patchOrRefetch<T>(queryClient: QueryClient, key: QueryKey, update: (data: T) => T) {
+  const state = queryClient.getQueryState<T>(key);
+  if (!state || state.data === undefined) return;
+  if (state.fetchStatus === 'fetching' || Date.now() - state.dataUpdatedAt < SETTLE_MS) {
+    void queryClient.invalidateQueries({ queryKey: key, exact: true, refetchType: 'all' });
+    return;
+  }
+  queryClient.setQueryData<T>(key, update(state.data));
+}
+
+/**
  * A `notification` event: prepend it to every cached first page whose filters it matches
  * and add one to the unread count. Later pages shift by one, so they're invalidated
  * rather than patched. An item already in any cached list (e.g. the list was refetched
- * after it was created) is ignored, so it's never shown or counted twice.
+ * after it was created) is ignored, so it's never shown or counted twice. A first page or
+ * count that's fetching or just fetched is refetched instead (see patchOrRefetch).
  */
 export function applyNewNotification(queryClient: QueryClient, notification: NotificationResponse) {
   const lists = cachedLists(queryClient);
   if (lists.some((l) => l.data.items.some((item) => item.id === notification.id))) return;
 
-  for (const { key, data, filters, page, size } of lists) {
+  for (const { key, filters, page, size } of lists) {
     const matches =
       (filters.type == null || filters.type === notification.type) && (!filters.unread || !notification.read);
     if (!matches) continue;
@@ -51,17 +76,19 @@ export function applyNewNotification(queryClient: QueryClient, notification: Not
       invalidateExact(queryClient, key);
       continue;
     }
-    const totalElements = data.totalElements + 1;
-    queryClient.setQueryData<NotificationPageResponse>(key, {
-      ...data,
-      items: [notification, ...data.items].slice(0, size),
-      totalElements,
-      totalPages: Math.ceil(totalElements / size),
+    patchOrRefetch<NotificationPageResponse>(queryClient, key, (current) => {
+      const totalElements = current.totalElements + 1;
+      return {
+        ...current,
+        items: [notification, ...current.items].slice(0, size),
+        totalElements,
+        totalPages: Math.ceil(totalElements / size),
+      };
     });
   }
 
   if (!notification.read) {
-    queryClient.setQueryData<number>(UNREAD_COUNT_KEY, (count) => (count === undefined ? count : count + 1));
+    patchOrRefetch<number>(queryClient, UNREAD_COUNT_KEY, (count) => count + 1);
   }
 }
 
@@ -79,16 +106,21 @@ function withRead(item: NotificationResponse, read: boolean): NotificationRespon
  *   state actually changes, so the event arriving after this tab already refetched (its
  *   own mutation invalidates too) changes nothing. If an ID isn't in any cached list its
  *   previous state is unknown, so the count is refetched instead. Never below 0.
+ * - Anything fetching or just fetched is refetched rather than patched (patchOrRefetch).
  */
 export function applyReadState(queryClient: QueryClient, event: ReadStateEvent) {
   const lists = cachedLists(queryClient);
 
   if ('all' in event) {
-    for (const { key, data, filters } of lists) {
+    for (const { key, filters } of lists) {
       if (filters.unread) invalidateExact(queryClient, key);
-      else queryClient.setQueryData<NotificationPageResponse>(key, { ...data, items: data.items.map((i) => withRead(i, true)) });
+      else
+        patchOrRefetch<NotificationPageResponse>(queryClient, key, (current) => ({
+          ...current,
+          items: current.items.map((i) => withRead(i, true)),
+        }));
     }
-    queryClient.setQueryData<number>(UNREAD_COUNT_KEY, (count) => (count === undefined ? count : 0));
+    patchOrRefetch<number>(queryClient, UNREAD_COUNT_KEY, () => 0);
     return;
   }
 
@@ -107,10 +139,10 @@ export function applyReadState(queryClient: QueryClient, event: ReadStateEvent) 
       continue;
     }
     if (!data.items.some((i) => ids.has(i.id))) continue;
-    queryClient.setQueryData<NotificationPageResponse>(key, {
-      ...data,
-      items: data.items.map((i) => (ids.has(i.id) ? withRead(i, event.read) : i)),
-    });
+    patchOrRefetch<NotificationPageResponse>(queryClient, key, (current) => ({
+      ...current,
+      items: current.items.map((i) => (ids.has(i.id) ? withRead(i, event.read) : i)),
+    }));
   }
 
   if ([...ids].some((id) => !previous.has(id))) {
@@ -120,9 +152,7 @@ export function applyReadState(queryClient: QueryClient, event: ReadStateEvent) 
   const changed = [...ids].filter((id) => previous.get(id) !== event.read).length;
   if (changed === 0) return;
   const delta = event.read ? -changed : changed;
-  queryClient.setQueryData<number>(UNREAD_COUNT_KEY, (count) =>
-    count === undefined ? count : Math.max(0, count + delta),
-  );
+  patchOrRefetch<number>(queryClient, UNREAD_COUNT_KEY, (count) => Math.max(0, count + delta));
 }
 
 /** After every (re)connect: the server doesn't replay, so refetch what may have been missed. */

@@ -61,6 +61,8 @@ export default function NotificationBell() {
         aria-expanded={open}
         aria-haspopup="dialog"
         data-testid="notification-bell"
+        // Test and diagnostic hook only (not styled): "true" while the notification
+        // stream is open. The E2E specs wait on it before acting.
         data-live={streamConnected}
       >
         <Bell className="w-5 h-5" strokeWidth={2} aria-hidden />

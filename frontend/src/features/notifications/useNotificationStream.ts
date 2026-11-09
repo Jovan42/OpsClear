@@ -6,6 +6,7 @@ import type { NotificationResponse } from '../../types';
 import { backoffDelay, nextFailureCount } from './backoff';
 import { applyNewNotification, applyReadState, invalidateAfterConnect, type ReadStateEvent } from './notificationCache';
 import { createSseParser, type SseEvent } from './sseParser';
+import { readStream } from './streamReader';
 
 /** The stream pauses once the tab has been hidden this long, and reconnects when shown. */
 export const HIDDEN_PAUSE_MS = 5 * 60_000;
@@ -62,19 +63,20 @@ function runStream({ onOpen, onEvent }: StreamHandlers): () => void {
 
     try {
       const response = await notificationsApi.openStream(ac.signal);
-      if (!response.ok || !response.body) throw new Error(`Notification stream failed: ${response.status}`);
+      if (!response.ok || !response.body) {
+        // Release the connection now instead of leaving the error body unread.
+        void response.body?.cancel().catch(() => undefined);
+        throw new Error(`Notification stream failed: ${response.status}`);
+      }
       openedAt = Date.now();
       setConnected(true);
       onOpen();
 
-      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       const parser = createSseParser(onEvent);
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        parser.push(decoder.decode(value, { stream: true }));
-      }
+      // Ends when the server closes the stream, or after 60s without even a heartbeat
+      // (a silently dead connection); both reconnect below.
+      await readStream(response.body, (chunk) => parser.push(decoder.decode(chunk, { stream: true })));
     } catch {
       // Network error, backend down, non-2xx or aborted: all handled below.
     }
@@ -83,7 +85,8 @@ function runStream({ onOpen, onEvent }: StreamHandlers): () => void {
     if (ac.signal.aborted) return;
     controller = null;
     setConnected(false);
-    // Ended by the server (30-minute close, eviction by a newer tab, restart) or failed.
+    // Ended by the server (30-minute close, eviction by a newer tab, restart), cut by the
+    // idle watchdog, or failed.
     failures = nextFailureCount(failures, openedAt === null ? null : Date.now() - openedAt);
     reconnectTimer = setTimeout(() => void connect(), backoffDelay(failures));
   }
@@ -134,7 +137,8 @@ function runStream({ onOpen, onEvent }: StreamHandlers): () => void {
  * authenticated users. `notification` and `read-state` events update the TanStack Query
  * caches in place; every (re)connect refetches the count and lists, because the server
  * doesn't replay what was sent while disconnected. Heartbeat comments are skipped by the
- * parser. The stream is aborted on unmount and logout.
+ * parser. The stream is aborted on unmount. Logout (`keycloak.logout()`) leaves the page,
+ * which closes it with everything else.
  */
 export function useNotificationStream() {
   const { authenticated } = useAuth();
