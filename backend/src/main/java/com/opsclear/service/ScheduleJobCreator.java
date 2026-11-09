@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.ScheduleAssigneeResponse;
+import com.opsclear.event.JobAssignedEvent;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
 import com.opsclear.model.FriendlyIdEntityType;
@@ -18,6 +19,7 @@ import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.ScheduleAssigneeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -47,6 +49,7 @@ public class ScheduleJobCreator {
     private final ProjectRepository projectRepository;
     private final ScheduleAssigneeRepository assigneeRepository;
     private final FriendlyIdService friendlyIdService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Materialises a job from the given schedule using {@code scheduledFor} as the reference
@@ -105,6 +108,10 @@ public class ScheduleJobCreator {
         JobModel saved = jobRepository.save(job);
         jobStatusHistoryRepository.insert(saved.getId(), null, JobStatus.NEW.name(), createdBy, null);
         jobTemplateRepository.incrementOccurrenceCount(templateId);
+        if (saved.getAssignedTo() != null) {
+            // Saved directly, not through JobService.create, so publish JOB_ASSIGNED here. A system event: no actor.
+            eventPublisher.publishEvent(new JobAssignedEvent(saved.getId(), projectId, null, saved.getAssignedTo()));
+        }
 
         log.info("Created job '{}' (id={}) from schedule {} for scheduledFor={}",
                 title, saved.getId(), schedule.getId(), scheduledFor);

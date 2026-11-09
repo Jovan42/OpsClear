@@ -1,15 +1,18 @@
 package com.opsclear.scheduler;
 
+import com.opsclear.event.ScheduleRunMissedEvent;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
 import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.ScheduleMissedRunRepository;
 import com.opsclear.service.ScheduleJobCreator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -24,6 +27,8 @@ public class SchedulerPoller {
     private final RecurringScheduleRepository scheduleRepository;
     private final ScheduleMissedRunRepository missedRunRepository;
     private final ScheduleJobCreator scheduleJobCreator;
+    private final ApplicationEventPublisher eventPublisher;
+    private final TransactionTemplate transactionTemplate;
 
     @Scheduled(fixedRate = 60_000)
     public void tick() {
@@ -34,7 +39,9 @@ public class SchedulerPoller {
         }
         for (RecurringSchedulesRecord schedule : due) {
             try {
-                processSchedule(schedule, now);
+                // A self-call bypasses the @Transactional proxy, so open the transaction here: each schedule commits
+                // on its own, and the notification events it publishes are delivered after that commit.
+                transactionTemplate.executeWithoutResult(status -> processSchedule(schedule, now));
             } catch (Exception e) {
                 log.error("Failed to process schedule {}: {}", schedule.getId(), e.getMessage(), e);
             }
@@ -68,6 +75,8 @@ public class SchedulerPoller {
                 Instant missedAt = futureZdt.toInstant();
                 log.warn("Schedule {} missed run at {}, recording", schedule.getId(), missedAt);
                 missedRunRepository.insert(schedule.getId(), missedAt);
+                eventPublisher.publishEvent(new ScheduleRunMissedEvent(
+                        schedule.getId(), schedule.getProjectId(), schedule.getName(), missedAt));
                 futureZdt = CronExpression.parse(schedule.getCronExpression()).next(futureZdt);
             }
             int newIndex = schedule.getCurrentRotationIndex() + 1;

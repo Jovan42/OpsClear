@@ -1,5 +1,6 @@
 package com.opsclear.scheduler;
 
+import com.opsclear.event.ScheduleRunMissedEvent;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
@@ -15,6 +16,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -29,6 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +45,8 @@ class SchedulerPollerTest {
     @Mock private RecurringScheduleRepository scheduleRepository;
     @Mock private ScheduleMissedRunRepository missedRunRepository;
     @Mock private ScheduleJobCreator scheduleJobCreator;
+    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private PlatformTransactionManager transactionManager;
 
     private SchedulerPoller poller;
 
@@ -49,7 +56,8 @@ class SchedulerPollerTest {
 
     @BeforeEach
     void setUp() {
-        poller = new SchedulerPoller(scheduleRepository, missedRunRepository, scheduleJobCreator);
+        poller = new SchedulerPoller(scheduleRepository, missedRunRepository, scheduleJobCreator, eventPublisher,
+                new TransactionTemplate(transactionManager));
 
         projectId  = UUID.randomUUID();
         templateId = UUID.randomUUID();
@@ -120,6 +128,36 @@ class SchedulerPollerTest {
         verify(missedRunRepository).insert(eq(schedule.getId()), eq(Instant.parse("2026-05-11T12:00:00Z")));
         verify(scheduleJobCreator, never()).createJob(any(), any(), any(), any());
         verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), anyInt());
+    }
+
+    @Test
+    @DisplayName("processSchedule — publishes SCHEDULE_RUN_MISSED for each recorded missed run")
+    void processSchedule_shouldPublishMissedRunEvent_perMissedRun() {
+        // nextRunAt = 09:00 on the 9th, now = 13:00 on the 11th, cron fires at noon → missed 10th and 11th
+        Instant now = Instant.parse("2026-05-11T13:00:00Z");
+        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC",
+                Instant.parse("2026-05-09T13:00:00Z"));
+
+        poller.processSchedule(schedule, now);
+
+        ArgumentCaptor<ScheduleRunMissedEvent> captor = ArgumentCaptor.forClass(ScheduleRunMissedEvent.class);
+        verify(eventPublisher, times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues()).containsExactly(
+                new ScheduleRunMissedEvent(schedule.getId(), projectId, "Test Schedule",
+                        Instant.parse("2026-05-10T12:00:00Z")),
+                new ScheduleRunMissedEvent(schedule.getId(), projectId, "Test Schedule",
+                        Instant.parse("2026-05-11T12:00:00Z")));
+    }
+
+    @Test
+    @DisplayName("processSchedule — publishes no event on a normal run")
+    void processSchedule_shouldNotPublish_onNormalRun() {
+        Instant now = Instant.parse("2026-05-11T10:00:00Z");
+        RecurringSchedulesRecord schedule = buildSchedule("0 0 12 * * *", "UTC", now.minusSeconds(3600));
+
+        poller.processSchedule(schedule, now);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
@@ -208,6 +246,9 @@ class SchedulerPollerTest {
         poller.tick();
 
         verify(scheduleRepository).updateAfterRun(eq(schedule.getId()), any(), any(), anyInt());
+        // Each schedule runs in its own transaction (the self-call would bypass @Transactional).
+        verify(transactionManager).getTransaction(any());
+        verify(transactionManager).commit(any());
     }
 
     @Test
@@ -240,6 +281,8 @@ class SchedulerPollerTest {
         poller.tick();
 
         verify(scheduleRepository).updateAfterRun(eq(schedule2.getId()), any(), any(), anyInt());
+        verify(transactionManager).rollback(any());
+        verify(transactionManager).commit(any());
     }
 
     // -------------------------------------------------------------------------

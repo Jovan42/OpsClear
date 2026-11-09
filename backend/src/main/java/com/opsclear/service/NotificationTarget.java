@@ -1,11 +1,14 @@
 package com.opsclear.service;
 
 import com.opsclear.model.JobModel;
+import com.opsclear.model.JobStatus;
 import com.opsclear.model.OrgMemberModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectModel;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -36,8 +39,34 @@ sealed interface NotificationTarget permits NotificationTarget.JobScope, Notific
     record JobScope(JobModel job, ProjectModel project, List<UUID> ownerAndAdminIds,
                     Set<UUID> visibleUserIds) implements NotificationTarget {
 
+        /**
+         * Who can currently see the job: Owners/Admins plus the assignee. Removing a member doesn't unassign their
+         * jobs, so the assignee only counts while still a project member ({@code assigneeIsMember}).
+         */
+        static JobScope of(JobModel job, ProjectModel project, List<UUID> ownerAndAdminIds, boolean assigneeIsMember) {
+            Set<UUID> visible = new LinkedHashSet<>(ownerAndAdminIds);
+            if (assigneeIsMember) {
+                visible.add(job.getAssignedTo());
+            }
+            return new JobScope(job, project, ownerAndAdminIds, visible);
+        }
+
         NotificationPayload payload(String actorName) {
             return NotificationPayload.forJob(job, project, actorName);
+        }
+
+        /** The assignee (null when unassigned, dropped by the pipeline) plus the project's Owners and Admins. */
+        List<UUID> assigneeAndOwnersAndAdmins() {
+            List<UUID> candidates = new ArrayList<>();
+            candidates.add(job.getAssignedTo());
+            candidates.addAll(ownerAndAdminIds);
+            return candidates;
+        }
+
+        /** Whether the job is still open, in an active project, with this deadline (deadline alerts, JOB-278). */
+        boolean isDueOn(Instant deadline) {
+            return job.getStatus() != JobStatus.COMPLETED && !project.isCompleted()
+                    && deadline.equals(job.getDeadline());
         }
 
         @Override

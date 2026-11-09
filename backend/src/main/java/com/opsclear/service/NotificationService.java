@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.event.ApprovalDecidedEvent;
 import com.opsclear.event.ApprovalRequestedEvent;
 import com.opsclear.event.BlockerClearedEvent;
+import com.opsclear.event.DeadlineAlertEvent;
 import com.opsclear.event.FeedbackResolvedEvent;
 import com.opsclear.event.InviteAcceptedEvent;
 import com.opsclear.event.JobAssignedEvent;
@@ -13,6 +14,7 @@ import com.opsclear.event.JobStatusChangedEvent;
 import com.opsclear.event.JobUpdatedEvent;
 import com.opsclear.event.NoteAddedEvent;
 import com.opsclear.event.ProjectMemberAddedEvent;
+import com.opsclear.event.ScheduleRunMissedEvent;
 import com.opsclear.event.SubscriptionPastDueEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
@@ -194,7 +196,7 @@ public class NotificationService {
                 .candidates(event.assigneeId().equals(scope.job().getAssignedTo())
                         ? List.of(event.assigneeId()) : List.of())
                 .payload(scope.payload(actorName(event.actorId()))
-                        .put(NotificationPayload.DEADLINE, isoInstant(scope.job().getDeadline()))
+                        .putInstant(NotificationPayload.DEADLINE, scope.job().getDeadline())
                         .put(NotificationPayload.PRIORITY, scope.job().getPriority()))
                 .build());
     }
@@ -204,7 +206,7 @@ public class NotificationService {
     public List<NotificationModel> notifyJobStatusChanged(JobStatusChangedEvent event) {
         return fanOutForJob(NotificationType.JOB_STATUS_CHANGED, event.jobId(), scope -> FanOut.builder()
                 .actorId(event.actorId())
-                .candidates(assigneeAndOwnersAndAdmins(scope))
+                .candidates(scope.assigneeAndOwnersAndAdmins())
                 .payload(scope.payload(actorName(event.actorId()))
                         .put(NotificationPayload.FROM_STATUS, event.fromStatus())
                         .put(NotificationPayload.TO_STATUS, event.toStatus()))
@@ -216,7 +218,7 @@ public class NotificationService {
     public List<NotificationModel> notifyJobBlocked(JobBlockedEvent event) {
         return fanOutForJob(NotificationType.JOB_BLOCKED, event.jobId(), scope -> FanOut.builder()
                 .actorId(event.actorId())
-                .candidates(assigneeAndOwnersAndAdmins(scope))
+                .candidates(scope.assigneeAndOwnersAndAdmins())
                 .payload(scope.payload(actorName(event.actorId()))
                         .put(NotificationPayload.BLOCK_REASON, event.blockReason()))
                 .build());
@@ -258,7 +260,7 @@ public class NotificationService {
                 .candidates(Collections.singletonList(scope.job().getAssignedTo()))
                 .payload(scope.payload(actorName(event.actorId()))
                         .put(NotificationPayload.CHANGED_FIELDS, event.changedFields())
-                        .put(NotificationPayload.DEADLINE, isoInstant(event.deadline()))
+                        .putInstant(NotificationPayload.DEADLINE, event.deadline())
                         .put(NotificationPayload.PRIORITY, event.priority()))
                 .build());
     }
@@ -275,18 +277,6 @@ public class NotificationService {
                         .candidates(Collections.singletonList(scope.job().getAssignedTo()))
                         .payload(scope.payload(actorName(event.actorId())))
                         .build());
-    }
-
-    // The assignee (null when unassigned, dropped by the pipeline) plus the project's Owners and Admins.
-    private static List<UUID> assigneeAndOwnersAndAdmins(JobScope scope) {
-        List<UUID> candidates = new ArrayList<>();
-        candidates.add(scope.job().getAssignedTo());
-        candidates.addAll(scope.ownerAndAdminIds());
-        return candidates;
-    }
-
-    private static String isoInstant(Instant instant) {
-        return instant != null ? instant.toString() : null;
     }
 
     // --- Project, organisation and billing types (JOB-279) ---
@@ -364,6 +354,45 @@ public class NotificationService {
                 .build());
     }
 
+    // --- Scheduled and system types (JOB-278): no actor, shown as "OpsClear" ---
+
+    /**
+     * {@code JOB_DEADLINE_SOON} (the assignee) or {@code JOB_OVERDUE} (the assignee and Owners/Admins), with the
+     * deadline. Nothing is sent if the job was completed, its deadline moved or its project completed by the fan-out.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyDeadlineAlert(DeadlineAlertEvent event) {
+        NotificationType type = event.kind().notificationType();
+        return fanOutForJob(type, event.jobId(), scope -> FanOut.builder()
+                .candidates(!scope.isDueOn(event.deadline()) ? List.of()
+                        : type == NotificationType.JOB_OVERDUE ? scope.assigneeAndOwnersAndAdmins()
+                        : Collections.singletonList(scope.job().getAssignedTo()))
+                .payload(scope.payload(null).putInstant(NotificationPayload.DEADLINE, event.deadline()))
+                .build());
+    }
+
+    /**
+     * {@code SCHEDULE_RUN_MISSED}: the project's Owners and Admins, with the schedule name and missed run time. No
+     * job. A project deleted before the fan-out notifies no one.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyScheduleRunMissed(ScheduleRunMissedEvent event) {
+        Optional<ProjectModel> project = projectRepository.findByIdAndDeletedAtIsNull(event.projectId());
+        if (project.isEmpty()) {
+            log.info("Skipped {} notifications: project {} no longer exists",
+                    NotificationType.SCHEDULE_RUN_MISSED, event.projectId());
+            return List.of();
+        }
+        Set<UUID> ownerAndAdminIds = Set.copyOf(projectMemberRepository.findOwnerAndAdminUserIds(event.projectId()));
+        OrgScope scope = new OrgScope(project.get().getOrganisationId(), event.projectId(), ownerAndAdminIds);
+        return fanOut(NotificationType.SCHEDULE_RUN_MISSED, scope, FanOut.builder()
+                .candidates(ownerAndAdminIds)
+                .payload(NotificationPayload.forProject(project.get(), null)
+                        .put(NotificationPayload.SCHEDULE_NAME, event.scheduleName())
+                        .putInstant(NotificationPayload.MISSED_AT, event.missedAt()))
+                .build());
+    }
+
     /**
      * Loads the organisation and its members, then fans out the request built from them. Organisation-level
      * notifications have no project; only current members can receive them. An organisation deleted between the
@@ -397,21 +426,12 @@ public class NotificationService {
             log.info("Skipped {} notifications: job {} or its project no longer exists", type, jobId);
             return List.of();
         }
-        List<UUID> ownerAndAdminIds = projectMemberRepository.findOwnerAndAdminUserIds(project.get().getId());
-        JobScope scope = new JobScope(job.get(), project.get(), ownerAndAdminIds,
-                visibleUserIds(job.get(), ownerAndAdminIds));
+        UUID assigneeId = job.get().getAssignedTo();
+        boolean assigneeIsMember = assigneeId != null
+                && projectMemberRepository.existsByProjectIdAndUserId(job.get().getProjectId(), assigneeId);
+        JobScope scope = JobScope.of(job.get(), project.get(),
+                projectMemberRepository.findOwnerAndAdminUserIds(project.get().getId()), assigneeIsMember);
         return fanOut(type, scope, request.apply(scope));
-    }
-
-    // Who can currently see the job: Owners/Admins plus the assignee. Removing a member doesn't unassign their jobs,
-    // so the assignee only counts while still a project member.
-    private Set<UUID> visibleUserIds(JobModel job, List<UUID> ownerAndAdminIds) {
-        Set<UUID> visible = new LinkedHashSet<>(ownerAndAdminIds);
-        UUID assigneeId = job.getAssignedTo();
-        if (assigneeId != null && projectMemberRepository.existsByProjectIdAndUserId(job.getProjectId(), assigneeId)) {
-            visible.add(assigneeId);
-        }
-        return visible;
     }
 
     /**
@@ -450,10 +470,7 @@ public class NotificationService {
     }
 
     private String actorName(UUID actorId) {
-        if (actorId == null) {
-            return null;
-        }
-        return userRepository.findById(actorId).map(UserModel::getName).orElse(null);
+        return actorId == null ? null : userRepository.findById(actorId).map(UserModel::getName).orElse(null);
     }
 
     /** One action to fan out: who did it (null for system events), who might hear about it, and what to show. */

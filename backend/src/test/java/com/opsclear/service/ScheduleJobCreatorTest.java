@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.ScheduleAssigneeResponse;
+import com.opsclear.event.JobAssignedEvent;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
 import com.opsclear.model.FriendlyIdEntityType;
@@ -25,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +58,7 @@ class ScheduleJobCreatorTest {
     @Mock private ProjectRepository projectRepository;
     @Mock private ScheduleAssigneeRepository assigneeRepository;
     @Mock private FriendlyIdService friendlyIdService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private ScheduleJobCreator creator;
 
@@ -67,7 +71,7 @@ class ScheduleJobCreatorTest {
     void setUp() {
         creator = new ScheduleJobCreator(
                 jobRepository, jobStatusHistoryRepository, jobTemplateRepository,
-                organisationRepository, projectRepository, assigneeRepository, friendlyIdService);
+                organisationRepository, projectRepository, assigneeRepository, friendlyIdService, eventPublisher);
 
         projectId  = UUID.randomUUID();
         templateId = UUID.randomUUID();
@@ -202,11 +206,14 @@ class ScheduleJobCreatorTest {
                     .status(m.getStatus()).build();
         });
 
-        creator.createJob(schedule, Instant.parse("2026-05-11T09:00:00Z"), ZoneId.of("UTC"), createdBy);
+        JobModel saved = creator.createJob(
+                schedule, Instant.parse("2026-05-11T09:00:00Z"), ZoneId.of("UTC"), createdBy);
 
         ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
         verify(jobRepository).save(captor.capture());
         assertThat(captor.getValue().getAssignedTo()).isEqualTo(user2);
+        // Saved directly (not via JobService.create), so the creator publishes JOB_ASSIGNED itself, with no actor.
+        verify(eventPublisher).publishEvent(new JobAssignedEvent(saved.getId(), projectId, null, user2));
     }
 
     @Test
@@ -225,6 +232,7 @@ class ScheduleJobCreatorTest {
         ArgumentCaptor<JobModel> captor = ArgumentCaptor.forClass(JobModel.class);
         verify(jobRepository).save(captor.capture());
         assertThat(captor.getValue().getAssignedTo()).isNull();
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test

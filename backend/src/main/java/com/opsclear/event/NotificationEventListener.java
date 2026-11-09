@@ -100,4 +100,18 @@ public class NotificationEventListener {
     public void onSubscriptionPastDue(SubscriptionPastDueEvent event) {
         notificationService.notifySubscriptionPastDue(event);
     }
+
+    // --- Scheduled and system events (JOB-278) ---
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onDeadlineAlert(DeadlineAlertEvent event) {
+        notificationService.notifyDeadlineAlert(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onScheduleRunMissed(ScheduleRunMissedEvent event) {
+        notificationService.notifyScheduleRunMissed(event);
+    }
 }

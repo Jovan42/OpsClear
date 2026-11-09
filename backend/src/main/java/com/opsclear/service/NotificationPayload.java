@@ -5,6 +5,7 @@ import com.opsclear.model.JobModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectModel;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -40,6 +41,9 @@ final class NotificationPayload {
     static final String FEEDBACK_TITLE = "feedbackTitle";
     static final String OUTCOME = "outcome";
     static final String CREDIT_AMOUNT = "creditAmount";
+    // Scheduled and system types (JOB-278)
+    static final String SCHEDULE_NAME = "scheduleName";
+    static final String MISSED_AT = "missedAt";
 
     private final Map<String, Object> values = new LinkedHashMap<>();
 
@@ -77,6 +81,11 @@ final class NotificationPayload {
             values.put(key, value);
         }
         return this;
+    }
+
+    /** Adds an instant as an ISO-8601 string; a null value is skipped. */
+    NotificationPayload putInstant(String key, Instant value) {
+        return put(key, value != null ? value.toString() : null);
     }
 
     String toJson(ObjectMapper objectMapper) {
