@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { useCurrentOrg } from '../org/OrgContext';
 import { useOrgMembers } from '../org/useOrganisation';
 import type { NotificationListFilters, OrgRole } from '../../types';
+import { useNotificationStreamConnected } from './useNotificationStream';
 
 /** Page size of the Notifications page; the bell dropdown asks for its own 10. */
 export const NOTIFICATIONS_PAGE_SIZE = 20;
@@ -11,14 +12,15 @@ export const DROPDOWN_SIZE = 10;
 
 const ALL_FILTERS: NotificationListFilters = { unread: false, type: null };
 
-// No live push yet (Frontend 2, SSE). Until then these queries refetch on window focus
-// (off app-wide in main.tsx), and NotificationBell refreshes stale ones on navigation
-// and when the dropdown opens.
+// Kept current by the notification stream (useNotificationStream). Only while it's down
+// (backend restart, network loss, backing off) do these queries fall back to refetching
+// on window focus, which is off app-wide in main.tsx.
 export function useUnreadCount() {
+  const streamConnected = useNotificationStreamConnected();
   return useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: notificationsApi.unreadCount,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: !streamConnected,
   });
 }
 
@@ -29,11 +31,12 @@ export function useNotifications(
   size = NOTIFICATIONS_PAGE_SIZE,
   enabled = true,
 ) {
+  const streamConnected = useNotificationStreamConnected();
   return useQuery({
     queryKey: ['notifications', 'list', filters, page, size],
     queryFn: () => notificationsApi.list({ unread: filters.unread, type: filters.type, page, size }),
     placeholderData: keepPreviousData,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: !streamConnected,
     enabled,
   });
 }
