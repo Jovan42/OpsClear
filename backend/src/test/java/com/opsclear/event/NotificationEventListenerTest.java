@@ -1,6 +1,7 @@
 package com.opsclear.event;
 
 import com.opsclear.model.ApprovalStatus;
+import com.opsclear.model.DeadlineAlertKind;
 import com.opsclear.model.FeedbackStatus;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -135,5 +137,27 @@ class NotificationEventListenerTest {
         listener.onSubscriptionPastDue(event);
 
         verify(notificationService).notifySubscriptionPastDue(event);
+    }
+
+    @Test
+    @DisplayName("hands deadline alert events to the fan-out")
+    void onDeadlineAlert_shouldFanOut() {
+        DeadlineAlertEvent event = new DeadlineAlertEvent(UUID.randomUUID(), UUID.randomUUID(),
+                DeadlineAlertKind.OVERDUE, Instant.parse("2026-11-08T00:00:00Z"));
+
+        listener.onDeadlineAlert(event);
+
+        verify(notificationService).notifyDeadlineAlert(event);
+    }
+
+    @Test
+    @DisplayName("hands SCHEDULE_RUN_MISSED events to the fan-out")
+    void onScheduleRunMissed_shouldFanOut() {
+        ScheduleRunMissedEvent event = new ScheduleRunMissedEvent(UUID.randomUUID(), UUID.randomUUID(),
+                "Weekly report", Instant.parse("2026-11-09T09:00:00Z"));
+
+        listener.onScheduleRunMissed(event);
+
+        verify(notificationService).notifyScheduleRunMissed(event);
     }
 }

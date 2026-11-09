@@ -4,7 +4,9 @@ import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.JobTypeColor;
+import com.opsclear.model.ProjectStatus;
 import lombok.RequiredArgsConstructor;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -22,6 +24,7 @@ import java.util.UUID;
 import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.JOB_TYPES;
 import static com.opsclear.generated.jooq.Tables.MILESTONES;
+import static com.opsclear.generated.jooq.Tables.PROJECTS;
 import static com.opsclear.generated.jooq.Tables.PROJECT_BLOCK_REASONS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 import static java.util.List.of;
@@ -93,6 +96,31 @@ public class JobRepository {
         return selectWithAssignee()
                 .where(JOBS.ID.in(ids))
                 .and(JOBS.DELETED_AT.isNull())
+                .fetch()
+                .map(this::toModel);
+    }
+
+    /** Open jobs (see {@link #findOpenInActiveProjects}) whose deadline is in {@code [from, to)}. */
+    public List<JobModel> findOpenInActiveProjectsWithDeadlineBetween(Instant from, Instant to) {
+        return findOpenInActiveProjects(JOBS.DEADLINE.ge(toLocalDateTime(from))
+                .and(JOBS.DEADLINE.lt(toLocalDateTime(to))));
+    }
+
+    /** Open jobs (see {@link #findOpenInActiveProjects}) whose deadline is before {@code before}. */
+    public List<JobModel> findOpenInActiveProjectsWithDeadlineBefore(Instant before) {
+        return findOpenInActiveProjects(JOBS.DEADLINE.lt(toLocalDateTime(before)));
+    }
+
+    // Not Completed, not deleted, in a project that is neither completed nor deleted (deadline alerts, ADR-0051).
+    private List<JobModel> findOpenInActiveProjects(Condition deadline) {
+        return selectWithAssignee()
+                .join(PROJECTS).on(JOBS.PROJECT_ID.eq(PROJECTS.ID))
+                .where(deadline)
+                .and(JOBS.STATUS.ne(JobStatus.COMPLETED.name()))
+                .and(JOBS.DELETED_AT.isNull())
+                .and(PROJECTS.STATUS.ne(ProjectStatus.COMPLETED.name()))
+                .and(PROJECTS.DELETED_AT.isNull())
+                .orderBy(JOBS.DEADLINE.asc(), JOBS.ID.asc())
                 .fetch()
                 .map(this::toModel);
     }

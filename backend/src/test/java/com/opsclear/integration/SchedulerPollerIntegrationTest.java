@@ -13,6 +13,7 @@ import com.opsclear.repository.FriendlyIdRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.JobTemplateRepository;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
@@ -21,6 +22,7 @@ import com.opsclear.repository.ScheduleAssigneeRepository;
 import com.opsclear.repository.ScheduleMissedRunRepository;
 import com.opsclear.repository.UserRepository;
 import com.opsclear.scheduler.SchedulerPoller;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,6 +62,7 @@ class SchedulerPollerIntegrationTest {
     @Autowired private FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private ScheduleMissedRunRepository missedRunRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private UUID ownerId;
     private UUID projectId;
@@ -68,6 +71,7 @@ class SchedulerPollerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        cleanUpNotifications();
         assigneeRepository.deleteAll();
         jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
@@ -99,6 +103,13 @@ class SchedulerPollerIntegrationTest {
                 .title("Deploy {{date}}").description("Monthly run: {{month}} {{year}} #{{occurrence}}")
                 .assigneeMode("NONE").createdBy(ownerId).build());
         templateId = template.getId();
+    }
+
+    // Missed runs and assigned schedule jobs create notifications (JOB-278), which reference users and projects that
+    // other integration classes delete.
+    @AfterEach
+    void cleanUpNotifications() {
+        notificationRepository.deleteAll();
     }
 
     @Test
