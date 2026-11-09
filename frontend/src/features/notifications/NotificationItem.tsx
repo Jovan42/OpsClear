@@ -9,7 +9,7 @@ import {
   isUrgent,
   notificationTarget,
 } from './notificationContent';
-import { useMarkRead } from './useNotifications';
+import { useMarkRead, useViewerOrgRole } from './useNotifications';
 
 interface NotificationItemProps {
   notification: NotificationResponse;
@@ -28,8 +28,9 @@ export default function NotificationItem({ notification: n, onNavigate, showRead
   const { t, i18n } = useTranslation(['notifications', 'shared2']);
   const { mutate: markRead, isPending } = useMarkRead();
 
-  const content = buildNotificationContent(n, t, i18n.language);
-  const target = notificationTarget(n);
+  const viewerOrgRole = useViewerOrgRole();
+  const content = buildNotificationContent(n, t, i18n.language, viewerOrgRole);
+  const target = notificationTarget(n, viewerOrgRole);
   const urgent = isUrgent(n.type);
   const Icon = NOTIFICATION_ICONS[n.type];
 
@@ -73,7 +74,10 @@ export default function NotificationItem({ notification: n, onNavigate, showRead
         ))}
       </div>
       {!n.read && (
-        <span className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0" aria-label={t('notifications:unreadMarker')} />
+        <span className="mt-2 shrink-0">
+          <span className="block w-2 h-2 rounded-full bg-blue-500" aria-hidden />
+          <span className="sr-only">{t('notifications:unreadMarker')}</span>
+        </span>
       )}
     </>
   );

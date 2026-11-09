@@ -42,6 +42,14 @@ export default function NotificationsPage() {
   const items = data?.items ?? [];
   const totalPages = data?.totalPages ?? 0;
 
+  // A page can empty under the user (e.g. marking the last unread items read with the
+  // Unread filter on page 2+). Step back to the last page that still has items. Set
+  // during render (React's "adjust state on change" pattern); it stops once page is 0
+  // or the fetched page has items.
+  if (data && !isPlaceholderData && items.length === 0 && page > 0) {
+    setPage(Math.max(0, Math.min(page - 1, totalPages - 1)));
+  }
+
   function updateFilters(next: Partial<NotificationListFilters>) {
     setFilters((f) => ({ ...f, ...next }));
     setPage(0);

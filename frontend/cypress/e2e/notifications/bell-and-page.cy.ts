@@ -193,7 +193,14 @@ describe('Notification bell and Notifications page', () => {
     cy.loginAs(email);
     cy.visit('/notifications');
     cy.contains("Couldn't load notifications.").should('be.visible');
-    cy.contains('button', 'Try again').should('be.visible');
+
+    // "Remove" the stub: a later intercept takes precedence, so this lets the real
+    // request through. Retrying then loads the (empty) list.
+    cy.intercept({ method: 'GET', pathname: '/api/notifications' }, (req) => req.continue()).as('listOk');
+    cy.contains('button', 'Try again').click();
+    cy.wait('@listOk').its('response.statusCode').should('eq', 200);
+    cy.contains("Couldn't load notifications.").should('not.exist');
+    cy.contains('No notifications yet.').should('be.visible');
 
     cleanUp(email);
   });

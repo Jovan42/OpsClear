@@ -101,6 +101,7 @@
     "priority": "Priority: {{priority}}",
     "reason": "Reason: {{reason}}",
     "missedAt": "Missed run: {{date}}",
-    "updatePayment": "Update the payment method in billing to keep access."
+    "updatePayment": "Update the payment method in billing to keep access.",
+    "askOwnerToUpdatePayment": "Ask an organisation Owner to update the payment method."
   }
 }

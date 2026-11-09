@@ -101,6 +101,7 @@
     "priority": "Prioritet: {{priority}}",
     "reason": "Razlog: {{reason}}",
     "missedAt": "Propušteno pokretanje: {{date}}",
-    "updatePayment": "Ažurirajte način plaćanja u odeljku za naplatu da biste zadržali pristup."
+    "updatePayment": "Ažurirajte način plaćanja u odeljku za naplatu da biste zadržali pristup.",
+    "askOwnerToUpdatePayment": "Zamolite vlasnika organizacije da ažurira način plaćanja."
   }
 }

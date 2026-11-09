@@ -24,6 +24,7 @@ import type {
   JobStatus,
   NotificationResponse,
   NotificationType,
+  OrgRole,
 } from '../../types';
 
 // A Record keyed by the union makes TypeScript fail the build if a type is added to
@@ -89,8 +90,9 @@ export const NOTIFICATION_ICONS: Record<NotificationType, LucideIcon> = {
 /**
  * Where clicking the notification goes, or null when it isn't clickable (`JOB_DELETED`,
  * whose job is gone, or a notification missing the IDs its target needs).
+ * `viewerOrgRole` matters for `SUBSCRIPTION_PAST_DUE`: only Owners see the billing section.
  */
-export function notificationTarget(n: NotificationResponse): string | null {
+export function notificationTarget(n: NotificationResponse, viewerOrgRole: OrgRole | null = null): string | null {
   // Org-level types have neither key, so both stay null for them.
   const snapshot = n.payload as JobNotificationPayload;
   const projectId = n.projectFriendlyId ?? snapshot.projectFriendlyId ?? null;
@@ -121,7 +123,8 @@ export function notificationTarget(n: NotificationResponse): string | null {
     case 'FEEDBACK_RESOLVED':
       return '/feedback';
     case 'SUBSCRIPTION_PAST_DUE':
-      return '/org/settings#billing';
+      // Admins get it too, but OrgSettingsPage renders billing for Owners only.
+      return viewerOrgRole === 'OWNER' ? '/org/settings#billing' : '/org/settings';
   }
 }
 
@@ -201,6 +204,7 @@ export function buildNotificationContent(
   n: NotificationResponse,
   t: TFunction<['notifications', 'shared2']>,
   language: string,
+  viewerOrgRole: OrgRole | null = null,
 ): NotificationContent {
   const locale = intlLocale(language);
   const p = n.payload;
@@ -329,7 +333,10 @@ export function buildNotificationContent(
     }
     case 'SUBSCRIPTION_PAST_DUE':
       text = t('notifications:text.SUBSCRIPTION_PAST_DUE', { org: org ?? t('notifications:fallback.org') });
-      details.push(t('notifications:detail.updatePayment'));
+      // Only an Owner can change billing; anyone else is told to ask one.
+      details.push(viewerOrgRole === 'OWNER'
+        ? t('notifications:detail.updatePayment')
+        : t('notifications:detail.askOwnerToUpdatePayment'));
       break;
   }
 

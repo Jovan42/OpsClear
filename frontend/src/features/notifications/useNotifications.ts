@@ -1,6 +1,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi } from '../../api/notifications';
-import type { NotificationListFilters } from '../../types';
+import { useAuth } from '../../auth/AuthContext';
+import { useCurrentOrg } from '../org/OrgContext';
+import { useOrgMembers } from '../org/useOrganisation';
+import type { NotificationListFilters, OrgRole } from '../../types';
 
 /** Page size of the Notifications page; the bell dropdown asks for its own 10. */
 export const NOTIFICATIONS_PAGE_SIZE = 20;
@@ -57,4 +60,15 @@ export function useMarkAllRead() {
     mutationFn: notificationsApi.markAllRead,
     onSuccess: invalidate,
   });
+}
+
+/**
+ * The viewer's role in their organisation, read the same way as UserMenu (members list,
+ * already cached by the header). Null while loading or without an org.
+ */
+export function useViewerOrgRole(): OrgRole | null {
+  const { org } = useCurrentOrg();
+  const { userId } = useAuth();
+  const { data: members = [] } = useOrgMembers(org?.id ?? null);
+  return members.find((m) => m.userId === userId)?.role ?? null;
 }
