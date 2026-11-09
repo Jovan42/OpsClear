@@ -20,8 +20,10 @@ import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.MilestoneRepository;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -64,14 +66,22 @@ class JobIntegrationTest {
     @Autowired private OrganisationRepository organisationRepository;
     @Autowired private com.opsclear.repository.FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private UUID ownerId;
     private UUID memberId;
     private UUID projectId;
     private UUID orgId;
 
+    // Job changes create notifications (JOB-277): leave nothing behind for other classes.
+    @AfterEach
+    void deleteNotifications() {
+        notificationRepository.deleteAll();
+    }
+
     @BeforeEach
     void setUp() {
+        notificationRepository.deleteAll();
         jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
         blockReasonRepository.deleteAll();

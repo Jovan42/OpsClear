@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +68,7 @@ class JobServiceTest {
     @Mock private BlockReasonService blockReasonService;
     @Mock private OrganisationRepository organisationRepository;
     @Mock private FriendlyIdService friendlyIdService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private JobService jobService;
 
@@ -79,7 +81,7 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, jobTypeRepository, blockReasonService, organisationRepository, friendlyIdService);
+        jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, jobTypeRepository, blockReasonService, organisationRepository, friendlyIdService, eventPublisher);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();

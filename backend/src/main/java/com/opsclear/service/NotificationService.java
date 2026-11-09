@@ -3,11 +3,18 @@ package com.opsclear.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.event.ApprovalDecidedEvent;
 import com.opsclear.event.ApprovalRequestedEvent;
+import com.opsclear.event.BlockerClearedEvent;
+import com.opsclear.event.JobAssignedEvent;
+import com.opsclear.event.JobBlockedEvent;
+import com.opsclear.event.JobDeletedEvent;
+import com.opsclear.event.JobStatusChangedEvent;
+import com.opsclear.event.JobUpdatedEvent;
 import com.opsclear.event.NoteAddedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobModel;
+import com.opsclear.model.JobStatus;
 import com.opsclear.model.NotificationModel;
 import com.opsclear.model.NotificationPage;
 import com.opsclear.model.NotificationType;
@@ -29,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -161,13 +169,126 @@ public class NotificationService {
         });
     }
 
+    // --- Job lifecycle fan-out (JOB-277) ---
+
+    /**
+     * {@code JOB_ASSIGNED}: the new assignee, only while they're still the job's assignee (a later reassignment sends
+     * its own event). The payload carries the deadline and priority, since an edit that changes the assignee and the
+     * deadline sends only this type.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyJobAssigned(JobAssignedEvent event) {
+        return fanOutForJob(NotificationType.JOB_ASSIGNED, event.jobId(), scope -> FanOut.builder()
+                .actorId(event.actorId())
+                .candidates(event.assigneeId().equals(scope.job().getAssignedTo())
+                        ? List.of(event.assigneeId()) : List.of())
+                .payload(scope.payload(actorName(event.actorId()))
+                        .put(NotificationPayload.DEADLINE, isoInstant(scope.job().getDeadline()))
+                        .put(NotificationPayload.PRIORITY, scope.job().getPriority()))
+                .build());
+    }
+
+    /** {@code JOB_STATUS_CHANGED}: the assignee and the project's Owners/Admins, with the from/to status. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyJobStatusChanged(JobStatusChangedEvent event) {
+        return fanOutForJob(NotificationType.JOB_STATUS_CHANGED, event.jobId(), scope -> FanOut.builder()
+                .actorId(event.actorId())
+                .candidates(assigneeAndOwnersAndAdmins(scope))
+                .payload(scope.payload(actorName(event.actorId()))
+                        .put(NotificationPayload.FROM_STATUS, event.fromStatus())
+                        .put(NotificationPayload.TO_STATUS, event.toStatus()))
+                .build());
+    }
+
+    /** {@code JOB_BLOCKED}: the assignee and the project's Owners/Admins, with the block reason. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyJobBlocked(JobBlockedEvent event) {
+        return fanOutForJob(NotificationType.JOB_BLOCKED, event.jobId(), scope -> FanOut.builder()
+                .actorId(event.actorId())
+                .candidates(assigneeAndOwnersAndAdmins(scope))
+                .payload(scope.payload(actorName(event.actorId()))
+                        .put(NotificationPayload.BLOCK_REASON, event.blockReason()))
+                .build());
+    }
+
+    /**
+     * {@code BLOCKER_CLEARED}: the assignee of each waiting job that isn't Completed, one notification per waiting
+     * job (about that job), with the blocker's friendly ID and title. Nothing is sent if the blocker was deleted or
+     * reopened before the fan-out.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyBlockerCleared(BlockerClearedEvent event) {
+        Optional<JobModel> blocker = jobRepository.findByIdAndDeletedAtIsNull(event.blockerJobId())
+                .filter(j -> j.getStatus() == JobStatus.COMPLETED);
+        if (blocker.isEmpty()) {
+            log.info("Skipped BLOCKER_CLEARED notifications: job {} is no longer completed", event.blockerJobId());
+            return List.of();
+        }
+        String actorName = actorName(event.actorId());
+        List<NotificationModel> saved = new ArrayList<>();
+        for (UUID waitingJobId : event.waitingJobIds()) {
+            saved.addAll(fanOutForJob(NotificationType.BLOCKER_CLEARED, waitingJobId, scope -> FanOut.builder()
+                    .actorId(event.actorId())
+                    .candidates(scope.job().getStatus() == JobStatus.COMPLETED
+                            ? List.of() : Collections.singletonList(scope.job().getAssignedTo()))
+                    .payload(scope.payload(actorName)
+                            .put(NotificationPayload.BLOCKER_JOB_FRIENDLY_ID, blocker.get().getFriendlyId())
+                            .put(NotificationPayload.BLOCKER_JOB_TITLE, blocker.get().getTitle()))
+                    .build()));
+        }
+        return saved;
+    }
+
+    /** {@code JOB_UPDATED}: the assignee, with the changed field(s) and their new values. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyJobUpdated(JobUpdatedEvent event) {
+        return fanOutForJob(NotificationType.JOB_UPDATED, event.jobId(), scope -> FanOut.builder()
+                .actorId(event.actorId())
+                .candidates(Collections.singletonList(scope.job().getAssignedTo()))
+                .payload(scope.payload(actorName(event.actorId()))
+                        .put(NotificationPayload.CHANGED_FIELDS, event.changedFields())
+                        .put(NotificationPayload.DEADLINE, isoInstant(event.deadline()))
+                        .put(NotificationPayload.PRIORITY, event.priority()))
+                .build());
+    }
+
+    /**
+     * {@code JOB_DELETED}: the (soft-deleted) job's assignee. Unlike the other types it reads the deleted job, so the
+     * payload snapshot lets the notification render after deletion. A deleted project notifies no one.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyJobDeleted(JobDeletedEvent event) {
+        return fanOutForJob(NotificationType.JOB_DELETED, event.jobId(), jobRepository.findById(event.jobId()),
+                scope -> FanOut.builder()
+                        .actorId(event.actorId())
+                        .candidates(Collections.singletonList(scope.job().getAssignedTo()))
+                        .payload(scope.payload(actorName(event.actorId())))
+                        .build());
+    }
+
+    // The assignee (null when unassigned, dropped by the pipeline) plus the project's Owners and Admins.
+    private static List<UUID> assigneeAndOwnersAndAdmins(JobScope scope) {
+        List<UUID> candidates = new ArrayList<>();
+        candidates.add(scope.job().getAssignedTo());
+        candidates.addAll(scope.ownerAndAdminIds());
+        return candidates;
+    }
+
+    private static String isoInstant(Instant instant) {
+        return instant != null ? instant.toString() : null;
+    }
+
     /**
      * Loads the job, its project and the project's Owners/Admins, then fans out the request built from them. A job
      * or project deleted between the action and the fan-out notifies no one.
      */
     private List<NotificationModel> fanOutForJob(NotificationType type, UUID jobId,
                                                  Function<JobScope, FanOut> request) {
-        Optional<JobModel> job = jobRepository.findByIdAndDeletedAtIsNull(jobId);
+        return fanOutForJob(type, jobId, jobRepository.findByIdAndDeletedAtIsNull(jobId), request);
+    }
+
+    private List<NotificationModel> fanOutForJob(NotificationType type, UUID jobId, Optional<JobModel> job,
+                                                 Function<JobScope, FanOut> request) {
         Optional<ProjectModel> project =
                 job.flatMap(j -> projectRepository.findByIdAndDeletedAtIsNull(j.getProjectId()));
         if (project.isEmpty()) {

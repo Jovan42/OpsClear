@@ -46,6 +46,16 @@ public class JobRelationshipRepository {
                         .and(JOB_RELATIONSHIPS.TYPE.eq(type.name())));
     }
 
+    /** IDs of the jobs that have a {@code type} relationship to {@code targetJobId} (e.g. jobs BLOCKED_BY it). */
+    public List<UUID> findSourceJobIdsByTargetJobIdAndType(UUID targetJobId, JobRelationshipType type) {
+        return dsl.select(JOB_RELATIONSHIPS.SOURCE_JOB_ID)
+                .from(JOB_RELATIONSHIPS)
+                .where(JOB_RELATIONSHIPS.TARGET_JOB_ID.eq(targetJobId))
+                .and(JOB_RELATIONSHIPS.TYPE.eq(type.name()))
+                .orderBy(JOB_RELATIONSHIPS.CREATED_AT)
+                .fetch(JOB_RELATIONSHIPS.SOURCE_JOB_ID);
+    }
+
     public JobRelationshipModel save(JobRelationshipModel model) {
         UUID id = dsl.insertInto(JOB_RELATIONSHIPS)
                 .set(JOB_RELATIONSHIPS.SOURCE_JOB_ID, model.getSourceJobId())
