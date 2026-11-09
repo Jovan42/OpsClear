@@ -6,6 +6,7 @@ import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
 import com.opsclear.repository.MilestoneRepository;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.ProjectMemberRepository;
@@ -13,6 +14,7 @@ import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,12 +54,20 @@ class FriendlyIdIntegrationTest {
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private UUID userId;
     private UUID projectId;
 
+    // Job changes create notifications (JOB-277): leave nothing behind for other classes.
+    @AfterEach
+    void deleteNotifications() {
+        notificationRepository.deleteAll();
+    }
+
     @BeforeEach
     void setUp() throws Exception {
+        notificationRepository.deleteAll();
         jobStatusHistoryRepository.deleteAll();
         jobRepository.deleteAll();
         blockReasonRepository.deleteAll();

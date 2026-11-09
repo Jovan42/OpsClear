@@ -2,6 +2,12 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateJobRequest;
 import com.opsclear.dto.UpdateJobRequest;
+import com.opsclear.event.BlockerClearedEvent;
+import com.opsclear.event.JobAssignedEvent;
+import com.opsclear.event.JobBlockedEvent;
+import com.opsclear.event.JobDeletedEvent;
+import com.opsclear.event.JobStatusChangedEvent;
+import com.opsclear.event.JobUpdatedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
@@ -16,6 +22,7 @@ import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobRelationshipDirection;
 import com.opsclear.model.JobRelationshipEntry;
 import com.opsclear.model.JobRelationshipModel;
+import com.opsclear.model.JobRelationshipType;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -32,12 +39,15 @@ import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -58,6 +68,7 @@ public class JobService {
     private final BlockReasonService blockReasonService;
     private final OrganisationRepository organisationRepository;
     private final FriendlyIdService friendlyIdService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
@@ -89,6 +100,10 @@ public class JobService {
         JobModel saved = jobRepository.save(job);
         jobStatusHistoryRepository.insert(saved.getId(), null, JobStatus.NEW.name(), requesterId, null);
         log.info("Created job '{}' in project {} by user {}", saved.getTitle(), projectId, requesterId);
+        if (saved.getAssignedTo() != null) {
+            eventPublisher.publishEvent(new JobAssignedEvent(saved.getId(), projectId, requesterId,
+                    saved.getAssignedTo()));
+        }
         return saved;
     }
 
@@ -171,6 +186,9 @@ public class JobService {
         requireMilestoneInProject(request.getMilestoneId(), projectId);
         requireTypeInProject(request.getTypeId(), projectId);
 
+        UUID oldAssignee = job.getAssignedTo();
+        Instant oldDeadline = job.getDeadline();
+        JobPriority oldPriority = job.getPriority();
         job.setTitle(request.getTitle());
         job.setDescription(request.getDescription());
         job.setClient(request.getClient());
@@ -184,6 +202,7 @@ public class JobService {
 
         JobModel updated = jobRepository.save(job);
         log.info("Updated job '{}' in project {}", jobId, projectId);
+        publishUpdateEvent(updated, oldAssignee, oldDeadline, oldPriority, requesterId);
         return updated;
     }
 
@@ -220,6 +239,7 @@ public class JobService {
         JobModel updated = jobRepository.save(job);
         jobStatusHistoryRepository.insert(jobId, oldStatus.name(), newStatus.name(), requesterId, historyBlockReason);
         log.info("Job {} status changed from {} to {} by user {}", jobId, oldStatus, newStatus, requesterId);
+        publishStatusEvents(projectId, jobId, oldStatus, newStatus, historyBlockReason, requesterId);
         return updated;
     }
 
@@ -234,6 +254,55 @@ public class JobService {
         job.softDelete();
         jobRepository.save(job);
         log.info("Soft-deleted job '{}' from project {}", jobId, projectId);
+        eventPublisher.publishEvent(new JobDeletedEvent(jobId, projectId, requesterId));
+    }
+
+    // --- Notification events (ADR-0051) ---
+
+    // A changed assignee sends only JOB_ASSIGNED (its payload carries the deadline); otherwise a changed deadline or
+    // priority sends JOB_UPDATED. Other field edits, and unassigning, send nothing.
+    private void publishUpdateEvent(JobModel updated, UUID oldAssignee, Instant oldDeadline,
+                                    JobPriority oldPriority, UUID requesterId) {
+        UUID newAssignee = updated.getAssignedTo();
+        if (!Objects.equals(oldAssignee, newAssignee)) {
+            if (newAssignee != null) {
+                eventPublisher.publishEvent(new JobAssignedEvent(updated.getId(), updated.getProjectId(),
+                        requesterId, newAssignee));
+            }
+            return;
+        }
+        List<String> changedFields = new ArrayList<>();
+        boolean deadlineChanged = !Objects.equals(oldDeadline, updated.getDeadline());
+        boolean priorityChanged = oldPriority != updated.getPriority();
+        if (deadlineChanged) {
+            changedFields.add(JobUpdatedEvent.DEADLINE);
+        }
+        if (priorityChanged) {
+            changedFields.add(JobUpdatedEvent.PRIORITY);
+        }
+        if (!changedFields.isEmpty()) {
+            eventPublisher.publishEvent(new JobUpdatedEvent(updated.getId(), updated.getProjectId(), requesterId,
+                    changedFields, deadlineChanged ? updated.getDeadline() : null,
+                    priorityChanged ? updated.getPriority() : null));
+        }
+    }
+
+    // Blocked sends only JOB_BLOCKED; any other status sends JOB_STATUS_CHANGED, and Completed also sends
+    // BLOCKER_CLEARED when other jobs are BLOCKED_BY this one.
+    private void publishStatusEvents(UUID projectId, UUID jobId, JobStatus oldStatus, JobStatus newStatus,
+                                     String blockReason, UUID requesterId) {
+        if (newStatus == JobStatus.BLOCKED) {
+            eventPublisher.publishEvent(new JobBlockedEvent(jobId, projectId, requesterId, blockReason));
+            return;
+        }
+        eventPublisher.publishEvent(new JobStatusChangedEvent(jobId, projectId, requesterId, oldStatus, newStatus));
+        if (newStatus == JobStatus.COMPLETED) {
+            List<UUID> waitingJobIds = jobRelationshipRepository.findSourceJobIdsByTargetJobIdAndType(
+                    jobId, JobRelationshipType.BLOCKED_BY);
+            if (!waitingJobIds.isEmpty()) {
+                eventPublisher.publishEvent(new BlockerClearedEvent(jobId, projectId, requesterId, waitingJobIds));
+            }
+        }
     }
 
     // --- Status transition rules ---
