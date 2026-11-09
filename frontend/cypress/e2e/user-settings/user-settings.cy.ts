@@ -21,7 +21,7 @@ describe('User Settings & Preferences', () => {
     createOrgWithSubscription(email, 'Reach Corp', uniqueSlug());
     cy.loginAs(email);
     cy.visit('/projects');
-    cy.get('[aria-haspopup="true"]').click();
+    cy.get('button[aria-label="User menu"]').click();
     cy.contains('Account settings').click();
     cy.url().should('include', '/settings');
     cy.contains('Theme').should('be.visible');

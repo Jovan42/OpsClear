@@ -94,7 +94,7 @@ describe('Login', () => {
   it('logout clears the session; a protected route afterward redirects to login again', () => {
     loginViaUi('testuser@example.com', 'password123');
     cy.visit('/projects');
-    cy.get('[aria-haspopup="true"]').click();
+    cy.get('button[aria-label="User menu"]').click();
     cy.contains('Sign out').click();
     cy.visit('/projects');
     cy.url().should('include', 'localhost:5173/');

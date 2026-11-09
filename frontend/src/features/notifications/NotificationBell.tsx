@@ -62,7 +62,7 @@ export default function NotificationBell() {
         className="relative p-1.5 text-white/80 hover:text-white transition-colors cursor-pointer"
         aria-label={unreadCount > 0 ? t('bell.labelUnread', { count: unreadCount }) : t('bell.label')}
         aria-expanded={open}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
         data-testid="notification-bell"
       >
         <Bell className="w-5 h-5" strokeWidth={2} aria-hidden />
@@ -79,6 +79,8 @@ export default function NotificationBell() {
       {open && (
         <div
           className="fixed inset-x-2 top-14 sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-96 max-h-[75vh] flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 overflow-hidden"
+          role="dialog"
+          aria-label={t('title')}
           data-testid="notification-dropdown"
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
