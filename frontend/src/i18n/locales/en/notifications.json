@@ -1,0 +1,106 @@
+{
+  "title": "Notifications",
+  "system": "OpsClear",
+  "markAllRead": "Mark all as read",
+  "markRead": "Mark as read",
+  "markUnread": "Mark as unread",
+  "viewAll": "View all",
+  "unreadMarker": "Unread",
+  "notClickable": "This job was deleted",
+  "loadError": "Couldn't load notifications.",
+  "bell": {
+    "label": "Notifications",
+    "labelUnread": "Notifications, {{count}} unread"
+  },
+  "empty": {
+    "all": "No notifications yet.",
+    "unread": "No unread notifications.",
+    "type": "No notifications of this type."
+  },
+  "filter": {
+    "all": "All",
+    "unread": "Unread",
+    "typeLabel": "Filter by type",
+    "allTypes": "All types"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{total}}"
+  },
+  "fallback": {
+    "someone": "Someone",
+    "job": "a job",
+    "project": "a project",
+    "org": "your organisation",
+    "feedback": "your feedback"
+  },
+  "type": {
+    "APPROVAL_REQUESTED": "Approval requested",
+    "APPROVAL_DECIDED": "Approval decided",
+    "JOB_ASSIGNED": "Job assigned",
+    "JOB_STATUS_CHANGED": "Status changed",
+    "JOB_BLOCKED": "Job blocked",
+    "BLOCKER_CLEARED": "Blocker cleared",
+    "JOB_UPDATED": "Deadline or priority changed",
+    "JOB_DELETED": "Job deleted",
+    "NOTE_ADDED": "Note added",
+    "JOB_DEADLINE_SOON": "Deadline tomorrow",
+    "JOB_OVERDUE": "Job overdue",
+    "PROJECT_MEMBER_ADDED": "Added to project",
+    "SCHEDULE_RUN_MISSED": "Schedule run missed",
+    "INVITE_ACCEPTED": "Invite accepted",
+    "FEEDBACK_RESOLVED": "Feedback resolved",
+    "SUBSCRIPTION_PAST_DUE": "Subscription past due"
+  },
+  "text": {
+    "APPROVAL_REQUESTED": "Requested approval on {{job}}",
+    "APPROVAL_DECIDED": {
+      "approved": "Approved your request on {{job}}",
+      "rejected": "Rejected your request on {{job}}",
+      "decided": "Decided your request on {{job}}"
+    },
+    "JOB_ASSIGNED": "Assigned you to {{job}}",
+    "JOB_STATUS_CHANGED": {
+      "fromTo": "Moved {{job}} from {{from}} to {{to}}",
+      "to": "Moved {{job}} to {{to}}",
+      "generic": "Changed the status of {{job}}"
+    },
+    "JOB_BLOCKED": "Blocked {{job}}",
+    "BLOCKER_CLEARED": {
+      "named": "{{blocker}} is completed, so {{job}} is no longer waiting on it",
+      "generic": "A job blocking {{job}} is completed"
+    },
+    "JOB_UPDATED": "Updated {{job}}",
+    "JOB_DELETED": "Deleted {{job}}",
+    "NOTE_ADDED": "Added a note on {{job}}",
+    "JOB_DEADLINE_SOON": "{{job}} is due tomorrow",
+    "JOB_OVERDUE": "{{job}} is overdue",
+    "PROJECT_MEMBER_ADDED": {
+      "withRole": "Added you to {{project}} as {{role}}",
+      "generic": "Added you to {{project}}"
+    },
+    "SCHEDULE_RUN_MISSED": {
+      "named": "Schedule \"{{schedule}}\" missed a run in {{project}}",
+      "generic": "A recurring schedule missed a run in {{project}}"
+    },
+    "INVITE_ACCEPTED": "Accepted your invite to {{org}}",
+    "FEEDBACK_RESOLVED": {
+      "creditedAmount": "\"{{title}}\" earned a credit of {{amount}}",
+      "credited": "\"{{title}}\" earned a credit",
+      "declined": "\"{{title}}\" was reviewed and declined",
+      "generic": "\"{{title}}\" was reviewed"
+    },
+    "SUBSCRIPTION_PAST_DUE": "The subscription payment for {{org}} is past due"
+  },
+  "detail": {
+    "due": "Due {{date}}",
+    "wasDue": "Was due {{date}}",
+    "newDeadline": "New deadline: {{date}}",
+    "deadlineRemoved": "Deadline removed",
+    "priority": "Priority: {{priority}}",
+    "reason": "Reason: {{reason}}",
+    "missedAt": "Missed run: {{date}}",
+    "updatePayment": "Update the payment method in billing to keep access."
+  }
+}

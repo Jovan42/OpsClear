@@ -28,6 +28,7 @@ import SuperAdminPricingPage from './features/superAdmin/SuperAdminPricingPage';
 import SuperAdminFeedbackPage from './features/superAdmin/SuperAdminFeedbackPage';
 import FeedbackPage from './features/feedback/FeedbackPage';
 import OverviewPage from './features/overview/OverviewPage';
+import NotificationsPage from './features/notifications/NotificationsPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage />, errorElement: <RouteErrorPage /> },
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
               { path: 'org/invites', element: <OrgInvitesPage /> },
               { path: 'feedback', element: <FeedbackPage /> },
               { path: 'overview', element: <OverviewPage /> },
+              { path: 'notifications', element: <NotificationsPage /> },
               { path: 'design', element: <DesignPage /> },
               { path: '*', element: <Navigate to="/projects" replace /> },
             ],

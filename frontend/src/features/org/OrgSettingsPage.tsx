@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,6 +45,15 @@ export default function OrgSettingsPage() {
   const [slugApiError, setSlugApiError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [billingHistoryOpen, setBillingHistoryOpen] = useState(false);
+
+  // ADR-0051: the SUBSCRIPTION_PAST_DUE notification links to `#billing`. The section
+  // only renders once the org and the caller's role have loaded, so wait for those.
+  const location = useLocation();
+  const billingReady = Boolean(org) && isOwner;
+  useEffect(() => {
+    if (location.hash !== '#billing' || !billingReady) return;
+    document.getElementById('billing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [location.hash, location.key, billingReady]);
 
   const { data: orgTemplates = [], isLoading: templatesLoading } = useOrgTemplates(ctxOrg?.id ?? null);
   const deleteOrgTemplate = useDeleteOrgTemplate(ctxOrg?.id ?? '');
@@ -329,7 +338,7 @@ export default function OrgSettingsPage() {
 
       {/* ── Subscription ── */}
       {isOwner && (
-        <section>
+        <section id="billing" className="scroll-mt-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
               {t('org:subscriptionHeading')}

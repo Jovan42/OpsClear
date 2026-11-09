@@ -535,3 +535,164 @@ export interface StatsResponse {
   /** Only for Owner/Admin without a memberId filter; null otherwise. */
   members: StatsMember[] | null;
 }
+
+// ---- Notifications (ADR-0051) ----
+
+/** The 16 notification types; mirrors the backend `NotificationType` enum. */
+export type NotificationType =
+  | 'APPROVAL_REQUESTED'
+  | 'APPROVAL_DECIDED'
+  | 'JOB_ASSIGNED'
+  | 'JOB_STATUS_CHANGED'
+  | 'JOB_BLOCKED'
+  | 'BLOCKER_CLEARED'
+  | 'JOB_UPDATED'
+  | 'JOB_DELETED'
+  | 'NOTE_ADDED'
+  | 'JOB_DEADLINE_SOON'
+  | 'JOB_OVERDUE'
+  | 'PROJECT_MEMBER_ADDED'
+  | 'SCHEDULE_RUN_MISSED'
+  | 'INVITE_ACCEPTED'
+  | 'FEEDBACK_RESOLVED'
+  | 'SUBSCRIPTION_PAST_DUE';
+
+// Payload snapshots, keys from the backend `NotificationPayload`. The backend leaves out
+// null values, so every key is optional and the renderer must handle any of them missing.
+
+/** Shared by every job-related type. */
+export interface JobNotificationPayload {
+  jobFriendlyId?: string;
+  jobTitle?: string;
+  projectFriendlyId?: string;
+  projectName?: string;
+  /** Absent for system events (shown as "OpsClear"). */
+  actorName?: string;
+}
+
+/** Project-level types without a job. */
+export interface ProjectNotificationPayload {
+  projectFriendlyId?: string;
+  projectName?: string;
+  actorName?: string;
+}
+
+/** Organisation-level types (no project). */
+export interface OrgNotificationPayload {
+  orgName?: string;
+  actorName?: string;
+}
+
+export interface ApprovalRequestedPayload extends JobNotificationPayload {
+  description?: string;
+}
+
+export interface ApprovalDecidedPayload extends JobNotificationPayload {
+  decision?: 'APPROVED' | 'REJECTED';
+  comment?: string;
+}
+
+export interface JobAssignedPayload extends JobNotificationPayload {
+  /** ISO-8601 instant; also set when the same edit changed the deadline. */
+  deadline?: string;
+  priority?: JobPriority;
+}
+
+export interface JobStatusChangedPayload extends JobNotificationPayload {
+  fromStatus?: JobStatus;
+  toStatus?: JobStatus;
+}
+
+export interface JobBlockedPayload extends JobNotificationPayload {
+  blockReason?: string;
+}
+
+export interface BlockerClearedPayload extends JobNotificationPayload {
+  blockerJobFriendlyId?: string;
+  blockerJobTitle?: string;
+}
+
+export type JobUpdatedField = 'deadline' | 'priority';
+
+export interface JobUpdatedPayload extends JobNotificationPayload {
+  changedFields?: JobUpdatedField[];
+  /** New deadline. Missing while `changedFields` includes `deadline` means it was cleared. */
+  deadline?: string;
+  priority?: JobPriority;
+}
+
+export interface JobDeadlinePayload extends JobNotificationPayload {
+  deadline?: string;
+}
+
+export interface ProjectMemberAddedPayload extends ProjectNotificationPayload {
+  role?: 'OWNER' | 'ADMIN' | 'MEMBER';
+}
+
+export interface ScheduleRunMissedPayload extends ProjectNotificationPayload {
+  scheduleName?: string;
+  /** ISO-8601 instant of the missed run. */
+  missedAt?: string;
+}
+
+export interface InviteAcceptedPayload extends OrgNotificationPayload {
+  memberName?: string;
+  memberEmail?: string;
+}
+
+export interface FeedbackResolvedPayload extends OrgNotificationPayload {
+  feedbackTitle?: string;
+  outcome?: 'CREDITED' | 'DECLINED';
+  /** Only when credited. */
+  creditAmount?: number;
+}
+
+export interface NotificationPayloadMap {
+  APPROVAL_REQUESTED: ApprovalRequestedPayload;
+  APPROVAL_DECIDED: ApprovalDecidedPayload;
+  JOB_ASSIGNED: JobAssignedPayload;
+  JOB_STATUS_CHANGED: JobStatusChangedPayload;
+  JOB_BLOCKED: JobBlockedPayload;
+  BLOCKER_CLEARED: BlockerClearedPayload;
+  JOB_UPDATED: JobUpdatedPayload;
+  JOB_DELETED: JobNotificationPayload;
+  NOTE_ADDED: JobNotificationPayload;
+  JOB_DEADLINE_SOON: JobDeadlinePayload;
+  JOB_OVERDUE: JobDeadlinePayload;
+  PROJECT_MEMBER_ADDED: ProjectMemberAddedPayload;
+  SCHEDULE_RUN_MISSED: ScheduleRunMissedPayload;
+  INVITE_ACCEPTED: InviteAcceptedPayload;
+  FEEDBACK_RESOLVED: FeedbackResolvedPayload;
+  SUBSCRIPTION_PAST_DUE: OrgNotificationPayload;
+}
+
+interface NotificationBase {
+  id: string;
+  read: boolean;
+  createdAt: string;
+  /** Null for system events. */
+  actor: { id: string; name: string | null } | null;
+  /** Null for organisation-level types; never assume a project. */
+  projectFriendlyId: string | null;
+  jobFriendlyId: string | null;
+  approvalId: string | null;
+}
+
+/** Discriminated on `type`, so narrowing it types the payload. */
+export type NotificationResponse = {
+  [K in NotificationType]: NotificationBase & { type: K; payload: NotificationPayloadMap[K] };
+}[NotificationType];
+
+export interface NotificationPageResponse {
+  items: NotificationResponse[];
+  /** Zero-based. */
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface NotificationListFilters {
+  unread: boolean;
+  type: NotificationType | null;
+}

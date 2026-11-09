@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -48,6 +48,9 @@ export default function JobDetailPage() {
   const { t } = useTranslation(['jobsPages', 'common']);
   const { projectFriendlyId: projectId = '', jobFriendlyId: jobId = '' } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  // ADR-0051: approval notifications link to `#approvals`, which opens and scrolls to that section.
+  const wantsApprovals = location.hash === '#approvals';
   const { userId } = useAuth();
   const queryClient = useQueryClient();
 
@@ -93,9 +96,16 @@ export default function JobDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notesLoading]);
   useEffect(() => {
-    if (!approvalsLoading) setApprovalsExpanded(approvals.length > 0);
+    if (!approvalsLoading) setApprovalsExpanded(approvals.length > 0 || wantsApprovals);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [approvalsLoading]);
+  // Re-runs per navigation (location.key), so a notification click while already on
+  // this job still opens and scrolls to the section. Waits for the page to render it.
+  useEffect(() => {
+    if (!wantsApprovals || isLoading || historyLoading) return;
+    setApprovalsExpanded(true);
+    document.getElementById('approvals')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [wantsApprovals, isLoading, historyLoading, location.key]);
   useEffect(() => {
     // Depends on the job's own isLoading flag (stable after the first successful
     // load — TanStack Query v5 doesn't flip it back to true on background
@@ -329,7 +339,7 @@ export default function JobDetailPage() {
 
       {/* Approvals accordion */}
       {hasAddon('APPROVALS') && (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        <div id="approvals" className="scroll-mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
           <button
             onClick={() => setApprovalsExpanded((v) => !v)}
             className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
