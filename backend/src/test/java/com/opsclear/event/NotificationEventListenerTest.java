@@ -6,6 +6,9 @@ import com.opsclear.model.FeedbackStatus;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberRole;
+import com.opsclear.dto.ReadStateEvent;
+import com.opsclear.model.NotificationModel;
+import com.opsclear.service.NotificationPublisher;
 import com.opsclear.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,19 +21,22 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("NotificationEventListener")
 class NotificationEventListenerTest {
 
     @Mock private NotificationService notificationService;
+    @Mock private NotificationPublisher notificationPublisher;
 
     private NotificationEventListener listener;
 
     @BeforeEach
     void setUp() {
-        listener = new NotificationEventListener(notificationService);
+        listener = new NotificationEventListener(notificationService, notificationPublisher);
     }
 
     @Test
@@ -42,6 +48,7 @@ class NotificationEventListenerTest {
         listener.onApprovalRequested(event);
 
         verify(notificationService).notifyApprovalRequested(event);
+        verify(notificationPublisher).publishCreated(List.of());
     }
 
     @Test
@@ -53,6 +60,7 @@ class NotificationEventListenerTest {
         listener.onApprovalDecided(event);
 
         verify(notificationService).notifyApprovalDecided(event);
+        verify(notificationPublisher).publishCreated(List.of());
     }
 
     @Test
@@ -64,6 +72,7 @@ class NotificationEventListenerTest {
         listener.onNoteAdded(event);
 
         verify(notificationService).notifyNoteAdded(event);
+        verify(notificationPublisher).publishCreated(List.of());
     }
 
     @Test
@@ -94,6 +103,7 @@ class NotificationEventListenerTest {
         verify(notificationService).notifyBlockerCleared(cleared);
         verify(notificationService).notifyJobUpdated(updated);
         verify(notificationService).notifyJobDeleted(deleted);
+        verify(notificationPublisher, times(6)).publishCreated(List.of());
     }
 
     @Test
@@ -105,6 +115,7 @@ class NotificationEventListenerTest {
         listener.onProjectMemberAdded(event);
 
         verify(notificationService).notifyProjectMemberAdded(event);
+        verify(notificationPublisher).publishCreated(List.of());
     }
 
     @Test
@@ -116,6 +127,7 @@ class NotificationEventListenerTest {
         listener.onInviteAccepted(event);
 
         verify(notificationService).notifyInviteAccepted(event);
+        verify(notificationPublisher).publishCreated(List.of());
     }
 
     @Test
@@ -127,6 +139,7 @@ class NotificationEventListenerTest {
         listener.onFeedbackResolved(event);
 
         verify(notificationService).notifyFeedbackResolved(event);
+        verify(notificationPublisher).publishCreated(List.of());
     }
 
     @Test
@@ -137,6 +150,7 @@ class NotificationEventListenerTest {
         listener.onSubscriptionPastDue(event);
 
         verify(notificationService).notifySubscriptionPastDue(event);
+        verify(notificationPublisher).publishCreated(List.of());
     }
 
     @Test
@@ -148,6 +162,7 @@ class NotificationEventListenerTest {
         listener.onDeadlineAlert(event);
 
         verify(notificationService).notifyDeadlineAlert(event);
+        verify(notificationPublisher).publishCreated(List.of());
     }
 
     @Test
@@ -159,5 +174,30 @@ class NotificationEventListenerTest {
         listener.onScheduleRunMissed(event);
 
         verify(notificationService).notifyScheduleRunMissed(event);
+        verify(notificationPublisher).publishCreated(List.of());
+    }
+
+    @Test
+    @DisplayName("pushes the notifications a fan-out saved to the recipients' streams")
+    void onEvent_shouldPushSavedNotifications() {
+        NoteAddedEvent event = new NoteAddedEvent(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID());
+        List<NotificationModel> saved = List.of(NotificationModel.builder().id(UUID.randomUUID()).build());
+        when(notificationService.notifyNoteAdded(event)).thenReturn(saved);
+
+        listener.onNoteAdded(event);
+
+        verify(notificationPublisher).publishCreated(saved);
+    }
+
+    @Test
+    @DisplayName("pushes read-state changes to the user's streams")
+    void onReadStateChanged_shouldPushReadState() {
+        UUID userId = UUID.randomUUID();
+        ReadStateEvent state = ReadStateEvent.allRead();
+
+        listener.onReadStateChanged(new NotificationReadStateChangedEvent(userId, state));
+
+        verify(notificationPublisher).publishReadState(userId, state);
     }
 }

@@ -1,19 +1,13 @@
 package com.opsclear.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.event.NotificationReadStateChangedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.NotificationModel;
 import com.opsclear.model.NotificationPage;
 import com.opsclear.model.NotificationType;
-import com.opsclear.repository.JobRepository;
-import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.NotificationRepository;
-import com.opsclear.repository.OrganisationRepository;
-import com.opsclear.repository.ProjectMemberRepository;
-import com.opsclear.repository.ProjectRepository;
-import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.List;
@@ -40,28 +35,20 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("NotificationService")
-class NotificationServiceTest {
+@DisplayName("NotificationReadService")
+class NotificationReadServiceTest {
 
     @Mock private NotificationRepository notificationRepository;
-    @Mock private NotificationSettingsService notificationSettingsService;
-    @Mock private JobRepository jobRepository;
-    @Mock private ProjectRepository projectRepository;
-    @Mock private ProjectMemberRepository projectMemberRepository;
-    @Mock private NoteRepository noteRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private OrganisationRepository organisationRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
-    private NotificationService notificationService;
+    private NotificationReadService readService;
 
     private UUID callerId;
     private UUID notificationId;
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(notificationRepository, notificationSettingsService,
-                jobRepository, projectRepository, projectMemberRepository, noteRepository, userRepository,
-                new ObjectMapper(), organisationRepository);
+        readService = new NotificationReadService(notificationRepository, eventPublisher);
         callerId = UUID.randomUUID();
         notificationId = UUID.randomUUID();
     }
@@ -85,7 +72,7 @@ class NotificationServiceTest {
         when(notificationRepository.findVisibleByRecipient(callerId, false, null, 0L, 20)).thenReturn(items);
         when(notificationRepository.countVisibleByRecipient(callerId, false, null)).thenReturn(1L);
 
-        NotificationPage page = notificationService.list(callerId, null, null, null, null);
+        NotificationPage page = readService.list(callerId, null, null, null, null);
 
         assertThat(page.getItems()).isEqualTo(items);
         assertThat(page.getPage()).isZero();
@@ -101,7 +88,7 @@ class NotificationServiceTest {
         when(notificationRepository.countVisibleByRecipient(callerId, true, NotificationType.NOTE_ADDED))
                 .thenReturn(12L);
 
-        NotificationPage page = notificationService.list(callerId, true, NotificationType.NOTE_ADDED, 2, 5);
+        NotificationPage page = readService.list(callerId, true, NotificationType.NOTE_ADDED, 2, 5);
 
         assertThat(page.getItems()).isEmpty();
         assertThat(page.getPage()).isEqualTo(2);
@@ -115,7 +102,7 @@ class NotificationServiceTest {
         when(notificationRepository.findVisibleByRecipient(callerId, false, null, 0L, 20)).thenReturn(List.of());
         when(notificationRepository.countVisibleByRecipient(callerId, false, null)).thenReturn(0L);
 
-        notificationService.list(callerId, false, null, null, null);
+        readService.list(callerId, false, null, null, null);
 
         verify(notificationRepository).findVisibleByRecipient(callerId, false, null, 0L, 20);
     }
@@ -127,7 +114,7 @@ class NotificationServiceTest {
                 .thenReturn(List.of());
         when(notificationRepository.countVisibleByRecipient(callerId, false, null)).thenReturn(0L);
 
-        notificationService.list(callerId, null, null, Integer.MAX_VALUE, 100);
+        readService.list(callerId, null, null, Integer.MAX_VALUE, 100);
 
         verify(notificationRepository).findVisibleByRecipient(callerId, false, null, 214_748_364_700L, 100);
     }
@@ -135,7 +122,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("list rejects a negative page with 400")
     void list_shouldThrow_whenPageNegative() {
-        assertThatThrownBy(() -> notificationService.list(callerId, null, null, -1, null))
+        assertThatThrownBy(() -> readService.list(callerId, null, null, -1, null))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage(ErrorMessages.Notification.INVALID_PAGE);
         verifyNoInteractions(notificationRepository);
@@ -144,7 +131,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("list rejects size 0 with 400")
     void list_shouldThrow_whenSizeZero() {
-        assertThatThrownBy(() -> notificationService.list(callerId, null, null, null, 0))
+        assertThatThrownBy(() -> readService.list(callerId, null, null, null, 0))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage(String.format(ErrorMessages.Notification.INVALID_SIZE, 100));
         verifyNoInteractions(notificationRepository);
@@ -153,7 +140,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("list rejects size above 100 with 400")
     void list_shouldThrow_whenSizeTooLarge() {
-        assertThatThrownBy(() -> notificationService.list(callerId, null, null, null, 101))
+        assertThatThrownBy(() -> readService.list(callerId, null, null, null, 101))
                 .isInstanceOf(BadRequestException.class);
         verifyNoInteractions(notificationRepository);
     }
@@ -165,7 +152,7 @@ class NotificationServiceTest {
     void unreadCount_shouldCountVisibleUnread() {
         when(notificationRepository.countVisibleByRecipient(callerId, true, null)).thenReturn(7L);
 
-        assertThat(notificationService.unreadCount(callerId)).isEqualTo(7L);
+        assertThat(readService.unreadCount(callerId)).isEqualTo(7L);
     }
 
     // --- markRead ---
@@ -177,12 +164,17 @@ class NotificationServiceTest {
         when(notificationRepository.findVisibleByIdAndRecipient(notificationId, callerId))
                 .thenReturn(Optional.of(notification(null)), Optional.of(after));
 
-        NotificationModel result = notificationService.markRead(callerId, notificationId, true);
+        NotificationModel result = readService.markRead(callerId, notificationId, true);
 
         ArgumentCaptor<Instant> readAt = ArgumentCaptor.forClass(Instant.class);
         verify(notificationRepository).updateReadAt(eq(notificationId), readAt.capture());
         assertThat(readAt.getValue()).isNotNull();
         assertThat(result).isSameAs(after);
+        NotificationReadStateChangedEvent event = publishedEvent();
+        assertThat(event.userId()).isEqualTo(callerId);
+        assertThat(event.state().getIds()).containsExactly(notificationId);
+        assertThat(event.state().getRead()).isTrue();
+        assertThat(event.state().getAll()).isNull();
     }
 
     @Test
@@ -191,10 +183,13 @@ class NotificationServiceTest {
         when(notificationRepository.findVisibleByIdAndRecipient(notificationId, callerId))
                 .thenReturn(Optional.of(notification(Instant.now())), Optional.of(notification(null)));
 
-        NotificationModel result = notificationService.markRead(callerId, notificationId, false);
+        NotificationModel result = readService.markRead(callerId, notificationId, false);
 
         verify(notificationRepository).updateReadAt(eq(notificationId), isNull());
         assertThat(result.isRead()).isFalse();
+        NotificationReadStateChangedEvent event = publishedEvent();
+        assertThat(event.state().getIds()).containsExactly(notificationId);
+        assertThat(event.state().getRead()).isFalse();
     }
 
     @Test
@@ -204,10 +199,11 @@ class NotificationServiceTest {
         when(notificationRepository.findVisibleByIdAndRecipient(notificationId, callerId))
                 .thenReturn(Optional.of(read));
 
-        NotificationModel result = notificationService.markRead(callerId, notificationId, true);
+        NotificationModel result = readService.markRead(callerId, notificationId, true);
 
         verify(notificationRepository, never()).updateReadAt(any(), any());
         assertThat(result.getReadAt()).isEqualTo(Instant.parse("2026-11-02T08:00:00Z"));
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -216,9 +212,10 @@ class NotificationServiceTest {
         when(notificationRepository.findVisibleByIdAndRecipient(notificationId, callerId))
                 .thenReturn(Optional.of(notification(null)));
 
-        notificationService.markRead(callerId, notificationId, false);
+        readService.markRead(callerId, notificationId, false);
 
         verify(notificationRepository, never()).updateReadAt(any(), any());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -227,7 +224,7 @@ class NotificationServiceTest {
         when(notificationRepository.findVisibleByIdAndRecipient(notificationId, callerId))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> notificationService.markRead(callerId, notificationId, true))
+        assertThatThrownBy(() -> readService.markRead(callerId, notificationId, true))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage(ErrorMessages.Notification.NOT_FOUND);
         verify(notificationRepository, never()).updateReadAt(any(), any());
@@ -240,8 +237,29 @@ class NotificationServiceTest {
     void markAllRead_shouldDelegateForCaller() {
         when(notificationRepository.markAllRead(callerId)).thenReturn(3);
 
-        assertThat(notificationService.markAllRead(callerId)).isEqualTo(3);
+        assertThat(readService.markAllRead(callerId)).isEqualTo(3);
         verify(notificationRepository).markAllRead(callerId);
         verify(notificationRepository, never()).findVisibleByRecipient(any(), eq(false), any(), anyLong(), anyInt());
+        NotificationReadStateChangedEvent event = publishedEvent();
+        assertThat(event.userId()).isEqualTo(callerId);
+        assertThat(event.state().getAll()).isTrue();
+        assertThat(event.state().getIds()).isNull();
+        assertThat(event.state().getRead()).isNull();
+    }
+
+    @Test
+    @DisplayName("markAllRead publishes no read-state event when nothing changed")
+    void markAllRead_shouldNotPublish_whenNothingChanged() {
+        when(notificationRepository.markAllRead(callerId)).thenReturn(0);
+
+        assertThat(readService.markAllRead(callerId)).isZero();
+        verifyNoInteractions(eventPublisher);
+    }
+
+    private NotificationReadStateChangedEvent publishedEvent() {
+        ArgumentCaptor<NotificationReadStateChangedEvent> event =
+                ArgumentCaptor.forClass(NotificationReadStateChangedEvent.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        return event.getValue();
     }
 }

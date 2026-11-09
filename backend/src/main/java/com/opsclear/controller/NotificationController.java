@@ -6,7 +6,8 @@ import com.opsclear.dto.NotificationResponse;
 import com.opsclear.dto.UnreadCountResponse;
 import com.opsclear.model.NotificationType;
 import com.opsclear.security.SecurityUtils;
-import com.opsclear.service.NotificationService;
+import com.opsclear.service.NotificationReadService;
+import com.opsclear.service.NotificationStreamRegistry;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.UUID;
 
@@ -30,7 +32,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationController {
 
-    private final NotificationService notificationService;
+    // Tells nginx not to buffer the stream (ADR-0051 §nginx).
+    static final String X_ACCEL_BUFFERING = "X-Accel-Buffering";
+
+    private final NotificationReadService notificationReadService;
+    private final NotificationStreamRegistry notificationStreamRegistry;
 
     @GetMapping
     public ResponseEntity<NotificationPageResponse> list(
@@ -41,13 +47,13 @@ public class NotificationController {
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.ok(NotificationPageResponse.from(
-                notificationService.list(callerId, unread, type, page, size)));
+                notificationReadService.list(callerId, unread, type, page, size)));
     }
 
     @GetMapping("/unread-count")
     public ResponseEntity<UnreadCountResponse> unreadCount(Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        return ResponseEntity.ok(UnreadCountResponse.from(notificationService.unreadCount(callerId)));
+        return ResponseEntity.ok(UnreadCountResponse.from(notificationReadService.unreadCount(callerId)));
     }
 
     @PatchMapping("/{id}")
@@ -57,13 +63,25 @@ public class NotificationController {
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.ok(NotificationResponse.from(
-                notificationService.markRead(callerId, id, request.getRead())));
+                notificationReadService.markRead(callerId, id, request.getRead())));
     }
 
     @PostMapping("/read-all")
     public ResponseEntity<Void> markAllRead(Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        notificationService.markAllRead(callerId);
+        notificationReadService.markAllRead(callerId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Live notification events for the caller over Server-Sent Events: {@code notification}, {@code read-state} and
+     * heartbeat comments. Closes after 30 minutes; the client reconnects and re-fetches.
+     */
+    @GetMapping("/stream")
+    public ResponseEntity<SseEmitter> stream(Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        return ResponseEntity.ok()
+                .header(X_ACCEL_BUFFERING, "no")
+                .body(notificationStreamRegistry.open(callerId));
     }
 }

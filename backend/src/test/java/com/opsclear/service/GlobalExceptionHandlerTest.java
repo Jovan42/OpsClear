@@ -9,10 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 @DisplayName("GlobalExceptionHandler — generic catch-all")
 class GlobalExceptionHandlerTest {
@@ -62,5 +64,12 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().error()).isEqualTo("Bad Request");
         assertThat(response.getBody().message()).isEqualTo("Invalid value for parameter 'weeks'");
+    }
+
+    @Test
+    @DisplayName("handleAsyncRequestTimeout_shouldEndQuietly_forATimedOutStream (JOB-280)")
+    void handleAsyncRequestTimeout_shouldEndQuietly_forATimedOutStream() {
+        assertThatCode(() -> handler.handleAsyncRequestTimeout(new AsyncRequestTimeoutException()))
+                .doesNotThrowAnyException();
     }
 }
