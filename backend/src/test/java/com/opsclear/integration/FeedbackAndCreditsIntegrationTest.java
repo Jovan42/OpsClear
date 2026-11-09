@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleCustomer;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.FeedbackSubmissionRepository;
 import com.opsclear.repository.OrgCreditRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -11,6 +12,7 @@ import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import com.opsclear.service.PaddleSubscriptionService;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,6 +57,7 @@ class FeedbackAndCreditsIntegrationTest {
     @Autowired private OrgCreditRepository orgCreditRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
     @Autowired private PaddleSubscriptionService paddleSubscriptionService;
+    @Autowired private NotificationRepository notificationRepository;
     @MockitoBean private PaddleClient paddleClient;
 
     private UUID ownerId;
@@ -64,6 +67,13 @@ class FeedbackAndCreditsIntegrationTest {
     private UUID superUserId;
     private UUID orgId;
     private UUID otherOrgId;
+
+    // Crediting or declining feedback creates a notification (JOB-279): leave none behind, or they block
+    // other classes from deleting organisations, projects and users.
+    @AfterEach
+    void deleteNotifications() {
+        notificationRepository.deleteAll();
+    }
 
     @BeforeEach
     void setUp() throws Exception {

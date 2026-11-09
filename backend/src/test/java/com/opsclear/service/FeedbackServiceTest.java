@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.SubmitFeedbackRequest;
+import com.opsclear.event.FeedbackResolvedEvent;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FeedbackStatus;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -34,12 +36,13 @@ class FeedbackServiceTest {
 
     @Mock private FeedbackSubmissionRepository feedbackSubmissionRepository;
     @Mock private OrganisationRepository organisationRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private FeedbackService feedbackService;
 
     @BeforeEach
     void setUp() {
-        feedbackService = new FeedbackService(feedbackSubmissionRepository, organisationRepository);
+        feedbackService = new FeedbackService(feedbackSubmissionRepository, organisationRepository, eventPublisher);
     }
 
     // --- submit ---
@@ -112,17 +115,21 @@ class FeedbackServiceTest {
     // --- markCreditedForOrg ---
 
     @Test
-    @DisplayName("markCreditedForOrg marks the submission CREDITED when it belongs to the org")
+    @DisplayName("markCreditedForOrg marks the submission CREDITED and publishes FEEDBACK_RESOLVED with the amount")
     void markCreditedForOrg_shouldMarkCredited_whenSubmissionBelongsToOrg() {
         UUID orgId = UUID.randomUUID();
         UUID submissionId = UUID.randomUUID();
+        UUID submitterId = UUID.randomUUID();
         when(feedbackSubmissionRepository.findByIdAndOrgId(submissionId, orgId))
                 .thenReturn(Optional.of(FeedbackSubmissionModel.builder()
-                        .id(submissionId).orgId(orgId).status(FeedbackStatus.PENDING).build()));
+                        .id(submissionId).orgId(orgId).submittedBy(submitterId).title("Broken button")
+                        .status(FeedbackStatus.PENDING).build()));
 
-        feedbackService.markCreditedForOrg(submissionId, orgId);
+        feedbackService.markCreditedForOrg(submissionId, orgId, 1000);
 
         verify(feedbackSubmissionRepository).updateStatus(submissionId, FeedbackStatus.CREDITED);
+        verify(eventPublisher).publishEvent(new FeedbackResolvedEvent(
+                submissionId, orgId, submitterId, "Broken button", FeedbackStatus.CREDITED, 1000));
     }
 
     @Test
@@ -132,10 +139,11 @@ class FeedbackServiceTest {
         UUID submissionId = UUID.randomUUID();
         when(feedbackSubmissionRepository.findByIdAndOrgId(submissionId, orgId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> feedbackService.markCreditedForOrg(submissionId, orgId))
+        assertThatThrownBy(() -> feedbackService.markCreditedForOrg(submissionId, orgId, 500))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Feedback submission not found");
         verify(feedbackSubmissionRepository, never()).updateStatus(eq(submissionId), any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
@@ -147,25 +155,31 @@ class FeedbackServiceTest {
                 .thenReturn(Optional.of(FeedbackSubmissionModel.builder()
                         .id(submissionId).orgId(orgId).status(FeedbackStatus.DECLINED).build()));
 
-        assertThatThrownBy(() -> feedbackService.markCreditedForOrg(submissionId, orgId))
+        assertThatThrownBy(() -> feedbackService.markCreditedForOrg(submissionId, orgId, 500))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("This submission has already been reviewed");
         verify(feedbackSubmissionRepository, never()).updateStatus(eq(submissionId), any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     // --- decline ---
 
     @Test
-    @DisplayName("decline marks a pending submission DECLINED")
+    @DisplayName("decline marks a pending submission DECLINED and publishes FEEDBACK_RESOLVED without an amount")
     void decline_shouldMarkDeclined_whenPending() {
         UUID submissionId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+        UUID submitterId = UUID.randomUUID();
         when(feedbackSubmissionRepository.findById(submissionId))
                 .thenReturn(Optional.of(FeedbackSubmissionModel.builder()
-                        .id(submissionId).status(FeedbackStatus.PENDING).build()));
+                        .id(submissionId).orgId(orgId).submittedBy(submitterId).title("Idea")
+                        .status(FeedbackStatus.PENDING).build()));
 
         feedbackService.decline(submissionId);
 
         verify(feedbackSubmissionRepository).updateStatus(submissionId, FeedbackStatus.DECLINED);
+        verify(eventPublisher).publishEvent(new FeedbackResolvedEvent(
+                submissionId, orgId, submitterId, "Idea", FeedbackStatus.DECLINED, null));
     }
 
     @Test
@@ -178,6 +192,7 @@ class FeedbackServiceTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Feedback submission not found");
         verify(feedbackSubmissionRepository, never()).updateStatus(eq(submissionId), any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
@@ -192,5 +207,6 @@ class FeedbackServiceTest {
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("This submission has already been reviewed");
         verify(feedbackSubmissionRepository, never()).updateStatus(eq(submissionId), any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 }

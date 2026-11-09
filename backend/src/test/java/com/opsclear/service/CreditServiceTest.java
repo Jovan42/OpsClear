@@ -72,7 +72,7 @@ class CreditServiceTest {
         OrgCreditModel result = creditService.grant(grantedBy, request);
 
         assertThat(result).isEqualTo(inserted);
-        verify(feedbackService, never()).markCreditedForOrg(any(), any());
+        verify(feedbackService, never()).markCreditedForOrg(any(), any(), anyInt());
     }
 
     @Test
@@ -91,7 +91,7 @@ class CreditServiceTest {
 
         creditService.grant(grantedBy, request);
 
-        verify(feedbackService).markCreditedForOrg(submissionId, orgId);
+        verify(feedbackService).markCreditedForOrg(submissionId, orgId, 1000);
     }
 
     @Test

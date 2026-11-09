@@ -3,6 +3,7 @@ package com.opsclear.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.JobStatusHistoryRepository;
@@ -12,6 +13,7 @@ import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,12 +52,20 @@ class OrgInviteIntegrationTest {
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private UUID ownerId;
     private UUID adminId;
     private UUID memberId;
     private UUID outsiderId;
     private UUID orgId;
+
+    // Accepting an invite creates a notification (JOB-279): leave none behind, or they block
+    // other classes from deleting organisations, projects and users.
+    @AfterEach
+    void deleteNotifications() {
+        notificationRepository.deleteAll();
+    }
 
     @BeforeEach
     void setUp() throws Exception {

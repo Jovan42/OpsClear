@@ -15,6 +15,7 @@ import com.opsclear.model.UserModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.NotificationRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
@@ -50,6 +51,7 @@ class NotificationServiceFanOutTest {
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private NoteRepository noteRepository;
     @Mock private UserRepository userRepository;
+    @Mock private OrganisationRepository organisationRepository;
     @Captor private ArgumentCaptor<List<NotificationModel>> batchCaptor;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -70,7 +72,7 @@ class NotificationServiceFanOutTest {
     void setUp() {
         notificationService = new NotificationService(notificationRepository, notificationSettingsService,
                 jobRepository, projectRepository, projectMemberRepository, noteRepository, userRepository,
-                objectMapper);
+                objectMapper, organisationRepository);
         orgId = UUID.randomUUID();
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();

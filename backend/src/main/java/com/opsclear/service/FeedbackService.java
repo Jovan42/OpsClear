@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.SubmitFeedbackRequest;
+import com.opsclear.event.FeedbackResolvedEvent;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.NotFoundException;
@@ -11,6 +12,7 @@ import com.opsclear.repository.FeedbackSubmissionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class FeedbackService {
 
     private final FeedbackSubmissionRepository feedbackSubmissionRepository;
     private final OrganisationRepository organisationRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public FeedbackSubmissionModel submit(UUID callerId, SubmitFeedbackRequest request) {
@@ -48,12 +51,17 @@ public class FeedbackService {
 
     // Called by CreditService when a grant links back to a submission — validates
     // the submission belongs to the org being credited, and that it's still
-    // PENDING, before marking it CREDITED.
+    // PENDING, before marking it CREDITED. creditAmount goes into the submitter's
+    // FEEDBACK_RESOLVED notification (ADR-0051), which is only created if the grant
+    // commits (a Paddle sync failure rolls it back, and the notification with it).
     @Transactional
-    public void markCreditedForOrg(UUID submissionId, UUID orgId) {
+    public void markCreditedForOrg(UUID submissionId, UUID orgId, int creditAmount) {
         FeedbackSubmissionModel submission = requireSubmissionForOrg(submissionId, orgId);
         requireStatusIsPending(submission);
         feedbackSubmissionRepository.updateStatus(submissionId, FeedbackStatus.CREDITED);
+        log.info("Feedback submission {} marked credited ({}) for org {}", submissionId, creditAmount, orgId);
+        eventPublisher.publishEvent(new FeedbackResolvedEvent(submissionId, submission.getOrgId(),
+                submission.getSubmittedBy(), submission.getTitle(), FeedbackStatus.CREDITED, creditAmount));
     }
 
     // Closes out a submission the admin decided not to reward — status alone then
@@ -63,6 +71,9 @@ public class FeedbackService {
         FeedbackSubmissionModel submission = requireSubmission(submissionId);
         requireStatusIsPending(submission);
         feedbackSubmissionRepository.updateStatus(submissionId, FeedbackStatus.DECLINED);
+        log.info("Feedback submission {} declined", submissionId);
+        eventPublisher.publishEvent(new FeedbackResolvedEvent(submissionId, submission.getOrgId(),
+                submission.getSubmittedBy(), submission.getTitle(), FeedbackStatus.DECLINED, null));
     }
 
     // --- Guards ---

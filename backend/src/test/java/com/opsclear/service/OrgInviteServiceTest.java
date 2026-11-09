@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.SendInviteRequest;
+import com.opsclear.event.InviteAcceptedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -43,6 +45,7 @@ class OrgInviteServiceTest {
     @Mock private OrganisationRepository organisationRepository;
     @Mock private UserRepository userRepository;
     @Mock private EmailService emailService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private OrgInviteService service;
 
@@ -54,7 +57,8 @@ class OrgInviteServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OrgInviteService(orgInviteRepository, organisationRepository, userRepository, emailService);
+        service = new OrgInviteService(orgInviteRepository, organisationRepository, userRepository, emailService,
+                eventPublisher);
 
         orgId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -264,6 +268,7 @@ class OrgInviteServiceTest {
         verify(organisationRepository).saveMember(orgId, newUserId, OrganisationRole.MEMBER);
         verify(orgInviteRepository).markAccepted(inviteId);
         assertThat(result.getAcceptedAt()).isNotNull();
+        verify(eventPublisher).publishEvent(new InviteAcceptedEvent(inviteId, orgId, newUserId, ownerId));
     }
 
     @Test
@@ -282,6 +287,7 @@ class OrgInviteServiceTest {
 
         assertThatThrownBy(() -> service.acceptInvite(token, memberId))
                 .isInstanceOf(ForbiddenException.class);
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test

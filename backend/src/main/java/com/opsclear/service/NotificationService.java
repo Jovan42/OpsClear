@@ -4,12 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.event.ApprovalDecidedEvent;
 import com.opsclear.event.ApprovalRequestedEvent;
 import com.opsclear.event.BlockerClearedEvent;
+import com.opsclear.event.FeedbackResolvedEvent;
+import com.opsclear.event.InviteAcceptedEvent;
 import com.opsclear.event.JobAssignedEvent;
 import com.opsclear.event.JobBlockedEvent;
 import com.opsclear.event.JobDeletedEvent;
 import com.opsclear.event.JobStatusChangedEvent;
 import com.opsclear.event.JobUpdatedEvent;
 import com.opsclear.event.NoteAddedEvent;
+import com.opsclear.event.ProjectMemberAddedEvent;
+import com.opsclear.event.SubscriptionPastDueEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.NotFoundException;
@@ -18,14 +22,20 @@ import com.opsclear.model.JobStatus;
 import com.opsclear.model.NotificationModel;
 import com.opsclear.model.NotificationPage;
 import com.opsclear.model.NotificationType;
+import com.opsclear.model.OrgMemberModel;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
 import com.opsclear.repository.NotificationRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
+import com.opsclear.service.NotificationTarget.JobScope;
+import com.opsclear.service.NotificationTarget.OrgMembers;
+import com.opsclear.service.NotificationTarget.OrgScope;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +83,7 @@ public class NotificationService {
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final OrganisationRepository organisationRepository;
 
     /**
      * The caller's notifications, newest first. {@code unread} true returns only unread ones; {@code type} null
@@ -278,6 +289,97 @@ public class NotificationService {
         return instant != null ? instant.toString() : null;
     }
 
+    // --- Project, organisation and billing types (JOB-279) ---
+
+    /**
+     * {@code PROJECT_MEMBER_ADDED}: the added user, with the role they were given. Project-scoped, no job. A project
+     * deleted, or the user removed again, before the fan-out notifies no one.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyProjectMemberAdded(ProjectMemberAddedEvent event) {
+        Optional<ProjectModel> project = projectRepository.findByIdAndDeletedAtIsNull(event.projectId());
+        if (project.isEmpty()) {
+            log.info("Skipped {} notifications: project {} no longer exists",
+                    NotificationType.PROJECT_MEMBER_ADDED, event.projectId());
+            return List.of();
+        }
+        Set<UUID> visible = projectMemberRepository.existsByProjectIdAndUserId(event.projectId(), event.userId())
+                ? Set.of(event.userId()) : Set.of();
+        OrgScope scope = new OrgScope(project.get().getOrganisationId(), project.get().getId(), visible);
+        return fanOut(NotificationType.PROJECT_MEMBER_ADDED, scope, FanOut.builder()
+                .actorId(event.actorId())
+                .candidates(List.of(event.userId()))
+                .payload(NotificationPayload.forProject(project.get(), actorName(event.actorId()))
+                        .put(NotificationPayload.ROLE, event.role().name()))
+                .build());
+    }
+
+    /**
+     * {@code INVITE_ACCEPTED}: the inviter. If the invite has no inviter, or they're no longer in the organisation,
+     * the organisation's Owners and Admins instead. Organisation-level (no project). The actor is the new member.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyInviteAccepted(InviteAcceptedEvent event) {
+        return fanOutForOrg(NotificationType.INVITE_ACCEPTED, event.orgId(), org -> {
+            UUID inviterId = event.inviterId();
+            Collection<UUID> candidates = inviterId != null && org.memberIds().contains(inviterId)
+                    ? List.of(inviterId) : org.ownerAndAdminIds();
+            Optional<OrgMemberModel> member = org.member(event.actorId());
+            String memberName = member.map(OrgMemberModel::getUserName).orElse(null);
+            return FanOut.builder()
+                    .actorId(event.actorId())
+                    .candidates(candidates)
+                    .payload(org.payload(memberName)
+                            .put(NotificationPayload.MEMBER_NAME, memberName)
+                            .put(NotificationPayload.MEMBER_EMAIL,
+                                    member.map(OrgMemberModel::getUserEmail).orElse(null)))
+                    .build();
+        });
+    }
+
+    /**
+     * {@code FEEDBACK_RESOLVED}: the submitter, with the outcome and the credit amount if credited. A super-admin
+     * action, so there's no actor (shown as "OpsClear").
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifyFeedbackResolved(FeedbackResolvedEvent event) {
+        return fanOutForOrg(NotificationType.FEEDBACK_RESOLVED, event.orgId(), org -> FanOut.builder()
+                .candidates(List.of(event.submitterId()))
+                .payload(org.payload(null)
+                        .put(NotificationPayload.FEEDBACK_TITLE, event.title())
+                        .put(NotificationPayload.OUTCOME, event.outcome().name())
+                        .put(NotificationPayload.CREDIT_AMOUNT, event.creditAmount()))
+                .build());
+    }
+
+    /**
+     * {@code SUBSCRIPTION_PAST_DUE}: the organisation's Owners and Admins. A Paddle webhook, so there's no actor. This
+     * type can't be muted: {@link #fanOut} ignores mutes for it.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<NotificationModel> notifySubscriptionPastDue(SubscriptionPastDueEvent event) {
+        return fanOutForOrg(NotificationType.SUBSCRIPTION_PAST_DUE, event.orgId(), org -> FanOut.builder()
+                .candidates(org.ownerAndAdminIds())
+                .payload(org.payload(null))
+                .build());
+    }
+
+    /**
+     * Loads the organisation and its members, then fans out the request built from them. Organisation-level
+     * notifications have no project; only current members can receive them. An organisation deleted between the
+     * action and the fan-out notifies no one.
+     */
+    private List<NotificationModel> fanOutForOrg(NotificationType type, UUID orgId,
+                                                 Function<OrgMembers, FanOut> request) {
+        Optional<OrganisationModel> org = organisationRepository.findByIdAndDeletedAtIsNull(orgId);
+        if (org.isEmpty()) {
+            log.info("Skipped {} notifications: organisation {} no longer exists", type, orgId);
+            return List.of();
+        }
+        OrgMembers members = new OrgMembers(org.get(), organisationRepository.findMembers(orgId));
+        return fanOut(type, new OrgScope(orgId, null, members.memberIds()), request.apply(members));
+    }
+
     /**
      * Loads the job, its project and the project's Owners/Admins, then fans out the request built from them. A job
      * or project deleted between the action and the fan-out notifies no one.
@@ -314,14 +416,16 @@ public class NotificationService {
 
     /**
      * The shared pipeline: candidates minus the actor, de-duplicated (one notification per person per action), only
-     * those who can currently see the job, minus those who muted the type; then one batch insert.
+     * those who may currently receive it ({@link NotificationTarget#visibleUserIds}), minus those who muted the type
+     * (skipped for types that can't be muted); then one batch insert.
      */
-    private List<NotificationModel> fanOut(NotificationType type, JobScope scope, FanOut request) {
+    private List<NotificationModel> fanOut(NotificationType type, NotificationTarget scope, FanOut request) {
         Set<UUID> recipients = new LinkedHashSet<>(request.candidates());
         recipients.remove(null); // an unassigned job yields no assignee
         recipients.remove(request.actorId());
         recipients.retainAll(scope.visibleUserIds());
-        recipients.removeIf(userId -> notificationSettingsService.getMutedTypes(userId).contains(type));
+        recipients.removeIf(userId -> type.isMutable()
+                && notificationSettingsService.getMutedTypes(userId).contains(type));
         if (recipients.isEmpty()) {
             return List.of();
         }
@@ -329,18 +433,18 @@ public class NotificationService {
         String payload = request.payload().toJson(objectMapper);
         List<NotificationModel> notifications = recipients.stream()
                 .map(recipientId -> NotificationModel.builder()
-                        .orgId(scope.project().getOrganisationId())
+                        .orgId(scope.orgId())
                         .recipientId(recipientId)
                         .type(type)
                         .actorId(request.actorId())
-                        .projectId(scope.project().getId())
-                        .jobId(scope.job().getId())
+                        .projectId(scope.projectId())
+                        .jobId(scope.jobId())
                         .approvalId(request.approvalId())
                         .payload(payload)
                         .build())
                 .toList();
         List<NotificationModel> saved = notificationRepository.insertBatch(notifications);
-        log.info("Created {} {} notification(s) for job {}", saved.size(), type, scope.job().getId());
+        log.info("Created {} {} notification(s) for {}", saved.size(), type, scope.describe());
         // Hook point for the SSE stream job: push a "notification" event to each recipient's open streams here.
         return saved;
     }
@@ -350,18 +454,6 @@ public class NotificationService {
             return null;
         }
         return userRepository.findById(actorId).map(UserModel::getName).orElse(null);
-    }
-
-    /**
-     * The job a notification is about, its project, its Owners/Admins, and who can currently see it (Owners/Admins
-     * plus the assignee while they're still a project member).
-     */
-    private record JobScope(JobModel job, ProjectModel project, List<UUID> ownerAndAdminIds,
-                            Set<UUID> visibleUserIds) {
-
-        NotificationPayload payload(String actorName) {
-            return NotificationPayload.forJob(job, project, actorName);
-        }
     }
 
     /** One action to fan out: who did it (null for system events), who might hear about it, and what to show. */

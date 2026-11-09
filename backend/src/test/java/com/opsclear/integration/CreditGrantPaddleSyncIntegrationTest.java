@@ -7,12 +7,14 @@ import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleDiscount;
 import com.opsclear.paddle.PaddleSubscription;
+import com.opsclear.repository.NotificationRepository;
 import com.opsclear.repository.OrgCreditRepository;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,10 +65,18 @@ class CreditGrantPaddleSyncIntegrationTest {
     @Autowired private OrgCreditRepository orgCreditRepository;
     @Autowired private OrgSubscriptionRepository orgSubscriptionRepository;
     @Autowired private SubscriptionTierRepository tierRepository;
+    @Autowired private NotificationRepository notificationRepository;
     @MockitoBean private PaddleClient paddleClient;
 
     private UUID superUserId;
     private UUID orgId;
+
+    // Granting a credit for a feedback submission creates a notification (JOB-279): leave none behind, or they block
+    // other classes from deleting organisations, projects and users.
+    @AfterEach
+    void deleteNotifications() {
+        notificationRepository.deleteAll();
+    }
 
     @BeforeEach
     void setUp() {

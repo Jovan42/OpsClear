@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.AddMemberRequest;
+import com.opsclear.event.ProjectMemberAddedEvent;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +28,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,6 +47,9 @@ class ProjectMemberServiceTest {
     @Mock
     private RecurringScheduleService recurringScheduleService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private ProjectMemberService projectMemberService;
 
     private UUID projectId;
@@ -54,7 +60,7 @@ class ProjectMemberServiceTest {
     @BeforeEach
     void setUp() {
         projectMemberService = new ProjectMemberService(
-                projectMemberRepository, projectRepository, userRepository, recurringScheduleService);
+                projectMemberRepository, projectRepository, userRepository, recurringScheduleService, eventPublisher);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -145,6 +151,8 @@ class ProjectMemberServiceTest {
         verify(projectMemberRepository).save(captor.capture());
         assertThat(captor.getValue().getRole()).isEqualTo(ProjectMemberRole.MEMBER);
         assertThat(captor.getValue().getProjectId()).isEqualTo(projectId);
+        verify(eventPublisher).publishEvent(
+                new ProjectMemberAddedEvent(projectId, newUserId, ProjectMemberRole.MEMBER, ownerId));
     }
 
     @Test
@@ -230,6 +238,7 @@ class ProjectMemberServiceTest {
         assertThatThrownBy(() -> projectMemberService.addMember(projectId, ownerId, request))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("User is already a member of this project");
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     // ─── updateRole ───────────────────────────────────────────────────────────

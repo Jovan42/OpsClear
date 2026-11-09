@@ -74,4 +74,30 @@ public class NotificationEventListener {
     public void onJobDeleted(JobDeletedEvent event) {
         notificationService.notifyJobDeleted(event);
     }
+
+    // --- Project, organisation and billing events (JOB-279) ---
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onProjectMemberAdded(ProjectMemberAddedEvent event) {
+        notificationService.notifyProjectMemberAdded(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onInviteAccepted(InviteAcceptedEvent event) {
+        notificationService.notifyInviteAccepted(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onFeedbackResolved(FeedbackResolvedEvent event) {
+        notificationService.notifyFeedbackResolved(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onSubscriptionPastDue(SubscriptionPastDueEvent event) {
+        notificationService.notifySubscriptionPastDue(event);
+    }
 }
