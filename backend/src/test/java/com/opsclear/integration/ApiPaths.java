@@ -443,6 +443,10 @@ final class ApiPaths {
         return "/api/notifications/" + notificationId;
     }
 
+    static String notificationStream() {
+        return "/api/notifications/stream";
+    }
+
     private ApiPaths() {
     }
 }

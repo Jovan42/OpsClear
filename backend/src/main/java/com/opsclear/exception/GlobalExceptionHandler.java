@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -94,6 +95,13 @@ public class GlobalExceptionHandler {
         // or ?memberId=not-a-uuid) is a client error, not a 500.
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of("Bad Request", "Invalid value for parameter '" + ex.getName() + "'"));
+    }
+
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public void handleAsyncRequestTimeout(AsyncRequestTimeoutException ex) {
+        // The notification SSE stream (the only async endpoint) reached its 30-minute timeout. That's its normal end:
+        // the response is already committed as text/event-stream, so write nothing and let the stream close. Without
+        // this handler the catch-all below logged an error and tried to write a JSON 500 into the stream.
     }
 
     @ExceptionHandler(Exception.class)

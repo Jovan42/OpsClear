@@ -645,6 +645,31 @@
 					"response": []
 				},
 				{
+					"name": "Notification Stream (SSE)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "text/event-stream"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/stream",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"stream"
+							]
+						},
+						"description": "Live notification events for the caller over Server-Sent Events (`text/event-stream`, ADR-0051). Events: `notification` (same shape as a list item), `read-state` (`{ \"ids\": [...], \"read\": true|false }` or `{ \"all\": true }`), and a `:heartbeat` comment on open and every 25 s. No replay: re-fetch the list and unread count on (re)connect. The server closes the stream after 30 minutes; at most 5 open streams per user (the oldest is closed). JWT auth (`Authorization` header). The response stays open: cancel the request in Postman to stop it."
+					},
+					"response": []
+				},
+				{
 					"name": "Get Notification Settings",
 					"request": {
 						"method": "GET",
