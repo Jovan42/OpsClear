@@ -23,6 +23,15 @@ final class NotificationPayload {
     static final String DESCRIPTION = "description";
     static final String DECISION = "decision";
     static final String COMMENT = "comment";
+    // Job lifecycle types (JOB-277). Deadlines are ISO-8601 instants.
+    static final String DEADLINE = "deadline";
+    static final String PRIORITY = "priority";
+    static final String FROM_STATUS = "fromStatus";
+    static final String TO_STATUS = "toStatus";
+    static final String BLOCK_REASON = "blockReason";
+    static final String BLOCKER_JOB_FRIENDLY_ID = "blockerJobFriendlyId";
+    static final String BLOCKER_JOB_TITLE = "blockerJobTitle";
+    static final String CHANGED_FIELDS = "changedFields";
     // Project, organisation and billing types (JOB-279)
     static final String ORG_NAME = "orgName";
     static final String ROLE = "role";

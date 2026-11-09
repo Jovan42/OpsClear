@@ -37,6 +37,44 @@ public class NotificationEventListener {
         notificationService.notifyNoteAdded(event);
     }
 
+    // --- Job lifecycle (JOB-277) ---
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onJobAssigned(JobAssignedEvent event) {
+        notificationService.notifyJobAssigned(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onJobStatusChanged(JobStatusChangedEvent event) {
+        notificationService.notifyJobStatusChanged(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onJobBlocked(JobBlockedEvent event) {
+        notificationService.notifyJobBlocked(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onBlockerCleared(BlockerClearedEvent event) {
+        notificationService.notifyBlockerCleared(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onJobUpdated(JobUpdatedEvent event) {
+        notificationService.notifyJobUpdated(event);
+    }
+
+    @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onJobDeleted(JobDeletedEvent event) {
+        notificationService.notifyJobDeleted(event);
+    }
+
     // --- Project, organisation and billing events (JOB-279) ---
 
     @Async(AsyncConfig.NOTIFICATION_EXECUTOR)
