@@ -1,8 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { notificationsApi } from '../../api/notifications';
 import type { NotificationSettings, NotificationType } from '../../types';
+import { toggleMuted } from '../notifications/notificationContent';
 
-const NOTIFICATION_SETTINGS_KEY = ['user', 'notification-settings'];
+export const NOTIFICATION_SETTINGS_KEY = ['user', 'notification-settings'];
+
+/** One toggle: turn `type` on (`enabled`) or off. */
+export interface NotificationToggle {
+  type: NotificationType;
+  enabled: boolean;
+}
 
 /** The caller's muted notification types (ADR-0051 §Muting). Server-stored, every device. */
 export function useNotificationSettings() {
@@ -12,35 +19,54 @@ export function useNotificationSettings() {
   });
 }
 
+function cachedMuted(queryClient: QueryClient): NotificationType[] {
+  return queryClient.getQueryData<NotificationSettings>(NOTIFICATION_SETTINGS_KEY)?.muted ?? [];
+}
+
+function setMuted(queryClient: QueryClient, muted: NotificationType[]) {
+  queryClient.setQueryData<NotificationSettings>(NOTIFICATION_SETTINGS_KEY, { muted });
+}
+
 /**
- * Replaces the muted list. Optimistic: the toggle flips at once and is put back if the
- * save fails (the API client shows the error toast).
+ * Mutation options for saving one toggle. Exported for the unit tests; components use
+ * `useUpdateNotificationSettings`.
+ *
+ * - Optimistic: `onMutate` flips the toggle in the cache at click time.
+ * - Saves run one at a time (`scope`), so the server applies them in click order. Each PUT
+ *   replaces the whole list, so parallel saves could finish out of order and lose a change.
+ * - Each PUT body is read from the cache when the save actually runs, so it carries every
+ *   toggle made so far, and not one that already failed and was reverted.
+ * - A failed save reverts only its own toggle, keeping later queued toggles.
  */
-export function useUpdateNotificationSettings() {
-  const queryClient = useQueryClient();
-  return useMutation({
+export function notificationSettingsMutationOptions(queryClient: QueryClient, onSaveError?: () => void) {
+  const othersPending = () => queryClient.isMutating({ mutationKey: NOTIFICATION_SETTINGS_KEY }) > 1;
+  return {
     mutationKey: NOTIFICATION_SETTINGS_KEY,
-    mutationFn: (muted: NotificationType[]) => notificationsApi.updateSettings(muted),
-    onMutate: async (muted) => {
+    scope: { id: 'notification-settings' },
+    mutationFn: () => notificationsApi.updateSettings(cachedMuted(queryClient)),
+    onMutate: async ({ type, enabled }: NotificationToggle) => {
       await queryClient.cancelQueries({ queryKey: NOTIFICATION_SETTINGS_KEY });
-      const previous = queryClient.getQueryData<NotificationSettings>(NOTIFICATION_SETTINGS_KEY);
-      queryClient.setQueryData<NotificationSettings>(NOTIFICATION_SETTINGS_KEY, { muted });
-      return { previous };
+      setMuted(queryClient, toggleMuted(cachedMuted(queryClient), type, enabled));
     },
-    onError: (_error, _muted, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(NOTIFICATION_SETTINGS_KEY, context.previous);
-      }
-      // A later toggle may have saved while this one was in flight, so resync with the
-      // server rather than trust the snapshot alone.
-      void queryClient.invalidateQueries({ queryKey: NOTIFICATION_SETTINGS_KEY });
+    onError: (_error: unknown, { type, enabled }: NotificationToggle) => {
+      setMuted(queryClient, toggleMuted(cachedMuted(queryClient), type, !enabled));
+      onSaveError?.();
     },
-    onSuccess: (settings) => {
-      // With quick toggles, an older response mustn't overwrite a newer optimistic value,
-      // so the server's answer is only written when no other save is in flight.
-      if (queryClient.isMutating({ mutationKey: NOTIFICATION_SETTINGS_KEY }) <= 1) {
+    onSuccess: (settings: NotificationSettings) => {
+      // A queued save will send a newer list; until then, keep its optimistic value.
+      if (!othersPending()) {
         queryClient.setQueryData(NOTIFICATION_SETTINGS_KEY, settings);
       }
     },
-  });
+  };
+}
+
+/**
+ * Saves one toggle (see `notificationSettingsMutationOptions`). `onSaveError` runs for
+ * every failed save, also when later toggles were made while it was in flight. The API
+ * client shows the error toast.
+ */
+export function useUpdateNotificationSettings(onSaveError?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation(notificationSettingsMutationOptions(queryClient, onSaveError));
 }

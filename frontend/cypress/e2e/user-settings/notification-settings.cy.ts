@@ -102,11 +102,22 @@ describe('Notification settings', () => {
       cy.loginAs(email);
       cy.visit('/settings');
 
+      // aria-disabled, not native disabled: it stays in the tab order so its explanation is read.
       toggle('SUBSCRIPTION_PAST_DUE')
         .should('have.attr', 'aria-checked', 'true')
-        .and('be.disabled')
-        .and('have.attr', 'aria-describedby');
-      cy.contains('Always on: billing problems affect the whole organisation.').should('be.visible');
+        .and('have.attr', 'aria-disabled', 'true')
+        .and('not.be.disabled')
+        .invoke('attr', 'aria-describedby')
+        .then((id) => {
+          cy.get(`#${id}`).should('have.text', 'Always on: billing problems affect the whole organisation.');
+        });
+      toggle('SUBSCRIPTION_PAST_DUE').focus();
+      toggle('SUBSCRIPTION_PAST_DUE').should('have.focus');
+
+      // Clicking it changes nothing and sends nothing.
+      toggle('SUBSCRIPTION_PAST_DUE').click();
+      toggle('SUBSCRIPTION_PAST_DUE').should('have.attr', 'aria-checked', 'true');
+      cy.get('@save.all').should('have.length', 0);
 
       toggle('NOTE_ADDED').click();
       cy.wait('@save').its('request.body').should('deep.eq', { muted: ['NOTE_ADDED'] });

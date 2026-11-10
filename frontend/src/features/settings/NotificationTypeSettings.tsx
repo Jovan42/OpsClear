@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import Button from '../../components/Button';
 import Skeleton from '../../components/Skeleton';
 import type { NotificationType } from '../../types';
 import {
   isMutable,
-  toggleMuted,
   typesInGroup,
   type NotificationGroup,
 } from '../notifications/notificationContent';
@@ -14,14 +14,17 @@ const GROUPS: NotificationGroup[] = ['JOB', 'ACCOUNT'];
 
 interface SwitchProps {
   readonly checked: boolean;
-  readonly disabled?: boolean;
+  /** Locked: stays focusable (so screen readers reach its description) but ignores input. */
+  readonly locked?: boolean;
   readonly labelledBy: string;
   readonly describedBy?: string;
   readonly testId: string;
   readonly onChange: (checked: boolean) => void;
 }
 
-function Switch({ checked, disabled = false, labelledBy, describedBy, testId, onChange }: SwitchProps) {
+// `aria-disabled`, not native `disabled`: a disabled button leaves the tab order, so keyboard
+// and screen-reader users would never hear why the switch can't be turned off.
+function Switch({ checked, locked = false, labelledBy, describedBy, testId, onChange }: SwitchProps) {
   return (
     <button
       type="button"
@@ -29,12 +32,17 @@ function Switch({ checked, disabled = false, labelledBy, describedBy, testId, on
       aria-checked={checked}
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      disabled={disabled}
+      aria-disabled={locked || undefined}
       data-testid={testId}
-      onClick={() => onChange(!checked)}
+      onClick={() => {
+        if (!locked) onChange(!checked);
+      }}
+      onKeyDown={(e) => {
+        if (locked && (e.key === 'Enter' || e.key === ' ')) e.preventDefault();
+      }}
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 ${
         checked ? 'bg-[var(--brand)]' : 'bg-gray-300 dark:bg-gray-600'
-      } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+      } ${locked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <span
         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
@@ -61,14 +69,14 @@ export function ScopeTag({ children }: { readonly children: string }) {
 export default function NotificationTypeSettings() {
   const { t } = useTranslation(['notifications']);
   const { data, isPending, isError, refetch } = useNotificationSettings();
-  const update = useUpdateNotificationSettings();
   const [saveFailed, setSaveFailed] = useState(false);
+  const update = useUpdateNotificationSettings(() => setSaveFailed(true));
 
   const muted = data?.muted ?? [];
 
   const onToggle = (type: NotificationType, enabled: boolean) => {
     setSaveFailed(false);
-    update.mutate(toggleMuted(muted, type, enabled), { onError: () => setSaveFailed(true) });
+    update.mutate({ type, enabled });
   };
 
   return (
@@ -96,13 +104,9 @@ export default function NotificationTypeSettings() {
       {isError && (
         <div className="p-5 flex items-center justify-between gap-4">
           <p className="text-sm text-red-600 dark:text-red-400">{t('settings.loadError')}</p>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="text-sm font-medium text-gray-700 dark:text-gray-200 underline cursor-pointer"
-          >
+          <Button variant="ghost" size="sm" onClick={() => void refetch()}>
             {t('settings.retry')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -135,7 +139,7 @@ export default function NotificationTypeSettings() {
                     </div>
                     <Switch
                       checked={enabled}
-                      disabled={locked}
+                      locked={locked}
                       labelledBy={labelId}
                       describedBy={descriptionId}
                       testId={`notification-type-toggle-${type}`}
