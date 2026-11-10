@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import ApiKeySection from './ApiKeySection';
+import NotificationTypeSettings, { ScopeTag } from './NotificationTypeSettings';
 import UpgradeCard from '../../components/UpgradeCard';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useCurrentOrg } from '../org/OrgContext';
@@ -61,14 +62,19 @@ function SelectControl<T extends string>({ value, options, onChange }: SelectCon
 interface SettingRowProps {
   readonly label: string;
   readonly description: string;
+  /** Where the setting is stored, shown as a tag next to the label. */
+  readonly scope?: string;
   readonly children: ReactNode;
 }
 
-function SettingRow({ label, description, children }: SettingRowProps) {
+function SettingRow({ label, description, scope, children }: SettingRowProps) {
   return (
     <div className="flex items-center justify-between gap-6 p-5">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{label}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {label}
+          {scope && <> <ScopeTag>{scope}</ScopeTag></>}
+        </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
       </div>
       {children}
@@ -261,13 +267,18 @@ export default function SettingsPage() {
           {t('settings.notificationsSection.heading')}
         </h2>
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-          <SettingRow label={t('settings.notificationsSection.sound.label')} description={t('settings.notificationsSection.sound.description')}>
+          <SettingRow
+            label={t('settings.notificationsSection.sound.label')}
+            description={t('settings.notificationsSection.sound.description')}
+            scope={t('settings.notificationsSection.sound.scope')}
+          >
             <SegmentedControl
               value={prefs.notificationSound ? 'true' : 'false'}
               options={SOUND_OPTIONS}
               onChange={(v) => update({ notificationSound: v === 'true' })}
             />
           </SettingRow>
+          <NotificationTypeSettings />
         </div>
       </section>
 

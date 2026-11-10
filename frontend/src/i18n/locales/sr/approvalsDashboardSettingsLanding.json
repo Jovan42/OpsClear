@@ -99,7 +99,8 @@
       "heading": "Obaveštenja",
       "sound": {
         "label": "Zvuk obaveštenja",
-        "description": "Pusti kratak zvuk kada novo obaveštenje stigne u karticu koju koristite.",
+        "description": "Pusti kratak zvuk kada novo obaveštenje stigne u karticu koju koristite. Čuva se samo u ovom pregledaču, kao tema i jezik.",
+        "scope": "Samo ovaj uređaj",
         "on": "Uključen",
         "off": "Isključen"
       }

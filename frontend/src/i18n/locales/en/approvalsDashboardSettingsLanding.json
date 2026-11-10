@@ -99,7 +99,8 @@
       "heading": "Notifications",
       "sound": {
         "label": "Notification sound",
-        "description": "Play a short sound when a new notification arrives in the tab you're using.",
+        "description": "Play a short sound when a new notification arrives in the tab you're using. Saved in this browser only, like theme and language.",
+        "scope": "This device only",
         "on": "On",
         "off": "Off"
       }
