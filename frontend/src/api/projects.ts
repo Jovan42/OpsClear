@@ -1,5 +1,10 @@
 import apiClient from './client';
-import type { ProjectResponse, ProjectMemberResponse, ProjectStatus } from '../types';
+import type {
+  ProjectResponse,
+  ProjectMemberResponse,
+  ProjectStatus,
+  UpdateProjectSettingsRequest,
+} from '../types';
 
 export const projectsApi = {
   list: (status?: ProjectStatus | 'ALL') =>
@@ -19,6 +24,13 @@ export const projectsApi = {
   updateStatus: (projectId: string, status: ProjectStatus) =>
     apiClient
       .patch<ProjectResponse>(`/api/projects/${projectId}/status`, { status })
+      .then((r) => r.data),
+
+  // The response's `links` is always empty (as with PUT): callers merge only the changed
+  // settings into the cached project.
+  updateSettings: (projectId: string, body: UpdateProjectSettingsRequest) =>
+    apiClient
+      .patch<ProjectResponse>(`/api/projects/${projectId}/settings`, body)
       .then((r) => r.data),
 
   delete: (projectId: string) =>

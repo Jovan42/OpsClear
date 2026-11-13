@@ -53,6 +53,7 @@
     "blockReasonsHeading": "Razlozi blokiranja",
     "blockReasonsHelp": "Unapred definisani razlozi koje članovi tima mogu izabrati prilikom blokiranja posla.",
     "noBlockReasons": "Nema definisanih razloga blokiranja. Podesite ih prilikom kreiranja projekta.",
+    "workflowHeading": "Tok rada",
     "dangerZoneHeading": "Opasna zona",
     "reactivateProjectTitle": "Ponovo aktiviraj ovaj projekat",
     "completeProjectTitle": "Završi ovaj projekat",
@@ -68,5 +69,15 @@
     "deleteModalSuffix": "i sve njegove poslove, beleške i odobrenja.",
     "cannotBeUndone": "Ovo se ne može poništiti.",
     "confirmTypeName": "Za potvrdu, unesite naziv projekta:"
+  },
+  "completionApproval": {
+    "label": "Zahtevaj odobrenje za završetak poslova",
+    "description": "Poslovi članova moraju da dobiju odobrenje vlasnika ili administratora pre završetka. Vlasnici i administratori završavaju direktno.",
+    "lockedOff": "Potreban je aktivan dodatak Odobrenja.",
+    "lockedOn": "Ne primenjuje se: potreban je aktivan dodatak Odobrenja. I dalje možete da ga isključite.",
+    "upgradeLink": "Nadogradite u podešavanjima organizacije",
+    "readOnly": "Samo vlasnici i administratori projekta mogu ovo da promene.",
+    "enabledToast": "Poslovi sada zahtevaju odobrenje za završetak",
+    "disabledToast": "Poslovi više ne zahtevaju odobrenje za završetak"
   }
 }

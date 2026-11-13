@@ -12,6 +12,7 @@ import Modal from '../../components/Modal';
 import Skeleton from '../../components/Skeleton';
 import RoleBadge from '../../components/RoleBadge';
 import AddMemberForm from './AddMemberForm';
+import CompletionApprovalSetting from './CompletionApprovalSetting';
 import {
   useProject,
   useProjectMembers,
@@ -285,6 +286,21 @@ export default function ProjectSettingsPage() {
               </ul>
             )}
           </div>
+        </section>
+      )}
+
+      {/* ── Workflow (ADR-0052; moves into the "Job screen" section with ADR-0053) ── */}
+      {project && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
+            {t('projects:projectSettingsPage.workflowHeading')}
+          </h2>
+          <CompletionApprovalSetting
+            projectId={projectId}
+            project={project}
+            canEdit={canEdit}
+            isCompleted={isCompleted}
+          />
         </section>
       )}
 

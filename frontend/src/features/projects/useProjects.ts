@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth/AuthContext';
 import { projectsApi } from '../../api/projects';
 import { projectLinksApi } from '../../api/links';
-import type { ProjectStatus } from '../../types';
+import type { ProjectResponse, ProjectStatus, UpdateProjectSettingsRequest } from '../../types';
 
 const PROJECT_ID_RE = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[A-Za-z]{2,6}-\d+)$/i;
 
@@ -67,6 +67,27 @@ export function useUpdateProjectStatus(projectId: string) {
     onSuccess: (data) => {
       queryClient.setQueryData(['projects', projectId], data);
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+/**
+ * ADR-0052 per-project settings. The PATCH response has `links: []`, so only the settings
+ * fields are merged into the cached project (not the whole response), then the project
+ * list is refetched.
+ */
+export function useUpdateProjectSettings(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateProjectSettingsRequest) => projectsApi.updateSettings(projectId, body),
+    onSuccess: (data) => {
+      queryClient.setQueryData<ProjectResponse>(['projects', projectId], (old) =>
+        old ? { ...old, requireCompletionApproval: data.requireCompletionApproval } : old,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: ['projects'],
+        predicate: (query) => typeof query.queryKey[1] !== 'string',
+      });
     },
   });
 }
