@@ -133,6 +133,10 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs/" + jobId + "/approvals/" + approvalId + "/status";
     }
 
+    static String cancelApproval(UUID projectId, UUID jobId, UUID approvalId) {
+        return "/api/projects/" + projectId + "/jobs/" + jobId + "/approvals/" + approvalId + "/cancel";
+    }
+
     static String pendingApprovals(UUID projectId) {
         return "/api/projects/" + projectId + "/approvals/pending";
     }

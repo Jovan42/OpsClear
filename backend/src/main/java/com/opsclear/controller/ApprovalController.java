@@ -61,6 +61,20 @@ public class ApprovalController {
     }
 
     @RequiresAddon(AddonCode.APPROVALS)
+    @PostMapping("/api/projects/{projectId}/jobs/{jobId}/approvals/{approvalId}/cancel")
+    public ResponseEntity<ApprovalResponse> cancel(
+            @PathVariable String projectId,
+            @PathVariable String jobId,
+            @PathVariable UUID approvalId,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        UUID pid = friendlyIdResolver.resolveProject(projectId, callerId);
+        UUID jid = friendlyIdResolver.resolveJob(jobId, callerId);
+        ApprovalModel approval = approvalService.cancel(pid, jid, approvalId, callerId);
+        return ResponseEntity.ok(ApprovalResponse.from(approval));
+    }
+
+    @RequiresAddon(AddonCode.APPROVALS)
     @GetMapping("/api/projects/{projectId}/jobs/{jobId}/approvals")
     public ResponseEntity<List<ApprovalResponse>> listByJob(
             @PathVariable String projectId,

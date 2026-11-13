@@ -157,6 +157,11 @@ public final class ErrorMessages {
                 "Access denied: you are not assigned to this job";
         public static final String COMPLETION_ALREADY_PENDING =
                 "A completion approval is already pending for this job";
+        public static final String CANNOT_SET_CANCELLED =
+                "Use the cancel endpoint to withdraw a completion approval";
+        public static final String CANCEL_DENIED =
+                "Only the requester or a project Owner/Admin can withdraw this approval";
+        public static final String ONLY_COMPLETION_CANCELLABLE = "Only completion approvals can be withdrawn";
         private Approval() {
         }
     }

@@ -161,6 +161,45 @@ public class ApprovalRepository {
                 .execute();
     }
 
+    /**
+     * Cancels completion approval {@code approvalId} if it's still pending (ADR-0052 withdrawal). The canceller is
+     * recorded as the approver and {@code cancelledAt} as the decision time.
+     *
+     * @return the number of rows updated: 0 if it's no longer pending (or isn't a completion approval)
+     */
+    public int cancelPendingCompletion(UUID approvalId, UUID cancelledBy, String comment, Instant cancelledAt) {
+        return dsl.update(APPROVALS)
+                .set(APPROVALS.STATUS, ApprovalStatus.CANCELLED.name())
+                .set(APPROVALS.APPROVER_ID, cancelledBy)
+                .set(APPROVALS.COMMENT, comment)
+                .set(APPROVALS.DECIDED_AT, toLocalDateTime(cancelledAt))
+                .where(APPROVALS.ID.eq(approvalId))
+                .and(APPROVALS.KIND.eq(ApprovalKind.COMPLETION.name()))
+                .and(APPROVALS.STATUS.eq(ApprovalStatus.PENDING.name()))
+                .execute();
+    }
+
+    /**
+     * Cancels the job's pending completion approval, if it has one (ADR-0052 auto-cancel on direct completion or
+     * deletion), recording {@code cancelledBy} as the approver.
+     *
+     * @return the cancelled approval, or empty if none was pending
+     */
+    public Optional<ApprovalModel> cancelPendingCompletionByJobId(UUID jobId, UUID cancelledBy, String comment,
+                                                                  Instant cancelledAt) {
+        return dsl.update(APPROVALS)
+                .set(APPROVALS.STATUS, ApprovalStatus.CANCELLED.name())
+                .set(APPROVALS.APPROVER_ID, cancelledBy)
+                .set(APPROVALS.COMMENT, comment)
+                .set(APPROVALS.DECIDED_AT, toLocalDateTime(cancelledAt))
+                .where(APPROVALS.JOB_ID.eq(jobId))
+                .and(APPROVALS.KIND.eq(ApprovalKind.COMPLETION.name()))
+                .and(APPROVALS.STATUS.eq(ApprovalStatus.PENDING.name()))
+                .returning(APPROVALS.ID)
+                .fetchOptional()
+                .map(r -> findById(r.getId()));
+    }
+
     /** Records the outcome of an approved completion approval (ADR-0052); {@code reason} is null when applied. */
     public void updateCompletionOutcome(UUID approvalId, boolean applied, String reason) {
         dsl.update(APPROVALS)

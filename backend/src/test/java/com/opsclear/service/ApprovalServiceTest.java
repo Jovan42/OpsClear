@@ -4,6 +4,7 @@ import com.opsclear.event.ApprovalDecidedEvent;
 import com.opsclear.event.ApprovalRequestedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ApprovalKind;
@@ -51,6 +52,7 @@ class ApprovalServiceTest {
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private JobStatusTransitioner jobStatusTransitioner;
+    @Mock private CompletionApprovalCanceller completionApprovalCanceller;
 
     private ApprovalService approvalService;
 
@@ -67,7 +69,7 @@ class ApprovalServiceTest {
     void setUp() {
         approvalService = new ApprovalService(
                 approvalRepository, jobRepository, projectRepository, projectMemberRepository, eventPublisher,
-                jobStatusTransitioner);
+                jobStatusTransitioner, completionApprovalCanceller);
 
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();
@@ -312,6 +314,23 @@ class ApprovalServiceTest {
                 projectId, jobId, approvalId, ApprovalStatus.PENDING, null, callerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Cannot transition an approval back to PENDING");
+    }
+
+    @Test
+    @DisplayName("decide should throw BadRequestException when status is CANCELLED (withdrawal has its own endpoint)")
+    void decide_shouldThrow_whenStatusIsCancelled() {
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(approvalRepository.findByIdAndJobId(approvalId, jobId))
+                .thenReturn(Optional.of(buildApproval(ApprovalStatus.PENDING)));
+
+        assertThatThrownBy(() -> approvalService.decide(
+                projectId, jobId, approvalId, ApprovalStatus.CANCELLED, null, callerId))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(ErrorMessages.Approval.CANNOT_SET_CANCELLED);
+        verify(approvalRepository, never()).updateDecision(any(), any(), any(), any(), any());
     }
 
     @Test

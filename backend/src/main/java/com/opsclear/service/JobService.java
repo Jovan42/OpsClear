@@ -71,6 +71,7 @@ public class JobService {
     private final ApprovalRepository approvalRepository;
     private final ApprovalService approvalService;
     private final AddonAccessChecker addonAccessChecker;
+    private final CompletionApprovalCanceller completionApprovalCanceller;
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
@@ -249,6 +250,11 @@ public class JobService {
             approvalService.createCompletionApproval(project, job, requester, message);
         } else {
             result = jobStatusTransitioner.transition(job, newStatus, reason, requester);
+            if (newStatus == JobStatus.COMPLETED) {
+                // ADR-0052: completing directly (Owner/Admin, or a Member while the gate isn't enforced) settles any
+                // pending completion request
+                completionApprovalCanceller.cancelOnDirectCompletion(result, requester);
+            }
         }
         attachPendingCompletionApproval(result);
         return JobStatusUpdateResult.builder().job(result).completionRequested(completionRequested).build();
@@ -266,12 +272,14 @@ public class JobService {
     public void softDelete(UUID projectId, UUID jobId, UUID requesterId) {
         requireOrgMembership(requesterId);
         requireProjectExistsById(projectId);
-        requireOwnerOrAdmin(projectId, requesterId);
-        JobModel job = requireJob(jobId);
+        ProjectMemberModel requester = requireOwnerOrAdmin(projectId, requesterId);
+        // Row lock (ADR-0052): the job first, then its pending completion approval, as in updateStatus and decide
+        JobModel job = requireJobForUpdate(jobId);
         requireJobInProject(job, projectId);
 
         job.softDelete();
         jobRepository.save(job);
+        completionApprovalCanceller.cancelOnDeletion(job, requester);
         log.info("Soft-deleted job '{}' from project {}", jobId, projectId);
         eventPublisher.publishEvent(new JobDeletedEvent(jobId, projectId, requesterId));
     }
@@ -387,10 +395,11 @@ public class JobService {
                 .orElseThrow(() -> new ForbiddenException(ErrorMessages.Member.NOT_A_MEMBER));
     }
 
-    private void requireOwnerOrAdmin(UUID projectId, UUID userId) {
+    private ProjectMemberModel requireOwnerOrAdmin(UUID projectId, UUID userId) {
         ProjectMemberModel requester = requireMember(projectId, userId);
         if (requester.getRole() == ProjectMemberRole.MEMBER) {
             throw new ForbiddenException(ErrorMessages.Member.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
         }
+        return requester;
     }
 }

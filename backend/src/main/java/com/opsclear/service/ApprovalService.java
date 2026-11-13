@@ -44,6 +44,7 @@ public class ApprovalService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final JobStatusTransitioner jobStatusTransitioner;
+    private final CompletionApprovalCanceller completionApprovalCanceller;
 
     @Transactional
     public ApprovalModel request(UUID projectId, UUID jobId, String description, UUID callerId) {
@@ -131,6 +132,27 @@ public class ApprovalService {
         }
     }
 
+    /**
+     * Withdraws a pending completion approval (ADR-0052): allowed for its requester or any project Owner/Admin. The
+     * job's status doesn't change. The requester is notified only when someone else withdraws it.
+     *
+     * @throws ForbiddenException if the caller is neither the requester nor an Owner/Admin
+     * @throws ConflictException  if it isn't a completion approval, is no longer pending, or the project is completed
+     */
+    @Transactional
+    public ApprovalModel cancel(UUID projectId, UUID jobId, UUID approvalId, UUID callerId) {
+        ProjectModel project = requireProjectExists(projectId);
+        requireProjectNotCompleted(project);
+        ProjectMemberModel caller = requireMember(projectId, callerId);
+        requireJobInProject(jobId, projectId);
+        ApprovalModel approval = requireApprovalExists(approvalId, jobId);
+        requireCanCancel(caller, approval);
+        requireCompletionKind(approval);
+        // Same lock order as decide and JobService: the job row first, then the approval
+        requireJobInProjectForUpdate(jobId, projectId);
+        return completionApprovalCanceller.withdraw(projectId, approval, callerId);
+    }
+
     @Transactional(readOnly = true)
     public List<ApprovalModel> listByJob(UUID projectId, UUID jobId, UUID callerId) {
         requireProjectExistsById(projectId);
@@ -209,9 +231,25 @@ public class ApprovalService {
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Approval.NOT_FOUND));
     }
 
+    private void requireCanCancel(ProjectMemberModel caller, ApprovalModel approval) {
+        if (caller.getRole() == ProjectMemberRole.MEMBER
+                && !caller.getUserId().equals(approval.getRequesterId())) {
+            throw new ForbiddenException(ErrorMessages.Approval.CANCEL_DENIED);
+        }
+    }
+
+    private void requireCompletionKind(ApprovalModel approval) {
+        if (approval.getKind() != ApprovalKind.COMPLETION) {
+            throw new ConflictException(ErrorMessages.Approval.ONLY_COMPLETION_CANCELLABLE);
+        }
+    }
+
     private void requireStatusIsDecision(ApprovalStatus status) {
         if (status == ApprovalStatus.PENDING) {
             throw new BadRequestException(ErrorMessages.Approval.CANNOT_SET_PENDING);
+        }
+        if (status == ApprovalStatus.CANCELLED) {
+            throw new BadRequestException(ErrorMessages.Approval.CANNOT_SET_CANCELLED);
         }
     }
 

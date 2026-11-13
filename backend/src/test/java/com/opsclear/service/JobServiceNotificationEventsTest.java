@@ -76,6 +76,7 @@ class JobServiceNotificationEventsTest {
     @Mock private ApprovalRepository approvalRepository;
     @Mock private ApprovalService approvalService;
     @Mock private AddonAccessChecker addonAccessChecker;
+    @Mock private CompletionApprovalCanceller completionApprovalCanceller;
 
     private JobService jobService;
 
@@ -93,7 +94,7 @@ class JobServiceNotificationEventsTest {
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
                 jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
                 milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
-                transitioner, approvalRepository, approvalService, addonAccessChecker);
+                transitioner, approvalRepository, approvalService, addonAccessChecker, completionApprovalCanceller);
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -351,7 +352,7 @@ class JobServiceNotificationEventsTest {
     @DisplayName("soft delete publishes JobDeletedEvent")
     void softDelete_shouldPublishJobDeleted() {
         givenCaller(ownerId, ProjectMemberRole.OWNER);
-        givenExistingJob();
+        givenExistingJobForStatusChange();
 
         jobService.softDelete(projectId, jobId, ownerId);
 

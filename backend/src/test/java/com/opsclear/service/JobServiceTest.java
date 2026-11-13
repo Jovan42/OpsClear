@@ -73,6 +73,7 @@ class JobServiceTest {
     @Mock private ApprovalRepository approvalRepository;
     @Mock private ApprovalService approvalService;
     @Mock private AddonAccessChecker addonAccessChecker;
+    @Mock private CompletionApprovalCanceller completionApprovalCanceller;
 
     private JobService jobService;
 
@@ -91,7 +92,7 @@ class JobServiceTest {
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
                 jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
                 milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
-                transitioner, approvalRepository, approvalService, addonAccessChecker);
+                transitioner, approvalRepository, approvalService, addonAccessChecker, completionApprovalCanceller);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -1137,7 +1138,7 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         jobService.softDelete(projectId, jobId, ownerId);
@@ -1146,6 +1147,8 @@ class JobServiceTest {
         verify(jobRepository).save(captor.capture());
         assertThat(captor.getValue().isDeleted()).isTrue();
         assertThat(captor.getValue().getDeletedAt()).isNotNull();
+        // ADR-0052: deleting the job cancels its pending completion approval, if any
+        verify(completionApprovalCanceller).cancelOnDeletion(job, ownerMembership);
     }
 
     @Test
@@ -1170,7 +1173,7 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.empty());
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> jobService.softDelete(projectId, jobId, ownerId))
                 .isInstanceOf(NotFoundException.class)
@@ -1191,7 +1194,7 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
         assertThatThrownBy(() -> jobService.softDelete(projectId, jobId, ownerId))
                 .isInstanceOf(NotFoundException.class)
