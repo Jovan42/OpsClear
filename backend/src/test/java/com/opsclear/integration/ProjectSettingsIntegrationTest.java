@@ -120,11 +120,15 @@ class ProjectSettingsIntegrationTest {
     }
 
     private void givenSubscriptionWithAddon(String addonKey) {
+        givenSubscriptionWithAddon(addonKey, "ACTIVE");
+    }
+
+    private void givenSubscriptionWithAddon(String addonKey, String subscriptionStatus) {
         UUID addonId = addonRepository.findAll().stream()
                 .filter(a -> a.getKey().equals(addonKey)).findFirst().orElseThrow().getId();
         UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(addonId));
-        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, subscriptionStatus, null, null);
     }
 
     private void givenGate(boolean on) {
@@ -190,7 +194,7 @@ class ProjectSettingsIntegrationTest {
     }
 
     @Test
-    @DisplayName("Turning the gate on without the APPROVALS add-on gets 403 and the gate stays off")
+    @DisplayName("Turning the gate on with real billing but only a different add-on (NOTES) gets 403")
     void updateSettings_shouldReturn403_whenEnablingWithoutAddon() throws Exception {
         givenSubscriptionWithAddon("NOTES");
 
@@ -198,6 +202,32 @@ class ProjectSettingsIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message")
                         .value(ErrorMessages.Project.COMPLETION_GATE_REQUIRES_APPROVALS_ADDON));
+
+        assertThat(gateInDb()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Turning the gate on while the subscription is PAST_DUE gets 403, even with APPROVALS")
+    void updateSettings_shouldReturn403_whenEnablingWhilePastDue() throws Exception {
+        givenSubscriptionWithAddon("APPROVALS", "PAST_DUE");
+
+        mockMvc.perform(patchSettings(ApiPaths.projectSettings(projectId), ownerId, GATE_ON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message")
+                        .value(ErrorMessages.Project.COMPLETION_GATE_REQUIRES_APPROVALS_ADDON));
+
+        assertThat(gateInDb()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Turning the gate off while the subscription is PAST_DUE is allowed")
+    void updateSettings_shouldDisableGate_whilePastDue() throws Exception {
+        givenSubscriptionWithAddon("APPROVALS", "PAST_DUE");
+        givenGate(true);
+
+        mockMvc.perform(patchSettings(ApiPaths.projectSettings(projectId), ownerId, GATE_OFF))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requireCompletionApproval").value(false));
 
         assertThat(gateInDb()).isFalse();
     }

@@ -47,7 +47,7 @@ class RequiresAddonAspectTest {
 
     @BeforeEach
     void setUp() {
-        aspect = new RequiresAddonAspect(subscriptionRepository, organisationRepository);
+        aspect = new RequiresAddonAspect(new AddonAccessChecker(subscriptionRepository), organisationRepository);
 
         userId = UUID.randomUUID();
         orgId = UUID.randomUUID();

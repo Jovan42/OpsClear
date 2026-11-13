@@ -82,7 +82,8 @@ public class JobStatusTransitioner {
 
     /**
      * Checks that moving {@code job} to {@code to} is a legal transition and that {@code changedBy} may make it,
-     * without changing anything.
+     * without changing anything. It does <b>not</b> include the block-reason check, which only
+     * {@link #transition} makes: a caller validating a move to {@code BLOCKED} must check the reason itself.
      *
      * @throws BadRequestException if the transition is illegal
      * @throws ForbiddenException  if {@code changedBy} may not make this transition

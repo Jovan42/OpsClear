@@ -12,7 +12,7 @@ public final class ErrorMessages {
         public static final String HAS_OPEN_JOBS =
                 "Cannot complete project: %d job(s) are still IN_PROGRESS or BLOCKED";
         public static final String COMPLETION_GATE_REQUIRES_APPROVALS_ADDON =
-                "APPROVALS add-on is required to require approval for job completion";
+                "An active APPROVALS add-on (not past due) is required to require approval for job completion";
 
         private Project() {
         }

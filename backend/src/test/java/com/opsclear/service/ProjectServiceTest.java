@@ -704,7 +704,7 @@ class ProjectServiceTest {
     void updateSettings_shouldEnableGate_whenOwnerAndAddonActive() {
         UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
         givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
-        when(addonAccessChecker.hasAddon(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(true);
+        when(addonAccessChecker.isAddonUsableForWrites(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(true);
         givenSaveReturnsArgument();
 
         ProjectModel result = projectService.updateSettings(projectId, ownerId, gate(true));
@@ -722,7 +722,7 @@ class ProjectServiceTest {
         UUID adminId = UUID.randomUUID();
         UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
         givenSettingsCaller(projectId, adminId, ProjectMemberRole.ADMIN);
-        when(addonAccessChecker.hasAddon(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(true);
+        when(addonAccessChecker.isAddonUsableForWrites(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(true);
         givenSaveReturnsArgument();
 
         ProjectModel result = projectService.updateSettings(projectId, adminId, gate(true));
@@ -776,11 +776,11 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("updateSettings: turning the gate on without the APPROVALS add-on gets 403 and nothing is saved")
+    @DisplayName("updateSettings: turning the gate on without a usable APPROVALS add-on (missing or past due) gets 403")
     void updateSettings_shouldThrowForbidden_whenEnablingWithoutAddon() {
         UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
         givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
-        when(addonAccessChecker.hasAddon(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(false);
+        when(addonAccessChecker.isAddonUsableForWrites(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(false);
 
         assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId, gate(true)))
                 .isInstanceOf(ForbiddenException.class)

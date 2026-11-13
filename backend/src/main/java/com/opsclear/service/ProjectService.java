@@ -223,7 +223,7 @@ public class ProjectService {
     }
 
     private void requireApprovalsAddon(UUID orgId) {
-        if (!addonAccessChecker.hasAddon(orgId, AddonCode.APPROVALS)) {
+        if (!addonAccessChecker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)) {
             throw new ForbiddenException(ErrorMessages.Project.COMPLETION_GATE_REQUIRES_APPROVALS_ADDON);
         }
     }
