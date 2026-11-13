@@ -10,6 +10,7 @@ export const mockOrgState: OrgState = {
   org: null,
   subscription: null,
   hasAddon: () => true,
+  isAddonUsableForWrites: () => true,
   setOrg: () => {},
   setSubscription: () => {},
   clearOrg: () => {},

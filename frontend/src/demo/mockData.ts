@@ -103,6 +103,7 @@ const BASE_PROJECT: ProjectResponse = {
   ownerName: DEMO_USERS.ana.name,
   status: 'ACTIVE',
   createdAt: hoursAgo(24 * 90),
+  requireCompletionApproval: false,
   links: [
     {
       id: 'demo-link-figma',
@@ -397,6 +398,7 @@ const BASE_TRACKING_PROJECT: ProjectResponse = {
   ownerName: DEMO_USERS.ana.name,
   status: 'ACTIVE',
   createdAt: hoursAgo(24 * 30),
+  requireCompletionApproval: false,
   links: [],
 };
 

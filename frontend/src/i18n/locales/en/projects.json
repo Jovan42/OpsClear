@@ -53,6 +53,7 @@
     "blockReasonsHeading": "Block Reasons",
     "blockReasonsHelp": "Pre-configured reasons team members can select when blocking a job.",
     "noBlockReasons": "No block reasons configured. Set them when creating the project.",
+    "workflowHeading": "Workflow",
     "dangerZoneHeading": "Danger zone",
     "reactivateProjectTitle": "Reactivate this project",
     "completeProjectTitle": "Complete this project",
@@ -68,5 +69,17 @@
     "deleteModalSuffix": "and all its jobs, notes, and approvals.",
     "cannotBeUndone": "This cannot be undone.",
     "confirmTypeName": "To confirm, type the project name:"
+  },
+  "completionApproval": {
+    "label": "Require approval to complete jobs",
+    "description": "Members' jobs need Owner/Admin approval before they're completed. Owners and Admins complete directly.",
+    "lockedOff": "Requires an active Approvals add-on.",
+    "lockedOn": "Not enforced: requires an active Approvals add-on. You can still turn it off.",
+    "lockedOnReadOnly": "Not enforced: requires an active Approvals add-on.",
+    "upgradeLink": "Upgrade in org settings",
+    "askOrgOwner": "Ask your organisation owner to upgrade.",
+    "readOnly": "Only project Owners and Admins can change this.",
+    "enabledToast": "Jobs now need approval to complete",
+    "disabledToast": "Jobs no longer need approval to complete"
   }
 }

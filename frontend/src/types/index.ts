@@ -12,6 +12,14 @@ export interface ProjectResponse {
   status: ProjectStatus;
   createdAt: string;
   links: LinkResponse[];
+  /** ADR-0052: Members' completions need Owner/Admin approval. Enforced only while the
+   *  org's APPROVALS add-on is usable (not past due). */
+  requireCompletionApproval: boolean;
+}
+
+/** ADR-0052: body of PATCH /api/projects/{id}/settings. A missing field is left unchanged. */
+export interface UpdateProjectSettingsRequest {
+  requireCompletionApproval?: boolean;
 }
 
 // ADR-0045: org-wide project directory (Owner/Admin only), regardless of the

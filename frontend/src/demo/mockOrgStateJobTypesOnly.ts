@@ -10,6 +10,7 @@ export const mockOrgStateJobTypesOnly: OrgState = {
   org: null,
   subscription: null,
   hasAddon: (key) => key === 'JOB_TYPES',
+  isAddonUsableForWrites: (key) => key === 'JOB_TYPES',
   setOrg: () => {},
   setSubscription: () => {},
   clearOrg: () => {},
