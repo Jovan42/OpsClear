@@ -335,6 +335,52 @@
 					"response": []
 				},
 				{
+					"name": "Update Project Settings (require completion approval on)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"requireCompletionApproval\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "settings"]
+						},
+						"description": "Partial update of per-project settings (ADR-0052). Omitted or null fields stay unchanged. Owner/Admin only (403 otherwise); completed project returns 409. Turning `requireCompletionApproval` on requires the `APPROVALS` add-on (403 otherwise). Returns 200 with the project."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project Settings (require completion approval off)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"requireCompletionApproval\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "settings"]
+						},
+						"description": "Turns the completion approval gate off. Always allowed for Owner/Admin, with or without the `APPROVALS` add-on. Pending completion approvals are left as they are."
+					},
+					"response": []
+				},
+				{
 					"name": "Delete Project",
 					"request": {
 						"method": "DELETE",

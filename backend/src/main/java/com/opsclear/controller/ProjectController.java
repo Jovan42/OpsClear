@@ -3,6 +3,7 @@ package com.opsclear.controller;
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.ProjectResponse;
 import com.opsclear.dto.UpdateProjectRequest;
+import com.opsclear.dto.UpdateProjectSettingsRequest;
 import com.opsclear.dto.UpdateProjectStatusRequest;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
@@ -89,6 +90,17 @@ public class ProjectController {
         UUID userId = SecurityUtils.resolveUserId(auth);
         UUID projectId = friendlyIdResolver.resolveProject(id, userId);
         ProjectModel project = projectService.updateStatus(projectId, request.getStatus(), userId);
+        return ResponseEntity.ok(ProjectResponse.from(project));
+    }
+
+    @PatchMapping("/{id}/settings")
+    public ResponseEntity<ProjectResponse> updateSettings(
+            @PathVariable String id,
+            @Valid @RequestBody UpdateProjectSettingsRequest request,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        UUID pid = friendlyIdResolver.resolveProject(id, callerId);
+        ProjectModel project = projectService.updateSettings(pid, callerId, request);
         return ResponseEntity.ok(ProjectResponse.from(project));
     }
 

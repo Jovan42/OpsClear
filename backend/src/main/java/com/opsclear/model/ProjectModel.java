@@ -27,6 +27,8 @@ public class ProjectModel {
     private UUID organisationId;
     @Builder.Default
     private ProjectStatus status = ProjectStatus.ACTIVE;
+    // ADR-0052: Members' completions need Owner/Admin approval when true
+    private boolean requireCompletionApproval;
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;

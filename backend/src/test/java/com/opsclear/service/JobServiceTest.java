@@ -81,7 +81,13 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository, jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository, milestoneRepository, jobTypeRepository, blockReasonService, organisationRepository, friendlyIdService, eventPublisher);
+        // Real transitioner over the same mocks, so status tests keep covering the full transition (JOB-285)
+        JobStatusTransitioner transitioner = new JobStatusTransitioner(jobRepository, jobStatusHistoryRepository,
+                jobRelationshipRepository, blockReasonService, eventPublisher);
+        jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
+                jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
+                milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
+                transitioner);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
