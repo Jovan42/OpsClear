@@ -9,6 +9,8 @@ import type {
   LinkResponse,
   MilestoneResponse,
   NoteResponse,
+  NotificationResponse,
+  NotificationType,
   ProjectMemberResponse,
   ProjectResponse,
   RecurringScheduleResponse,
@@ -1004,6 +1006,184 @@ const BASE_FEEDBACK_SUBMISSIONS: FeedbackSubmissionResponse[] = [
   },
 ];
 
+// The Notifications card's inbox (ADR-0051, JOB-330), for the demo persona (John, the
+// project Owner). Newest first, one of most kinds across both settings groups, the first
+// four unread so the bell shows a badge. Each item points at a job, schedule or feedback
+// entry from the dataset above, and every target is a route the demo registers, so
+// clicking an item opens the matching demo page.
+
+const PROJECT_SNAPSHOT = { projectFriendlyId: DEMO_PROJECT_ID, projectName: BASE_PROJECT.name };
+
+function notificationActor(user: { id: string; name: string }) {
+  return { id: user.id, name: user.name };
+}
+
+/** Top-level keys plus the payload snapshot every job notification carries. */
+function jobNotification(friendlyId: string, actorUser: { id: string; name: string } | null) {
+  const job = BASE_JOBS.find((j) => j.friendlyId === friendlyId);
+  return {
+    actor: actorUser ? notificationActor(actorUser) : null,
+    projectFriendlyId: DEMO_PROJECT_ID,
+    jobFriendlyId: friendlyId,
+    snapshot: {
+      ...PROJECT_SNAPSHOT,
+      jobFriendlyId: friendlyId,
+      jobTitle: job?.title,
+      ...(actorUser ? { actorName: actorUser.name } : {}),
+    },
+  };
+}
+
+const NOTIFIED = {
+  blocked: jobNotification('DEMO-102', DEMO_USERS.iva),
+  approval: jobNotification('DEMO-106', DEMO_USERS.iva),
+  overdue: jobNotification('DEMO-109', null),
+  note: jobNotification('DEMO-101', DEMO_USERS.marko),
+  assigned: jobNotification('DEMO-110', DEMO_USERS.marko),
+  cleared: jobNotification('DEMO-106', DEMO_USERS.iva),
+  completed: jobNotification('DEMO-107', DEMO_USERS.marko),
+  decided: jobNotification('DEMO-111', DEMO_USERS.marko),
+  dueSoon: jobNotification('DEMO-105', null),
+};
+
+const BASE_NOTIFICATIONS: NotificationResponse[] = [
+  {
+    id: 'demo-notification-01',
+    type: 'JOB_BLOCKED',
+    read: false,
+    createdAt: hoursAgo(0.3),
+    actor: NOTIFIED.blocked.actor,
+    projectFriendlyId: NOTIFIED.blocked.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.blocked.jobFriendlyId,
+    approvalId: null,
+    payload: { ...NOTIFIED.blocked.snapshot, blockReason: 'Waiting on design review from John' },
+  },
+  {
+    id: 'demo-notification-02',
+    type: 'APPROVAL_REQUESTED',
+    read: false,
+    createdAt: hoursAgo(1),
+    actor: NOTIFIED.approval.actor,
+    projectFriendlyId: NOTIFIED.approval.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.approval.jobFriendlyId,
+    approvalId: 'demo-approval-02',
+    payload: {
+      ...NOTIFIED.approval.snapshot,
+      description: 'New copy is drafted — OK to publish to the live checkout page?',
+    },
+  },
+  {
+    id: 'demo-notification-03',
+    type: 'JOB_OVERDUE',
+    read: false,
+    createdAt: hoursAgo(3),
+    actor: NOTIFIED.overdue.actor,
+    projectFriendlyId: NOTIFIED.overdue.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.overdue.jobFriendlyId,
+    approvalId: null,
+    payload: { ...NOTIFIED.overdue.snapshot, deadline: daysFromNow(-2) },
+  },
+  {
+    id: 'demo-notification-04',
+    type: 'NOTE_ADDED',
+    read: false,
+    createdAt: hoursAgo(5),
+    actor: NOTIFIED.note.actor,
+    projectFriendlyId: NOTIFIED.note.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.note.jobFriendlyId,
+    approvalId: null,
+    payload: NOTIFIED.note.snapshot,
+  },
+  {
+    id: 'demo-notification-05',
+    type: 'JOB_ASSIGNED',
+    read: true,
+    createdAt: hoursAgo(26),
+    actor: NOTIFIED.assigned.actor,
+    projectFriendlyId: NOTIFIED.assigned.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.assigned.jobFriendlyId,
+    approvalId: null,
+    payload: { ...NOTIFIED.assigned.snapshot, priority: 'HIGH' },
+  },
+  {
+    id: 'demo-notification-06',
+    type: 'BLOCKER_CLEARED',
+    read: true,
+    createdAt: hoursAgo(28),
+    actor: NOTIFIED.cleared.actor,
+    projectFriendlyId: NOTIFIED.cleared.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.cleared.jobFriendlyId,
+    approvalId: null,
+    payload: {
+      ...NOTIFIED.cleared.snapshot,
+      blockerJobFriendlyId: 'DEMO-104',
+      blockerJobTitle: 'Launch beta to internal team',
+    },
+  },
+  {
+    id: 'demo-notification-07',
+    type: 'JOB_STATUS_CHANGED',
+    read: true,
+    createdAt: hoursAgo(30),
+    actor: NOTIFIED.completed.actor,
+    projectFriendlyId: NOTIFIED.completed.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.completed.jobFriendlyId,
+    approvalId: null,
+    payload: { ...NOTIFIED.completed.snapshot, fromStatus: 'IN_PROGRESS', toStatus: 'COMPLETED' },
+  },
+  {
+    id: 'demo-notification-08',
+    type: 'APPROVAL_DECIDED',
+    read: true,
+    createdAt: hoursAgo(48),
+    actor: NOTIFIED.decided.actor,
+    projectFriendlyId: NOTIFIED.decided.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.decided.jobFriendlyId,
+    approvalId: null,
+    payload: {
+      ...NOTIFIED.decided.snapshot,
+      decision: 'APPROVED',
+      comment: 'Fine to archive, just keep the export for a month.',
+    },
+  },
+  {
+    id: 'demo-notification-09',
+    type: 'JOB_DEADLINE_SOON',
+    read: true,
+    createdAt: hoursAgo(52),
+    actor: NOTIFIED.dueSoon.actor,
+    projectFriendlyId: NOTIFIED.dueSoon.projectFriendlyId,
+    jobFriendlyId: NOTIFIED.dueSoon.jobFriendlyId,
+    approvalId: null,
+    payload: { ...NOTIFIED.dueSoon.snapshot, deadline: daysFromNow(-1) },
+  },
+  {
+    id: 'demo-notification-10',
+    type: 'SCHEDULE_RUN_MISSED',
+    read: true,
+    createdAt: hoursAgo(24 * 4),
+    actor: null,
+    projectFriendlyId: DEMO_PROJECT_ID,
+    jobFriendlyId: null,
+    approvalId: null,
+    payload: { ...PROJECT_SNAPSHOT, scheduleName: 'Weekly QA sweep — Mondays', missedAt: hoursAgo(24 * 4 + 2) },
+  },
+  {
+    id: 'demo-notification-11',
+    type: 'FEEDBACK_RESOLVED',
+    read: true,
+    createdAt: hoursAgo(24 * 6),
+    actor: null,
+    projectFriendlyId: null,
+    jobFriendlyId: null,
+    approvalId: null,
+    payload: { orgName: ORG_NAME, feedbackTitle: 'Bulk-assign jobs from the list view', outcome: 'CREDITED' },
+  },
+];
+
+// One type muted out of the box, so the mute settings slide shows both states.
+const BASE_NOTIFICATION_MUTED: NotificationType[] = ['JOB_UPDATED'];
+
 // ---- mutable in-memory store, reset per demo-overlay open ----
 
 export interface DemoStore {
@@ -1020,6 +1200,8 @@ export interface DemoStore {
   missedRunsByScheduleId: Record<string, ScheduleMissedRunResponse[]>;
   apiKeys: ApiKeyResponse[];
   feedbackSubmissions: FeedbackSubmissionResponse[];
+  notifications: NotificationResponse[];
+  notificationMuted: NotificationType[];
   trackingProject: ProjectResponse;
   trackingJobs: JobResponse[];
   trackingJobTypes: JobTypeResponse[];
@@ -1040,6 +1222,8 @@ function freshStore(): DemoStore {
     missedRunsByScheduleId: structuredClone(BASE_MISSED_RUNS),
     apiKeys: structuredClone(BASE_API_KEYS),
     feedbackSubmissions: structuredClone(BASE_FEEDBACK_SUBMISSIONS),
+    notifications: structuredClone(BASE_NOTIFICATIONS),
+    notificationMuted: structuredClone(BASE_NOTIFICATION_MUTED),
     trackingProject: structuredClone(BASE_TRACKING_PROJECT),
     trackingJobs: structuredClone(BASE_TRACKING_JOBS),
     trackingJobTypes: structuredClone(BASE_TRACKING_JOB_TYPES),
