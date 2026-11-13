@@ -156,6 +156,51 @@ public class ApprovalsRecord extends UpdatableRecordImpl<ApprovalsRecord> {
         return (LocalDateTime) get(8);
     }
 
+    /**
+     * Setter for <code>public.approvals.kind</code>.
+     */
+    public ApprovalsRecord setKind(String value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.approvals.kind</code>.
+     */
+    public String getKind() {
+        return (String) get(9);
+    }
+
+    /**
+     * Setter for <code>public.approvals.completion_applied</code>.
+     */
+    public ApprovalsRecord setCompletionApplied(Boolean value) {
+        set(10, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.approvals.completion_applied</code>.
+     */
+    public Boolean getCompletionApplied() {
+        return (Boolean) get(10);
+    }
+
+    /**
+     * Setter for <code>public.approvals.completion_not_applied_reason</code>.
+     */
+    public ApprovalsRecord setCompletionNotAppliedReason(String value) {
+        set(11, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.approvals.completion_not_applied_reason</code>.
+     */
+    public String getCompletionNotAppliedReason() {
+        return (String) get(11);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -179,7 +224,7 @@ public class ApprovalsRecord extends UpdatableRecordImpl<ApprovalsRecord> {
     /**
      * Create a detached, initialised ApprovalsRecord
      */
-    public ApprovalsRecord(UUID id, UUID jobId, UUID requesterId, UUID approverId, String description, String status, String comment, LocalDateTime requestedAt, LocalDateTime decidedAt) {
+    public ApprovalsRecord(UUID id, UUID jobId, UUID requesterId, UUID approverId, String description, String status, String comment, LocalDateTime requestedAt, LocalDateTime decidedAt, String kind, Boolean completionApplied, String completionNotAppliedReason) {
         super(Approvals.APPROVALS);
 
         setId(id);
@@ -191,6 +236,9 @@ public class ApprovalsRecord extends UpdatableRecordImpl<ApprovalsRecord> {
         setComment(comment);
         setRequestedAt(requestedAt);
         setDecidedAt(decidedAt);
+        setKind(kind);
+        setCompletionApplied(completionApplied);
+        setCompletionNotAppliedReason(completionNotAppliedReason);
         resetChangedOnNotNull();
     }
 }

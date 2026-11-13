@@ -102,6 +102,21 @@ public class Approvals extends TableImpl<ApprovalsRecord> {
      */
     public final TableField<ApprovalsRecord, LocalDateTime> DECIDED_AT = createField(DSL.name("decided_at"), SQLDataType.LOCALDATETIME(6), this, "");
 
+    /**
+     * The column <code>public.approvals.kind</code>.
+     */
+    public final TableField<ApprovalsRecord, String> KIND = createField(DSL.name("kind"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'MANUAL'::character varying"), SQLDataType.VARCHAR)), this, "");
+
+    /**
+     * The column <code>public.approvals.completion_applied</code>.
+     */
+    public final TableField<ApprovalsRecord, Boolean> COMPLETION_APPLIED = createField(DSL.name("completion_applied"), SQLDataType.BOOLEAN, this, "");
+
+    /**
+     * The column <code>public.approvals.completion_not_applied_reason</code>.
+     */
+    public final TableField<ApprovalsRecord, String> COMPLETION_NOT_APPLIED_REASON = createField(DSL.name("completion_not_applied_reason"), SQLDataType.VARCHAR(50), this, "");
+
     private Approvals(Name alias, Table<ApprovalsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -138,7 +153,7 @@ public class Approvals extends TableImpl<ApprovalsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_APPROVALS_JOB_ID, Indexes.IDX_APPROVALS_STATUS);
+        return Arrays.asList(Indexes.IDX_APPROVALS_JOB_ID, Indexes.IDX_APPROVALS_STATUS, Indexes.UQ_APPROVALS_ONE_PENDING_COMPLETION);
     }
 
     @Override
@@ -149,7 +164,8 @@ public class Approvals extends TableImpl<ApprovalsRecord> {
     @Override
     public List<Check<ApprovalsRecord>> getChecks() {
         return Arrays.asList(
-            Internal.createCheck(this, DSL.name("chk_approval_status"), "(((status)::text = ANY ((ARRAY['PENDING'::character varying, 'APPROVED'::character varying, 'REJECTED'::character varying])::text[])))", true)
+            Internal.createCheck(this, DSL.name("chk_approval_kind"), "(((kind)::text = ANY ((ARRAY['MANUAL'::character varying, 'COMPLETION'::character varying])::text[])))", true),
+            Internal.createCheck(this, DSL.name("chk_approval_status"), "(((status)::text = ANY ((ARRAY['PENDING'::character varying, 'APPROVED'::character varying, 'REJECTED'::character varying, 'CANCELLED'::character varying])::text[])))", true)
         );
     }
 

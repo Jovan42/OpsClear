@@ -109,6 +109,11 @@ public class Projects extends TableImpl<ProjectsRecord> {
      */
     public final TableField<ProjectsRecord, String> FRIENDLY_ID = createField(DSL.name("friendly_id"), SQLDataType.VARCHAR(20), this, "");
 
+    /**
+     * The column <code>public.projects.require_completion_approval</code>.
+     */
+    public final TableField<ProjectsRecord, Boolean> REQUIRE_COMPLETION_APPROVAL = createField(DSL.name("require_completion_approval"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
+
     private Projects(Name alias, Table<ProjectsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
