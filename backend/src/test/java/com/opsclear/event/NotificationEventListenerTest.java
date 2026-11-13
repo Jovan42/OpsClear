@@ -1,5 +1,6 @@
 package com.opsclear.event;
 
+import com.opsclear.model.ApprovalKind;
 import com.opsclear.model.ApprovalStatus;
 import com.opsclear.model.DeadlineAlertKind;
 import com.opsclear.model.FeedbackStatus;
@@ -43,7 +44,7 @@ class NotificationEventListenerTest {
     @DisplayName("hands APPROVAL_REQUESTED events to the fan-out")
     void onApprovalRequested_shouldFanOut() {
         ApprovalRequestedEvent event = new ApprovalRequestedEvent(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Need a decision");
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Need a decision", ApprovalKind.MANUAL);
 
         listener.onApprovalRequested(event);
 
@@ -55,7 +56,7 @@ class NotificationEventListenerTest {
     @DisplayName("hands APPROVAL_DECIDED events to the fan-out")
     void onApprovalDecided_shouldFanOut() {
         ApprovalDecidedEvent event = new ApprovalDecidedEvent(UUID.randomUUID(), UUID.randomUUID(),
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), ApprovalStatus.APPROVED, null);
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), ApprovalStatus.APPROVED, null, ApprovalKind.MANUAL, null, null);
 
         listener.onApprovalDecided(event);
 

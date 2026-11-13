@@ -55,6 +55,9 @@ public class JobResponse {
 
     private UUID sourceScheduleId;
 
+    // ADR-0052: the job's pending completion approval, null when there is none
+    private PendingCompletionApprovalResponse pendingCompletionApproval;
+
     public static JobResponse from(JobModel job) {
         return JobResponse.builder()
                 .id(job.getId())
@@ -86,6 +89,9 @@ public class JobResponse {
                         .map(LinkResponse::from)
                         .toList())
                 .sourceScheduleId(job.getSourceScheduleId())
+                .pendingCompletionApproval(job.getPendingCompletionApproval() != null
+                        ? PendingCompletionApprovalResponse.from(job.getPendingCompletionApproval())
+                        : null)
                 .build();
     }
 }

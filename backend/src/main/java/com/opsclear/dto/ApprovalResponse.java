@@ -1,5 +1,6 @@
 package com.opsclear.dto;
 
+import com.opsclear.model.ApprovalKind;
 import com.opsclear.model.ApprovalModel;
 import com.opsclear.model.ApprovalStatus;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,9 @@ public class ApprovalResponse {
     private UUID projectId;
     private String projectFriendlyId;
     private String projectName;
+    private ApprovalKind kind;
+    private Boolean completionApplied;
+    private String completionNotAppliedReason;
 
     public static ApprovalResponse from(ApprovalModel model) {
         return ApprovalResponse.builder()
@@ -49,6 +53,9 @@ public class ApprovalResponse {
                 .projectId(model.getProjectId())
                 .projectFriendlyId(model.getProjectFriendlyId())
                 .projectName(model.getProjectName())
+                .kind(model.getKind())
+                .completionApplied(model.getCompletionApplied())
+                .completionNotAppliedReason(model.getCompletionNotAppliedReason())
                 .build();
     }
 }

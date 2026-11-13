@@ -59,6 +59,22 @@ public class JobRepository {
                 .map(this::toModel);
     }
 
+    /**
+     * Like {@link #findByIdAndDeletedAtIsNull}, but locks the job row ({@code SELECT … FOR NO KEY UPDATE OF jobs})
+     * until the transaction ends, so concurrent status changes and completion decisions see each other's result
+     * (ADR-0052: approve vs block race). {@code FOR NO KEY UPDATE} still conflicts with itself and with updates, but
+     * not with the key-share locks taken by inserts that reference the job (notes, approvals, links, relationships).
+     */
+    public Optional<JobModel> findByIdForUpdate(UUID id) {
+        return selectWithAssignee()
+                .where(JOBS.ID.eq(id))
+                .and(JOBS.DELETED_AT.isNull())
+                .forNoKeyUpdate()
+                .of(JOBS)
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
     public List<JobModel> findByProjectIdAndDeletedAtIsNull(UUID projectId) {
         return findByFilters(projectId, null, null, null, null);
     }

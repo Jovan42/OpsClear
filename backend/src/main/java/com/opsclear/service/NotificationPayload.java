@@ -24,6 +24,10 @@ final class NotificationPayload {
     static final String DESCRIPTION = "description";
     static final String DECISION = "decision";
     static final String COMMENT = "comment";
+    // Completion approvals (ADR-0052): kind on both approval types, the outcome on an approved completion
+    static final String KIND = "kind";
+    static final String COMPLETION_APPLIED = "completionApplied";
+    static final String COMPLETION_NOT_APPLIED_REASON = "completionNotAppliedReason";
     // Job lifecycle types (JOB-277). Deadlines are ISO-8601 instants.
     static final String DEADLINE = "deadline";
     static final String PRIORITY = "priority";

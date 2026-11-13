@@ -23,6 +23,7 @@ import com.opsclear.model.JobTypeColor;
 import com.opsclear.model.JobTypeModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.repository.JobStatusHistoryRepository;
+import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.JobLinkRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
@@ -69,6 +70,9 @@ class JobServiceTest {
     @Mock private OrganisationRepository organisationRepository;
     @Mock private FriendlyIdService friendlyIdService;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private ApprovalRepository approvalRepository;
+    @Mock private ApprovalService approvalService;
+    @Mock private AddonAccessChecker addonAccessChecker;
 
     private JobService jobService;
 
@@ -87,7 +91,7 @@ class JobServiceTest {
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
                 jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
                 milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
-                transitioner);
+                transitioner, approvalRepository, approvalService, addonAccessChecker);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -739,7 +743,7 @@ class JobServiceTest {
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(completed));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, ownerId))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("This project is completed and no longer accepts changes");
     }
@@ -758,10 +762,10 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, memberId);
+        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, memberId).getJob();
 
         assertThat(result.getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
     }
@@ -779,10 +783,10 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, ownerId);
+        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, null, ownerId).getJob();
 
         assertThat(result.getStatus()).isEqualTo(JobStatus.COMPLETED);
     }
@@ -800,10 +804,10 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, ownerId);
+        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, ownerId).getJob();
 
         assertThat(result.getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
     }
@@ -827,11 +831,11 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(blockReasonService.findOrCreate(projectId, "Waiting for client sign-off")).thenReturn(blockReason);
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "Waiting for client sign-off", ownerId);
+        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "Waiting for client sign-off", null, ownerId).getJob();
 
         assertThat(result.getStatus()).isEqualTo(JobStatus.BLOCKED);
         assertThat(result.getBlockedBy()).isEqualTo(ownerId);
@@ -860,11 +864,11 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(blockReasonService.findOrCreate(projectId, "  Waiting for client sign-off  ")).thenReturn(blockReason);
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "  Waiting for client sign-off  ", ownerId);
+        jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "  Waiting for client sign-off  ", null, ownerId);
 
         ArgumentCaptor<String> reasonCaptor = ArgumentCaptor.forClass(String.class);
         verify(jobStatusHistoryRepository).insert(eq(jobId), eq("IN_PROGRESS"), eq("BLOCKED"), eq(ownerId), reasonCaptor.capture());
@@ -884,9 +888,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, null, ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, null, null, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("A block reason is required when blocking a job");
     }
@@ -904,9 +908,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "   ", ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "   ", null, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("A block reason is required when blocking a job");
     }
@@ -924,9 +928,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, null, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Invalid transition: BLOCKED → COMPLETED");
     }
@@ -947,10 +951,10 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, ownerId);
+        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, ownerId).getJob();
 
         assertThat(result.getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
         assertThat(result.getBlockedBy()).isNull();
@@ -971,9 +975,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, null, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Invalid transition: NEW → COMPLETED");
     }
@@ -992,10 +996,10 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, adminId))
                 .thenReturn(Optional.of(adminMembership(adminId)));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, adminId);
+        JobModel result = jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, null, adminId).getJob();
 
         assertThat(result.getStatus()).isEqualTo(JobStatus.COMPLETED);
     }
@@ -1013,9 +1017,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.NEW, null, ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.NEW, null, null, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Invalid transition: IN_PROGRESS → NEW");
     }
@@ -1033,9 +1037,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.NEW, null, ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.NEW, null, null, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Invalid transition: COMPLETED → NEW");
     }
@@ -1054,9 +1058,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, memberId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, memberId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Only OWNER, ADMIN, or the assigned member can change job status");
     }
@@ -1075,9 +1079,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, memberId))
                 .thenReturn(Optional.of(memberMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, memberId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, memberId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Only OWNER or ADMIN can reopen a completed job");
     }
@@ -1090,9 +1094,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.empty());
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Job not found");
     }
@@ -1110,9 +1114,9 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, ownerId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Job not found");
     }

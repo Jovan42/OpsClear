@@ -19,6 +19,7 @@ import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.UserModel;
+import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.JobLinkRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
@@ -72,6 +73,9 @@ class JobServiceNotificationEventsTest {
     @Mock private OrganisationRepository organisationRepository;
     @Mock private FriendlyIdService friendlyIdService;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private ApprovalRepository approvalRepository;
+    @Mock private ApprovalService approvalService;
+    @Mock private AddonAccessChecker addonAccessChecker;
 
     private JobService jobService;
 
@@ -89,7 +93,7 @@ class JobServiceNotificationEventsTest {
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
                 jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
                 milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
-                transitioner);
+                transitioner, approvalRepository, approvalService, addonAccessChecker);
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -112,6 +116,11 @@ class JobServiceNotificationEventsTest {
 
     private void givenExistingJob() {
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    private void givenExistingJobForStatusChange() {
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }
 
@@ -269,11 +278,11 @@ class JobServiceNotificationEventsTest {
     @DisplayName("moving to Blocked publishes only JobBlockedEvent with the stored reason")
     void updateStatus_shouldPublishOnlyJobBlocked_whenBlocked() {
         givenCaller(ownerId, ProjectMemberRole.OWNER);
-        givenExistingJob();
+        givenExistingJobForStatusChange();
         when(blockReasonService.findOrCreate(projectId, "  Waiting for client "))
                 .thenReturn(BlockReasonModel.builder().id(UUID.randomUUID()).reason("Waiting for client").build());
 
-        jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "  Waiting for client ", ownerId);
+        jobService.updateStatus(projectId, jobId, JobStatus.BLOCKED, "  Waiting for client ", null, ownerId);
 
         assertThat(publishedEvents(1))
                 .containsExactly(new JobBlockedEvent(jobId, projectId, ownerId, "Waiting for client"));
@@ -284,9 +293,9 @@ class JobServiceNotificationEventsTest {
     void updateStatus_shouldPublishJobStatusChanged_whenUnblocked() {
         givenCaller(ownerId, ProjectMemberRole.OWNER);
         job.setStatus(JobStatus.BLOCKED);
-        givenExistingJob();
+        givenExistingJobForStatusChange();
 
-        jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, ownerId);
+        jobService.updateStatus(projectId, jobId, JobStatus.IN_PROGRESS, null, null, ownerId);
 
         assertThat(publishedEvents(1)).containsExactly(new JobStatusChangedEvent(jobId, projectId, ownerId,
                 JobStatus.BLOCKED, JobStatus.IN_PROGRESS));
@@ -297,12 +306,12 @@ class JobServiceNotificationEventsTest {
     @DisplayName("completing a blocker publishes JobStatusChangedEvent and BlockerClearedEvent with the waiting jobs")
     void updateStatus_shouldPublishBlockerCleared_whenCompletedWithWaitingJobs() {
         givenCaller(assigneeId, ProjectMemberRole.MEMBER);
-        givenExistingJob();
+        givenExistingJobForStatusChange();
         List<UUID> waiting = List.of(UUID.randomUUID(), UUID.randomUUID());
         when(jobRelationshipRepository.findSourceJobIdsByTargetJobIdAndType(jobId, JobRelationshipType.BLOCKED_BY))
                 .thenReturn(waiting);
 
-        jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, assigneeId);
+        jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, null, assigneeId);
 
         assertThat(publishedEvents(2)).containsExactly(
                 new JobStatusChangedEvent(jobId, projectId, assigneeId, JobStatus.IN_PROGRESS, JobStatus.COMPLETED),
@@ -313,11 +322,11 @@ class JobServiceNotificationEventsTest {
     @DisplayName("completing a job nothing waits on publishes only JobStatusChangedEvent")
     void updateStatus_shouldNotPublishBlockerCleared_whenNoWaitingJobs() {
         givenCaller(ownerId, ProjectMemberRole.OWNER);
-        givenExistingJob();
+        givenExistingJobForStatusChange();
         when(jobRelationshipRepository.findSourceJobIdsByTargetJobIdAndType(jobId, JobRelationshipType.BLOCKED_BY))
                 .thenReturn(List.of());
 
-        jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, ownerId);
+        jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, null, ownerId);
 
         assertThat(publishedEvents(1)).containsExactly(new JobStatusChangedEvent(jobId, projectId, ownerId,
                 JobStatus.IN_PROGRESS, JobStatus.COMPLETED));
@@ -328,9 +337,9 @@ class JobServiceNotificationEventsTest {
     void updateStatus_shouldPublishNothing_whenForbidden() {
         UUID otherMemberId = UUID.randomUUID();
         givenCaller(otherMemberId, ProjectMemberRole.MEMBER);
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
 
-        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, otherMemberId))
+        assertThatThrownBy(() -> jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, null, otherMemberId))
                 .isInstanceOf(ForbiddenException.class);
 
         verify(eventPublisher, never()).publishEvent(any());

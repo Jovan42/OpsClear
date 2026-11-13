@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.event.ApprovalDecidedEvent;
 import com.opsclear.event.ApprovalRequestedEvent;
 import com.opsclear.event.NoteAddedEvent;
+import com.opsclear.model.ApprovalKind;
 import com.opsclear.model.ApprovalStatus;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobStatus;
@@ -135,7 +136,8 @@ class NotificationServiceFanOutTest {
         givenInsertReturnsInput();
 
         List<NotificationModel> saved = notificationService.notifyApprovalRequested(
-                new ApprovalRequestedEvent(approvalId, projectId, jobId, assigneeId, "Need a decision"));
+                new ApprovalRequestedEvent(approvalId, projectId, jobId, assigneeId, "Need a decision",
+                        ApprovalKind.MANUAL));
 
         assertThat(saved).hasSize(2);
         List<NotificationModel> batch = captureBatch();
@@ -154,6 +156,23 @@ class NotificationServiceFanOutTest {
         assertThat(payload.get("projectName").asText()).isEqualTo("Website Redesign");
         assertThat(payload.get("actorName").asText()).isEqualTo("Ann Assignee");
         assertThat(payload.get("description").asText()).isEqualTo("Need a decision");
+        assertThat(payload.get("kind").asText()).isEqualTo("MANUAL");
+    }
+
+    @Test
+    @DisplayName("APPROVAL_REQUESTED for a completion approval carries kind COMPLETION (ADR-0052)")
+    void notifyApprovalRequested_shouldCarryCompletionKind() throws Exception {
+        givenJobScope();
+        givenActor(assigneeId, "Ann Assignee");
+        givenNoMutes(ownerId, adminId);
+        givenInsertReturnsInput();
+
+        notificationService.notifyApprovalRequested(new ApprovalRequestedEvent(approvalId, projectId, jobId,
+                assigneeId, "Requesting to complete this job", ApprovalKind.COMPLETION));
+
+        JsonNode payload = payload(captureBatch().getFirst());
+        assertThat(payload.get("kind").asText()).isEqualTo("COMPLETION");
+        assertThat(payload.get("description").asText()).isEqualTo("Requesting to complete this job");
     }
 
     @Test
@@ -165,7 +184,8 @@ class NotificationServiceFanOutTest {
         givenInsertReturnsInput();
 
         notificationService.notifyApprovalRequested(
-                new ApprovalRequestedEvent(approvalId, projectId, jobId, ownerId, "Need a decision"));
+                new ApprovalRequestedEvent(approvalId, projectId, jobId, ownerId, "Need a decision",
+                        ApprovalKind.MANUAL));
 
         assertThat(captureBatch()).extracting(NotificationModel::getRecipientId).containsExactly(adminId);
         verify(notificationSettingsService, never()).getMutedTypes(ownerId);
@@ -182,7 +202,8 @@ class NotificationServiceFanOutTest {
         givenInsertReturnsInput();
 
         notificationService.notifyApprovalDecided(new ApprovalDecidedEvent(
-                approvalId, projectId, jobId, ownerId, assigneeId, ApprovalStatus.REJECTED, "Too expensive"));
+                approvalId, projectId, jobId, ownerId, assigneeId, ApprovalStatus.REJECTED, "Too expensive",
+                ApprovalKind.MANUAL, null, null));
 
         List<NotificationModel> batch = captureBatch();
         assertThat(batch).extracting(NotificationModel::getRecipientId).containsExactly(assigneeId);
@@ -202,11 +223,49 @@ class NotificationServiceFanOutTest {
         givenInsertReturnsInput();
 
         notificationService.notifyApprovalDecided(new ApprovalDecidedEvent(
-                approvalId, projectId, jobId, ownerId, assigneeId, ApprovalStatus.APPROVED, null));
+                approvalId, projectId, jobId, ownerId, assigneeId, ApprovalStatus.APPROVED, null,
+                ApprovalKind.MANUAL, null, null));
 
         JsonNode payload = payload(captureBatch().getFirst());
         assertThat(payload.get("decision").asText()).isEqualTo("APPROVED");
         assertThat(payload.has("comment")).isFalse();
+        assertThat(payload.get("kind").asText()).isEqualTo("MANUAL");
+        assertThat(payload.has("completionApplied")).isFalse();
+        assertThat(payload.has("completionNotAppliedReason")).isFalse();
+    }
+
+    @Test
+    @DisplayName("APPROVAL_DECIDED for an applied completion carries kind and completionApplied true (ADR-0052)")
+    void notifyApprovalDecided_shouldCarryCompletionApplied() throws Exception {
+        givenJobScope();
+        givenActor(ownerId, "Olga Owner");
+        givenNoMutes(assigneeId);
+        givenInsertReturnsInput();
+
+        notificationService.notifyApprovalDecided(new ApprovalDecidedEvent(approvalId, projectId, jobId, ownerId,
+                assigneeId, ApprovalStatus.APPROVED, null, ApprovalKind.COMPLETION, true, null));
+
+        JsonNode payload = payload(captureBatch().getFirst());
+        assertThat(payload.get("kind").asText()).isEqualTo("COMPLETION");
+        assertThat(payload.get("completionApplied").asBoolean()).isTrue();
+        assertThat(payload.has("completionNotAppliedReason")).isFalse();
+    }
+
+    @Test
+    @DisplayName("APPROVAL_DECIDED for a completion not applied carries completionApplied false and the reason")
+    void notifyApprovalDecided_shouldCarryCompletionNotAppliedReason() throws Exception {
+        givenJobScope();
+        givenActor(ownerId, "Olga Owner");
+        givenNoMutes(assigneeId);
+        givenInsertReturnsInput();
+
+        notificationService.notifyApprovalDecided(new ApprovalDecidedEvent(approvalId, projectId, jobId, ownerId,
+                assigneeId, ApprovalStatus.APPROVED, null, ApprovalKind.COMPLETION, false, "BLOCKED"));
+
+        JsonNode payload = payload(captureBatch().getFirst());
+        assertThat(payload.get("completionApplied").isBoolean()).isTrue();
+        assertThat(payload.get("completionApplied").asBoolean()).isFalse();
+        assertThat(payload.get("completionNotAppliedReason").asText()).isEqualTo("BLOCKED");
     }
 
     @Test
@@ -216,7 +275,8 @@ class NotificationServiceFanOutTest {
         givenActor(ownerId, "Olga Owner");
 
         List<NotificationModel> saved = notificationService.notifyApprovalDecided(new ApprovalDecidedEvent(
-                approvalId, projectId, jobId, ownerId, ownerId, ApprovalStatus.APPROVED, null));
+                approvalId, projectId, jobId, ownerId, ownerId, ApprovalStatus.APPROVED, null,
+                ApprovalKind.MANUAL, null, null));
 
         assertThat(saved).isEmpty();
         verify(notificationRepository, never()).insertBatch(any());
@@ -230,7 +290,8 @@ class NotificationServiceFanOutTest {
         givenActor(ownerId, "Olga Owner");
 
         List<NotificationModel> saved = notificationService.notifyApprovalDecided(new ApprovalDecidedEvent(
-                approvalId, projectId, jobId, ownerId, participantId, ApprovalStatus.APPROVED, null));
+                approvalId, projectId, jobId, ownerId, participantId, ApprovalStatus.APPROVED, null,
+                ApprovalKind.MANUAL, null, null));
 
         assertThat(saved).isEmpty();
         verify(notificationRepository, never()).insertBatch(any());
@@ -346,7 +407,8 @@ class NotificationServiceFanOutTest {
         givenInsertReturnsInput();
 
         notificationService.notifyApprovalRequested(
-                new ApprovalRequestedEvent(approvalId, projectId, jobId, assigneeId, "Need a decision"));
+                new ApprovalRequestedEvent(approvalId, projectId, jobId, assigneeId, "Need a decision",
+                        ApprovalKind.MANUAL));
 
         assertThat(captureBatch()).extracting(NotificationModel::getRecipientId).containsExactly(adminId);
     }
@@ -359,7 +421,8 @@ class NotificationServiceFanOutTest {
         when(notificationSettingsService.getMutedTypes(any())).thenReturn(Set.of(NotificationType.APPROVAL_REQUESTED));
 
         List<NotificationModel> saved = notificationService.notifyApprovalRequested(
-                new ApprovalRequestedEvent(approvalId, projectId, jobId, assigneeId, "Need a decision"));
+                new ApprovalRequestedEvent(approvalId, projectId, jobId, assigneeId, "Need a decision",
+                        ApprovalKind.MANUAL));
 
         assertThat(saved).isEmpty();
         verify(notificationRepository, never()).insertBatch(any());
@@ -386,7 +449,8 @@ class NotificationServiceFanOutTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
 
         List<NotificationModel> saved = notificationService.notifyApprovalRequested(
-                new ApprovalRequestedEvent(approvalId, projectId, jobId, ownerId, "Need a decision"));
+                new ApprovalRequestedEvent(approvalId, projectId, jobId, ownerId, "Need a decision",
+                        ApprovalKind.MANUAL));
 
         assertThat(saved).isEmpty();
         verifyNoInteractions(projectMemberRepository, notificationRepository);

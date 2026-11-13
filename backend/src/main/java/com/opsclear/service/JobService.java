@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.aop.AddonCode;
 import com.opsclear.dto.CreateJobRequest;
 import com.opsclear.dto.UpdateJobRequest;
 import com.opsclear.event.JobAssignedEvent;
@@ -18,9 +19,12 @@ import com.opsclear.model.JobRelationshipDirection;
 import com.opsclear.model.JobRelationshipEntry;
 import com.opsclear.model.JobRelationshipModel;
 import com.opsclear.model.JobStatus;
+import com.opsclear.model.JobStatusUpdateResult;
+import com.opsclear.model.PendingCompletionApprovalModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
+import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.JobLinkRepository;
 import com.opsclear.repository.JobRelationshipRepository;
 import com.opsclear.repository.JobRepository;
@@ -43,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,6 +68,9 @@ public class JobService {
     private final FriendlyIdService friendlyIdService;
     private final ApplicationEventPublisher eventPublisher;
     private final JobStatusTransitioner jobStatusTransitioner;
+    private final ApprovalRepository approvalRepository;
+    private final ApprovalService approvalService;
+    private final AddonAccessChecker addonAccessChecker;
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
@@ -119,6 +127,7 @@ public class JobService {
         List<JobModel> jobs = jobRepository.findByFilters(
                 projectId, assignedTo, trimmedQ, priority, milestoneId, typeId);
         attachLinks(jobs);
+        attachPendingCompletionApprovals(jobs);
         return jobs;
     }
 
@@ -133,6 +142,7 @@ public class JobService {
 
         job.setRelationships(fetchRelationships(jobId));
         job.setLinks(jobLinkRepository.findByJobId(jobId));
+        attachPendingCompletionApproval(job);
         return job;
     }
 
@@ -141,6 +151,19 @@ public class JobService {
         Map<UUID, List<JobLinkModel>> byJobId = jobLinkRepository.findByJobIds(jobIds).stream()
                 .collect(Collectors.groupingBy(JobLinkModel::getJobId));
         jobs.forEach(j -> j.setLinks(byJobId.getOrDefault(j.getId(), List.of())));
+    }
+
+    // ADR-0052: one query for the whole list, no N+1
+    private void attachPendingCompletionApprovals(List<JobModel> jobs) {
+        List<UUID> jobIds = jobs.stream().map(JobModel::getId).toList();
+        Map<UUID, PendingCompletionApprovalModel> byJobId = approvalRepository.findPendingCompletionByJobIds(jobIds)
+                .stream()
+                .collect(Collectors.toMap(PendingCompletionApprovalModel::getJobId, Function.identity()));
+        jobs.forEach(j -> j.setPendingCompletionApproval(byJobId.get(j.getId())));
+    }
+
+    private void attachPendingCompletionApproval(JobModel job) {
+        job.setPendingCompletionApproval(approvalRepository.findPendingCompletionByJobId(job.getId()).orElse(null));
     }
 
     private List<JobRelationshipEntry> fetchRelationships(UUID jobId) {
@@ -200,16 +223,43 @@ public class JobService {
         return updated;
     }
 
+    /**
+     * Changes the job's status, or (ADR-0052) for a Member completing a job on a gated project, validates the
+     * transition and creates a completion approval instead, leaving the status unchanged. The gate is enforced only
+     * while the org can use the {@code APPROVALS} add-on for writes (not while {@code PAST_DUE}), since otherwise
+     * nobody could decide the approval. The returned job carries its pending completion approval, if any.
+     *
+     * @param message optional completion request message, ignored unless a completion approval is created
+     */
     @Transactional
-    public JobModel updateStatus(UUID projectId, UUID jobId, JobStatus newStatus, String reason, UUID requesterId) {
+    public JobStatusUpdateResult updateStatus(UUID projectId, UUID jobId, JobStatus newStatus, String reason,
+                                              String message, UUID requesterId) {
         requireOrgMembership(requesterId);
         ProjectModel project = requireProjectExists(projectId);
         requireProjectNotCompleted(project);
         ProjectMemberModel requester = requireMember(projectId, requesterId);
-        JobModel job = requireJob(jobId);
+        // Row lock (ADR-0052): a status change racing a completion approval's decision sees its result
+        JobModel job = requireJobForUpdate(jobId);
         requireJobInProject(job, projectId);
 
-        return jobStatusTransitioner.transition(job, newStatus, reason, requester);
+        boolean completionRequested = isCompletionGated(project, requester, newStatus);
+        JobModel result = job;
+        if (completionRequested) {
+            jobStatusTransitioner.validate(job, newStatus, requester);
+            approvalService.createCompletionApproval(project, job, requester, message);
+        } else {
+            result = jobStatusTransitioner.transition(job, newStatus, reason, requester);
+        }
+        attachPendingCompletionApproval(result);
+        return JobStatusUpdateResult.builder().job(result).completionRequested(completionRequested).build();
+    }
+
+    // ADR-0052: Owners/Admins complete directly; the add-on check runs last since it queries the subscription
+    private boolean isCompletionGated(ProjectModel project, ProjectMemberModel requester, JobStatus newStatus) {
+        return newStatus == JobStatus.COMPLETED
+                && project.isRequireCompletionApproval()
+                && requester.getRole() == ProjectMemberRole.MEMBER
+                && addonAccessChecker.isAddonUsableForWrites(project.getOrganisationId(), AddonCode.APPROVALS);
     }
 
     @Transactional
@@ -275,6 +325,11 @@ public class JobService {
 
     private JobModel requireJob(UUID jobId) {
         return jobRepository.findByIdAndDeletedAtIsNull(jobId)
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.Job.NOT_FOUND));
+    }
+
+    private JobModel requireJobForUpdate(UUID jobId) {
+        return jobRepository.findByIdForUpdate(jobId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Job.NOT_FOUND));
     }
 

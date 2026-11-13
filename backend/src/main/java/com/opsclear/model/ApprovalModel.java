@@ -28,6 +28,13 @@ public class ApprovalModel {
     private Instant requestedAt;
     private Instant decidedAt;
 
+    // ADR-0052: completion approvals. completionApplied is set only once a completion approval is approved;
+    // completionNotAppliedReason is the job status that stopped the completion (e.g. BLOCKED).
+    @Builder.Default
+    private ApprovalKind kind = ApprovalKind.MANUAL;
+    private Boolean completionApplied;
+    private String completionNotAppliedReason;
+
     // Populated only by ApprovalRepository#findPendingAcrossOrgs (JOB-190/ADR-0046) —
     // null on every other query, where the caller already knows which project they're in.
     private UUID projectId;
