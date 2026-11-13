@@ -53,6 +53,50 @@ export const NOTIFICATION_TYPES = (Object.keys(TYPE_ORDER) as NotificationType[]
   (a, b) => TYPE_ORDER[a] - TYPE_ORDER[b],
 );
 
+export type NotificationGroup = 'JOB' | 'ACCOUNT';
+
+// ADR-0051's two tables: job events, then project, organisation and account events.
+// A Record so a new type can't be added without a group.
+const TYPE_GROUP: Record<NotificationType, NotificationGroup> = {
+  APPROVAL_REQUESTED: 'JOB',
+  APPROVAL_DECIDED: 'JOB',
+  JOB_ASSIGNED: 'JOB',
+  JOB_STATUS_CHANGED: 'JOB',
+  JOB_BLOCKED: 'JOB',
+  BLOCKER_CLEARED: 'JOB',
+  JOB_UPDATED: 'JOB',
+  JOB_DELETED: 'JOB',
+  NOTE_ADDED: 'JOB',
+  JOB_DEADLINE_SOON: 'JOB',
+  JOB_OVERDUE: 'JOB',
+  PROJECT_MEMBER_ADDED: 'ACCOUNT',
+  SCHEDULE_RUN_MISSED: 'ACCOUNT',
+  INVITE_ACCEPTED: 'ACCOUNT',
+  FEEDBACK_RESOLVED: 'ACCOUNT',
+  SUBSCRIPTION_PAST_DUE: 'ACCOUNT',
+};
+
+/** The types of one ADR-0051 group, in the backend enum's order (for the mute settings). */
+export function typesInGroup(group: NotificationGroup): NotificationType[] {
+  return NOTIFICATION_TYPES.filter((type) => TYPE_GROUP[type] === group);
+}
+
+/** Mirrors the backend `NotificationType.isMutable()`: billing problems affect the whole org. */
+export function isMutable(type: NotificationType): boolean {
+  return type !== 'SUBSCRIPTION_PAST_DUE';
+}
+
+/**
+ * The muted list after turning `type` on (`enabled`) or off. Unmutable types are never in
+ * the result, since the backend rejects the whole request (400) if one is sent.
+ */
+export function toggleMuted(muted: NotificationType[], type: NotificationType, enabled: boolean): NotificationType[] {
+  const next = new Set(muted);
+  if (enabled) next.delete(type);
+  else next.add(type);
+  return NOTIFICATION_TYPES.filter((t) => next.has(t) && isMutable(t));
+}
+
 const URGENT_TYPES: ReadonlySet<NotificationType> = new Set([
   'JOB_BLOCKED',
   'JOB_OVERDUE',

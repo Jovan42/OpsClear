@@ -1,5 +1,10 @@
 import apiClient, { API_BASE_URL, getAccessToken } from './client';
-import type { NotificationPageResponse, NotificationResponse, NotificationType } from '../types';
+import type {
+  NotificationPageResponse,
+  NotificationResponse,
+  NotificationSettings,
+  NotificationType,
+} from '../types';
 
 export interface NotificationListParams {
   unread?: boolean;
@@ -43,6 +48,15 @@ export const notificationsApi = {
       .then((r) => withPayload(r.data)),
 
   markAllRead: () => apiClient.post<void>('/api/notifications/read-all').then(() => undefined),
+
+  getSettings: () =>
+    apiClient.get<NotificationSettings>('/api/user/notification-settings').then((r) => r.data),
+
+  /** Replaces the whole muted list. `SUBSCRIPTION_PAST_DUE` must not be in it (400). */
+  updateSettings: (muted: NotificationType[]) =>
+    apiClient
+      .put<NotificationSettings>('/api/user/notification-settings', { muted })
+      .then((r) => r.data),
 
   /**
    * Opens the SSE stream (ADR-0051) and resolves with the raw fetch response; the caller

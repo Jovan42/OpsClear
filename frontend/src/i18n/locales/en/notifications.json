@@ -103,5 +103,18 @@
     "missedAt": "Missed run: {{date}}",
     "updatePayment": "Update the payment method in billing to keep access.",
     "askOwnerToUpdatePayment": "Ask an organisation Owner to update the payment method."
+  },
+  "settings": {
+    "heading": "Notification types",
+    "scope": "All your devices",
+    "description": "Saved to your account, so these apply on every device. A type that's off isn't created at all: it won't appear in the bell or count toward the badge.",
+    "groups": {
+      "JOB": "Job events",
+      "ACCOUNT": "Project, organisation and account"
+    },
+    "lockedOn": "Always on: billing problems affect the whole organisation.",
+    "loadError": "Couldn't load your notification settings.",
+    "retry": "Try again",
+    "saveError": "Couldn't save that change, so it was put back."
   }
 }

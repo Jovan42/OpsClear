@@ -692,6 +692,12 @@ export interface NotificationPageResponse {
   totalPages: number;
 }
 
+/** The caller's muted notification types (`/api/user/notification-settings`). Server-stored,
+ *  so it applies on every device. Never contains `SUBSCRIPTION_PAST_DUE` (the backend 400s). */
+export interface NotificationSettings {
+  muted: NotificationType[];
+}
+
 export interface NotificationListFilters {
   unread: boolean;
   type: NotificationType | null;
