@@ -83,10 +83,13 @@ class JobServiceNotificationEventsTest {
 
     @BeforeEach
     void setUp() {
+        // Real transitioner over the same mocks: status events are published from it (JOB-285)
+        JobStatusTransitioner transitioner = new JobStatusTransitioner(jobRepository, jobStatusHistoryRepository,
+                jobRelationshipRepository, blockReasonService, eventPublisher);
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
                 jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
-                milestoneRepository, jobTypeRepository, blockReasonService, organisationRepository,
-                friendlyIdService, eventPublisher);
+                milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
+                transitioner);
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();
         ownerId = UUID.randomUUID();

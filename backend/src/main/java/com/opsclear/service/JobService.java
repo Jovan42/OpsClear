@@ -2,18 +2,13 @@ package com.opsclear.service;
 
 import com.opsclear.dto.CreateJobRequest;
 import com.opsclear.dto.UpdateJobRequest;
-import com.opsclear.event.BlockerClearedEvent;
 import com.opsclear.event.JobAssignedEvent;
-import com.opsclear.event.JobBlockedEvent;
 import com.opsclear.event.JobDeletedEvent;
-import com.opsclear.event.JobStatusChangedEvent;
 import com.opsclear.event.JobUpdatedEvent;
-import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.exception.ConflictException;
-import com.opsclear.model.BlockReasonModel;
 import com.opsclear.model.FriendlyIdEntityType;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.JobLinkModel;
@@ -22,7 +17,6 @@ import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobRelationshipDirection;
 import com.opsclear.model.JobRelationshipEntry;
 import com.opsclear.model.JobRelationshipModel;
-import com.opsclear.model.JobRelationshipType;
 import com.opsclear.model.JobStatus;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
@@ -65,10 +59,10 @@ public class JobService {
     private final UserRepository userRepository;
     private final MilestoneRepository milestoneRepository;
     private final JobTypeRepository jobTypeRepository;
-    private final BlockReasonService blockReasonService;
     private final OrganisationRepository organisationRepository;
     private final FriendlyIdService friendlyIdService;
     private final ApplicationEventPublisher eventPublisher;
+    private final JobStatusTransitioner jobStatusTransitioner;
 
     @Transactional
     public JobModel create(UUID projectId, CreateJobRequest request, UUID requesterId) {
@@ -215,32 +209,7 @@ public class JobService {
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
 
-        JobStatus oldStatus = job.getStatus();
-        validateTransition(oldStatus, newStatus, requester, job.getAssignedTo(), requesterId);
-        requireBlockReasonIfBlocking(newStatus, reason);
-
-        String historyBlockReason = null;
-        if (newStatus == JobStatus.BLOCKED) {
-            BlockReasonModel blockReason = blockReasonService.findOrCreate(projectId, reason);
-            job.setStatus(JobStatus.BLOCKED);
-            job.setBlockedBy(requesterId);
-            job.setBlockedReasonId(blockReason.getId());
-            job.setBlockedAt(Instant.now());
-            historyBlockReason = blockReason.getReason();
-        } else if (oldStatus == JobStatus.BLOCKED) {
-            job.setStatus(newStatus);
-            job.setBlockedBy(null);
-            job.setBlockedReasonId(null);
-            job.setBlockedAt(null);
-        } else {
-            job.setStatus(newStatus);
-        }
-
-        JobModel updated = jobRepository.save(job);
-        jobStatusHistoryRepository.insert(jobId, oldStatus.name(), newStatus.name(), requesterId, historyBlockReason);
-        log.info("Job {} status changed from {} to {} by user {}", jobId, oldStatus, newStatus, requesterId);
-        publishStatusEvents(projectId, jobId, oldStatus, newStatus, historyBlockReason, requesterId);
-        return updated;
+        return jobStatusTransitioner.transition(job, newStatus, reason, requester);
     }
 
     @Transactional
@@ -287,49 +256,6 @@ public class JobService {
         }
     }
 
-    // Blocked sends only JOB_BLOCKED; any other status sends JOB_STATUS_CHANGED, and Completed also sends
-    // BLOCKER_CLEARED when other jobs are BLOCKED_BY this one.
-    private void publishStatusEvents(UUID projectId, UUID jobId, JobStatus oldStatus, JobStatus newStatus,
-                                     String blockReason, UUID requesterId) {
-        if (newStatus == JobStatus.BLOCKED) {
-            eventPublisher.publishEvent(new JobBlockedEvent(jobId, projectId, requesterId, blockReason));
-            return;
-        }
-        eventPublisher.publishEvent(new JobStatusChangedEvent(jobId, projectId, requesterId, oldStatus, newStatus));
-        if (newStatus == JobStatus.COMPLETED) {
-            List<UUID> waitingJobIds = jobRelationshipRepository.findSourceJobIdsByTargetJobIdAndType(
-                    jobId, JobRelationshipType.BLOCKED_BY);
-            if (!waitingJobIds.isEmpty()) {
-                eventPublisher.publishEvent(new BlockerClearedEvent(jobId, projectId, requesterId, waitingJobIds));
-            }
-        }
-    }
-
-    // --- Status transition rules ---
-
-    private void validateTransition(JobStatus from, JobStatus to,
-                                    ProjectMemberModel requester, UUID assignedTo, UUID requesterId) {
-        boolean valid = (from == JobStatus.NEW && to == JobStatus.IN_PROGRESS)
-                || (from == JobStatus.IN_PROGRESS && to == JobStatus.COMPLETED)
-                || (from == JobStatus.IN_PROGRESS && to == JobStatus.BLOCKED)
-                || (from == JobStatus.BLOCKED && to == JobStatus.IN_PROGRESS)
-                || (from == JobStatus.COMPLETED && to == JobStatus.IN_PROGRESS);
-
-        if (!valid) {
-            throw new BadRequestException(ErrorMessages.Job.INVALID_TRANSITION + from + " → " + to);
-        }
-
-        boolean isOwnerOrAdmin = requester.getRole() == ProjectMemberRole.OWNER
-                || requester.getRole() == ProjectMemberRole.ADMIN;
-
-        if (from == JobStatus.COMPLETED && !isOwnerOrAdmin) {
-            throw new ForbiddenException(ErrorMessages.Job.ONLY_OWNER_ADMIN_CAN_REOPEN);
-        }
-        if (!isOwnerOrAdmin && !requesterId.equals(assignedTo)) {
-            throw new ForbiddenException(ErrorMessages.Job.ONLY_OWNER_ADMIN_OR_ASSIGNEE_CAN_CHANGE_STATUS);
-        }
-    }
-
     // --- Org guard ---
 
     private UUID requireOrgMembership(UUID userId) {
@@ -344,12 +270,6 @@ public class JobService {
         if (requester.getRole() == ProjectMemberRole.MEMBER
                 && !requesterId.equals(job.getAssignedTo())) {
             throw new ForbiddenException(ErrorMessages.Job.ACCESS_DENIED_NOT_ASSIGNED);
-        }
-    }
-
-    private void requireBlockReasonIfBlocking(JobStatus newStatus, String reason) {
-        if (newStatus == JobStatus.BLOCKED && (reason == null || reason.isBlank())) {
-            throw new BadRequestException(ErrorMessages.Job.BLOCK_REASON_REQUIRED);
         }
     }
 

@@ -26,6 +26,7 @@ public class ProjectResponse {
     private UUID ownerId;
     private String ownerName;
     private ProjectStatus status;
+    private boolean requireCompletionApproval;
     private Instant createdAt;
     private Instant updatedAt;
     private List<LinkResponse> links;
@@ -39,6 +40,7 @@ public class ProjectResponse {
                 .ownerId(project.getOwnerId())
                 .ownerName(project.getOwnerName())
                 .status(project.getStatus())
+                .requireCompletionApproval(project.isRequireCompletionApproval())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .links(project.getLinks().stream()

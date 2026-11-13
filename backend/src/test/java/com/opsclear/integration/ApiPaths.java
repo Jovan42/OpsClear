@@ -33,6 +33,14 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/status";
     }
 
+    static String projectSettings(UUID projectId) {
+        return "/api/projects/" + projectId + "/settings";
+    }
+
+    static String projectSettings(String projectId) {
+        return "/api/projects/" + projectId + "/settings";
+    }
+
     static String projectsByStatus(String status) {
         return "/api/projects?status=" + status;
     }

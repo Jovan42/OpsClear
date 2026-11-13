@@ -1,7 +1,9 @@
 package com.opsclear.service;
 
+import com.opsclear.aop.AddonCode;
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.UpdateProjectRequest;
+import com.opsclear.dto.UpdateProjectSettingsRequest;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
@@ -43,6 +45,7 @@ public class ProjectService {
     private final OrganisationRepository organisationRepository;
     private final ProjectLinkRepository projectLinkRepository;
     private final FriendlyIdService friendlyIdService;
+    private final AddonAccessChecker addonAccessChecker;
 
     @Transactional
     public ProjectModel create(CreateProjectRequest request, UUID ownerId) {
@@ -122,6 +125,30 @@ public class ProjectService {
         return projectRepository.save(project);
     }
 
+    // Partial update: a null field leaves that setting unchanged (ADR-0052; JOB-300 adds more settings here)
+    @Transactional
+    public ProjectModel updateSettings(UUID projectId, UUID callerId, UpdateProjectSettingsRequest request) {
+        requireOrgMembership(callerId);
+        ProjectModel project = requireProject(projectId);
+        requireOwnerOrAdmin(projectId, callerId);
+        requireProjectNotCompleted(project);
+
+        Boolean requireCompletionApproval = request.getRequireCompletionApproval();
+        if (requireCompletionApproval == null
+                || requireCompletionApproval == project.isRequireCompletionApproval()) {
+            return project;
+        }
+        if (requireCompletionApproval) {
+            requireApprovalsAddon(project.getOrganisationId());
+        }
+        // Turning the gate off leaves pending completion approvals as they are (ADR-0052)
+        project.setRequireCompletionApproval(requireCompletionApproval);
+        ProjectModel updated = projectRepository.save(project);
+        log.info("Project '{}' requireCompletionApproval set to {} by user {}",
+                projectId, requireCompletionApproval, callerId);
+        return updated;
+    }
+
     @Transactional
     public ProjectModel updateStatus(UUID projectId, ProjectStatus newStatus, UUID requesterId) {
         requireOrgMembership(requesterId);
@@ -187,6 +214,18 @@ public class ProjectService {
     private ProjectModel requireProject(UUID projectId) {
         return projectRepository.findByIdAndDeletedAtIsNull(projectId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
+    }
+
+    private void requireProjectNotCompleted(ProjectModel project) {
+        if (project.isCompleted()) {
+            throw new ConflictException(ErrorMessages.Project.COMPLETED_NO_MUTATIONS);
+        }
+    }
+
+    private void requireApprovalsAddon(UUID orgId) {
+        if (!addonAccessChecker.hasAddon(orgId, AddonCode.APPROVALS)) {
+            throw new ForbiddenException(ErrorMessages.Project.COMPLETION_GATE_REQUIRES_APPROVALS_ADDON);
+        }
     }
 
     private void requireUserExists(UUID userId) {

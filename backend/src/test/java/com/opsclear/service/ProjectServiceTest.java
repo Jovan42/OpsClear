@@ -1,7 +1,9 @@
 package com.opsclear.service;
 
 import com.opsclear.dto.CreateProjectRequest;
+import com.opsclear.aop.AddonCode;
 import com.opsclear.dto.UpdateProjectRequest;
+import com.opsclear.dto.UpdateProjectSettingsRequest;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
@@ -39,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +68,9 @@ class ProjectServiceTest {
     @Mock
     private FriendlyIdService friendlyIdService;
 
+    @Mock
+    private AddonAccessChecker addonAccessChecker;
+
     private ProjectService projectService;
 
     private UserModel testOwner;
@@ -72,7 +78,9 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository, blockReasonRepository, organisationRepository, projectLinkRepository, friendlyIdService);
+        projectService = new ProjectService(projectRepository, userRepository, projectMemberRepository,
+                blockReasonRepository, organisationRepository, projectLinkRepository, friendlyIdService,
+                addonAccessChecker);
         ownerId = UUID.randomUUID();
         testOwner = UserModel.builder()
                 .id(ownerId)
@@ -665,4 +673,180 @@ class ProjectServiceTest {
                 .hasMessage(ErrorMessages.Organisation.NOT_FOUND);
     }
 
+    // --- updateSettings (ADR-0052, JOB-285) ---
+
+    private static final UUID SETTINGS_ORG_ID = UUID.randomUUID();
+
+    private UUID givenSettingsProject(boolean gateOn, ProjectStatus status) {
+        UUID projectId = UUID.randomUUID();
+        ProjectModel project = ProjectModel.builder()
+                .id(projectId).name("Acme").ownerId(ownerId).organisationId(SETTINGS_ORG_ID)
+                .status(status).requireCompletionApproval(gateOn).build();
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        return projectId;
+    }
+
+    private void givenSettingsCaller(UUID projectId, UUID userId, ProjectMemberRole role) {
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, userId)).thenReturn(Optional.of(
+                ProjectMemberModel.builder().projectId(projectId).userId(userId).role(role).build()));
+    }
+
+    private void givenSaveReturnsArgument() {
+        when(projectRepository.save(any(ProjectModel.class))).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    private static UpdateProjectSettingsRequest gate(Boolean value) {
+        return UpdateProjectSettingsRequest.builder().requireCompletionApproval(value).build();
+    }
+
+    @Test
+    @DisplayName("updateSettings: Owner turns the gate on when the org has the APPROVALS add-on")
+    void updateSettings_shouldEnableGate_whenOwnerAndAddonActive() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        when(addonAccessChecker.hasAddon(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(true);
+        givenSaveReturnsArgument();
+
+        ProjectModel result = projectService.updateSettings(projectId, ownerId, gate(true));
+
+        assertThat(result.isRequireCompletionApproval()).isTrue();
+        ArgumentCaptor<ProjectModel> captor = ArgumentCaptor.forClass(ProjectModel.class);
+        verify(projectRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(projectId);
+        assertThat(captor.getValue().isRequireCompletionApproval()).isTrue();
+    }
+
+    @Test
+    @DisplayName("updateSettings: Admin turns the gate on when the org has the APPROVALS add-on")
+    void updateSettings_shouldEnableGate_whenAdmin() {
+        UUID adminId = UUID.randomUUID();
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, adminId, ProjectMemberRole.ADMIN);
+        when(addonAccessChecker.hasAddon(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(true);
+        givenSaveReturnsArgument();
+
+        ProjectModel result = projectService.updateSettings(projectId, adminId, gate(true));
+
+        assertThat(result.isRequireCompletionApproval()).isTrue();
+        verify(projectRepository).save(any(ProjectModel.class));
+    }
+
+    @Test
+    @DisplayName("updateSettings: Admin turns the gate off without the add-on being checked")
+    void updateSettings_shouldDisableGate_withoutAddonCheck() {
+        UUID adminId = UUID.randomUUID();
+        UUID projectId = givenSettingsProject(true, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, adminId, ProjectMemberRole.ADMIN);
+        givenSaveReturnsArgument();
+
+        ProjectModel result = projectService.updateSettings(projectId, adminId, gate(false));
+
+        assertThat(result.isRequireCompletionApproval()).isFalse();
+        ArgumentCaptor<ProjectModel> captor = ArgumentCaptor.forClass(ProjectModel.class);
+        verify(projectRepository).save(captor.capture());
+        assertThat(captor.getValue().isRequireCompletionApproval()).isFalse();
+        verifyNoInteractions(addonAccessChecker);
+    }
+
+    @Test
+    @DisplayName("updateSettings: Member gets 403 and nothing is saved")
+    void updateSettings_shouldThrowForbidden_whenMember() {
+        UUID memberId = UUID.randomUUID();
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, memberId, ProjectMemberRole.MEMBER);
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, memberId, gate(true)))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Member.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
+        verify(projectRepository, never()).save(any());
+        verifyNoInteractions(addonAccessChecker);
+    }
+
+    @Test
+    @DisplayName("updateSettings: a caller who is not a project member gets 403")
+    void updateSettings_shouldThrowForbidden_whenNotAMember() {
+        UUID outsiderId = UUID.randomUUID();
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, outsiderId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, outsiderId, gate(true)))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Member.NOT_A_MEMBER);
+        verify(projectRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateSettings: turning the gate on without the APPROVALS add-on gets 403 and nothing is saved")
+    void updateSettings_shouldThrowForbidden_whenEnablingWithoutAddon() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        when(addonAccessChecker.hasAddon(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(false);
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId, gate(true)))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Project.COMPLETION_GATE_REQUIRES_APPROVALS_ADDON);
+        verify(projectRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateSettings: a completed project gets 409 and nothing is saved")
+    void updateSettings_shouldThrowConflict_whenProjectCompleted() {
+        UUID projectId = givenSettingsProject(true, ProjectStatus.COMPLETED);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId, gate(false)))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Project.COMPLETED_NO_MUTATIONS);
+        verify(projectRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateSettings: a missing project gets 404")
+    void updateSettings_shouldThrowNotFound_whenProjectMissing() {
+        UUID projectId = UUID.randomUUID();
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId, gate(true)))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.Project.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("updateSettings: a caller outside any organisation gets 403")
+    void updateSettings_shouldThrowForbidden_whenNotInOrg() {
+        UUID projectId = UUID.randomUUID();
+        when(organisationRepository.findByMember(ownerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId, gate(true)))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
+        verify(projectRepository, never()).findByIdAndDeletedAtIsNull(any());
+    }
+
+    @Test
+    @DisplayName("updateSettings: an empty body (null field) changes nothing and returns the project")
+    void updateSettings_shouldLeaveSettingUnchanged_whenFieldNull() {
+        UUID projectId = givenSettingsProject(true, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+
+        ProjectModel result = projectService.updateSettings(projectId, ownerId, gate(null));
+
+        assertThat(result.getId()).isEqualTo(projectId);
+        assertThat(result.isRequireCompletionApproval()).isTrue();
+        verify(projectRepository, never()).save(any());
+        verifyNoInteractions(addonAccessChecker);
+    }
+
+    @Test
+    @DisplayName("updateSettings: re-sending the current value is a no-op, so an on gate stays on without the add-on")
+    void updateSettings_shouldNotCheckAddon_whenGateAlreadyOn() {
+        UUID projectId = givenSettingsProject(true, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+
+        ProjectModel result = projectService.updateSettings(projectId, ownerId, gate(true));
+
+        assertThat(result.isRequireCompletionApproval()).isTrue();
+        verify(projectRepository, never()).save(any());
+        verifyNoInteractions(addonAccessChecker);
+    }
 }
