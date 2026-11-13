@@ -66,6 +66,7 @@ class JobServiceCompletionGateTest {
     @Mock private ApprovalRepository approvalRepository;
     @Mock private ApprovalService approvalService;
     @Mock private AddonAccessChecker addonAccessChecker;
+    @Mock private CompletionApprovalCanceller completionApprovalCanceller;
 
     private JobService jobService;
 
@@ -85,7 +86,7 @@ class JobServiceCompletionGateTest {
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
                 jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
                 milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
-                transitioner, approvalRepository, approvalService, addonAccessChecker);
+                transitioner, approvalRepository, approvalService, addonAccessChecker, completionApprovalCanceller);
 
         orgId = UUID.randomUUID();
         projectId = UUID.randomUUID();
@@ -117,7 +118,7 @@ class JobServiceCompletionGateTest {
         assertThat(result.getJob().getStatus()).isEqualTo(JobStatus.IN_PROGRESS);
         assertThat(result.getJob().getPendingCompletionApproval()).isSameAs(pending);
         verify(jobRepository, never()).save(any());
-        verifyNoInteractions(jobStatusHistoryRepository, eventPublisher);
+        verifyNoInteractions(jobStatusHistoryRepository, eventPublisher, completionApprovalCanceller);
     }
 
     @Test
@@ -151,7 +152,7 @@ class JobServiceCompletionGateTest {
     @Test
     @DisplayName("gate on but APPROVALS not usable for writes (missing add-on or PAST_DUE): Member completes directly")
     void updateStatus_shouldCompleteDirectly_whenAddonNotUsable() {
-        givenStatusChange(memberId, ProjectMemberRole.MEMBER);
+        ProjectMemberModel caller = givenStatusChange(memberId, ProjectMemberRole.MEMBER);
         when(addonAccessChecker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)).thenReturn(false);
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -162,6 +163,8 @@ class JobServiceCompletionGateTest {
         assertThat(result.getJob().getStatus()).isEqualTo(JobStatus.COMPLETED);
         assertThat(result.getJob().getPendingCompletionApproval()).isNull();
         verifyNoInteractions(approvalService);
+        // ADR-0052 add-on lapsed: the Member's own pending request is cancelled
+        verify(completionApprovalCanceller).cancelOnDirectCompletion(job, caller);
     }
 
     @Test
@@ -183,7 +186,7 @@ class JobServiceCompletionGateTest {
     @DisplayName("gated project: an Owner completes directly")
     void updateStatus_shouldCompleteDirectly_whenOwner() {
         UUID ownerId = UUID.randomUUID();
-        givenStatusChange(ownerId, ProjectMemberRole.OWNER);
+        ProjectMemberModel caller = givenStatusChange(ownerId, ProjectMemberRole.OWNER);
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         JobStatusUpdateResult result = jobService.updateStatus(projectId, jobId, JobStatus.COMPLETED, null, null,
@@ -192,6 +195,8 @@ class JobServiceCompletionGateTest {
         assertThat(result.isCompletionRequested()).isFalse();
         assertThat(result.getJob().getStatus()).isEqualTo(JobStatus.COMPLETED);
         verifyNoInteractions(addonAccessChecker, approvalService);
+        // ADR-0052: completing directly cancels a pending completion request
+        verify(completionApprovalCanceller).cancelOnDirectCompletion(job, caller);
     }
 
     @Test
@@ -224,7 +229,7 @@ class JobServiceCompletionGateTest {
         assertThat(result.isCompletionRequested()).isFalse();
         assertThat(result.getJob().getStatus()).isEqualTo(JobStatus.BLOCKED);
         assertThat(result.getJob().getPendingCompletionApproval()).isSameAs(pending);
-        verifyNoInteractions(addonAccessChecker, approvalService);
+        verifyNoInteractions(addonAccessChecker, approvalService, completionApprovalCanceller);
     }
 
     // --- Reads: pendingCompletionApproval ---

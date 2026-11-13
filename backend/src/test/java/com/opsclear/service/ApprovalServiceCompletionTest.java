@@ -52,6 +52,7 @@ class ApprovalServiceCompletionTest {
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private JobStatusTransitioner jobStatusTransitioner;
+    @Mock private CompletionApprovalCanceller completionApprovalCanceller;
 
     private ApprovalService approvalService;
 
@@ -68,7 +69,7 @@ class ApprovalServiceCompletionTest {
     @BeforeEach
     void setUp() {
         approvalService = new ApprovalService(approvalRepository, jobRepository, projectRepository,
-                projectMemberRepository, eventPublisher, jobStatusTransitioner);
+                projectMemberRepository, eventPublisher, jobStatusTransitioner, completionApprovalCanceller);
 
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();

@@ -618,6 +618,112 @@
 							"body": "{\n  \"id\": \"{{approvalId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"jobTitle\": \"Install solar panel\",\n  \"requesterId\": \"{{memberId}}\",\n  \"approverId\": \"6a1f3c2d-8b4e-4f7a-9c0d-1e2f3a4b5c6d\",\n  \"description\": \"All panels installed, please check\",\n  \"status\": \"APPROVED\",\n  \"comment\": \"Looks good\",\n  \"requestedAt\": \"2026-11-13T10:15:00Z\",\n  \"decidedAt\": \"2026-11-13T11:02:00Z\",\n  \"kind\": \"COMPLETION\",\n  \"completionApplied\": false,\n  \"completionNotAppliedReason\": \"BLOCKED\"\n}"
 						}
 					]
+				},
+				{
+					"name": "Cancel Completion Approval (withdraw)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Approval cancelled\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().status).to.eql('CANCELLED');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/approvals/{{approvalId}}/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"projects",
+								"{{projectId}}",
+								"jobs",
+								"{{jobId}}",
+								"approvals",
+								"{{approvalId}}",
+								"cancel"
+							]
+						},
+						"description": "ADR-0052: withdraw a pending **completion** approval. No body. Allowed for the requester or any project Owner/Admin (others get 403); requires the `APPROVALS` add-on (403 while it's missing or the subscription is PAST_DUE).\n\nThe approval becomes `CANCELLED` (`approverId` = the canceller, `decidedAt` set) and the job stays `IN_PROGRESS`. A manual approval returns 409 (\"Only completion approvals can be withdrawn\"), as does one that's no longer pending (\"This approval has already been decided\") or a completed project. When someone other than the requester withdraws it, the requester gets an `APPROVAL_DECIDED` notification with `decision: CANCELLED` and `kind: COMPLETION`.\n\nPending completion approvals are also cancelled automatically when the job is completed directly (comment \"Completed directly by <name>\") or deleted (comment \"Job deleted by <name>\")."
+					},
+					"response": [
+						{
+							"name": "200 cancelled",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/approvals/{{approvalId}}/cancel",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"projects",
+										"{{projectId}}",
+										"jobs",
+										"{{jobId}}",
+										"approvals",
+										"{{approvalId}}",
+										"cancel"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"id\": \"{{approvalId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"jobTitle\": \"Install solar panel\",\n  \"requesterId\": \"{{memberId}}\",\n  \"approverId\": \"{{memberId}}\",\n  \"description\": \"All panels installed, please check\",\n  \"status\": \"CANCELLED\",\n  \"comment\": null,\n  \"requestedAt\": \"2026-11-13T10:15:00Z\",\n  \"decidedAt\": \"2026-11-13T10:40:00Z\",\n  \"kind\": \"COMPLETION\",\n  \"completionApplied\": null,\n  \"completionNotAppliedReason\": null\n}"
+						},
+						{
+							"name": "409 already decided or cancelled",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/approvals/{{approvalId}}/cancel",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"projects",
+										"{{projectId}}",
+										"jobs",
+										"{{jobId}}",
+										"approvals",
+										"{{approvalId}}",
+										"cancel"
+									]
+								}
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"status\": 409,\n  \"message\": \"This approval has already been decided\"\n}"
+						}
+					]
 				}
 			],
 			"description": "Approval workflow endpoints"
