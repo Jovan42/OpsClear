@@ -54,6 +54,7 @@ const API_KEYS_CARD_TITLE = 'API keys';
 const LINKS_CARD_TITLE = 'Job links';
 const RELATIONSHIPS_CARD_TITLE = 'Job relationships';
 const FEEDBACK_CARD_TITLE = 'Feedback & Credits';
+const NOTIFICATIONS_CARD_TITLE = 'Notifications';
 
 /** Waits for a card's shrunk live preview to render real content (not the static
  *  fallback), then clicks it open. The wait is scoped to the DemoTrigger's own
@@ -80,10 +81,10 @@ function closeDemo() {
 }
 
 describe('/features interactive demos — trigger, overlay, and MSW isolation', () => {
-  it('all 13 cards render a real live preview on page load, not the static screenshot fallback', { tags: '@smoke' }, () => {
+  it('all 14 cards render a real live preview on page load, not the static screenshot fallback', { tags: '@smoke' }, () => {
     cy.visit('/features');
     const cardTitles = [
-      'Job tracking', FEEDBACK_CARD_TITLE, 'Dashboard', APPROVALS_CARD_TITLE, NOTES_CARD_TITLE,
+      'Job tracking', NOTIFICATIONS_CARD_TITLE, FEEDBACK_CARD_TITLE, 'Dashboard', APPROVALS_CARD_TITLE, NOTES_CARD_TITLE,
       HISTORY_CARD_TITLE, MILESTONES_CARD_TITLE, RELATIONSHIPS_CARD_TITLE, 'Job templates',
       'Recurring scheduling', API_KEYS_CARD_TITLE, LINKS_CARD_TITLE, 'Job types',
     ];
@@ -219,9 +220,9 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
     cy.get('@overlay').contains('Approvals').should('be.visible');
   });
 
-  it('adding a note in the notes demo creates exactly one new entry, not a duplicate (all-13-cards-mount request-storm regression guard)', () => {
+  it('adding a note in the notes demo creates exactly one new entry, not a duplicate (all-14-cards-mount request-storm regression guard)', () => {
     cy.visit('/features');
-    // All 13 DemoTrigger instances mount simultaneously on this same page load —
+    // All 14 DemoTrigger instances mount simultaneously on this same page load —
     // exactly the scenario the FeaturesPage.tsx useMemo(CARDS) fix guards against.
     openDemo(NOTES_CARD_TITLE, 'First pass is up on staging');
     cy.get('@overlay').find('.prose, [class*="note"]').its('length').then(() => {
@@ -252,6 +253,54 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
     cy.get('@overlay').find('[data-testid="stats-member-row"]').should('have.length', 3);
     cy.get('@overlay').find('button[aria-label="Show stats for Jane Smith"]').click();
     cy.get('@overlay').find('[data-testid="stats-member-filter"]').should('contain.text', 'Jane Smith');
+  });
+
+  it('the Notifications card is an Included (core) feature, not an add-on (JOB-330)', () => {
+    cy.visit('/features');
+    cy.contains('h3', NOTIFICATIONS_CARD_TITLE).parent().contains('Included').should('be.visible');
+  });
+
+  it('the Notifications demo pages through the bell, the Notifications page and the mute settings on sample data, with no real notification requests (JOB-330)', () => {
+    // Covers the list, count, read-state and stream endpoints alike. A regex, not a glob:
+    // `**/api/notifications**` would also match Vite serving /src/api/notifications.ts.
+    cy.intercept({ url: /\/api\/notifications(\/|\?|$)/ }, cy.spy().as('realNotificationsEndpoint'));
+    cy.intercept({ url: /\/api\/user\/notification-settings/ }, cy.spy().as('realSettingsEndpoint'));
+    cy.visit('/features');
+    openDemo(NOTIFICATIONS_CARD_TITLE, 'Fix mobile navigation bug');
+
+    // Slide 1: the real bell, opened, with the sample inbox's 4 unread and the newest 10.
+    cy.get('@overlay').contains('Notification bell').should('be.visible');
+    cy.get('@overlay').contains('1/3').should('be.visible');
+    cy.get('@overlay').find('[data-testid="notification-badge"]').should('have.text', '4');
+    cy.get('@overlay').find('[data-testid="notification-dropdown"] [data-testid="notification-item"]')
+      .should('have.length', 10);
+    // An item opens its job inside the demo (and is marked read on the way).
+    cy.get('@overlay').find('[data-testid="notification-dropdown"]').contains('Fix mobile navigation bug').click();
+    cy.get('@overlay').contains('Waiting on design review from John').should('be.visible');
+
+    // Slide 2: the full page, all 11 items, the Unread filter and Mark all as read.
+    cy.get('@overlay').find('button[aria-label="Next example"]').click();
+    cy.get('@overlay').contains('Notifications page').should('be.visible');
+    cy.get('@overlay').contains('2/3').should('be.visible');
+    cy.get('@overlay').find('[data-testid="notification-item"]').should('have.length', 11);
+    cy.get('@overlay').contains('button', 'Unread').click();
+    cy.get('@overlay').find('[data-testid="notification-item"]').should('have.length', 3);
+    cy.get('@overlay').contains('button', 'Mark all as read').click();
+    cy.get('@overlay').contains('No unread notifications.').should('be.visible');
+
+    // Slide 3: the mute toggles, one type muted out of the box, toggling saves in place.
+    cy.get('@overlay').find('button[aria-label="Next example"]').click();
+    cy.get('@overlay').contains('Mute notification types').should('be.visible');
+    cy.get('@overlay').contains('3/3').should('be.visible');
+    cy.get('@overlay').find('[data-testid="notification-type-toggle-JOB_UPDATED"]').should('have.attr', 'aria-checked', 'false');
+    cy.get('@overlay').find('[data-testid="notification-type-toggle-JOB_ASSIGNED"]').as('assignedToggle');
+    cy.get('@assignedToggle').should('have.attr', 'aria-checked', 'true');
+    cy.get('@assignedToggle').click();
+    cy.get('@assignedToggle').should('have.attr', 'aria-checked', 'false');
+    cy.get('@overlay').find('[data-testid="notification-type-toggle-SUBSCRIPTION_PAST_DUE"]').should('have.attr', 'aria-disabled', 'true');
+
+    cy.get('@realNotificationsEndpoint').should('not.have.been.called');
+    cy.get('@realSettingsEndpoint').should('not.have.been.called');
   });
 
   it('resetDemoData() on close then immediately reopening produces an identical baseline every time', () => {
