@@ -234,6 +234,7 @@ class ApprovalServiceCompletionTest {
     @DisplayName("decide reads the job with a row lock and returns 404 when it's gone")
     void decide_shouldThrowNotFound_whenJobMissing() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(owner));
         when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> approvalService.decide(projectId, jobId, approvalId, ApprovalStatus.APPROVED, null,

@@ -22,4 +22,5 @@ public class PendingCompletionApprovalModel {
     private UUID requesterId;
     private String requesterName; // resolved via JOIN, not a DB column
     private Instant requestedAt;
+    private String message; // the approval's description
 }

@@ -90,7 +90,8 @@ public class ApprovalRepository {
         if (jobIds.isEmpty()) {
             return List.of();
         }
-        return dsl.select(APPROVALS.ID, APPROVALS.JOB_ID, APPROVALS.REQUESTER_ID, USERS.NAME, APPROVALS.REQUESTED_AT)
+        return dsl.select(APPROVALS.ID, APPROVALS.JOB_ID, APPROVALS.REQUESTER_ID, USERS.NAME, APPROVALS.REQUESTED_AT,
+                        APPROVALS.DESCRIPTION)
                 .from(APPROVALS)
                 .leftJoin(USERS).on(APPROVALS.REQUESTER_ID.eq(USERS.ID))
                 .where(APPROVALS.JOB_ID.in(jobIds))
@@ -102,6 +103,7 @@ public class ApprovalRepository {
                         .requesterId(r.get(APPROVALS.REQUESTER_ID))
                         .requesterName(r.get(USERS.NAME))
                         .requestedAt(toInstant(r.get(APPROVALS.REQUESTED_AT)))
+                        .message(r.get(APPROVALS.DESCRIPTION))
                         .build());
     }
 

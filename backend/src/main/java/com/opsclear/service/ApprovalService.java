@@ -95,9 +95,10 @@ public class ApprovalService {
                                 ApprovalStatus status, String comment, UUID callerId) {
         ProjectModel project = requireProjectExists(projectId);
         requireProjectNotCompleted(project);
-        // Locks the job row first (ADR-0052), so an approval racing a status change sees its result
-        JobModel job = requireJobInProjectForUpdate(jobId, projectId);
         ProjectMemberModel decider = requireOwnerOrAdmin(projectId, callerId);
+        // Locks the job row before touching the approval (ADR-0052), so a decision racing a status change sees its
+        // result; every path locks the job first, then the approval
+        JobModel job = requireJobInProjectForUpdate(jobId, projectId);
         ApprovalModel approval = requireApprovalExists(approvalId, jobId);
         requireStatusIsDecision(status);
 

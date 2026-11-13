@@ -446,7 +446,7 @@
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "projects", "{{projectId}}", "jobs", "{{jobId}}", "status"]
 						},
-						"description": "Change a job's status. Body: `status`, `reason` (required for BLOCKED) and optional `message` (max 2000 characters, used only for completion requests).\n\nADR-0052: on a project with `requireCompletionApproval` on, a **Member** completing a job gets **202 Accepted**: the job stays `IN_PROGRESS` and a completion approval (`kind = COMPLETION`, description = message or \"Requesting to complete this job\") is created and returned in `pendingCompletionApproval`. A second request while one is pending returns **409**. Owners/Admins, ungated projects, and orgs whose `APPROVALS` add-on isn't usable for writes (missing or subscription `PAST_DUE`) complete directly with **200**."
+						"description": "Change a job's status. Body: `status`, `reason` (required for BLOCKED) and optional `message` (max 2000 characters, used only for completion requests).\n\nADR-0052: on a project with `requireCompletionApproval` on, a **Member** completing a job gets **202 Accepted**: the job stays `IN_PROGRESS` and a completion approval (`kind = COMPLETION`, description = message or \"Requesting to complete this job\") is created and returned in `pendingCompletionApproval` (`id`, `requesterId`, `requesterName`, `requestedAt`, `message`). A second request while one is pending returns **409**. Owners/Admins, ungated projects, and orgs whose `APPROVALS` add-on isn't usable for writes (missing or subscription `PAST_DUE`) complete directly with **200**."
 					},
 					"response": [
 						{
@@ -478,7 +478,7 @@
 									"value": "application/json"
 								}
 							],
-							"body": "{\n  \"id\": \"{{jobId}}\",\n  \"friendlyId\": \"JOB-042\",\n  \"projectId\": \"{{projectId}}\",\n  \"title\": \"Install solar panel\",\n  \"status\": \"IN_PROGRESS\",\n  \"priority\": \"MEDIUM\",\n  \"assignedTo\": \"{{memberId}}\",\n  \"assignedToName\": \"Carol\",\n  \"links\": [],\n  \"relationships\": [],\n  \"pendingCompletionApproval\": {\n    \"id\": \"7d0c5a1e-2f4b-4c8e-9a51-3b6f0e2d9c11\",\n    \"requesterId\": \"{{memberId}}\",\n    \"requesterName\": \"Carol\",\n    \"requestedAt\": \"2026-11-13T10:15:00Z\"\n  }\n}"
+							"body": "{\n  \"id\": \"{{jobId}}\",\n  \"friendlyId\": \"JOB-042\",\n  \"projectId\": \"{{projectId}}\",\n  \"title\": \"Install solar panel\",\n  \"status\": \"IN_PROGRESS\",\n  \"priority\": \"MEDIUM\",\n  \"assignedTo\": \"{{memberId}}\",\n  \"assignedToName\": \"Carol\",\n  \"links\": [],\n  \"relationships\": [],\n  \"pendingCompletionApproval\": {\n    \"id\": \"7d0c5a1e-2f4b-4c8e-9a51-3b6f0e2d9c11\",\n    \"requesterId\": \"{{memberId}}\",\n    \"requesterName\": \"Carol\",\n    \"requestedAt\": \"2026-11-13T10:15:00Z\",\n    \"message\": \"All panels installed, please check\"\n  }\n}"
 						},
 						{
 							"name": "200 completed directly (Owner/Admin or ungated)",

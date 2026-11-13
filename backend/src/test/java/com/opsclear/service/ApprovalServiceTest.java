@@ -336,7 +336,6 @@ class ApprovalServiceTest {
     @DisplayName("decide should throw ForbiddenException when caller is a MEMBER")
     void decide_shouldThrow_whenCallerIsMember() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId))
                 .thenReturn(Optional.of(memberMembership));
 
@@ -344,6 +343,8 @@ class ApprovalServiceTest {
                 projectId, jobId, approvalId, ApprovalStatus.APPROVED, null, callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
+        // The role check runs before the job row lock, so a Member's attempt never holds it
+        verifyNoInteractions(jobRepository);
     }
 
     @Test

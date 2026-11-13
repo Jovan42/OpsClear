@@ -3,6 +3,7 @@ package com.opsclear.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opsclear.exception.ErrorMessages;
+import com.opsclear.model.ApprovalStatus;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.JobPriority;
 import com.opsclear.model.JobStatus;
@@ -27,6 +28,8 @@ import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.SubscriptionAddonRepository;
 import com.opsclear.repository.SubscriptionTierRepository;
 import com.opsclear.repository.UserRepository;
+import com.opsclear.service.ApprovalService;
+import com.opsclear.service.JobStatusTransitioner;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.junit.jupiter.api.AfterEach;
@@ -41,6 +44,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -97,6 +101,9 @@ class CompletionApprovalIntegrationTest {
     @Autowired private SubscriptionAddonRepository addonRepository;
     @Autowired private FriendlyIdRepository friendlyIdRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private TransactionTemplate transactionTemplate;
+    @Autowired private JobStatusTransitioner jobStatusTransitioner;
+    @Autowired private ApprovalService approvalService;
 
     private UUID ownerId;
     private UUID adminId;
@@ -161,7 +168,8 @@ class CompletionApprovalIntegrationTest {
                 .andExpect(jsonPath("$.pendingCompletionApproval.id").exists())
                 .andExpect(jsonPath("$.pendingCompletionApproval.requesterId").value(memberId.toString()))
                 .andExpect(jsonPath("$.pendingCompletionApproval.requesterName").value("Max Member"))
-                .andExpect(jsonPath("$.pendingCompletionApproval.requestedAt").exists());
+                .andExpect(jsonPath("$.pendingCompletionApproval.requestedAt").exists())
+                .andExpect(jsonPath("$.pendingCompletionApproval.message").value(DEFAULT_DESCRIPTION));
 
         assertThat(jobStatusInDb()).isEqualTo(JobStatus.IN_PROGRESS);
         Record approval = onlyApproval();
@@ -182,12 +190,14 @@ class CompletionApprovalIntegrationTest {
     }
 
     @Test
-    @DisplayName("The optional message becomes the approval's description (stripped)")
+    @DisplayName("The optional message becomes the approval's description and the pending request's message")
     void complete_shouldUseMessageAsDescription() throws Exception {
         givenSubscription("APPROVALS", "ACTIVE");
 
         complete(memberId, "  All panels installed, please check  ")
-                .andExpect(status().isAccepted());
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.pendingCompletionApproval.message")
+                        .value("All panels installed, please check"));
 
         assertThat(onlyApproval().get(APPROVALS.DESCRIPTION)).isEqualTo("All panels installed, please check");
     }
@@ -361,13 +371,14 @@ class CompletionApprovalIntegrationTest {
     void reads_shouldIncludePendingCompletionApproval() throws Exception {
         givenSubscription("APPROVALS", "ACTIVE");
         UUID otherJobId = job("JOB-288", "Other job", JobStatus.IN_PROGRESS);
-        complete(memberId, null).andExpect(status().isAccepted());
+        complete(memberId, "Ready for review").andExpect(status().isAccepted());
         UUID approvalId = onlyApproval().get(APPROVALS.ID);
 
         mockMvc.perform(get(ApiPaths.job(projectId, jobId)).with(as(memberId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pendingCompletionApproval.id").value(approvalId.toString()))
-                .andExpect(jsonPath("$.pendingCompletionApproval.requesterName").value("Max Member"));
+                .andExpect(jsonPath("$.pendingCompletionApproval.requesterName").value("Max Member"))
+                .andExpect(jsonPath("$.pendingCompletionApproval.message").value("Ready for review"));
 
         mockMvc.perform(get(ApiPaths.jobs(projectId)).with(as(ownerId)))
                 .andExpect(status().isOk())
@@ -376,6 +387,8 @@ class CompletionApprovalIntegrationTest {
                         .value(approvalId.toString()))
                 .andExpect(jsonPath("$[?(@.id == '" + jobId + "')].pendingCompletionApproval.requesterId")
                         .value(memberId.toString()))
+                .andExpect(jsonPath("$[?(@.id == '" + jobId + "')].pendingCompletionApproval.message")
+                        .value("Ready for review"))
                 .andExpect(jsonPath("$[?(@.id == '" + otherJobId + "')].pendingCompletionApproval")
                         .value((Object) null));
     }
@@ -579,7 +592,117 @@ class CompletionApprovalIntegrationTest {
                 .andExpect(jsonPath("$.pendingCompletionApproval").value(nullValue()));
     }
 
+    // --- Row locks (ADR-0052: approve vs block race) ---
+
+    @Test
+    @DisplayName("Row lock: a decision waits for an uncommitted block, then records 'not applied' with reason BLOCKED")
+    void approve_shouldWaitForConcurrentBlock_andNotApply() throws Exception {
+        givenSubscription("APPROVALS", "ACTIVE");
+        UUID approvalId = requestCompletion();
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch commit = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            // A: locks the job, blocks it, and holds the transaction open
+            Future<?> blocker = pool.submit(() -> transactionTemplate.executeWithoutResult(tx -> {
+                JobModel job = jobRepository.findByIdForUpdate(jobId).orElseThrow();
+                jobStatusTransitioner.transition(job, JobStatus.BLOCKED, "Waiting for parts", membership(memberId));
+                locked.countDown();
+                awaitQuietly(commit);
+            }));
+            assertThat(locked.await(10, TimeUnit.SECONDS)).isTrue();
+
+            // B: approves while A is uncommitted; it must wait on the job row lock
+            Future<String> decision = pool.submit(() -> decide(ownerId, approvalId, "APPROVED", null)
+                    .andReturn().getResponse().getContentAsString());
+            awaitLockWaiter();
+            assertThat(decision.isDone()).isFalse();
+
+            commit.countDown();
+            blocker.get(30, TimeUnit.SECONDS);
+            JsonNode response = objectMapper.readTree(decision.get(30, TimeUnit.SECONDS));
+            assertThat(response.get("status").asText()).isEqualTo("APPROVED");
+            assertThat(response.get("completionApplied").asBoolean()).isFalse();
+            assertThat(response.get("completionNotAppliedReason").asText()).isEqualTo("BLOCKED");
+        } finally {
+            commit.countDown();
+            pool.shutdownNow();
+        }
+
+        assertThat(jobStatusInDb()).isEqualTo(JobStatus.BLOCKED);
+        assertThat(dsl.fetchCount(JOB_STATUS_HISTORY, JOB_STATUS_HISTORY.CHANGED_TO.eq("COMPLETED"))).isZero();
+    }
+
+    @Test
+    @DisplayName("Row lock: a block waits for an uncommitted approval, then fails (400) instead of overwriting it")
+    void block_shouldWaitForConcurrentApproval_andNotOverwriteCompletion() throws Exception {
+        givenSubscription("APPROVALS", "ACTIVE");
+        UUID approvalId = requestCompletion();
+        CountDownLatch decided = new CountDownLatch(1);
+        CountDownLatch commit = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            // A: approves (locks the job and auto-completes it) and holds the transaction open
+            Future<?> approver = pool.submit(() -> transactionTemplate.executeWithoutResult(tx -> {
+                approvalService.decide(projectId, jobId, approvalId, ApprovalStatus.APPROVED, null, ownerId);
+                decided.countDown();
+                awaitQuietly(commit);
+            }));
+            assertThat(decided.await(10, TimeUnit.SECONDS)).isTrue();
+
+            // B: an Admin blocks the job while A is uncommitted; it must wait on the job row lock. (Not the Member:
+            // A's approval holds a key-share lock on the requester's user row, so the Member's request would wait in
+            // the user sync filter before ever reading the job.)
+            Future<Integer> block = pool.submit(() -> mockMvc.perform(patch(ApiPaths.jobStatus(projectId, jobId))
+                            .with(as(adminId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body(Map.of("status", "BLOCKED", "reason", "Waiting for parts"))))
+                    .andReturn().getResponse().getStatus());
+            awaitLockWaiter();
+            assertThat(block.isDone()).isFalse();
+
+            commit.countDown();
+            approver.get(30, TimeUnit.SECONDS);
+            // B now sees COMPLETED, and COMPLETED -> BLOCKED is illegal
+            assertThat(block.get(30, TimeUnit.SECONDS)).isEqualTo(400);
+        } finally {
+            commit.countDown();
+            pool.shutdownNow();
+        }
+
+        assertThat(jobStatusInDb()).isEqualTo(JobStatus.COMPLETED);
+        assertThat(onlyApproval().get(APPROVALS.COMPLETION_APPLIED)).isTrue();
+        assertThat(dsl.fetchCount(JOB_STATUS_HISTORY, JOB_STATUS_HISTORY.CHANGED_TO.eq("BLOCKED"))).isZero();
+    }
+
     // --- Helpers ---
+
+    private ProjectMemberModel membership(UUID userId) {
+        return projectMemberRepository.findByProjectIdAndUserId(projectId, userId).orElseThrow();
+    }
+
+    private static void awaitQuietly(CountDownLatch latch) {
+        try {
+            assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
+    // Waits until another session in this database is blocked on a lock (the request under test).
+    private void awaitLockWaiter() throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (System.nanoTime() < deadline) {
+            Integer waiting = dsl.fetchOne("select count(*)::int from pg_stat_activity "
+                    + "where datname = current_database() and wait_event_type = 'Lock'").get(0, Integer.class);
+            if (waiting != null && waiting > 0) {
+                return;
+            }
+            Thread.sleep(50);
+        }
+        throw new AssertionError("No session started waiting on a lock within 10 seconds");
+    }
 
     private UUID user(String email, String name) {
         UUID id = UUID.randomUUID();
