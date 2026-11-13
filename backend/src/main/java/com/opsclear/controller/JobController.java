@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import com.opsclear.model.JobPriority;
+import com.opsclear.model.JobStatusUpdateResult;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -95,8 +96,11 @@ public class JobController {
         UUID userId = SecurityUtils.resolveUserId(auth);
         UUID pid = friendlyIdResolver.resolveProject(projectId, userId);
         UUID jid = friendlyIdResolver.resolveJob(jobId, userId);
-        return ResponseEntity.ok(JobResponse.from(
-                jobService.updateStatus(pid, jid, request.getStatus(), request.getReason(), userId)));
+        JobStatusUpdateResult result = jobService.updateStatus(
+                pid, jid, request.getStatus(), request.getReason(), request.getMessage(), userId);
+        // ADR-0052: 202 when a completion approval was created instead of completing the job
+        HttpStatus status = result.isCompletionRequested() ? HttpStatus.ACCEPTED : HttpStatus.OK;
+        return ResponseEntity.status(status).body(JobResponse.from(result.getJob()));
     }
 
     @DeleteMapping("/{jobId}")

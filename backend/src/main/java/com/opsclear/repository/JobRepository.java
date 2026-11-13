@@ -59,6 +59,20 @@ public class JobRepository {
                 .map(this::toModel);
     }
 
+    /**
+     * Like {@link #findByIdAndDeletedAtIsNull}, but locks the job row ({@code SELECT … FOR UPDATE OF jobs}) until the
+     * transaction ends, so concurrent status changes see each other's result (ADR-0052: approve vs block race).
+     */
+    public Optional<JobModel> findByIdForUpdate(UUID id) {
+        return selectWithAssignee()
+                .where(JOBS.ID.eq(id))
+                .and(JOBS.DELETED_AT.isNull())
+                .forUpdate()
+                .of(JOBS)
+                .fetchOptional()
+                .map(this::toModel);
+    }
+
     public List<JobModel> findByProjectIdAndDeletedAtIsNull(UUID projectId) {
         return findByFilters(projectId, null, null, null, null);
     }

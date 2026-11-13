@@ -2,6 +2,7 @@ package com.opsclear.dto;
 
 import com.opsclear.model.JobStatus;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,4 +21,8 @@ public class UpdateJobStatusRequest {
 
     // Required when status == BLOCKED; ignored for all other transitions
     private String reason;
+
+    // ADR-0052: optional message for a completion request on a gated project; ignored otherwise
+    @Size(max = 2000, message = "Message must not exceed 2000 characters")
+    private String message;
 }

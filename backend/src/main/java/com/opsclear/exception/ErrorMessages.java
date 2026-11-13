@@ -155,6 +155,8 @@ public final class ErrorMessages {
         public static final String CANNOT_SET_PENDING = "Cannot transition an approval back to PENDING";
         public static final String ACCESS_DENIED_NOT_ASSIGNED =
                 "Access denied: you are not assigned to this job";
+        public static final String COMPLETION_ALREADY_PENDING =
+                "A completion approval is already pending for this job";
         private Approval() {
         }
     }

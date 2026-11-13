@@ -6,6 +6,7 @@ import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.ApprovalKind;
 import com.opsclear.model.ApprovalModel;
 import com.opsclear.model.ApprovalStatus;
 import com.opsclear.model.JobModel;
@@ -34,7 +35,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -47,6 +50,7 @@ class ApprovalServiceTest {
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private JobStatusTransitioner jobStatusTransitioner;
 
     private ApprovalService approvalService;
 
@@ -62,7 +66,8 @@ class ApprovalServiceTest {
     @BeforeEach
     void setUp() {
         approvalService = new ApprovalService(
-                approvalRepository, jobRepository, projectRepository, projectMemberRepository, eventPublisher);
+                approvalRepository, jobRepository, projectRepository, projectMemberRepository, eventPublisher,
+                jobStatusTransitioner);
 
         projectId = UUID.randomUUID();
         jobId = UUID.randomUUID();
@@ -115,7 +120,7 @@ class ApprovalServiceTest {
         assertThat(result.getStatus()).isEqualTo(ApprovalStatus.PENDING);
         verify(approvalRepository).insert(jobId, callerId, "Need transformer");
         verify(eventPublisher).publishEvent(
-                new ApprovalRequestedEvent(approvalId, projectId, jobId, callerId, "Need transformer"));
+                new ApprovalRequestedEvent(approvalId, projectId, jobId, callerId, "Need transformer", ApprovalKind.MANUAL));
     }
 
     @Test
@@ -247,7 +252,7 @@ class ApprovalServiceTest {
         approved.setComment("Approved");
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalRepository.findByIdAndJobId(approvalId, jobId))
@@ -261,7 +266,11 @@ class ApprovalServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(ApprovalStatus.APPROVED);
         verify(eventPublisher).publishEvent(new ApprovalDecidedEvent(
-                approvalId, projectId, jobId, callerId, callerId, ApprovalStatus.APPROVED, "Approved"));
+                approvalId, projectId, jobId, callerId, callerId, ApprovalStatus.APPROVED, "Approved",
+                ApprovalKind.MANUAL, null, null));
+        // Approving a manual approval never changes the job's status (ADR-0052)
+        verifyNoInteractions(jobStatusTransitioner);
+        verify(approvalRepository, never()).updateCompletionOutcome(any(), anyBoolean(), any());
     }
 
     @Test
@@ -271,7 +280,7 @@ class ApprovalServiceTest {
         ApprovalModel rejected = buildApproval(ApprovalStatus.REJECTED);
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalRepository.findByIdAndJobId(approvalId, jobId))
@@ -285,14 +294,15 @@ class ApprovalServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(ApprovalStatus.REJECTED);
         verify(eventPublisher).publishEvent(new ApprovalDecidedEvent(
-                approvalId, projectId, jobId, callerId, callerId, ApprovalStatus.REJECTED, null));
+                approvalId, projectId, jobId, callerId, callerId, ApprovalStatus.REJECTED, null,
+                ApprovalKind.MANUAL, null, null));
     }
 
     @Test
     @DisplayName("decide should throw BadRequestException when status is PENDING")
     void decide_shouldThrow_whenStatusIsPending() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalRepository.findByIdAndJobId(approvalId, jobId))
@@ -308,7 +318,7 @@ class ApprovalServiceTest {
     @DisplayName("decide should throw ConflictException when approval was already decided")
     void decide_shouldThrow_whenAlreadyDecided() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalRepository.findByIdAndJobId(approvalId, jobId))
@@ -326,7 +336,7 @@ class ApprovalServiceTest {
     @DisplayName("decide should throw ForbiddenException when caller is a MEMBER")
     void decide_shouldThrow_whenCallerIsMember() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId))
                 .thenReturn(Optional.of(memberMembership));
 
@@ -340,7 +350,7 @@ class ApprovalServiceTest {
     @DisplayName("decide should throw NotFoundException when approval does not exist")
     void decide_shouldThrow_whenApprovalNotFound() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
-        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByIdForUpdate(jobId)).thenReturn(Optional.of(job));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(approvalRepository.findByIdAndJobId(approvalId, jobId)).thenReturn(Optional.empty());

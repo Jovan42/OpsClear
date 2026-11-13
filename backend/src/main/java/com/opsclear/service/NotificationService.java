@@ -86,11 +86,15 @@ public class NotificationService {
                 .approvalId(event.approvalId())
                 .candidates(scope.ownerAndAdminIds())
                 .payload(scope.payload(actorName(event.actorId()))
-                        .put(NotificationPayload.DESCRIPTION, event.description()))
+                        .put(NotificationPayload.DESCRIPTION, event.description())
+                        .put(NotificationPayload.KIND, event.kind()))
                 .build());
     }
 
-    /** {@code APPROVAL_DECIDED}: the person who requested the approval. */
+    /**
+     * {@code APPROVAL_DECIDED}: the person who requested the approval. An approved completion approval (ADR-0052) also
+     * carries whether the job was completed and, if not, the job status that stopped it.
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<NotificationModel> notifyApprovalDecided(ApprovalDecidedEvent event) {
         return fanOutForJob(NotificationType.APPROVAL_DECIDED, event.jobId(), scope -> FanOut.builder()
@@ -99,7 +103,10 @@ public class NotificationService {
                 .candidates(List.of(event.requesterId()))
                 .payload(scope.payload(actorName(event.actorId()))
                         .put(NotificationPayload.DECISION, event.decision().name())
-                        .put(NotificationPayload.COMMENT, event.comment()))
+                        .put(NotificationPayload.COMMENT, event.comment())
+                        .put(NotificationPayload.KIND, event.kind())
+                        .put(NotificationPayload.COMPLETION_APPLIED, event.completionApplied())
+                        .put(NotificationPayload.COMPLETION_NOT_APPLIED_REASON, event.completionNotAppliedReason()))
                 .build());
     }
 

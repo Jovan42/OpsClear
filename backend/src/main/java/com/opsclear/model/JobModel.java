@@ -59,6 +59,9 @@ public class JobModel {
     private String blockedReason; // resolved via JOIN, not a DB column
     private Instant blockedAt;
 
+    // ADR-0052: populated by JobService on list, getById and status updates — not stored in DB, null when none
+    private PendingCompletionApprovalModel pendingCompletionApproval;
+
     public boolean isDeleted() {
         return deletedAt != null;
     }

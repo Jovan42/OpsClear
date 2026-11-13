@@ -404,7 +404,116 @@
 		},
 		{
 			"name": "Jobs",
-			"item": [],
+			"item": [
+				{
+					"name": "Update Job Status (complete; gated Member → 202 completion request)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Completed (200) or completion requested (202)\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 202]);",
+									"});",
+									"",
+									"if (pm.response.code === 202) {",
+									"    pm.test(\"Job still In Progress with a pending completion approval\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.status).to.eql('IN_PROGRESS');",
+									"        pm.expect(jsonData.pendingCompletionApproval).to.not.be.null;",
+									"        pm.environment.set('approvalId', jsonData.pendingCompletionApproval.id);",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"COMPLETED\",\n  \"message\": \"All panels installed, please check\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "jobs", "{{jobId}}", "status"]
+						},
+						"description": "Change a job's status. Body: `status`, `reason` (required for BLOCKED) and optional `message` (max 2000 characters, used only for completion requests).\n\nADR-0052: on a project with `requireCompletionApproval` on, a **Member** completing a job gets **202 Accepted**: the job stays `IN_PROGRESS` and a completion approval (`kind = COMPLETION`, description = message or \"Requesting to complete this job\") is created and returned in `pendingCompletionApproval`. A second request while one is pending returns **409**. Owners/Admins, ungated projects, and orgs whose `APPROVALS` add-on isn't usable for writes (missing or subscription `PAST_DUE`) complete directly with **200**."
+					},
+					"response": [
+						{
+							"name": "202 completion requested (gated Member)",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"COMPLETED\",\n  \"message\": \"All panels installed, please check\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "projects", "{{projectId}}", "jobs", "{{jobId}}", "status"]
+								}
+							},
+							"status": "Accepted",
+							"code": 202,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"id\": \"{{jobId}}\",\n  \"friendlyId\": \"JOB-042\",\n  \"projectId\": \"{{projectId}}\",\n  \"title\": \"Install solar panel\",\n  \"status\": \"IN_PROGRESS\",\n  \"priority\": \"MEDIUM\",\n  \"assignedTo\": \"{{memberId}}\",\n  \"assignedToName\": \"Carol\",\n  \"links\": [],\n  \"relationships\": [],\n  \"pendingCompletionApproval\": {\n    \"id\": \"7d0c5a1e-2f4b-4c8e-9a51-3b6f0e2d9c11\",\n    \"requesterId\": \"{{memberId}}\",\n    \"requesterName\": \"Carol\",\n    \"requestedAt\": \"2026-11-13T10:15:00Z\"\n  }\n}"
+						},
+						{
+							"name": "200 completed directly (Owner/Admin or ungated)",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"COMPLETED\",\n  \"message\": \"All panels installed, please check\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "projects", "{{projectId}}", "jobs", "{{jobId}}", "status"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"id\": \"{{jobId}}\",\n  \"friendlyId\": \"JOB-042\",\n  \"projectId\": \"{{projectId}}\",\n  \"title\": \"Install solar panel\",\n  \"status\": \"COMPLETED\",\n  \"priority\": \"MEDIUM\",\n  \"assignedTo\": \"{{memberId}}\",\n  \"assignedToName\": \"Carol\",\n  \"links\": [],\n  \"relationships\": [],\n  \"pendingCompletionApproval\": null\n}"
+						}
+					]
+				}
+			],
 			"description": "Job CRUD and status endpoints"
 		},
 		{
@@ -414,7 +523,103 @@
 		},
 		{
 			"name": "Approvals",
-			"item": [],
+			"item": [
+				{
+					"name": "Decide Approval (approve completion approval)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": ["pm.test(\"Approval decided\", function () {", "    pm.response.to.have.status(200);", "    pm.expect(pm.response.json()).to.have.property('kind');", "});"]
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"APPROVED\",\n  \"comment\": \"Looks good\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/approvals/{{approvalId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "jobs", "{{jobId}}", "approvals", "{{approvalId}}", "status"]
+						},
+						"description": "Approve or reject an approval (`status`: APPROVED or REJECTED, optional `comment`). Owner/Admin only; requires the `APPROVALS` add-on.\n\nADR-0052: the response carries `kind` (MANUAL or COMPLETION), `completionApplied` and `completionNotAppliedReason`. Approving a **completion** approval completes the job (history attributed to the approver) if it's still `IN_PROGRESS` (`completionApplied: true`); otherwise the approval is recorded as approved but not applied, with the job's current status as the reason (e.g. `BLOCKED`). Rejecting leaves the job as it is. Manual approvals never change job status; their completion fields are null."
+					},
+					"response": [
+						{
+							"name": "200 approved, completion applied",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"APPROVED\",\n  \"comment\": \"Looks good\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/approvals/{{approvalId}}/status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "projects", "{{projectId}}", "jobs", "{{jobId}}", "approvals", "{{approvalId}}", "status"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"id\": \"{{approvalId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"jobTitle\": \"Install solar panel\",\n  \"requesterId\": \"{{memberId}}\",\n  \"approverId\": \"6a1f3c2d-8b4e-4f7a-9c0d-1e2f3a4b5c6d\",\n  \"description\": \"All panels installed, please check\",\n  \"status\": \"APPROVED\",\n  \"comment\": \"Looks good\",\n  \"requestedAt\": \"2026-11-13T10:15:00Z\",\n  \"decidedAt\": \"2026-11-13T11:02:00Z\",\n  \"kind\": \"COMPLETION\",\n  \"completionApplied\": true,\n  \"completionNotAppliedReason\": null\n}"
+						},
+						{
+							"name": "200 approved, not applied (job was Blocked)",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"APPROVED\",\n  \"comment\": \"Looks good\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/projects/{{projectId}}/jobs/{{jobId}}/approvals/{{approvalId}}/status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "projects", "{{projectId}}", "jobs", "{{jobId}}", "approvals", "{{approvalId}}", "status"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"id\": \"{{approvalId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"jobTitle\": \"Install solar panel\",\n  \"requesterId\": \"{{memberId}}\",\n  \"approverId\": \"6a1f3c2d-8b4e-4f7a-9c0d-1e2f3a4b5c6d\",\n  \"description\": \"All panels installed, please check\",\n  \"status\": \"APPROVED\",\n  \"comment\": \"Looks good\",\n  \"requestedAt\": \"2026-11-13T10:15:00Z\",\n  \"decidedAt\": \"2026-11-13T11:02:00Z\",\n  \"kind\": \"COMPLETION\",\n  \"completionApplied\": false,\n  \"completionNotAppliedReason\": \"BLOCKED\"\n}"
+						}
+					]
+				}
+			],
 			"description": "Approval workflow endpoints"
 		},
 		{
