@@ -82,4 +82,5 @@ public class Indexes {
     public static final Index SCHEDULE_MISSED_RUNS_SCHEDULE_ID_IDX = Internal.createIndex(DSL.name("schedule_missed_runs_schedule_id_idx"), ScheduleMissedRuns.SCHEDULE_MISSED_RUNS, new OrderField[] { ScheduleMissedRuns.SCHEDULE_MISSED_RUNS.SCHEDULE_ID }, false);
     public static final Index UK_ORGANISATIONS_SLUG_ACTIVE = Internal.createIndex(DSL.name("uk_organisations_slug_active"), Organisations.ORGANISATIONS, new OrderField[] { Organisations.ORGANISATIONS.SLUG }, true);
     public static final Index UK_PROJECTS_NAME_OWNER_ACTIVE = Internal.createIndex(DSL.name("uk_projects_name_owner_active"), Projects.PROJECTS, new OrderField[] { Projects.PROJECTS.NAME, Projects.PROJECTS.OWNER_ID }, true);
+    public static final Index UQ_APPROVALS_ONE_PENDING_COMPLETION = Internal.createIndex(DSL.name("uq_approvals_one_pending_completion"), Approvals.APPROVALS, new OrderField[] { Approvals.APPROVALS.JOB_ID }, true);
 }

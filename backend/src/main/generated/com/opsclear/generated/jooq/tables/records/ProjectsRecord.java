@@ -175,6 +175,21 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
         return (String) get(9);
     }
 
+    /**
+     * Setter for <code>public.projects.require_completion_approval</code>.
+     */
+    public ProjectsRecord setRequireCompletionApproval(Boolean value) {
+        set(10, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.projects.require_completion_approval</code>.
+     */
+    public Boolean getRequireCompletionApproval() {
+        return (Boolean) get(10);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -198,7 +213,7 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
     /**
      * Create a detached, initialised ProjectsRecord
      */
-    public ProjectsRecord(UUID id, String name, String description, UUID ownerId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, String status, UUID organisationId, String friendlyId) {
+    public ProjectsRecord(UUID id, String name, String description, UUID ownerId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, String status, UUID organisationId, String friendlyId, Boolean requireCompletionApproval) {
         super(Projects.PROJECTS);
 
         setId(id);
@@ -211,6 +226,7 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
         setStatus(status);
         setOrganisationId(organisationId);
         setFriendlyId(friendlyId);
+        setRequireCompletionApproval(requireCompletionApproval);
         resetChangedOnNotNull();
     }
 }
