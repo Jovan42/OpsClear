@@ -75,7 +75,9 @@
     "description": "Poslovi članova moraju da dobiju odobrenje vlasnika ili administratora pre završetka. Vlasnici i administratori završavaju direktno.",
     "lockedOff": "Potreban je aktivan dodatak Odobrenja.",
     "lockedOn": "Ne primenjuje se: potreban je aktivan dodatak Odobrenja. I dalje možete da ga isključite.",
+    "lockedOnReadOnly": "Ne primenjuje se: potreban je aktivan dodatak Odobrenja.",
     "upgradeLink": "Nadogradite u podešavanjima organizacije",
+    "askOrgOwner": "Zamolite vlasnika organizacije da nadogradi pretplatu.",
     "readOnly": "Samo vlasnici i administratori projekta mogu ovo da promene.",
     "enabledToast": "Poslovi sada zahtevaju odobrenje za završetak",
     "disabledToast": "Poslovi više ne zahtevaju odobrenje za završetak"

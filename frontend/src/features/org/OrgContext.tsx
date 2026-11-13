@@ -1,12 +1,15 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AddonCode, OrgSubscriptionResponse, OrganisationResponse } from '../../types';
-import { hasRealPaddleBilling } from './paddleBillingStatus';
+import { hasAddonAccess, isAddonUsableForWrites as addonUsableForWrites } from './addonAccess';
 
 export interface OrgState {
   org: OrganisationResponse | null;
   subscription: OrgSubscriptionResponse | null;
   hasAddon: (key: AddonCode) => boolean;
+  /** `hasAddon`, but also false while the subscription is PAST_DUE (internal orgs
+   *  excepted). Mirrors the backend's `AddonAccessChecker.isAddonUsableForWrites`. */
+  isAddonUsableForWrites: (key: AddonCode) => boolean;
   setOrg: (org: OrganisationResponse) => void;
   setSubscription: (sub: OrgSubscriptionResponse | null) => void;
   clearOrg: () => void;
@@ -21,6 +24,7 @@ export const OrgContext = createContext<OrgState>({
   org: null,
   subscription: null,
   hasAddon: () => false,
+  isAddonUsableForWrites: () => false,
   setOrg: () => {},
   setSubscription: () => {},
   clearOrg: () => {},
@@ -42,9 +46,11 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   // one via the free picker only stages it (needed to compose what checkout will
   // charge for), it doesn't grant access. Access requires real, active billing.
   function hasAddon(key: AddonCode): boolean {
-    if (subscription?.internal) return true;
-    if (!hasRealPaddleBilling(subscription)) return false;
-    return subscription?.addons.some((a) => a.key === key) ?? false;
+    return hasAddonAccess(subscription, key);
+  }
+
+  function isAddonUsableForWrites(key: AddonCode): boolean {
+    return addonUsableForWrites(subscription, key);
   }
 
   function clearOrg() {
@@ -53,7 +59,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <OrgContext.Provider value={{ org, subscription, hasAddon, setOrg, setSubscription, clearOrg }}>
+    <OrgContext.Provider value={{ org, subscription, hasAddon, isAddonUsableForWrites, setOrg, setSubscription, clearOrg }}>
       {children}
     </OrgContext.Provider>
   );

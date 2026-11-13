@@ -65,32 +65,55 @@ describe('Project settings: completion approval toggle', () => {
 
   it('an org without APPROVALS sees it locked, but a gate that is already on can still be turned off', () => {
     const email = uniqueEmail('gate-locked');
+    const memberEmail = uniqueEmail('gate-locked-member');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
+    cy.createKeycloakUser(memberEmail, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Lantern Corp', uniqueSlug()).then((orgId) =>
-      createProjectAs(email, 'Lantern Refit').then((projectId) => {
-        cy.loginAs(email);
-        cy.visit(`/projects/${projectId}/settings`);
-        cy.get('[data-testid="completion-approval-locked"]')
-          .should('contain.text', 'Requires an active Approvals add-on.')
-          .and('contain.text', 'Upgrade in org settings');
-        toggle().should('have.attr', 'aria-disabled', 'true').and('have.attr', 'aria-checked', 'false');
-        toggle().click();
-        toggle().should('have.attr', 'aria-checked', 'false');
+      createProjectAs(email, 'Lantern Refit').then((projectId) =>
+        userIdFor(memberEmail).then((memberId) => {
+          addMember(orgId, email, memberId, 'MEMBER');
+          addProjectMember(projectId, email, memberId, 'MEMBER');
 
-        // The add-on lapsed after the gate was turned on: the API refuses to turn it on
-        // without the add-on, so set it straight in the database.
-        cy.task('queryDb', {
-          sql: 'UPDATE projects SET require_completion_approval = true WHERE organisation_id = $1 AND UPPER(friendly_id) = UPPER($2)',
-          params: [orgId, projectId],
-        });
-        cy.reload();
-        cy.get('[data-testid="completion-approval-locked"]').should('contain.text', 'Not enforced');
-        toggle().should('have.attr', 'aria-checked', 'true').and('not.have.attr', 'aria-disabled');
-        toggle().click();
-        cy.contains('Jobs no longer need approval to complete').should('be.visible');
-        toggle().should('have.attr', 'aria-checked', 'false').and('have.attr', 'aria-disabled', 'true');
-      }),
+          cy.loginAs(email);
+          cy.visit(`/projects/${projectId}/settings`);
+          cy.get('[data-testid="completion-approval-locked"]')
+            .should('contain.text', 'Requires an active Approvals add-on.')
+            .and('contain.text', 'Upgrade in org settings');
+          toggle().should('have.attr', 'aria-disabled', 'true').and('have.attr', 'aria-checked', 'false');
+          toggle().click();
+          toggle().should('have.attr', 'aria-checked', 'false');
+
+          // The add-on lapsed after the gate was turned on: the API refuses to turn it on
+          // without the add-on, so set it straight in the database.
+          cy.task('queryDb', {
+            sql: 'UPDATE projects SET require_completion_approval = true WHERE organisation_id = $1 AND UPPER(friendly_id) = UPPER($2)',
+            params: [orgId, projectId],
+          });
+
+          // A Member can't turn it off: no "turn it off" hint, no upgrade link, and the
+          // read-only note stays.
+          cy.loginAs(memberEmail);
+          cy.visit(`/projects/${projectId}/settings`);
+          cy.get('[data-testid="completion-approval-locked"]')
+            .should('contain.text', 'Not enforced')
+            .and('contain.text', 'Ask your organisation owner to upgrade.')
+            .and('not.contain.text', 'turn it off')
+            .and('not.contain.text', 'Upgrade in org settings');
+          cy.get('[data-testid="completion-approval-read-only"]')
+            .should('contain.text', 'Only project Owners and Admins can change this.');
+          toggle().should('have.attr', 'aria-checked', 'true').and('have.attr', 'aria-disabled', 'true');
+
+          cy.loginAs(email);
+          cy.visit(`/projects/${projectId}/settings`);
+          cy.get('[data-testid="completion-approval-locked"]').should('contain.text', 'You can still turn it off.');
+          toggle().should('have.attr', 'aria-checked', 'true').and('not.have.attr', 'aria-disabled');
+          toggle().click();
+          cy.contains('Jobs no longer need approval to complete').should('be.visible');
+          toggle().should('have.attr', 'aria-checked', 'false').and('have.attr', 'aria-disabled', 'true');
+        }),
+      ),
     );
     cy.deleteKeycloakUser(email);
+    cy.deleteKeycloakUser(memberEmail);
   });
 });
