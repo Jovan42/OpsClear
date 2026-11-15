@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:coverage": "COVERAGE=true VITE_COVERAGE=true vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "type-check": "tsc -b --noEmit",
     "test": "vitest run",
     "e2e:open": "cypress open",
-    "e2e:run": "cypress run"
+    "e2e:run": "cypress run",
+    "e2e:coverage": "COVERAGE=true cypress run"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -38,6 +40,7 @@
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@cypress/code-coverage": "^4.1.3",
     "@cypress/grep": "^7.0.0",
     "@eslint/js": "^9.39.1",
     "@tailwindcss/vite": "^4.1.10",
@@ -55,11 +58,13 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "mocha-junit-reporter": "^2.2.1",
+    "nyc": "^18.0.0",
     "pg": "^8.23.0",
     "tailwindcss": "^4.1.10",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
     "vite": "^7.3.1",
+    "vite-plugin-istanbul": "^9.0.1",
     "vitest": "^5.1.0"
   },
   "msw": {

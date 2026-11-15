@@ -11,6 +11,10 @@ target/
 dist/
 node_modules/
 
+# Frontend E2E coverage (ADR-0057)
+frontend/coverage/
+frontend/.nyc_output/
+
 # Environment & secrets
 .env
 .env.local
