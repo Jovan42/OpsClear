@@ -14,19 +14,14 @@ on:
       # signal). Scoped to this file specifically, not the whole .github/workflows/**
       # directory, so a deploy.yml-only change doesn't also trigger this pipeline.
       - '.github/workflows/ci.yml'
+  # No `paths` filter here on purpose (JOB-309): the main ruleset requires Build, Unit
+  # Tests, Integration Tests and Checkstyle. A workflow that never starts on a docs-only
+  # PR leaves those checks missing, so the PR could never merge. Instead the workflow
+  # always starts and the `changes` job below decides; jobs it gates show as "skipped",
+  # which counts as passing for required checks. The `push` filter above stays: it only
+  # affects runs on main, never PR checks, and keeps docs-only merges from running e2e-full.
   pull_request:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'scripts/**'
-      # Changes to this workflow itself run the full pipeline too — a job/step edit
-      # here (e.g. e2e-smoke's Keycloak/Postgres wiring) otherwise never triggers at
-      # all, since it touches neither backend/** nor frontend/** (bit us on JOB-201's
-      # setup-java bump and JOB-205's Keycloak-in-CI job landing with zero real CI
-      # signal). Scoped to this file specifically, not the whole .github/workflows/**
-      # directory, so a deploy.yml-only change doesn't also trigger this pipeline.
-      - '.github/workflows/ci.yml'
   # e2e-full only (ADR-0049 §5) — every other job below depends on the `changes`
   # job, which skips entirely on a schedule run (no push/PR diff to filter on), so
   # they all skip too rather than needing their own explicit exclusion.
