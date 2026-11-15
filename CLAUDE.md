@@ -156,12 +156,14 @@ For OpsClear API work use `scripts/opsclear` (same doc), not raw curl.
 
 ## Demo Users
 
-All users share password `password123`. Run `./scripts/seed.sh` to populate the DB with realistic demo data.
+All users share password `password123`. Run `./scripts/seed.sh` to wipe the local DB and populate it with
+realistic demo data: one internal organisation, **OpsClear Demo** (`DEM`), with every add-on, 3 projects, 23 jobs,
+notes, approvals and job relationships. Mobile App has the completion approval gate on, with one pending request.
 
-| Email | Role in seed data |
-|-------|-------------------|
-| `testuser@example.com` | owner: Mobile App \| member: Infrastructure Upgrade |
-| `alice@example.com` | owner: Website Redesign \| admin: Mobile App |
-| `bob@example.com` | admin: Website Redesign \| owner: Infrastructure Upgrade |
-| `carol@example.com` | member: Website Redesign, Mobile App |
-| `dave@example.com` | member: Website Redesign, Infrastructure Upgrade |
+| Email | Org role | Project roles in seed data |
+|-------|----------|----------------------------|
+| `testuser@example.com` | owner | owner: Mobile App \| member: Infrastructure Upgrade |
+| `alice@example.com` | admin | owner: Website Redesign \| admin: Mobile App |
+| `bob@example.com` | admin | admin: Website Redesign \| owner: Infrastructure Upgrade |
+| `carol@example.com` | member | member: Website Redesign, Mobile App |
+| `dave@example.com` | member | member: Website Redesign, Infrastructure Upgrade |

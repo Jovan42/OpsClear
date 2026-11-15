@@ -391,6 +391,115 @@ jobs:
           paddle-api-key: ${{ secrets.PADDLE_API_KEY }}
           grep-tags: '@smoke'
 
+  # JOB-298: runs scripts/seed.sh end to end against a real Postgres + Keycloak + backend, so a
+  # backend change that breaks the demo seed (as organisations once did) fails here instead of on
+  # someone's laptop. The script checks its own result (counts, project roles, API access per user)
+  # and exits non-zero on any failed request. Same Keycloak/backend startup as the e2e-run action,
+  # minus the frontend and Cypress; the realm only needs testuser, the script creates the rest.
+  # Not a required check. Backend changes can break the seed too, hence the `backend` half of the gate.
+  seed-smoke:
+    name: Seed Smoke
+    needs: changes
+    if: github.event_name == 'pull_request' && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.scripts == 'true')
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: opsclear
+          POSTGRES_USER: opsclear
+          POSTGRES_PASSWORD: opsclear
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Start Keycloak
+        run: |
+          docker run -d --name keycloak \
+            -p 8180:8080 \
+            -e KEYCLOAK_ADMIN=admin \
+            -e KEYCLOAK_ADMIN_PASSWORD=admin \
+            quay.io/keycloak/keycloak:24.0 start-dev
+
+      - name: Wait for Keycloak and import realm
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf -X POST "http://localhost:8180/realms/master/protocol/openid-connect/token" \
+                -d "client_id=admin-cli&username=admin&password=admin&grant_type=password" -o /dev/null; then
+              break
+            fi
+            if [ "$i" = 60 ]; then echo "Keycloak did not become ready in time" >&2; exit 1; fi
+            echo "Waiting for Keycloak... ($i/60)"
+            sleep 2
+          done
+          ADMIN_TOKEN=$(curl -sf -X POST "http://localhost:8180/realms/master/protocol/openid-connect/token" \
+            -d "client_id=admin-cli&username=admin&password=admin&grant_type=password" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+          curl -sf -X POST "http://localhost:8180/admin/realms" \
+            -H "Authorization: Bearer $ADMIN_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @keycloak/realm-export.json
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/opsclear
+          SPRING_DATASOURCE_USERNAME: opsclear
+          SPRING_DATASOURCE_PASSWORD: opsclear
+          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+        run: |
+          chmod +x gradlew
+          nohup ./gradlew bootRun > backend.log 2>&1 &
+
+      - name: Wait for backend
+        run: |
+          for i in $(seq 1 90); do
+            if curl -sf http://localhost:8080/api/health -o /dev/null; then
+              echo "Backend is ready"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/90)"
+            sleep 2
+          done
+          echo "Backend did not become ready in time" >&2
+          cat backend/backend.log
+          exit 1
+
+      - name: Run seed.sh
+        env:
+          # The service container's ID, so the script's `docker exec` reaches this job's Postgres.
+          DB_CONTAINER: ${{ job.services.postgres.id }}
+        run: ./scripts/seed.sh
+
+      - name: Backend log on failure
+        if: failure()
+        run: tail -n 200 backend/backend.log
+
   # JOB-265: sharded across 4 parallel matrix jobs instead of one ~35min sequential
   # run — each shard re-provisions its own Keycloak/backend/frontend (fixed ~3-4min
   # cost paid once per shard, not saved by sharding), so wall-clock drops roughly
