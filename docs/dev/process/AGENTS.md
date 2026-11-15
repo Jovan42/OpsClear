@@ -72,7 +72,9 @@ Every implementation agent follows this loop. Its own file adds only the layer-s
    file and run `scripts/opsclear pr check --title '<title>' --body-file <file>` (add
    `--labels cross-layer` for a PR that can't be split); fix what it reports, since CI runs the
    same [process check](WORKFLOW.md#process-checks). Then `gh pr create` with
-   `Closes JOB-x` on its own line (or `Part of JOB-x` for a partial PR), Summary, References (job, ADR) and a Test plan listing what was actually run. No AI attribution: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
+   `Closes JOB-x` on its own line (or `Part of JOB-x` for a partial PR), Summary, References (job,
+   ADR) and a Test plan listing what was actually run. No AI attribution: no `Co-Authored-By`
+   trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
 6. **Update OpsClear.** The [job sync](#github-job-sync) normally does this when the PR opens, so
    this step is an idempotent fallback (a harmless no-op if the sync already ran).
    `scripts/opsclear link add <JOB> <PR url> --label "PR #N"`, and
@@ -98,7 +100,7 @@ What it checks, the `cross-layer` label (only for the layer check) and the requi
 [WORKFLOW.md](WORKFLOW.md#process-checks). Local mode needs no API key:
 `scripts/opsclear pr check --title '<title>' --body-file pr.md [--labels cross-layer]`.
 `/ship`, `/write-adr` and every implementation agent run it before opening the PR; `pr-reviewer`
-is unchanged.
+doesn't run it.
 
 ---
 
@@ -126,7 +128,14 @@ references: [WORKFLOW.md](WORKFLOW.md#github-job-sync) and the ADR.
   2. `gh secret set OPSCLEAR_API_KEY --repo Jovan42/OpsClear` (it prompts for the value; never
      paste the key into chat, files or a command line).
   3. Revoke the old key. GitHub masks the secret as `***` in logs.
-- **Manual run.** Without `--event`, `scripts/opsclear pr sync` takes the PR as flags: `--action` (`opened`/`edited`/`reopened`/`closed`), `--number`, `--url`, and `--branch`, `--title`, `--body-file` (jobs are read only from these three, so leave them out and nothing syncs). For a merge add `--merged` (without it, `closed` means closed without merge). For an edit to an already closed PR add `--state closed`. `--dry-run` previews; status moves past In Progress need `--yes`. Example merge preview: `scripts/opsclear pr sync --action closed --merged --number N --url <PR url> --branch <branch> --title '<title>' --body-file body.txt --dry-run`. See `scripts/opsclear pr sync --help`.
+- **Manual run.** Without `--event`, `scripts/opsclear pr sync` takes the PR as flags: `--action`
+  (`opened`/`edited`/`reopened`/`closed`), `--number`, `--url`, and `--branch`, `--title`,
+  `--body-file` (jobs are read only from these three, so leave them out and nothing syncs). For a
+  merge add `--merged` (without it, `closed` means closed without merge). For an edit to an already
+  closed PR add `--state closed`. `--dry-run` previews; status moves past In Progress need `--yes`.
+  Example merge preview:
+  `scripts/opsclear pr sync --action closed --merged --number N --url <PR url> --branch <branch> --title '<title>' --body-file body.txt --dry-run`.
+  See `scripts/opsclear pr sync --help`.
 
 ---
 

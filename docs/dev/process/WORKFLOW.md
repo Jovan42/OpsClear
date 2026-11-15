@@ -32,7 +32,7 @@ After the ADR merges, split the milestone into implementation jobs. Each job sho
 DB migration → Backend → Frontend
 ```
 
-Larger milestones can have multiple jobs per layer — `Backend 1`, `Backend 2`, `Frontend 1`, `Frontend 2` and so on. The only hard rule is that DB, backend, and frontend must never be combined in the same job. Each job is one layer only.
+Larger milestones can have multiple jobs per layer — `Backend 1`, `Backend 2`, `Frontend 1`, `Frontend 2` and so on. The only hard rule is that DB, backend, and frontend must never be combined in the same job. Each job is one layer only (a PR that can't be split gets the `cross-layer` label, see [Process checks](#process-checks)).
 
 Set BLOCKED_BY relationships: backend jobs are blocked by the DB migration job, frontend jobs are blocked by the backend jobs they depend on. Job templates exist in OpsClear for each standard job type — use them when creating jobs to pre-fill the description structure. See [JOBS.md](JOBS.md) for naming conventions and splitting rules.
 

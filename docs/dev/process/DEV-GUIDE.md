@@ -31,7 +31,10 @@ Step-by-step commands: [AGENTS.md § Setup](AGENTS.md#setup). Check it works:
 | 7. Review | — | — | Read the PR and the reviewer comment, merge |
 | 8. Close | `/finish JOB-a` | Checks it's merged and the done list is met, completes the job, syncs `main`, says what's unblocked | Confirm anything unmet |
 
-The GitHub job sync (ADR-0055) usually links the PR and, for `Closes JOB-x`, completes the job on merge already. `/finish` and `/finish-adr` skip what it did, and still sync `main` and show what's unblocked. See [WORKFLOW.md](WORKFLOW.md#github-job-sync) and [AGENTS.md](AGENTS.md#github-job-sync).
+The GitHub job sync (ADR-0055) usually links the PR and, for `Closes JOB-x`, completes the job on
+merge already. `/finish` and `/finish-adr` skip what it did, and still sync `main` and show what's
+unblocked. See [WORKFLOW.md](WORKFLOW.md#github-job-sync) and
+[AGENTS.md](AGENTS.md#github-job-sync).
 
 Bugs and chores skip steps 2–5: `/new-idea`, then `/implement`, review, `/finish`.
 
@@ -48,8 +51,7 @@ Bugs and chores skip steps 2–5: `/new-idea`, then `/implement`, review, `/fini
 
 Prefer to code a change by hand, or with Claude in the main chat? Make the change, then
 `/ship JOB-x`. It commits in the right format, pushes, opens the PR, links it and moves the job to
-In Progress.
-Close it with `/finish JOB-x` after merging.
+In Progress. Close it with `/finish JOB-x` after merging.
 
 ## The process check
 
@@ -64,7 +66,8 @@ be split (migration plus its backend test) gets the `cross-layer` label. Rules:
 - **An agent stopped.** The report says why (job unclear, blocker not done, app bug found). Fix
   the cause, usually by updating the job or ADR, then run `/implement` again. Don't ask it to guess.
 - **A job was skipped.** Its blocker isn't Completed, or the title has no layer prefix.
-- **Checks fail on the PR.** The `Process check` summary says what to fix. Ask Claude in the main chat to fix it on that branch, then push.
+- **Checks fail on the PR.** The `Process check` summary says what to fix. Ask Claude in the
+  main chat to fix it on that branch, then push.
 - **Claude asks for permission.** Anything that writes to OpsClear or GitHub beyond the usual
   flow needs your OK ([AGENTS.md § Permissions](AGENTS.md#permissions)). That's on purpose.
 

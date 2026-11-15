@@ -155,6 +155,7 @@ change can break a frontend flow with no frontend diff to show for it.
 
 ## Job type: `E2E`
 
-`E2E` is now a standing job type, alongside `ADR`/`DB`/`Backend`/`Frontend`/`Infra` (see `JOBS.md`)
+`E2E` is now a standing job type, alongside `ADR`/`DB`/`Backend`/`Frontend` (see `JOBS.md` and
+[NAMING.md](NAMING.md#job-titles))
 — introduced in PRJ-011 for this backfill, and the convention any project should use going forward
 once it starts writing its own E2E specs, not something specific to this project.
