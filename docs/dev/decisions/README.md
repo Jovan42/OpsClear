@@ -104,3 +104,4 @@ Status is as recorded in each ADR. New ADRs: add a row here in the same PR.
 | 0055 | [GitHub ↔ OpsClear Job Sync](0055-github-job-sync.md) | Proposed | 2026-11-06 |
 | 0056 | [CI Process Checks](0056-ci-process-checks.md) | Proposed | 2026-11-08 |
 | 0057 | [Frontend E2E Code Coverage](0057-frontend-e2e-code-coverage.md) | Proposed | 2026-11-08 |
+| 0058 | [API Rate Limiting](0058-api-rate-limiting.md) | Proposed | 2026-11-15 |
