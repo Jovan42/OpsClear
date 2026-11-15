@@ -13,6 +13,9 @@ public final class ErrorMessages {
                 "Cannot complete project: %d job(s) are still IN_PROGRESS or BLOCKED";
         public static final String COMPLETION_GATE_REQUIRES_APPROVALS_ADDON =
                 "An active APPROVALS add-on (not past due) is required to require approval for job completion";
+        public static final String UNKNOWN_JOB_SECTION =
+                "hiddenJobSections contains an unknown section; allowed: NOTES, APPROVALS, RELATIONSHIPS, LINKS, "
+                        + "STATUS_HISTORY";
 
         private Project() {
         }

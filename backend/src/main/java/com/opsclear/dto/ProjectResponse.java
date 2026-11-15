@@ -1,5 +1,6 @@
 package com.opsclear.dto;
 
+import com.opsclear.model.JobSection;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
 import lombok.AllArgsConstructor;
@@ -27,6 +28,7 @@ public class ProjectResponse {
     private String ownerName;
     private ProjectStatus status;
     private boolean requireCompletionApproval;
+    private List<JobSection> hiddenJobSections;
     private Instant createdAt;
     private Instant updatedAt;
     private List<LinkResponse> links;
@@ -41,6 +43,7 @@ public class ProjectResponse {
                 .ownerName(project.getOwnerName())
                 .status(project.getStatus())
                 .requireCompletionApproval(project.isRequireCompletionApproval())
+                .hiddenJobSections(List.copyOf(project.getHiddenJobSections()))
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .links(project.getLinks().stream()

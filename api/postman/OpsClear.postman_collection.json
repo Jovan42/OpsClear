@@ -293,7 +293,7 @@
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "projects"]
 						},
-						"description": "List all projects owned by the authenticated user."
+						"description": "List all projects owned by the authenticated user. Each project includes `requireCompletionApproval` and `hiddenJobSections` (job-detail sections hidden on this project, empty = all shown, ADR-0053)."
 					},
 					"response": []
 				},
@@ -307,7 +307,7 @@
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "projects", "{{projectId}}"]
 						},
-						"description": "Get a single project by ID."
+						"description": "Get a single project by ID. Includes `requireCompletionApproval` and `hiddenJobSections` (job-detail sections hidden on this project, empty = all shown, ADR-0053)."
 					},
 					"response": []
 				},
@@ -377,6 +377,52 @@
 							"path": ["api", "projects", "{{projectId}}", "settings"]
 						},
 						"description": "Turns the completion approval gate off. Always allowed for Owner/Admin, with or without the `APPROVALS` add-on. Pending completion approvals are left as they are."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project Settings (hide job sections)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"hiddenJobSections\": [\"NOTES\", \"LINKS\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "settings"]
+						},
+						"description": "ADR-0053: hides job-detail sections on this project's job screen. Values: `NOTES`, `APPROVALS`, `RELATIONSHIPS`, `LINKS`, `STATUS_HISTORY`. Replaces the stored list; duplicates are stored once and the list is returned in that fixed order. Unknown values return 400. Owner/Admin only (403 otherwise); completed project returns 409. Not add-on gated, and hiding a section the org has no add-on for is allowed. A display preference only: section endpoints keep working. Can be sent together with `requireCompletionApproval`. Returns 200 with the project, including `hiddenJobSections`."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project Settings (show all job sections)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"hiddenJobSections\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/projects/{{projectId}}/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "projects", "{{projectId}}", "settings"]
+						},
+						"description": "ADR-0053: an empty `hiddenJobSections` list clears every hidden section, so the job screen shows every section the org's add-ons allow. Omitting the field leaves the stored list unchanged."
 					},
 					"response": []
 				},

@@ -29,6 +29,9 @@ public class ProjectModel {
     private ProjectStatus status = ProjectStatus.ACTIVE;
     // ADR-0052: Members' completions need Owner/Admin approval when true
     private boolean requireCompletionApproval;
+    // ADR-0053: job-detail sections hidden on this project's job screen (empty = all shown)
+    @Builder.Default
+    private List<JobSection> hiddenJobSections = new ArrayList<>();
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
