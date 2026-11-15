@@ -10,6 +10,7 @@ Day-to-day workflow, job conventions, and layer-specific technical conventions l
 - [BACKEND.md](docs/dev/process/BACKEND.md) — backend technical conventions
 - [FRONTEND.md](docs/dev/process/FRONTEND.md) — frontend technical conventions
 - [DEV-GUIDE.md](docs/dev/process/DEV-GUIDE.md) — one-page guide to dev with Claude Code skills and agents (start here)
+- [NAMING.md](docs/dev/process/NAMING.md) — the single source for job, branch, commit and PR naming
 - [E2E.md](docs/dev/process/E2E.md) — when E2E coverage is required, sizing, naming, CI tiers
 
 This file covers commit/PR/branch mechanics only.
@@ -35,21 +36,12 @@ This file covers commit/PR/branch mechanics only.
 - **Each `-` line:** one short sentence, one change
 - **One commit = one logical change** (bullets explain the parts)
 
-### Types
+### Type and scope
 
-| Type | Use for |
-|------|---------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation |
-| `refactor` | Code restructure (no behavior change) |
-| `test` | Tests only |
-| `chore` | Config, deps, build, CI, tooling |
-
-### Scope
-
-Use a scope from the fixed list in [WORKFLOW.md](docs/dev/process/WORKFLOW.md#commit-format). Scope is
-the layer or area, never the feature name.
+Types, the fixed scope list and the title rules are in
+[NAMING.md](docs/dev/process/NAMING.md#commit-subjects-and-pr-titles) (checked by CI, see
+[WORKFLOW.md](docs/dev/process/WORKFLOW.md#process-checks)). Scope is the layer or area, never the
+feature name.
 
 ### Examples
 
@@ -85,8 +77,7 @@ chore(deps): upgrade Testcontainers to 1.21.4 for Docker Engine 29 (JOB-310)
 
 ## Branching
 
-Branch naming is defined in [WORKFLOW.md](docs/dev/process/WORKFLOW.md#branch-naming)
-(`feature/JOB-123-…`, `fix/JOB-123-…`, `chore/…`).
+Branch naming is defined in [NAMING.md](docs/dev/process/NAMING.md#branch-names).
 
 **Everything goes through a PR**, including small docs fixes. Never push directly to `main`.
 
@@ -103,7 +94,8 @@ Branch naming is defined in [WORKFLOW.md](docs/dev/process/WORKFLOW.md#branch-na
 
 ### Title
 
-Same as the commit subject: `<type>(<scope>): <short summary> (JOB-123)`
+Same as the commit subject: `<type>(<scope>): <short summary> (JOB-123)`, see
+[NAMING.md](docs/dev/process/NAMING.md#commit-subjects-and-pr-titles).
 
 ### Body
 
@@ -137,6 +129,9 @@ Closes JOB-123
 - **No tool/AI attribution** in commits or PR descriptions: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
   `.claude/settings.json` turns Claude Code's own footers off; don't add them by hand
 - **PR title = commit subject** for single-commit PRs
+- **Process check:** CI runs `scripts/opsclear pr check` on every PR (title, branch, body, layers).
+  Run it locally first: `scripts/opsclear pr check --title '<title>' --body-file pr.md`. Details:
+  [WORKFLOW.md](docs/dev/process/WORKFLOW.md#process-checks)
 - **Tests ship with the PR**: every implementation PR includes its tests; there are no separate
   "write tests" PRs
 

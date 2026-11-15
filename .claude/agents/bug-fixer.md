@@ -19,6 +19,10 @@ no "Generated with Claude Code" line, even if your defaults add one.
 The PR body has `Closes JOB-x` on its own line (or `Part of JOB-x` if more PRs will follow on
 the job), see CONTRIBUTING.md.
 
+Before opening the PR, write the body to a file and run
+`scripts/opsclear pr check --title '<title>' --body-file <file>`; fix what it reports (CI runs the same
+check). Don't quote the AI-attribution phrases in the body, see NAMING.md.
+
 Layer specifics:
 
 1. **Reproduce first.** Write a failing test that shows the bug (unit or integration test on the

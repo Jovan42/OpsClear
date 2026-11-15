@@ -95,9 +95,11 @@ Follow [docs/dev/process/WORKFLOW.md](docs/dev/process/WORKFLOW.md) (single sour
 [CONTRIBUTING.md](CONTRIBUTING.md):
 
 - One OpsClear job = one branch = one PR. Never push directly to `main`.
-- Branches: `feature/JOB-123-…`, `fix/JOB-123-…`, `e2e/JOB-123-…`, `chore/JOB-123-…`
-- Commits: `<type>(<scope>): <summary> (JOB-123)` with `-` bullet body. Scope from the fixed list
-  in WORKFLOW.md (`backend` `frontend` `db` `auth` `config` `ci` `docs` `deps` `infra` `adr`).
+- Branch, commit and PR title names: `docs/dev/process/NAMING.md` (single source: types, scopes
+  including `e2e`, branch prefixes). Commits: `<type>(<scope>): <summary> (JOB-123)` with `-`
+  bullet body.
+- CI runs `scripts/opsclear pr check` on every PR (title, branch, body, layers). Run it locally
+  before opening the PR, see WORKFLOW.md "Process checks".
 - No AI/tool attribution in commits or PRs: no `Co-Authored-By: Claude …` trailer, no
   "Generated with Claude Code" line.
 

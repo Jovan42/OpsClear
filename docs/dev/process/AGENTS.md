@@ -68,7 +68,10 @@ Every implementation agent follows this loop. Its own file adds only the layer-s
    `npm run type-check` (plus Cypress specs the job adds, see E2E.md). `scripts/`:
    `python3 scripts/opsclear_test.py`. All must pass.
 5. **Commit, push, PR.** Commit per [CONTRIBUTING.md](../../../CONTRIBUTING.md#commit-messages)
-   (`<type>(<scope>): <summary> (<JOB>)`), `git push -u origin <branch>`, `gh pr create` with
+   (`<type>(<scope>): <summary> (<JOB>)`), `git push -u origin <branch>`. Write the PR body to a
+   file and run `scripts/opsclear pr check --title '<title>' --body-file <file>` (add
+   `--labels cross-layer` for a PR that can't be split); fix what it reports, since CI runs the
+   same [process check](WORKFLOW.md#process-checks). Then `gh pr create` with
    `Closes JOB-x` on its own line (or `Part of JOB-x` for a partial PR), Summary, References (job, ADR) and a Test plan listing what was actually run. No AI attribution: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
 6. **Update OpsClear.** The [job sync](#github-job-sync) normally does this when the PR opens, so
    this step is an idempotent fallback (a harmless no-op if the sync already ran).
@@ -85,6 +88,17 @@ Every implementation agent follows this loop. Its own file adds only the layer-s
 
 `/implement` runs at most one `db-migration` agent at a time (migration numbers would collide, and
 they share the local database) and never runs jobs linked by BLOCKED_BY in parallel.
+
+---
+
+## Process check
+
+`.github/workflows/pr-checks.yml` runs `scripts/opsclear pr check` on every PR to `main` (ADR-0056).
+What it checks, the `cross-layer` label (only for the layer check) and the required-check rules:
+[WORKFLOW.md](WORKFLOW.md#process-checks). Local mode needs no API key:
+`scripts/opsclear pr check --title '<title>' --body-file pr.md [--labels cross-layer]`.
+`/ship`, `/write-adr` and every implementation agent run it before opening the PR; `pr-reviewer`
+is unchanged.
 
 ---
 
