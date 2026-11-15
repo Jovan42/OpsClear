@@ -114,6 +114,11 @@ public class Projects extends TableImpl<ProjectsRecord> {
      */
     public final TableField<ProjectsRecord, Boolean> REQUIRE_COMPLETION_APPROVAL = createField(DSL.name("require_completion_approval"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
 
+    /**
+     * The column <code>public.projects.hidden_job_sections</code>.
+     */
+    public final TableField<ProjectsRecord, String[]> HIDDEN_JOB_SECTIONS = createField(DSL.name("hidden_job_sections"), SQLDataType.VARCHAR(30).array().nullable(false).defaultValue(DSL.field(DSL.raw("'{}'::character varying[]"), SQLDataType.VARCHAR.array())), this, "");
+
     private Projects(Name alias, Table<ProjectsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -161,6 +166,7 @@ public class Projects extends TableImpl<ProjectsRecord> {
     @Override
     public List<Check<ProjectsRecord>> getChecks() {
         return Arrays.asList(
+            Internal.createCheck(this, DSL.name("chk_projects_hidden_job_sections"), "((hidden_job_sections <@ ARRAY['NOTES'::character varying(30), 'APPROVALS'::character varying(30), 'RELATIONSHIPS'::character varying(30), 'LINKS'::character varying(30), 'STATUS_HISTORY'::character varying(30)]))", true),
             Internal.createCheck(this, DSL.name("projects_status_check"), "(((status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'COMPLETED'::character varying])::text[])))", true)
         );
     }

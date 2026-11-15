@@ -190,6 +190,21 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
         return (Boolean) get(10);
     }
 
+    /**
+     * Setter for <code>public.projects.hidden_job_sections</code>.
+     */
+    public ProjectsRecord setHiddenJobSections(String[] value) {
+        set(11, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.projects.hidden_job_sections</code>.
+     */
+    public String[] getHiddenJobSections() {
+        return (String[]) get(11);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -213,7 +228,7 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
     /**
      * Create a detached, initialised ProjectsRecord
      */
-    public ProjectsRecord(UUID id, String name, String description, UUID ownerId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, String status, UUID organisationId, String friendlyId, Boolean requireCompletionApproval) {
+    public ProjectsRecord(UUID id, String name, String description, UUID ownerId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt, String status, UUID organisationId, String friendlyId, Boolean requireCompletionApproval, String[] hiddenJobSections) {
         super(Projects.PROJECTS);
 
         setId(id);
@@ -227,6 +242,7 @@ public class ProjectsRecord extends UpdatableRecordImpl<ProjectsRecord> {
         setOrganisationId(organisationId);
         setFriendlyId(friendlyId);
         setRequireCompletionApproval(requireCompletionApproval);
+        setHiddenJobSections(hiddenJobSections);
         resetChangedOnNotNull();
     }
 }
