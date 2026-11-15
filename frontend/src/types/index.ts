@@ -100,6 +100,18 @@ export interface JobResponse {
   relationships: JobRelationshipView[];
   links: LinkResponse[];
   sourceScheduleId: string | null;
+  /** ADR-0052: the job's pending completion approval, or null when there is none. */
+  pendingCompletionApproval: PendingCompletionApproval | null;
+}
+
+/** ADR-0052: a pending completion approval as embedded in a job response. */
+export interface PendingCompletionApproval {
+  id: string;
+  requesterId: string;
+  requesterName: string | null;
+  requestedAt: string;
+  /** The request message, or the backend's default text when none was given. */
+  message: string;
 }
 
 // ---- Job Types ----
@@ -165,7 +177,10 @@ export interface NoteResponse {
 
 // ---- Approvals ----
 
-export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+/** ADR-0052: MANUAL approvals are requested by hand; COMPLETION ones gate completing a job. */
+export type ApprovalKind = 'MANUAL' | 'COMPLETION';
 
 export interface ApprovalResponse {
   id: string;
@@ -177,6 +192,11 @@ export interface ApprovalResponse {
   comment: string | null;
   requestedAt: string;
   decidedAt: string | null;
+  kind: ApprovalKind;
+  /** Set only on decided completion approvals: whether approving completed the job. */
+  completionApplied: boolean | null;
+  /** The job status at decision time when the completion wasn't applied (e.g. BLOCKED). */
+  completionNotAppliedReason: string | null;
 }
 
 export interface PendingApprovalResponse {

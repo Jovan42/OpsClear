@@ -29,7 +29,8 @@
     "approveCommentPlaceholder": "npr. Odobreno, u okviru budžeta",
     "rejectCommentPlaceholder": "npr. Koristi alternativnog dobavljača",
     "approve": "Odobri",
-    "reject": "Odbij"
+    "reject": "Odbij",
+    "completionNotApplied": "Odobreno, ali zadatak nije završen jer je status {{status}}."
   },
   "approvalList": {
     "noRequests": "Nema zahteva za odobrenje.",
@@ -39,8 +40,10 @@
     "status": {
       "pending": "Na čekanju",
       "approved": "Odobreno",
-      "rejected": "Odbijeno"
-    }
+      "rejected": "Odbijeno",
+      "cancelled": "Otkazano"
+    },
+    "withdrawnBy": "Povukao {{name}}"
   },
   "blockedBanner": {
     "blockedSince": "Blokirano od {{date}}"
@@ -65,7 +68,9 @@
     "unblockModal": {
       "title": "Odblokiraj zadatak",
       "message": "Odblokirati ovaj zadatak i nastaviti rad?"
-    }
+    },
+    "requestCompletion": "Zatraži završetak",
+    "approvalRequested": "Odobrenje zatraženo"
   },
   "linksSection": {
     "noLinks": "Još nema linkova.",
@@ -109,5 +114,21 @@
     "durationIn": "{{duration}} u statusu {{status}}",
     "unknown": "Nepoznato",
     "reason": "Razlog: {{reason}}"
+  },
+  "completionRequestBanner": {
+    "requestedBy": "Završetak zatražio {{name}} · {{time}}",
+    "withdraw": "Povuci",
+    "withdrawModal": {
+      "title": "Povuci zahtev za završetak",
+      "message": "Povući ovaj zahtev za završetak? Zadatak ostaje U toku i završetak se može ponovo zatražiti."
+    }
+  },
+  "requestCompletionModal": {
+    "title": "Zatraži završetak",
+    "explanation": "Na ovom projektu vlasnik ili administrator mora da odobri završetak zadataka. Zadatak ostaje U toku dok se zahtev ne odobri, a zatim se automatski završava.",
+    "messageLabel": "Poruka",
+    "messagePlaceholder": "npr. Sve provere završene, spremno za odobrenje",
+    "submit": "Zatraži završetak",
+    "requestedToast": "Završetak zatražen"
   }
 }

@@ -383,6 +383,7 @@ function buildJob(seed: DemoJobSeed, projectId: string = DEMO_PROJECT_ID): JobRe
     relationships: [],
     links: seed.links ?? [],
     sourceScheduleId: null,
+    pendingCompletionApproval: null,
   };
 }
 

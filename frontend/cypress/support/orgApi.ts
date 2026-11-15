@@ -810,6 +810,24 @@ export function getProjectAs(email: string, projectId: string) {
   );
 }
 
+/** Updates a project's settings (ADR-0052, `PATCH /api/projects/{id}/settings`), acting
+ *  as `email` (Owner/Admin). Turning `requireCompletionApproval` on needs the APPROVALS
+ *  add-on, so callers should use an org created via createOrgWithFullAccess. */
+export function updateProjectSettingsAs(
+  email: string,
+  projectId: string,
+  body: { requireCompletionApproval?: boolean },
+) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'PATCH',
+      url: `${API}/api/projects/${projectId}/settings`,
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+    }),
+  );
+}
+
 /** Adds a link to `jobId` in `projectId`, acting as `email`, and returns its id.
  *  `failOnStatusCode: false` since this is also used to exercise validation cases. */
 export function createJobLinkAs(email: string, projectId: string, jobId: string, url: string, label?: string) {

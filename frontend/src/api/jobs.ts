@@ -39,7 +39,9 @@ export const jobsApi = {
   updateStatus: (
     projectId: string,
     jobId: string,
-    body: { status: JobStatus; reason?: string },
+    // ADR-0052: `message` is only used for a completion request on a gated project.
+    // A gated request answers 202 with the job still IN_PROGRESS and its pendingCompletionApproval.
+    body: { status: JobStatus; reason?: string; message?: string },
   ) =>
     apiClient
       .patch<JobResponse>(`/api/projects/${projectId}/jobs/${jobId}/status`, body)
