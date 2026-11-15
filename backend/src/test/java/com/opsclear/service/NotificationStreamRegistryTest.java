@@ -193,6 +193,20 @@ class NotificationStreamRegistryTest {
         assertThat(registry.streamCount(userId)).isZero();
     }
 
+    @Test
+    @DisplayName("A dead stream that also fails to complete is dropped; the next stream still receives (JOB-329)")
+    void sendToUser_shouldReachNextStream_whenCompletingDeadStreamFails() throws Exception {
+        SseEmitter dead = deadStream();
+        SseEmitter alive = mock(SseEmitter.class);
+        registry.register(userId, dead);
+        registry.register(userId, alive);
+
+        registry.sendToUser(userId, "notification", Map.of());
+
+        verify(alive).send(any(SseEventBuilder.class));
+        assertThat(registry.streamCount(userId)).isEqualTo(1);
+    }
+
     // --- heartbeat ---
 
     @Test
@@ -228,6 +242,26 @@ class NotificationStreamRegistryTest {
         assertThat(registry.streamCount(otherUserId)).isEqualTo(1);
     }
 
+    @Test
+    @DisplayName("The heartbeat reaches every live stream even when completing a dead stream fails (JOB-329)")
+    void sendHeartbeat_shouldReachAllLiveStreams_whenCompletingDeadStreamFails() throws Exception {
+        // Each user has a dead stream first, so whichever user the heartbeat visits first, an escaping exception
+        // would skip that user's live stream and every stream of the other user.
+        SseEmitter alive = mock(SseEmitter.class);
+        SseEmitter otherAlive = mock(SseEmitter.class);
+        registry.register(userId, deadStream());
+        registry.register(userId, alive);
+        registry.register(otherUserId, deadStream());
+        registry.register(otherUserId, otherAlive);
+
+        registry.sendHeartbeat();
+
+        verify(alive).send(any(SseEventBuilder.class));
+        verify(otherAlive).send(any(SseEventBuilder.class));
+        assertThat(registry.streamCount(userId)).isEqualTo(1);
+        assertThat(registry.streamCount(otherUserId)).isEqualTo(1);
+    }
+
     // --- closeAll ---
 
     @Test
@@ -258,6 +292,19 @@ class NotificationStreamRegistryTest {
         verify(emitter).onTimeout(timeout.capture());
         verify(emitter).onError(error.capture());
         return new Callbacks(completion.getValue(), timeout.getValue(), error.getValue());
+    }
+
+    /**
+     * A stream whose client went away: the send fails, and completing it fails too, as Tomcat does once it has errored
+     * the async request.
+     */
+    private static SseEmitter deadStream() throws IOException {
+        SseEmitter dead = mock(SseEmitter.class);
+        IOException failure = new IOException("Broken pipe");
+        doThrow(failure).when(dead).send(any(SseEventBuilder.class));
+        doThrow(new IllegalStateException("AsyncContext used after an error had occurred"))
+                .when(dead).completeWithError(failure);
+        return dead;
     }
 
     private static String render(SseEventBuilder event) {
