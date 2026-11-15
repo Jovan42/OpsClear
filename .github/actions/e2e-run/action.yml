@@ -115,11 +115,10 @@ runs:
 
         # The static export only seeds `testuser@example.com` — alice/bob/carol/dave
         # are created dynamically by scripts/seed.sh's own create_kc_user, mirrored
-        # here rather than running that script wholesale (it also truncates/reseeds
-        # Postgres via `docker exec <container-name>`, which doesn't translate to a
-        # GitHub Actions service container's auto-generated name — a concern for
-        # whichever backfill job first needs real seeded org/project fixtures in CI,
-        # not this one).
+        # here rather than running that script wholesale (it also wipes and reseeds
+        # Postgres with demo org/project data the specs don't expect). CI's own run of
+        # the full script is the separate Seed Smoke job (JOB-298), which points its
+        # `docker exec` at the service container via DB_CONTAINER.
         create_kc_user() {
           curl -sf -o /dev/null -X POST "http://localhost:8180/admin/realms/opsclear/users" \
             -H "Authorization: Bearer $ADMIN_TOKEN" \
