@@ -44,7 +44,7 @@ runs:
         cache-dependency-path: frontend/package-lock.json
 
     - name: Cache Gradle packages
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
           ~/.gradle/caches
@@ -197,7 +197,7 @@ runs:
         fi
 
     - name: Publish E2E test results
-      uses: dorny/test-reporter@v1
+      uses: dorny/test-reporter@v3
       if: always()
       with:
         name: E2E Test Results (${{ inputs.artifact-name }})
@@ -205,7 +205,7 @@ runs:
         reporter: java-junit
 
     - name: Upload Cypress artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: failure()
       with:
         name: cypress-${{ inputs.artifact-name }}-artifacts
