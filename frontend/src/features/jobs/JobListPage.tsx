@@ -11,6 +11,7 @@ import RefreshButton from '../../components/RefreshButton';
 import PriorityBadge from '../../components/PriorityBadge';
 import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
+import { AwaitingCompletionBadge } from './components/ApprovalBadges';
 import JobTypeBadge from '../../components/JobTypeBadge';
 import NewJobModal from './NewJobModal';
 import { useJobList } from './useJobs';
@@ -149,7 +150,8 @@ function JobCard({ job, projectId, showMilestoneChip = false }: JobCardProps) {
           <StatusBadge status={job.status} />
         </div>
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-1">
+        {job.pendingCompletionApproval && <AwaitingCompletionBadge />}
         {job.client && (
           <span className="text-xs text-gray-500 dark:text-gray-400">{job.client}</span>
         )}
@@ -215,7 +217,10 @@ function JobRow({ job, projectId, showMilestoneChip = false, showType = false }:
         </td>
       )}
       <td className="px-4 py-3 whitespace-nowrap">
-        <StatusBadge status={job.status} />
+        <div className="flex flex-col items-start gap-1">
+          <StatusBadge status={job.status} />
+          {job.pendingCompletionApproval && <AwaitingCompletionBadge />}
+        </div>
       </td>
     </tr>
   );

@@ -248,6 +248,7 @@ export const demoHandlers = [
         requesterId,
         description,
         requestedAt,
+        kind: 'MANUAL' as const,
       })),
       typeBreakdown: [],
     };
@@ -1008,6 +1009,7 @@ export const demoHandlers = [
         requesterId,
         description,
         requestedAt,
+        kind: 'MANUAL' as const,
       }));
     return HttpResponse.json(pending);
   }),

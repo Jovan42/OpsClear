@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_COMPLETION_MESSAGE,
+  autoCancelReason,
   canActOnCompletionRequest,
+  isApprovedNotApplied,
   completionRequestMessage,
   requiresCompletionApproval,
 } from './completionApproval';
@@ -52,5 +54,34 @@ describe('completionRequestMessage', () => {
     expect(completionRequestMessage(DEFAULT_COMPLETION_MESSAGE)).toBeNull();
     expect(completionRequestMessage('')).toBeNull();
     expect(completionRequestMessage(null)).toBeNull();
+  });
+});
+
+describe('autoCancelReason', () => {
+  it('recognises the comments the backend stores on automatic cancellation', () => {
+    expect(autoCancelReason('Completed directly by Alice Smith')).toBe('COMPLETED_DIRECTLY');
+    expect(autoCancelReason('Job deleted by Bob Jones')).toBe('JOB_DELETED');
+  });
+
+  it('returns null for a withdrawal (no comment) and for other comments', () => {
+    expect(autoCancelReason(null)).toBeNull();
+    expect(autoCancelReason(undefined)).toBeNull();
+    expect(autoCancelReason('')).toBeNull();
+    expect(autoCancelReason('Not ready yet')).toBeNull();
+  });
+});
+
+describe('isApprovedNotApplied', () => {
+  it('is true only for an approved completion approval that did not complete the job', () => {
+    expect(isApprovedNotApplied({ status: 'APPROVED', kind: 'COMPLETION', completionApplied: false })).toBe(true);
+  });
+
+  it('is false when the completion was applied or not decided yet', () => {
+    expect(isApprovedNotApplied({ status: 'APPROVED', kind: 'COMPLETION', completionApplied: true })).toBe(false);
+    expect(isApprovedNotApplied({ status: 'PENDING', kind: 'COMPLETION', completionApplied: null })).toBe(false);
+  });
+
+  it('is false for manual approvals', () => {
+    expect(isApprovedNotApplied({ status: 'APPROVED', kind: 'MANUAL', completionApplied: false })).toBe(false);
   });
 });

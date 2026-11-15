@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import Button from '../../../components/Button';
 import ApprovalDecisionModal from './ApprovalDecisionModal';
+import { ApprovalKindBadge, ApprovalStatusBadge } from './ApprovalBadges';
 import { useApprovals } from '../useApprovals';
+import { approvalDescription, autoCancelReason, isApprovedNotApplied } from '../completionApproval';
+import { jobStatusLabel } from '../../notifications/notificationContent';
 import type { ApprovalResponse, ProjectMemberResponse } from '../../../types';
 
 type Role = 'OWNER' | 'ADMIN' | 'MEMBER' | null;
@@ -22,26 +25,6 @@ function memberName(members: ProjectMemberResponse[], userId: string, t: TFuncti
   return members.find((m) => m.userId === userId)?.userName ?? t('jobsComponents:unknownUser');
 }
 
-function StatusBadge({ status, t }: { status: ApprovalResponse['status']; t: TFunction }) {
-  const config: Record<ApprovalResponse['status'], string> = {
-    PENDING: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    APPROVED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    CANCELLED: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-  };
-  const labels: Record<ApprovalResponse['status'], string> = {
-    PENDING: t('jobsComponents:approvalList.status.pending'),
-    APPROVED: t('jobsComponents:approvalList.status.approved'),
-    REJECTED: t('jobsComponents:approvalList.status.rejected'),
-    CANCELLED: t('jobsComponents:approvalList.status.cancelled'),
-  };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config[status]}`}>
-      {labels[status]}
-    </span>
-  );
-}
-
 // ADR-0052: a CANCELLED completion approval records who cancelled it as the approver: the
 // requester or an Owner/Admin withdrawing it, or the Owner/Admin who completed or deleted the job.
 const DECIDED_BY_KEYS = {
@@ -49,6 +32,20 @@ const DECIDED_BY_KEYS = {
   REJECTED: 'jobsComponents:approvalList.rejectedBy',
   CANCELLED: 'jobsComponents:approvalList.cancelledBy',
 } as const;
+
+// The backend's English comment on an automatic cancellation, as a translated sentence.
+const AUTO_CANCEL_KEYS = {
+  COMPLETED_DIRECTLY: 'jobsComponents:approvalState.completedDirectly',
+  JOB_DELETED: 'jobsComponents:approvalState.jobDeleted',
+} as const;
+
+/** The decision comment, quoted; an automatic cancellation's reason is translated instead. */
+function DecisionComment({ approval, t }: { approval: ApprovalResponse; t: TFunction }) {
+  if (!approval.comment) return null;
+  const reason = approval.status === 'CANCELLED' ? autoCancelReason(approval.comment) : null;
+  if (reason) return <p className="mt-1">{t(AUTO_CANCEL_KEYS[reason])}</p>;
+  return <p className="mt-1 italic">"{approval.comment}"</p>;
+}
 
 interface Props {
   projectId: string;
@@ -58,7 +55,7 @@ interface Props {
 }
 
 export default function ApprovalList({ projectId, jobId, role, members }: Props) {
-  const { t } = useTranslation(['jobsComponents', 'common']);
+  const { t } = useTranslation(['jobsComponents', 'common', 'shared2']);
   const { data: approvals = [] } = useApprovals(projectId, jobId);
   const [decision, setDecision] = useState<{
     approvalId: string;
@@ -76,12 +73,13 @@ export default function ApprovalList({ projectId, jobId, role, members }: Props)
       <div className="space-y-3">
         {approvals.map((approval) => (
           <div key={approval.id} className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{approval.description}</p>
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{approvalDescription(approval, t)}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
               <span>{t('jobsComponents:approvalList.requestedBy', { name: memberName(members, approval.requesterId, t) })}</span>
               <span>·</span>
               <span>{formatDateTime(approval.requestedAt)}</span>
-              <StatusBadge status={approval.status} t={t} />
+              <ApprovalKindBadge kind={approval.kind} />
+              <ApprovalStatusBadge approval={approval} />
             </div>
 
             {approval.status !== 'PENDING' && (
@@ -92,9 +90,14 @@ export default function ApprovalList({ projectId, jobId, role, members }: Props)
                     {approval.decidedAt && ` · ${formatDateTime(approval.decidedAt)}`}
                   </span>
                 )}
-                {approval.comment && (
-                  <p className="mt-1 italic">"{approval.comment}"</p>
+                {isApprovedNotApplied(approval) && (
+                  <p className="mt-1 text-amber-700 dark:text-amber-400">
+                    {t('jobsComponents:approvalState.notAppliedReason', {
+                      status: jobStatusLabel(approval.completionNotAppliedReason, t),
+                    })}
+                  </p>
                 )}
+                <DecisionComment approval={approval} t={t} />
               </div>
             )}
 

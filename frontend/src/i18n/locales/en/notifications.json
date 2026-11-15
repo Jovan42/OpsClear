@@ -60,6 +60,12 @@
       "rejected": "Rejected your request on {{job}}",
       "decided": "Decided your request on {{job}}"
     },
+    "COMPLETION_APPROVAL": {
+      "requested": "Requested to complete {{job}}",
+      "approved": "Approved completion of {{job}}",
+      "approvedNotApplied": "Approved completion of {{job}}, but it wasn't completed because it is {{status}}",
+      "cancelled": "Cancelled your completion request on {{job}}"
+    },
     "JOB_ASSIGNED": "Assigned you to {{job}}",
     "JOB_STATUS_CHANGED": {
       "fromTo": "Moved {{job}} from {{from}} to {{to}}",
@@ -102,7 +108,9 @@
     "reason": "Reason: {{reason}}",
     "missedAt": "Missed run: {{date}}",
     "updatePayment": "Update the payment method in billing to keep access.",
-    "askOwnerToUpdatePayment": "Ask an organisation Owner to update the payment method."
+    "askOwnerToUpdatePayment": "Ask an organisation Owner to update the payment method.",
+    "completedDirectly": "The job was completed directly",
+    "jobDeleted": "The job was deleted"
   },
   "settings": {
     "heading": "Notification types",

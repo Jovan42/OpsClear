@@ -4,8 +4,7 @@ import { toast } from 'sonner';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import { useDecideApproval } from '../useApprovals';
-import { STATUS_KEYS } from '../../notifications/notificationContent';
-import type { JobStatus } from '../../../types';
+import { jobStatusLabel } from '../../notifications/notificationContent';
 
 interface Props {
   open: boolean;
@@ -46,11 +45,9 @@ export default function ApprovalDecisionModal({
           // ADR-0052: an approved completion approval is "not applied" when the job left
           // In Progress meanwhile (e.g. it was blocked). The approver is told right away.
           if (approval.completionApplied === false) {
-            const reason = approval.completionNotAppliedReason;
-            const statusKey = reason && reason in STATUS_KEYS ? STATUS_KEYS[reason as JobStatus] : null;
             toast.warning(
               t('jobsComponents:approvalDecisionModal.completionNotApplied', {
-                status: statusKey ? t(statusKey) : (reason ?? '—'),
+                status: jobStatusLabel(approval.completionNotAppliedReason, t),
               }),
             );
           }

@@ -206,6 +206,8 @@ export interface PendingApprovalResponse {
   requesterId: string;
   description: string;
   requestedAt: string;
+  /** ADR-0052: COMPLETION approvals are labelled "Completion" in the queues. */
+  kind: ApprovalKind;
   // Only populated by the cross-project GET /api/approvals/pending endpoint
   // (JOB-190/ADR-0046) — undefined on the per-project pending list, whose
   // caller already knows which project/job it's looking at.
@@ -613,11 +615,19 @@ export interface OrgNotificationPayload {
 
 export interface ApprovalRequestedPayload extends JobNotificationPayload {
   description?: string;
+  /** ADR-0052: set by backends that know about completion approvals. */
+  kind?: ApprovalKind;
 }
 
 export interface ApprovalDecidedPayload extends JobNotificationPayload {
-  decision?: 'APPROVED' | 'REJECTED';
+  /** CANCELLED: someone other than the requester cancelled a completion approval (ADR-0052). */
+  decision?: 'APPROVED' | 'REJECTED' | 'CANCELLED';
   comment?: string;
+  kind?: ApprovalKind;
+  /** Approved completion approvals only: whether approving completed the job. */
+  completionApplied?: boolean;
+  /** The job status that stopped the completion (e.g. BLOCKED), when it wasn't applied. */
+  completionNotAppliedReason?: string;
 }
 
 export interface JobAssignedPayload extends JobNotificationPayload {
