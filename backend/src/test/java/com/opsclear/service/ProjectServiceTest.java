@@ -4,9 +4,11 @@ import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.aop.AddonCode;
 import com.opsclear.dto.UpdateProjectRequest;
 import com.opsclear.dto.UpdateProjectSettingsRequest;
+import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.model.JobSection;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
@@ -29,6 +31,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -678,10 +682,15 @@ class ProjectServiceTest {
     private static final UUID SETTINGS_ORG_ID = UUID.randomUUID();
 
     private UUID givenSettingsProject(boolean gateOn, ProjectStatus status) {
+        return givenSettingsProject(gateOn, status, List.of());
+    }
+
+    private UUID givenSettingsProject(boolean gateOn, ProjectStatus status, List<JobSection> hidden) {
         UUID projectId = UUID.randomUUID();
         ProjectModel project = ProjectModel.builder()
                 .id(projectId).name("Acme").ownerId(ownerId).organisationId(SETTINGS_ORG_ID)
-                .status(status).requireCompletionApproval(gateOn).build();
+                .status(status).requireCompletionApproval(gateOn).hiddenJobSections(new ArrayList<>(hidden))
+                .build();
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         return projectId;
     }
@@ -848,5 +857,207 @@ class ProjectServiceTest {
         assertThat(result.isRequireCompletionApproval()).isTrue();
         verify(projectRepository, never()).save(any());
         verifyNoInteractions(addonAccessChecker);
+    }
+
+    // --- updateSettings: hiddenJobSections (ADR-0053, JOB-300) ---
+
+    private static UpdateProjectSettingsRequest sections(JobSection... values) {
+        return UpdateProjectSettingsRequest.builder().hiddenJobSections(Arrays.asList(values)).build();
+    }
+
+    private ProjectModel capturedSave() {
+        ArgumentCaptor<ProjectModel> captor = ArgumentCaptor.forClass(ProjectModel.class);
+        verify(projectRepository).save(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    @DisplayName("updateSettings: Owner hides sections, stored in enum order, without any add-on check")
+    void updateSettings_shouldSetHiddenSections_whenOwner() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        givenSaveReturnsArgument();
+
+        ProjectModel result = projectService.updateSettings(projectId, ownerId,
+                sections(JobSection.LINKS, JobSection.NOTES));
+
+        assertThat(result.getHiddenJobSections()).containsExactly(JobSection.NOTES, JobSection.LINKS);
+        ProjectModel saved = capturedSave();
+        assertThat(saved.getId()).isEqualTo(projectId);
+        assertThat(saved.getHiddenJobSections()).containsExactly(JobSection.NOTES, JobSection.LINKS);
+        assertThat(saved.isRequireCompletionApproval()).isFalse();
+        verifyNoInteractions(addonAccessChecker);
+    }
+
+    @Test
+    @DisplayName("updateSettings: Admin can hide sections")
+    void updateSettings_shouldSetHiddenSections_whenAdmin() {
+        UUID adminId = UUID.randomUUID();
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, adminId, ProjectMemberRole.ADMIN);
+        givenSaveReturnsArgument();
+
+        ProjectModel result = projectService.updateSettings(projectId, adminId, sections(JobSection.STATUS_HISTORY));
+
+        assertThat(result.getHiddenJobSections()).containsExactly(JobSection.STATUS_HISTORY);
+        assertThat(capturedSave().getHiddenJobSections()).containsExactly(JobSection.STATUS_HISTORY);
+    }
+
+    @Test
+    @DisplayName("updateSettings: an empty list clears every hidden section")
+    void updateSettings_shouldClearHiddenSections_whenEmptyList() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE,
+                List.of(JobSection.NOTES, JobSection.APPROVALS));
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        givenSaveReturnsArgument();
+
+        ProjectModel result = projectService.updateSettings(projectId, ownerId, sections());
+
+        assertThat(result.getHiddenJobSections()).isEmpty();
+        assertThat(capturedSave().getHiddenJobSections()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("updateSettings: duplicate sections are stored once")
+    void updateSettings_shouldDeduplicateHiddenSections() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        givenSaveReturnsArgument();
+
+        projectService.updateSettings(projectId, ownerId,
+                sections(JobSection.NOTES, JobSection.LINKS, JobSection.NOTES, JobSection.LINKS));
+
+        assertThat(capturedSave().getHiddenJobSections()).containsExactly(JobSection.NOTES, JobSection.LINKS);
+    }
+
+    @Test
+    @DisplayName("updateSettings: a null (unknown) section gets 400 and nothing is saved")
+    void updateSettings_shouldThrowBadRequest_whenSectionUnknown() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId,
+                sections(JobSection.NOTES, null)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(ErrorMessages.Project.UNKNOWN_JOB_SECTION);
+        verify(projectRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateSettings: an invalid section rejects the whole request, so the gate isn't changed either")
+    void updateSettings_shouldNotChangeGate_whenSectionUnknown() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        UpdateProjectSettingsRequest request = UpdateProjectSettingsRequest.builder()
+                .requireCompletionApproval(true).hiddenJobSections(Arrays.asList((JobSection) null)).build();
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage(ErrorMessages.Project.UNKNOWN_JOB_SECTION);
+        verify(projectRepository, never()).save(any());
+        verifyNoInteractions(addonAccessChecker);
+    }
+
+    @Test
+    @DisplayName("updateSettings: Member gets 403 when hiding sections")
+    void updateSettings_shouldThrowForbidden_whenMemberHidesSections() {
+        UUID memberId = UUID.randomUUID();
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, memberId, ProjectMemberRole.MEMBER);
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, memberId, sections(JobSection.NOTES)))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Member.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
+        verify(projectRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateSettings: a completed project gets 409 when hiding sections")
+    void updateSettings_shouldThrowConflict_whenCompletedProjectHidesSections() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.COMPLETED);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId, sections(JobSection.NOTES)))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Project.COMPLETED_NO_MUTATIONS);
+        verify(projectRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateSettings: an absent hiddenJobSections leaves the stored sections unchanged")
+    void updateSettings_shouldLeaveHiddenSections_whenFieldAbsent() {
+        UUID projectId = givenSettingsProject(true, ProjectStatus.ACTIVE, List.of(JobSection.LINKS));
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        givenSaveReturnsArgument();
+
+        ProjectModel result = projectService.updateSettings(projectId, ownerId, gate(false));
+
+        assertThat(result.isRequireCompletionApproval()).isFalse();
+        assertThat(result.getHiddenJobSections()).containsExactly(JobSection.LINKS);
+        ProjectModel saved = capturedSave();
+        assertThat(saved.isRequireCompletionApproval()).isFalse();
+        assertThat(saved.getHiddenJobSections()).containsExactly(JobSection.LINKS);
+    }
+
+    @Test
+    @DisplayName("updateSettings: changing only hiddenJobSections leaves the gate unchanged and skips the add-on check")
+    void updateSettings_shouldLeaveGate_whenOnlySectionsSent() {
+        UUID projectId = givenSettingsProject(true, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        givenSaveReturnsArgument();
+
+        ProjectModel result = projectService.updateSettings(projectId, ownerId, sections(JobSection.APPROVALS));
+
+        assertThat(result.isRequireCompletionApproval()).isTrue();
+        ProjectModel saved = capturedSave();
+        assertThat(saved.isRequireCompletionApproval()).isTrue();
+        assertThat(saved.getHiddenJobSections()).containsExactly(JobSection.APPROVALS);
+        verifyNoInteractions(addonAccessChecker);
+    }
+
+    @Test
+    @DisplayName("updateSettings: gate and sections are both applied in one save when both change")
+    void updateSettings_shouldUpdateBoth_whenBothChange() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        when(addonAccessChecker.isAddonUsableForWrites(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(true);
+        givenSaveReturnsArgument();
+        UpdateProjectSettingsRequest request = UpdateProjectSettingsRequest.builder()
+                .requireCompletionApproval(true).hiddenJobSections(List.of(JobSection.RELATIONSHIPS)).build();
+
+        projectService.updateSettings(projectId, ownerId, request);
+
+        ProjectModel saved = capturedSave();
+        assertThat(saved.isRequireCompletionApproval()).isTrue();
+        assertThat(saved.getHiddenJobSections()).containsExactly(JobSection.RELATIONSHIPS);
+    }
+
+    @Test
+    @DisplayName("updateSettings: the add-on check still guards the gate when sections change in the same request")
+    void updateSettings_shouldThrowForbidden_whenEnablingGateWithoutAddonAlongsideSections() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE);
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+        when(addonAccessChecker.isAddonUsableForWrites(SETTINGS_ORG_ID, AddonCode.APPROVALS)).thenReturn(false);
+        UpdateProjectSettingsRequest request = UpdateProjectSettingsRequest.builder()
+                .requireCompletionApproval(true).hiddenJobSections(List.of(JobSection.NOTES)).build();
+
+        assertThatThrownBy(() -> projectService.updateSettings(projectId, ownerId, request))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage(ErrorMessages.Project.COMPLETION_GATE_REQUIRES_APPROVALS_ADDON);
+        verify(projectRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateSettings: the same set of sections in another order, with duplicates, is a no-op")
+    void updateSettings_shouldNotSave_whenSectionsUnchanged() {
+        UUID projectId = givenSettingsProject(false, ProjectStatus.ACTIVE,
+                List.of(JobSection.NOTES, JobSection.LINKS));
+        givenSettingsCaller(projectId, ownerId, ProjectMemberRole.OWNER);
+
+        ProjectModel result = projectService.updateSettings(projectId, ownerId,
+                sections(JobSection.LINKS, JobSection.NOTES, JobSection.LINKS));
+
+        assertThat(result.getHiddenJobSections()).containsExactly(JobSection.NOTES, JobSection.LINKS);
+        verify(projectRepository, never()).save(any());
     }
 }

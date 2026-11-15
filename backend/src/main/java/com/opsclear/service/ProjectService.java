@@ -4,11 +4,13 @@ import com.opsclear.aop.AddonCode;
 import com.opsclear.dto.CreateProjectRequest;
 import com.opsclear.dto.UpdateProjectRequest;
 import com.opsclear.dto.UpdateProjectSettingsRequest;
+import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.FriendlyIdEntityType;
+import com.opsclear.model.JobSection;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectDirectoryEntryModel;
@@ -30,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -133,19 +136,38 @@ public class ProjectService {
         requireOwnerOrAdmin(projectId, callerId);
         requireProjectNotCompleted(project);
 
+        // Validate the whole request before applying any of it
+        List<JobSection> hiddenJobSections = request.getHiddenJobSections() == null
+                ? null
+                : requireKnownJobSections(request.getHiddenJobSections());
         Boolean requireCompletionApproval = request.getRequireCompletionApproval();
-        if (requireCompletionApproval == null
-                || requireCompletionApproval == project.isRequireCompletionApproval()) {
+        boolean gateChanged = requireCompletionApproval != null
+                && requireCompletionApproval != project.isRequireCompletionApproval();
+        boolean sectionsChanged = hiddenJobSections != null
+                && !hiddenJobSections.equals(project.getHiddenJobSections());
+        if (!gateChanged && !sectionsChanged) {
             return project;
         }
-        if (requireCompletionApproval) {
+        if (gateChanged && requireCompletionApproval) {
             requireApprovalsAddon(project.getOrganisationId());
         }
-        // Turning the gate off leaves pending completion approvals as they are (ADR-0052)
-        project.setRequireCompletionApproval(requireCompletionApproval);
+
+        if (gateChanged) {
+            // Turning the gate off leaves pending completion approvals as they are (ADR-0052)
+            project.setRequireCompletionApproval(requireCompletionApproval);
+        }
+        if (sectionsChanged) {
+            // Display preference only (ADR-0053): not add-on gated, and section endpoints don't enforce it
+            project.setHiddenJobSections(hiddenJobSections);
+        }
         ProjectModel updated = projectRepository.save(project);
-        log.info("Project '{}' requireCompletionApproval set to {} by user {}",
-                projectId, requireCompletionApproval, callerId);
+        if (gateChanged) {
+            log.info("Project '{}' requireCompletionApproval set to {} by user {}",
+                    projectId, requireCompletionApproval, callerId);
+        }
+        if (sectionsChanged) {
+            log.info("Project '{}' hiddenJobSections set to {} by user {}", projectId, hiddenJobSections, callerId);
+        }
         return updated;
     }
 
@@ -226,6 +248,17 @@ public class ProjectService {
         if (!addonAccessChecker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)) {
             throw new ForbiddenException(ErrorMessages.Project.COMPLETION_GATE_REQUIRES_APPROVALS_ADDON);
         }
+    }
+
+    /**
+     * Returns the sections de-duplicated in enum order. Jackson already rejects unknown names with 400,
+     * so the only unknown value that reaches here is a {@code null} entry.
+     */
+    private List<JobSection> requireKnownJobSections(List<JobSection> sections) {
+        if (sections.stream().anyMatch(Objects::isNull)) {
+            throw new BadRequestException(ErrorMessages.Project.UNKNOWN_JOB_SECTION);
+        }
+        return sections.stream().distinct().sorted().toList();
     }
 
     private void requireUserExists(UUID userId) {

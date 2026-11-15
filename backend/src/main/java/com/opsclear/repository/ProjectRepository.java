@@ -1,5 +1,6 @@
 package com.opsclear.repository;
 
+import com.opsclear.model.JobSection;
 import com.opsclear.model.ProjectDirectoryEntryModel;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.model.ProjectStatus;
@@ -14,9 +15,12 @@ import static org.jooq.impl.DSL.count;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.opsclear.generated.jooq.Tables.JOBS;
 import static com.opsclear.generated.jooq.Tables.PROJECTS;
@@ -38,6 +42,23 @@ public class ProjectRepository {
 
     private static LocalDateTime toLocalDateTime(Instant instant) {
         return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
+    }
+
+    // The check constraint limits values to JobSection names but allows duplicates, so de-duplicate here
+    private static List<JobSection> toSectionList(String[] sections) {
+        return Arrays.stream(sections)
+                .map(JobSection::valueOf)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private static String[] toSectionArray(List<JobSection> sections) {
+        return sections.stream()
+                .distinct()
+                .sorted()
+                .map(JobSection::name)
+                .toArray(String[]::new);
     }
 
     public Optional<ProjectModel> findByIdAndDeletedAtIsNull(UUID id) {
@@ -67,6 +88,7 @@ public class ProjectRepository {
                         PROJECTS.ORGANISATION_ID,
                         PROJECTS.STATUS,
                         PROJECTS.REQUIRE_COMPLETION_APPROVAL,
+                        PROJECTS.HIDDEN_JOB_SECTIONS,
                         PROJECTS.CREATED_AT,
                         PROJECTS.UPDATED_AT,
                         PROJECTS.DELETED_AT))
@@ -160,6 +182,7 @@ public class ProjectRepository {
                     .set(PROJECTS.ORGANISATION_ID, project.getOrganisationId())
                     .set(PROJECTS.STATUS, project.getStatus().name())
                     .set(PROJECTS.REQUIRE_COMPLETION_APPROVAL, project.isRequireCompletionApproval())
+                    .set(PROJECTS.HIDDEN_JOB_SECTIONS, toSectionArray(project.getHiddenJobSections()))
                     .set(PROJECTS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .set(PROJECTS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                     .returning(PROJECTS.ID)
@@ -172,6 +195,7 @@ public class ProjectRepository {
                 .set(PROJECTS.DESCRIPTION, project.getDescription())
                 .set(PROJECTS.STATUS, project.getStatus().name())
                 .set(PROJECTS.REQUIRE_COMPLETION_APPROVAL, project.isRequireCompletionApproval())
+                .set(PROJECTS.HIDDEN_JOB_SECTIONS, toSectionArray(project.getHiddenJobSections()))
                 .set(PROJECTS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .set(PROJECTS.DELETED_AT, toLocalDateTime(project.getDeletedAt()))
                 .where(PROJECTS.ID.eq(project.getId()))
@@ -194,6 +218,7 @@ public class ProjectRepository {
                         PROJECTS.ORGANISATION_ID,
                         PROJECTS.STATUS,
                         PROJECTS.REQUIRE_COMPLETION_APPROVAL,
+                        PROJECTS.HIDDEN_JOB_SECTIONS,
                         PROJECTS.CREATED_AT,
                         PROJECTS.UPDATED_AT,
                         PROJECTS.DELETED_AT))
@@ -212,6 +237,7 @@ public class ProjectRepository {
                 .organisationId(r.get(PROJECTS.ORGANISATION_ID))
                 .status(ProjectStatus.valueOf(r.get(PROJECTS.STATUS)))
                 .requireCompletionApproval(r.get(PROJECTS.REQUIRE_COMPLETION_APPROVAL))
+                .hiddenJobSections(toSectionList(r.get(PROJECTS.HIDDEN_JOB_SECTIONS)))
                 .createdAt(toInstant(r.get(PROJECTS.CREATED_AT)))
                 .updatedAt(toInstant(r.get(PROJECTS.UPDATED_AT)))
                 .deletedAt(toInstant(r.get(PROJECTS.DELETED_AT)))
