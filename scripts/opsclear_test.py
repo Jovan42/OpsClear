@@ -6,6 +6,7 @@ Run: python3 scripts/opsclear_test.py
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -840,6 +841,318 @@ class PrSyncRetryTest(unittest.TestCase):
 
     def test_default_schedule_is_about_three_minutes(self):
         self.assertEqual(opsclear.RETRY_DELAYS, (10, 20, 40, 60, 60))
+
+
+class PrCheckRulesTest(unittest.TestCase):
+    """ADR-0056 rules: good and bad examples, several from the real PRs listed in the ADR."""
+
+    def title(self, t):
+        return opsclear.check_title(t)
+
+    def test_good_titles(self):
+        for t in ("feat(backend): add org-level template CRUD (JOB-109)",
+                  "test(e2e): approvals flow (JOB-224)",
+                  "chore(ci): run checks (JOB-1, JOB-2)",
+                  "docs(adr): add ADR-0056 (JOB-295)"):
+            self.assertTrue(self.title(t).ok, t)
+
+    def test_bare_scope_titles_fail(self):  # #456, #457, #475, #464
+        for t in ("chore: tidy things (JOB-456)", "test: more coverage (JOB-464)"):
+            r = self.title(t)
+            self.assertFalse(r.ok, t)
+            self.assertIn("missing scope", r.problem)
+
+    def test_missing_job_id_fails(self):  # #420, #462
+        r = self.title("test(e2e): cypress specs")
+        self.assertIn("job ID", r.problem)
+        self.assertFalse(self.title("fix(backend): thing (JOB-)").ok)
+
+    def test_unknown_type_scope_and_shape(self):
+        self.assertIn("unknown type", self.title("feature(backend): x (JOB-1)").problem)
+        self.assertIn("unknown scope", self.title("feat(user): x (JOB-1)").problem)
+        self.assertIn("does not match", self.title("Add things (JOB-1)").problem)
+        self.assertFalse(self.title("feat(backend):  (JOB-1)").ok)
+        self.assertFalse(self.title("feat(backend): x (job-1)").ok)
+
+    def test_branch_rules(self):
+        self.assertTrue(opsclear.check_branch("chore/JOB-324-pr-check", ["JOB-324"]).ok)
+        self.assertTrue(opsclear.check_branch("e2e/JOB-1-a", ["JOB-2", "JOB-1"]).ok)
+        for bad in ("worktree-agent-abb59", "feat/JOB-1-x", "chore/JOB-1-Upper", "chore/JOB-1", "chore/x-JOB-1-y",
+                    "revert-12-chore/JOB-1-x"):
+            self.assertFalse(opsclear.check_branch(bad, ["JOB-1"]).ok, bad)
+        r = opsclear.check_branch("chore/JOB-9-x", ["JOB-1"])
+        self.assertIn("not one of the title's", r.problem)
+
+    def test_body_rules(self):
+        ok = opsclear.check_body
+        self.assertTrue(ok("## Summary\n\nCloses JOB-1\n", ["JOB-1"]).ok)
+        self.assertTrue(ok("Part of JOB-1", ["JOB-1"]).ok)
+        self.assertTrue(ok("Closes JOB-5, JOB-1", ["JOB-1"]).ok)
+        self.assertTrue(ok("Closes JOB-5\nPart of JOB-1", ["JOB-1", "JOB-2"]).ok)
+        self.assertIn("no `Closes", ok("Fixes JOB-1", ["JOB-1"]).problem)
+        self.assertIn("none of the title's", ok("Closes JOB-5", ["JOB-1"]).problem)
+        self.assertIn("placeholder", ok("Closes JOB-1\nReferences JOB-___", ["JOB-1"]).problem)
+
+    def test_body_html_comments_ignored(self):
+        self.assertFalse(opsclear.check_body("<!-- Closes JOB-1 -->", ["JOB-1"]).ok)
+        self.assertTrue(opsclear.check_body("Closes JOB-1\n<!-- JOB-___ Co-Authored-By: Claude -->", ["JOB-1"]).ok)
+
+    def test_ai_attribution(self):
+        for line in ("Co-Authored-By: Claude <noreply@anthropic.com>", "co-authored-by: Copilot <x@y>",
+                     "Co-authored-by: ChatGPT", "Co-Authored-By: Cursor Agent", "Co-Authored-By: Gemini",
+                     "Co-Authored-By: OpenAI Codex", "Co-Authored-By: someone <a@anthropic.com>",
+                     "Generated with Claude Code", "\U0001f916 Generated with [Claude Code](https://claude.com)"):
+            r = opsclear.check_body(f"Closes JOB-1\n\n{line}\n", ["JOB-1"])
+            self.assertIn("AI attribution", r.problem, line)
+        human = opsclear.check_body("Closes JOB-1\n\nCo-Authored-By: Jane Doe <jane@example.com>", ["JOB-1"])
+        self.assertTrue(human.ok)
+
+    def test_layer_classification(self):
+        cases = {
+            "backend/src/main/resources/db/migration/V1__x.sql": "db",
+            "backend/src/main/generated/jooq/Tables.java": "db",
+            "backend/src/main/java/A.java": "backend",
+            "backend/src/test/java/ATest.java": "backend",
+            "backend/build.gradle": "backend",
+            "frontend/src/App.tsx": "frontend",
+            "frontend/package.json": "frontend",
+            "frontend/cypress/e2e/a.cy.ts": "neutral",
+            "docs/dev/x.md": "neutral", ".github/workflows/ci.yml": "neutral", ".claude/settings.json": "neutral",
+            "scripts/opsclear": "neutral", "api/postman/c.json": "neutral", "keycloak/realm.json": "neutral",
+            "README.md": "neutral",
+        }
+        for path, layer in cases.items():
+            self.assertEqual(opsclear.layer_of(path), layer, path)
+
+    def test_layer_check(self):
+        layers = opsclear.check_layers
+        self.assertTrue(layers(["docs/a.md", "frontend/cypress/a.ts"], []).ok)
+        self.assertTrue(layers(["frontend/src/a.ts", "frontend/cypress/a.ts", "docs/a.md"], []).ok)
+        self.assertTrue(layers(["backend/src/main/resources/db/migration/V1__x.sql",
+                                "backend/src/main/generated/A.java"], []).ok)  # #483: one layer
+        mixed = ["backend/src/main/resources/db/migration/V1__x.sql", "backend/src/test/java/ATest.java"]  # #431
+        r = layers(mixed, [])
+        self.assertIn("db, backend", r.problem)
+        self.assertTrue(layers(mixed, ["Cross-Layer"]).ok)
+        self.assertIn("db, backend", layers(mixed, ["cross-layer"]).detail)
+        self.assertFalse(layers(["backend/a", "frontend/b"], ["other"]).ok)
+        self.assertTrue(layers(["backend/a", "frontend/b", "backend/src/main/generated/c"], ["cross-layer"]).ok)
+
+    def test_too_many_files_fails(self):
+        r = opsclear.check_layers([f"docs/{i}.md" for i in range(3000)], ["cross-layer"])
+        self.assertIn("Split the PR", r.fix)
+        self.assertTrue(opsclear.check_layers([f"docs/{i}.md" for i in range(2999)], []).ok)
+
+    def test_all_failures_reported(self):
+        results = opsclear.run_checks("chore: x", "nothing", "main", [], ["backend/a", "frontend/b"])
+        self.assertEqual([r.ok for r in results], [False] * 4)
+
+    def test_real_prs(self):
+        # #496: backend fix with a Cypress regression test is one layer
+        results = opsclear.run_checks("fix(backend): keep SSE pushes going (JOB-329)", "Closes JOB-329",
+                                      "fix/JOB-329-sse", [],
+                                      ["backend/src/main/java/A.java", "frontend/cypress/e2e/a.cy.ts"])
+        self.assertTrue(all(r.ok for r in results))
+        # #420, #425, #426: e2e scope was unlisted, now fine
+        self.assertTrue(opsclear.check_title("test(e2e): approvals (JOB-420)").ok)
+
+
+class PrCheckCliTest(unittest.TestCase):
+    GOOD = {"title": "chore(ci): add the check (JOB-324)", "body": "Closes JOB-324\n", "branch": "chore/JOB-324-x"}
+
+    def local(self, extra=(), title=None, body=None, branch=None, git=None):
+        d = tempfile.mkdtemp()
+        path = os.path.join(d, "body.md")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(self.GOOD["body"] if body is None else body)
+        argv = ["pr", "check", "--title", title or self.GOOD["title"], "--body-file", path] + list(extra)
+        if branch is not False:
+            argv += ["--branch", branch or self.GOOD["branch"]]
+        git = git or (lambda args: "scripts/opsclear\ndocs/dev/process/NAMING.md\n")
+        original = opsclear.run_git
+        opsclear.run_git = git
+        try:
+            return run(argv, {}, env={"HOME": "/nonexistent"})
+        finally:
+            opsclear.run_git = original
+
+    def test_local_pass_needs_no_key(self):
+        code, out, err, fake = self.local()
+        self.assertEqual(code, 0)
+        self.assertEqual(err, "")
+        self.assertIn("PASS  Layers", out)
+        self.assertEqual(fake.calls, [])
+
+    def test_local_failure_exit_1_with_annotations(self):
+        code, out, err, _ = self.local(title="chore: x")
+        self.assertEqual(code, 1)
+        self.assertIn("::error title=Process check%3A PR title::", out)
+        self.assertIn("missing scope", out)
+        self.assertIn("PASS  PR body", out)
+
+    def test_local_git_fallbacks(self):
+        calls = []
+
+        def git(args):
+            calls.append(args)
+            return "feature/JOB-324-x\n" if args[0] == "rev-parse" else "frontend/a.ts\nbackend/b.java\n"
+
+        code, out, _, _ = self.local(branch=False, git=git, title="feat(frontend): x (JOB-324)")
+        self.assertEqual(code, 1)
+        self.assertEqual(calls, [["rev-parse", "--abbrev-ref", "HEAD"], ["diff", "--name-only", "origin/main...HEAD"]])
+        self.assertIn("PASS  Branch name: feature/JOB-324-x", out)
+        self.assertIn("touches 2 layers", out)
+        code, _, _, _ = self.local(extra=["--base", "upstream/dev", "--labels", "a, cross-layer"],
+                                   branch=False, git=git, title="feat(frontend): x (JOB-324)")
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[-1], ["diff", "--name-only", "upstream/dev...HEAD"])
+
+    def test_git_failure_is_an_error(self):
+        def git(args):
+            raise opsclear.CliError("git diff failed: bad revision")
+        code, _, err, _ = self.local(git=git)
+        self.assertEqual(code, 1)
+        self.assertIn("bad revision", err)
+
+    def test_needs_event_or_title(self):
+        code, _, err, _ = run(["pr", "check"], {}, env={})
+        self.assertEqual(code, opsclear.EXIT_USAGE)
+        self.assertIn("--title", err)
+
+    def test_summary_table(self):
+        summary = os.path.join(tempfile.mkdtemp(), "s.md")
+        self.local(extra=["--summary", summary], title="chore: x")
+        with open(summary, encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn("| Check | Result | Detail |", text)
+        self.assertIn("| PR title | FAIL |", text)
+        self.assertIn("| Layers | pass | neutral paths only |", text)
+
+    def test_annotation_escaping(self):
+        self.assertEqual(opsclear.gh_escape("a\nb%"), "a%0Ab%25")
+
+
+class PrCheckCiTest(unittest.TestCase):
+    ENV = {"GITHUB_TOKEN": "ghs_token", "GITHUB_REPOSITORY": "o/r"}
+
+    def event(self, labels=(), **pr):
+        data = {"action": "opened", "pull_request": {
+            "number": 7, "title": "chore(ci): add (JOB-324)", "body": "Closes JOB-324",
+            "head": {"ref": "chore/JOB-324-x"}, "labels": [{"name": n} for n in labels], **pr}}
+        path = os.path.join(tempfile.mkdtemp(), "event.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        return path
+
+    def run_with(self, script, argv, env=None):
+        calls, sleeps = [], []
+
+        def transport(method, url, headers, data):
+            calls.append((method, url, headers))
+            item = script[min(len(calls) - 1, len(script) - 1)]
+            if isinstance(item, Exception):
+                raise item
+            return item
+
+        out, err = io.StringIO(), io.StringIO()
+        code = opsclear.main(argv, env=self.ENV if env is None else env, transport=transport, stdout=out,
+                             stderr=err, sleep=sleeps.append)
+        return code, out.getvalue(), err.getvalue(), calls, sleeps
+
+    @staticmethod
+    def files(*names):
+        return opsclear.Response(200, json.dumps([{"filename": n} for n in names]).encode())
+
+    def test_ci_mode_pass(self):
+        code, out, _, calls, _ = self.run_with([self.files("scripts/opsclear")],
+                                               ["pr", "check", "--event", self.event()])
+        self.assertEqual(code, 0)
+        method, url, headers = calls[0]
+        self.assertEqual(url, "https://api.github.com/repos/o/r/pulls/7/files?per_page=100&page=1")
+        self.assertEqual(headers["Authorization"], "Bearer ghs_token")
+
+    def test_ci_mode_label_from_event(self):
+        names = ["backend/a.java", "frontend/b.ts"]
+        code, _, _, _, _ = self.run_with([self.files(*names)], ["pr", "check", "--event", self.event()])
+        self.assertEqual(code, 1)
+        code, _, _, _, _ = self.run_with([self.files(*names)],
+                                         ["pr", "check", "--event", self.event(["cross-layer"])])
+        self.assertEqual(code, 0)
+
+    def test_pagination(self):
+        page1 = self.files(*[f"docs/{i}.md" for i in range(100)])
+        page2 = opsclear.Response(200, json.dumps(
+            [{"filename": "backend/a.java", "previous_filename": "frontend/x.ts"}]).encode())
+        code, out, _, calls, _ = self.run_with([page1, page2], ["pr", "check", "--event", self.event()])
+        self.assertEqual(len(calls), 2)
+        self.assertIn("page=2", calls[1][1])
+        self.assertEqual(code, 1)  # the rename's old path counts: backend + frontend
+        self.assertIn("touches 2 layers: backend, frontend", out)
+
+    def test_retry_then_succeed(self):
+        script = [opsclear.CliError("boom"), opsclear.Response(502, b"bad gateway"), self.files("docs/a.md")]
+        code, _, _, calls, sleeps = self.run_with(script, ["pr", "check", "--event", self.event()])
+        self.assertEqual(code, 0)
+        self.assertEqual(sleeps, [2, 4])
+        self.assertEqual(len(calls), 3)
+
+    def test_retry_then_fail(self):
+        code, out, err, calls, sleeps = self.run_with([opsclear.Response(500, b"{}")],
+                                                      ["pr", "check", "--event", self.event()])
+        self.assertEqual(code, 1)
+        self.assertEqual(len(calls), len(opsclear.CHECK_RETRY_DELAYS) + 1)
+        self.assertIn("cannot list the PR's files", err)
+        self.assertNotIn("PASS", out)  # a required check must not pass on missing data
+
+    def test_client_error_is_not_retried(self):
+        code, _, err, calls, sleeps = self.run_with([opsclear.Response(404, b'{"message":"Not Found"}')],
+                                                    ["pr", "check", "--event", self.event()])
+        self.assertEqual(code, 1)
+        self.assertEqual((len(calls), sleeps), (1, []))
+        self.assertIn("Not Found", err)
+
+    def test_missing_token_or_event(self):
+        code, _, err, _, _ = self.run_with([], ["pr", "check", "--event", self.event()], env={})
+        self.assertEqual(code, 1)
+        self.assertIn("GITHUB_TOKEN", err)
+        code, _, err, _, _ = self.run_with([], ["pr", "check", "--event", "/nonexistent.json"])
+        self.assertEqual(code, opsclear.EXIT_USAGE)
+
+
+class NamingDocSyncTest(unittest.TestCase):
+    """docs/dev/process/NAMING.md and the constants in scripts/opsclear must agree."""
+
+    @classmethod
+    def setUpClass(cls):
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "dev", "process", "NAMING.md")
+        with open(path, encoding="utf-8") as f:
+            cls.text = f.read()
+
+    def ticked(self, label):
+        lines = [line for line in self.text.splitlines() if line.startswith(label)]
+        self.assertEqual(len(lines), 1, f"NAMING.md needs exactly one line starting {label!r}")
+        return re.findall(r"`([^`]+)`", lines[0])
+
+    def test_types(self):
+        self.assertEqual(self.ticked("**Types:**"), list(opsclear.TYPES))
+
+    def test_scopes(self):
+        self.assertEqual(self.ticked("**Scopes (fixed list):**"), list(opsclear.SCOPES))
+
+    def test_branch_prefixes(self):
+        prefixes = re.findall(r"^\|[^|]*\| `(\w+)/<job-id>-<slug>` \|", self.text, re.MULTILINE)
+        self.assertEqual(prefixes, list(opsclear.BRANCH_PREFIXES))
+
+    def test_label_and_layer_paths(self):
+        self.assertIn(f"`{opsclear.CROSS_LAYER_LABEL}`", self.text)
+        for _, prefixes in opsclear.LAYER_PATHS:
+            for prefix in prefixes:
+                if prefix != "backend/" and prefix != "frontend/":
+                    self.assertIn(f"`{prefix}**`", self.text)
+        for prefix in opsclear.NEUTRAL_PATHS:
+            self.assertIn(f"`{prefix}**`", self.text)
+        for tool in opsclear.AI_TOOLS:
+            self.assertIn(tool, self.text)
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@ import http.client
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.error
@@ -197,6 +198,7 @@ class Ctx:
     today: date = field(default_factory=date.today)
     sleep: Callable[[float], None] = time.sleep
     retry_delays: Tuple[float, ...] = RETRY_DELAYS
+    env: Dict[str, str] = field(default_factory=dict)
 
 
 def apply(ctx: Ctx, writes: List[Write], plan: List[str], needs_confirm: bool) -> Optional[List[Any]]:
@@ -1193,6 +1195,265 @@ def cmd_pr_sync(ctx: Ctx, args) -> int:
     return EXIT_OK
 
 
+# --------------------------------------------------------------------------- commands: pr check (ADR-0056)
+
+# The naming rules (docs/dev/process/NAMING.md). The doc-sync test fails if NAMING.md differs.
+TYPES = ("feat", "fix", "docs", "refactor", "test", "chore")
+SCOPES = ("backend", "frontend", "db", "e2e", "auth", "config", "ci", "docs", "deps", "infra", "adr")
+BRANCH_PREFIXES = ("feature", "fix", "e2e", "chore")
+CROSS_LAYER_LABEL = "cross-layer"
+# Layer -> path prefixes. First match wins, so db comes before backend. Everything else is neutral.
+LAYER_PATHS = (
+    ("db", ("backend/src/main/resources/db/migration/", "backend/src/main/generated/")),
+    ("backend", ("backend/",)),
+    ("frontend", ("frontend/",)),
+)
+NEUTRAL_PATHS = ("frontend/cypress/",)  # under a layer's root but belongs to none
+AI_TOOLS = ("Claude", "Anthropic", "Copilot", "OpenAI", "ChatGPT", "Gemini", "Cursor")
+AI_ATTRIBUTION_RE = re.compile(
+    r"^[ \t>*-]*co-authored-by:[^\n]*(?:" + "|".join(AI_TOOLS) + r")|generated with\W*claude code",
+    re.IGNORECASE | re.MULTILINE)
+PLACEHOLDER_RE = re.compile(r"\bJOB-_+", re.IGNORECASE)
+TITLE_RE = re.compile(r"^(?P<type>[^(:\s]*)(?:\((?P<scope>[^)]*)\))?: (?P<rest>.*)$", re.DOTALL)
+TITLE_JOBS_RE = re.compile(r"^(?P<summary>.*\S) \((?P<jobs>JOB-\d+(?:, JOB-\d+)*)\)$", re.DOTALL)
+BRANCH_RE = re.compile(r"^(?P<prefix>[^/]+)/(?P<job>JOB-\d+)-(?P<slug>[a-z0-9-]+)$")
+MAX_CHECK_FILES = 3000  # the GitHub files API returns at most this many
+CHECK_RETRY_DELAYS = (2, 4, 8)  # seconds, brief
+GITHUB_API_URL = "https://api.github.com"
+
+
+def fmt_list(items) -> str:
+    return " ".join(f"`{i}`" for i in items)
+
+
+def layer_of(path: str) -> str:
+    """db, backend, frontend, or neutral."""
+    if path.startswith(NEUTRAL_PATHS):
+        return "neutral"
+    for layer, prefixes in LAYER_PATHS:
+        if path.startswith(prefixes):
+            return layer
+    return "neutral"
+
+
+def layers_touched(files: List[str]) -> List[str]:
+    found = {layer_of(f) for f in files}
+    return [layer for layer, _ in LAYER_PATHS if layer in found]
+
+
+@dataclass
+class CheckResult:
+    name: str
+    problem: str = ""  # empty means pass
+    fix: str = ""
+    detail: str = ""  # shown in the table when passing, or extra context when failing
+
+    @property
+    def ok(self) -> bool:
+        return not self.problem
+
+
+def title_jobs(title: str) -> List[str]:
+    m = TITLE_JOBS_RE.match(title or "")
+    return JOB_REF_RE.findall(m.group("jobs")) if m else []
+
+
+def check_title(title: str) -> CheckResult:
+    r = CheckResult("PR title")
+    example = "feat(backend): add org-level template CRUD (JOB-109)"
+    shape = f"Use `<type>(<scope>): <summary> (JOB-x)`, e.g. `{example}`."
+    m = TITLE_RE.match(title or "")
+    if not m:
+        r.problem, r.fix = f"title {title!r} does not match the format", shape
+        return r
+    if m.group("type") not in TYPES:
+        r.problem = f"unknown type {m.group('type')!r}"
+        r.fix = f"Use one of {fmt_list(TYPES)}."
+        return r
+    if m.group("scope") is None:
+        r.problem = "missing scope"
+        r.fix = f"Add a scope from {fmt_list(SCOPES)}, e.g. `{m.group('type')}(backend): ...`."
+        return r
+    if m.group("scope") not in SCOPES:
+        r.problem = f"unknown scope {m.group('scope')!r}"
+        r.fix = f"Use one of {fmt_list(SCOPES)}."
+        return r
+    if not TITLE_JOBS_RE.match(m.group("rest")):
+        r.problem = "missing job ID at the end, or empty summary"
+        r.fix = "End the title with the OpsClear job, `(JOB-123)` or `(JOB-1, JOB-2)`. " + shape
+        return r
+    r.detail = ", ".join(title_jobs(title))
+    return r
+
+
+def check_branch(branch: str, jobs: List[str]) -> CheckResult:
+    r = CheckResult("Branch name")
+    shape = f"Use `<{'|'.join(BRANCH_PREFIXES)}>/JOB-x-<slug>` with a slug of `a-z0-9-`, e.g. `chore/JOB-324-pr-check`."
+    m = BRANCH_RE.match(branch or "")
+    if not m or m.group("prefix") not in BRANCH_PREFIXES:
+        r.problem, r.fix = f"branch {branch!r} does not match the format", shape
+    elif jobs and m.group("job") not in jobs:
+        r.problem = f"branch job {m.group('job')} is not one of the title's ({', '.join(jobs)})"
+        r.fix = "Name the branch after a job in the PR title."
+    else:
+        r.detail = branch
+    return r
+
+
+def check_body(body: str, jobs: List[str]) -> CheckResult:
+    r = CheckResult("PR body")
+    text = strip_html_comments(body)
+    problems, fixes = [], []
+    named = [j.upper() for m in CLOSES_LINE_RE.finditer(text) for j in JOB_REF_RE.findall(m.group(2))]
+    if not named:
+        problems.append("no `Closes JOB-x` or `Part of JOB-x` line")
+        fixes.append("Add a line `Closes JOB-x` (or `Part of JOB-x` if more PRs follow) on its own.")
+    elif jobs and not set(named) & set(jobs):
+        problems.append(f"`Closes` / `Part of` names {', '.join(named)}, none of the title's jobs ({', '.join(jobs)})")
+        fixes.append("Name a job from the PR title on the `Closes` / `Part of` line.")
+    if PLACEHOLDER_RE.search(text):
+        problems.append("unfilled `JOB-___` placeholder")
+        fixes.append("Replace the `JOB-___` placeholder with the real job ID.")
+    if AI_ATTRIBUTION_RE.search(text):
+        problems.append("AI attribution")
+        fixes.append("Remove the AI `Co-Authored-By` trailer or 'Generated with Claude Code' line.")
+    r.problem, r.fix = "; ".join(problems), " ".join(fixes)
+    if r.ok:
+        r.detail = ", ".join(_unique(named))
+    return r
+
+
+def check_layers(files: List[str], labels: List[str]) -> CheckResult:
+    r = CheckResult("Layers")
+    if len(files) >= MAX_CHECK_FILES:
+        r.problem = f"{len(files)} changed files, GitHub lists at most {MAX_CHECK_FILES}"
+        r.fix = "Split the PR: it is too large to check or review."
+        return r
+    layers = layers_touched(files)
+    r.detail = ", ".join(layers) if layers else "neutral paths only"
+    if len(layers) >= 2:
+        if CROSS_LAYER_LABEL in [label.lower() for label in labels]:
+            r.detail += f" (allowed by the `{CROSS_LAYER_LABEL}` label)"
+        else:
+            r.problem = f"touches {len(layers)} layers: {', '.join(layers)}"
+            r.fix = (f"Split the PR so it touches one of db / backend / frontend, or add the "
+                     f"`{CROSS_LAYER_LABEL}` label if the PR can't be split.")
+    return r
+
+
+def run_checks(title: str, body: str, branch: str, labels: List[str], files: List[str]) -> List[CheckResult]:
+    return [check_title(title), check_branch(branch, title_jobs(title)), check_body(body, title_jobs(title)),
+            check_layers(files, labels)]
+
+
+def gh_escape(text: str, prop: bool = False) -> str:
+    text = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    return text.replace(":", "%3A").replace(",", "%2C") if prop else text
+
+
+def fetch_pr_files(ctx: Ctx, repo: str, number: int, token: str, base_url: str) -> List[str]:
+    """Filenames (and old names of renames) from the PR files API: paginated, brief retry, then fail."""
+    files: List[str] = []
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+               "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "opsclear-pr-check"}
+    page = 1
+    while True:
+        url = f"{base_url.rstrip('/')}/repos/{repo}/pulls/{number}/files?per_page=100&page={page}"
+        attempt = 0
+        while True:
+            failure = ""
+            fatal = False
+            try:
+                resp = ctx.api.transport("GET", url, headers, None)
+                if resp.status == 200:
+                    break
+                failure = f"GitHub returned {resp.status}: {_error_message(resp.body)}"
+                fatal = resp.status < 500 and resp.status not in (403, 429)
+            except CliError as e:
+                failure = str(e)
+            if fatal or attempt >= len(CHECK_RETRY_DELAYS):
+                raise CliError(f"cannot list the PR's files after {attempt + 1} attempt(s): {failure}")
+            ctx.sleep(CHECK_RETRY_DELAYS[attempt])
+            attempt += 1
+        items = json.loads(resp.body or b"[]")
+        for item in items:
+            files.append(str(item.get("filename") or ""))
+            if item.get("previous_filename"):
+                files.append(str(item["previous_filename"]))
+        if len(items) < 100 or len(files) >= MAX_CHECK_FILES:
+            return files
+        page += 1
+
+
+def run_git(args: List[str]) -> str:
+    try:
+        proc = subprocess.run(["git"] + args, capture_output=True, text=True, check=False)
+    except OSError as e:
+        raise CliError(f"cannot run git: {e.strerror}")
+    if proc.returncode != 0:
+        raise CliError(f"git {' '.join(args)} failed: {proc.stderr.strip() or proc.returncode}")
+    return proc.stdout
+
+
+def read_check_input(ctx: Ctx, args) -> Tuple[str, str, str, List[str], List[str]]:
+    """(title, body, branch, labels, files) from the event file (CI) or from flags and git (local)."""
+    if args.event:
+        try:
+            with open(args.event, encoding="utf-8") as f:
+                data = json.load(f)
+        except OSError as e:
+            raise argparse.ArgumentTypeError(f"cannot read event file {args.event}: {e.strerror}")
+        except ValueError as e:
+            raise argparse.ArgumentTypeError(f"event file {args.event} is not valid JSON: {e}")
+        pr = data.get("pull_request") if isinstance(data, dict) else None
+        if not isinstance(pr, dict):
+            raise argparse.ArgumentTypeError("event file has no pull_request")
+        repo = str(((data.get("repository") or {}).get("full_name")) or ctx.env.get("GITHUB_REPOSITORY") or "")
+        token = ctx.env.get("GITHUB_TOKEN") or ""
+        if not repo or not token or not pr.get("number"):
+            raise CliError("CI mode needs the repository (event file or GITHUB_REPOSITORY), the PR number "
+                           "and GITHUB_TOKEN")
+        files = fetch_pr_files(ctx, repo, int(pr["number"]), token, ctx.env.get("GITHUB_API_URL") or GITHUB_API_URL)
+        labels = [str(label.get("name") or "") for label in pr.get("labels") or [] if isinstance(label, dict)]
+        return (str(pr.get("title") or ""), str(pr.get("body") or ""),
+                str((pr.get("head") or {}).get("ref") or ""), labels, files)
+    if args.title is None:
+        raise argparse.ArgumentTypeError("pr check needs --event, or --title (and usually --body-file)")
+    branch = args.branch if args.branch is not None else run_git(["rev-parse", "--abbrev-ref", "HEAD"]).strip()
+    files = [f for f in run_git(["diff", "--name-only", f"{args.base}...HEAD"]).splitlines() if f]
+    labels = [label.strip() for label in (args.labels or "").split(",") if label.strip()]
+    return args.title, read_text(args.body_file) if args.body_file else "", branch, labels, files
+
+
+def cmd_pr_check(ctx: Ctx, args) -> int:
+    title, body, branch, labels, files = read_check_input(ctx, args)
+    results = run_checks(title, body, branch, labels, files)
+    out = ctx.out
+    for r in results:
+        if r.ok:
+            out.print(f"PASS  {r.name}: {r.detail}" if r.detail else f"PASS  {r.name}")
+        else:
+            out.print(f"::error title={gh_escape('Process check: ' + r.name, True)}::"
+                      f"{gh_escape(r.problem + '. ' + r.fix)}")
+    failed = [r for r in results if not r.ok]
+    if args.summary:
+        lines = ["### PR process check", "", "| Check | Result | Detail |", "|---|---|---|"]
+        for r in results:
+            detail = f"{r.problem}. {r.fix}" if r.problem else r.detail
+            if r.problem and r.detail:
+                detail += f" ({r.detail})"
+            lines.append(f"| {md_cell(r.name)} | {'FAIL' if r.problem else 'pass'} | {md_cell(detail)} |")
+        try:
+            with open(args.summary, "a", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        except OSError as e:
+            out.print(f"::warning::cannot write summary {args.summary}: {e.strerror}")
+    if failed:
+        out.warn(f"PR check failed: {', '.join(r.name for r in failed)}.")
+        return EXIT_ERROR
+    return EXIT_OK
+
+
 # --------------------------------------------------------------------------- argument parser
 
 
@@ -1292,6 +1553,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--title", help="without --event: the PR title")
     p.add_argument("--body-file", help="without --event: file with the PR body ('-' for stdin)")
 
+    p = cmd(prs, "check", cmd_pr_check,
+            "check a PR's title, branch, body and layers against the dev process (ADR-0056); "
+            "exits 1 on any failure, needs no API key")
+    p.add_argument("--event", help="CI mode: GitHub event JSON file ($GITHUB_EVENT_PATH); needs GITHUB_TOKEN")
+    p.add_argument("--summary", help="append a Markdown table here ($GITHUB_STEP_SUMMARY)")
+    p.add_argument("--title", help="local mode: the PR title")
+    p.add_argument("--body-file", help="local mode: file with the PR body ('-' for stdin)")
+    p.add_argument("--branch", help="local mode: the head branch (default: the current git branch)")
+    p.add_argument("--labels", help="local mode: comma-separated PR labels, e.g. cross-layer")
+    p.add_argument("--base", default="origin/main", help="local mode: files = git diff --name-only <base>...HEAD")
+
     notes = group("note", "job notes (immutable)")
     p = cmd(notes, "list", cmd_note_list, "show a job's notes")
     p.add_argument("job", type=friendly("JOB"))
@@ -1363,6 +1635,19 @@ def main(argv: Optional[List[str]] = None, env: Optional[Dict[str, str]] = None,
             args = parser.parse_args(argv)
     except SystemExit as e:
         return int(e.code or 0)
+    if getattr(args, "group", "") == "pr" and args.action == "check":
+        # needs no OpsClear key: a CI run has none and local runs shouldn't need one
+        ctx = Ctx(api=Api(DEFAULT_URL, "", transport), out=out, json=args.json, yes=args.yes,
+                  dry_run=args.dry_run, today=today or date.today(), sleep=sleep, retry_delays=retry_delays,
+                  env=dict(env))
+        try:
+            return args.func(ctx, args)
+        except argparse.ArgumentTypeError as e:
+            out.warn(f"error: {e}")
+            return EXIT_USAGE
+        except CliError as e:
+            out.warn(f"error: {e}")
+            return EXIT_ERROR
     if not key and getattr(args, "group", "") == "pr":
         try:
             read_pr_event(args)
