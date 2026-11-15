@@ -141,11 +141,48 @@ function toApprovalResponse(a: DemoApproval): ApprovalResponse {
     comment: a.comment,
     requestedAt: a.requestedAt,
     decidedAt: a.decidedAt,
-    // The demo only has manual approvals (ADR-0052 completion approvals aren't simulated).
-    kind: 'MANUAL',
-    completionApplied: null,
-    completionNotAppliedReason: null,
+    kind: a.kind ?? 'MANUAL',
+    completionApplied: a.completionApplied ?? null,
+    completionNotAppliedReason: a.completionNotAppliedReason ?? null,
   };
+}
+
+/** PendingApprovalResponse shape (project queue and dashboard), with the ADR-0052 kind. */
+function toPendingApproval(a: DemoApproval): PendingApprovalResponse {
+  const { id, jobId, jobTitle, requesterId, description, requestedAt } = a;
+  return { id, jobId, jobTitle, requesterId, description, requestedAt, kind: a.kind ?? 'MANUAL' };
+}
+
+/**
+ * ADR-0052 outcome of deciding a completion approval, as the backend applies it: approving
+ * completes the job (history attributed to the approver) only while it's still In Progress,
+ * otherwise it's recorded as "approved, not applied". Every outcome clears the job's banner.
+ */
+function applyCompletionDecision(approval: DemoApproval, status: 'APPROVED' | 'REJECTED') {
+  const job = demoStore.jobs.find((j) => j.id === approval.jobId);
+  if (!job) return;
+  job.pendingCompletionApproval = null;
+  if (status !== 'APPROVED') return;
+
+  if (job.status !== 'IN_PROGRESS') {
+    approval.completionApplied = false;
+    approval.completionNotAppliedReason = job.status;
+    return;
+  }
+  approval.completionApplied = true;
+  job.status = 'COMPLETED';
+  job.updatedAt = new Date().toISOString();
+  const entry: JobHistoryEntry = {
+    id: uniqueId(`demo-hist-${job.id}`),
+    jobId: job.id,
+    changedFrom: 'IN_PROGRESS',
+    changedTo: 'COMPLETED',
+    changedBy: DEMO_CURRENT_USER.id,
+    changedByName: DEMO_CURRENT_USER.name,
+    changedAt: job.updatedAt,
+    blockReason: null,
+  };
+  demoStore.historyByJobId[job.id] = [...(demoStore.historyByJobId[job.id] ?? []), entry];
 }
 
 export const demoHandlers = [
@@ -241,15 +278,7 @@ export const demoHandlers = [
       },
       blockedJobs: jobs.filter((j) => j.status === 'BLOCKED').map(toSummary),
       overdueJobs: jobs.filter(isOverdue).map(toSummary),
-      pendingApprovals: pendingApprovals.map(({ id, jobId, jobTitle, requesterId, description, requestedAt }) => ({
-        id,
-        jobId,
-        jobTitle,
-        requesterId,
-        description,
-        requestedAt,
-        kind: 'MANUAL' as const,
-      })),
+      pendingApprovals: pendingApprovals.map(toPendingApproval),
       typeBreakdown: [],
     };
 
@@ -798,6 +827,18 @@ export const demoHandlers = [
     const previousStatus = job.status;
     job.status = body.status;
     job.updatedAt = new Date().toISOString();
+    // ADR-0052: the demo user is the Owner, so Complete is direct and cancels a pending
+    // completion request, with the comment the backend stores for it.
+    if (body.status === 'COMPLETED' && job.pendingCompletionApproval) {
+      const pending = demoStore.approvals.find((a) => a.id === job.pendingCompletionApproval?.id);
+      if (pending) {
+        pending.status = 'CANCELLED';
+        pending.approverId = DEMO_CURRENT_USER.id;
+        pending.comment = `Completed directly by ${DEMO_CURRENT_USER.name}`;
+        pending.decidedAt = job.updatedAt;
+      }
+      job.pendingCompletionApproval = null;
+    }
     if (body.status === 'BLOCKED') {
       job.blockedBy = DEMO_CURRENT_USER.id;
       job.blockedReason = body.reason ?? null;
@@ -1002,15 +1043,7 @@ export const demoHandlers = [
   http.get(`${base}/approvals/pending`, () => {
     const pending: PendingApprovalResponse[] = demoStore.approvals
       .filter((a) => a.status === 'PENDING')
-      .map(({ id, jobId, jobTitle, requesterId, description, requestedAt }) => ({
-        id,
-        jobId,
-        jobTitle,
-        requesterId,
-        description,
-        requestedAt,
-        kind: 'MANUAL' as const,
-      }));
+      .map(toPendingApproval);
     return HttpResponse.json(pending);
   }),
 
@@ -1032,6 +1065,25 @@ export const demoHandlers = [
     approval.comment = body.comment ?? null;
     approval.approverId = DEMO_CURRENT_USER.id;
     approval.decidedAt = new Date().toISOString();
+    if (approval.kind === 'COMPLETION') applyCompletionDecision(approval, body.status);
+
+    return HttpResponse.json(toApprovalResponse(approval));
+  }),
+
+  // ADR-0052: withdraw a pending completion approval. The job stays In Progress.
+  http.post(`${base}/jobs/:jobId/approvals/:approvalId/cancel`, ({ params }) => {
+    const approval = demoStore.approvals.find((a) => a.id === params.approvalId);
+    if (!approval || approval.kind !== 'COMPLETION' || approval.status !== 'PENDING') {
+      return HttpResponse.json(
+        { error: 'Conflict', message: 'Already decided.', timestamp: new Date().toISOString() },
+        { status: 409 },
+      );
+    }
+    approval.status = 'CANCELLED';
+    approval.approverId = DEMO_CURRENT_USER.id;
+    approval.decidedAt = new Date().toISOString();
+    const job = demoStore.jobs.find((j) => j.id === approval.jobId);
+    if (job) job.pendingCompletionApproval = null;
 
     return HttpResponse.json(toApprovalResponse(approval));
   }),

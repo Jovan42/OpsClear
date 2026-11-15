@@ -9,6 +9,8 @@ import ApprovalList from '../features/jobs/components/ApprovalList';
 import JobDetailPage from '../features/jobs/JobDetailPage';
 
 const HISTORY_JOB_ID = 'demo-job-04';
+// The job with a pending completion approval in mockData.ts (ADR-0052).
+const COMPLETION_JOB_FRIENDLY_ID = 'DEMO-109';
 
 // Same accordion chrome as JobDetailPage's own Approvals section (JOB-146 polish) —
 // defaults expanded since this slide's whole point is showing decided history
@@ -43,8 +45,11 @@ function ApprovalHistorySlide() {
 
 /**
  * The Approvals card's demo slides (ADR-0040 / JOB-143): the pending-approvals queue,
- * plus just the ApprovalList component showing decided history (one approved, one
- * rejected) for a completed job — DemoOverlay's prev/next arrows page between them.
+ * just the ApprovalList component showing decided history (one approved, one rejected)
+ * for a completed job, and (ADR-0052, JOB-331) the real job page of a Member's job on a
+ * gated project, with its completion request banner. As the Owner, Approve completes the
+ * job, Reject keeps it In Progress and Withdraw cancels the request, all against the
+ * in-memory store. DemoOverlay's prev/next arrows page between the slides.
  */
 export const slides: DemoSlide[] = [
   {
@@ -66,6 +71,15 @@ export const slides: DemoSlide[] = [
   {
     labelKey: 'featuresPage.demo.slideLabels.approvalHistory',
     render: () => <ApprovalHistorySlide />,
+  },
+  {
+    labelKey: 'featuresPage.demo.slideLabels.completionApproval',
+    render: () => (
+      <DemoRouteWrapper
+        routes={[{ path: '/projects/:projectFriendlyId/jobs/:jobFriendlyId', element: <JobDetailPage /> }]}
+        initialEntry={`/projects/${DEMO_PROJECT_ID}/jobs/${COMPLETION_JOB_FRIENDLY_ID}`}
+      />
+    ),
   },
 ];
 

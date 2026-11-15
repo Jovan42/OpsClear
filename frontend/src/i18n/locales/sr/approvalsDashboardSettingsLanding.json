@@ -255,7 +255,7 @@
   "productPricing": {
     "addonTaglines": {
       "DASHBOARD": "Pregled poslovanja i trendovi završavanja",
-      "APPROVALS": "Tok odobrenja sa zabeleženim odlukama",
+      "APPROVALS": "Odobrenja i odobrenje završetka, sve zabeleženo",
       "NOTES": "Nepromenljiv trag revizije na svakom poslu",
       "JOB_STATUS_HISTORY": "Potpuna hronološka istorija statusa",
       "MILESTONES": "Grupišite poslove u faze (najviše 5 po projektu)",
@@ -304,6 +304,7 @@
       "slideLabels": {
         "pendingApprovals": "Odobrenja na čekanju",
         "approvalHistory": "Istorija odobrenja na poslu",
+        "completionApproval": "Odobrenje završetka na poslu",
         "jobTracking": "Lista poslova",
         "milestones": "Etape",
         "milestoneGrouping": "Poslovi grupisani po etapi",
@@ -343,7 +344,7 @@
       },
       "approvals": {
         "name": "Odobrenja",
-        "description": "Strukturirano odobravanje direktno na poslu. Zaposleni zahtevaju, vi odlučujete, sve se trajno beleži uz vaš komentar. Nema nejasnoća o tome šta je odlučeno ili kada."
+        "description": "Strukturirano odobravanje direktno na poslu. Zaposleni zahtevaju, vi odlučujete, sve se trajno beleži uz vaš komentar. Nema nejasnoća o tome šta je odlučeno ili kada. Po želji, za svaki projekat zahtevajte odobrenje vlasnika ili administratora pre nego što posao člana može da se završi: jedan klik za zahtev, a posao se automatski završava kad se odobri."
       },
       "notes": {
         "name": "Beleške",

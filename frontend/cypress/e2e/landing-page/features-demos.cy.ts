@@ -132,13 +132,19 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
   it('a multi-slide demo (Approvals) pages via the arrow buttons with a live slide counter', () => {
     cy.visit('/features');
     openDemo(APPROVALS_CARD_TITLE, 'Ready to delete the old CMS export');
-    cy.get('@overlay').contains('1/2').should('be.visible');
+    cy.get('@overlay').contains('1/3').should('be.visible');
     cy.get('@overlay').find('button[aria-label="Next example"]').click();
     cy.get('@overlay').contains('Approval history on a job').should('be.visible');
-    cy.get('@overlay').contains('2/2').should('be.visible');
+    cy.get('@overlay').contains('2/3').should('be.visible');
+    cy.get('@overlay').find('button[aria-label="Next example"]').click();
+    cy.get('@overlay').contains('Completion approval on a job').should('be.visible');
+    cy.get('@overlay').contains('3/3').should('be.visible');
+    cy.get('@overlay').find('button[aria-label="Previous example"]').click();
+    cy.get('@overlay').contains('Approval history on a job').should('be.visible');
+    cy.get('@overlay').contains('2/3').should('be.visible');
     cy.get('@overlay').find('button[aria-label="Previous example"]').click();
     cy.get('@overlay').contains('Pending approvals').should('be.visible');
-    cy.get('@overlay').contains('1/2').should('be.visible');
+    cy.get('@overlay').contains('1/3').should('be.visible');
   });
 
   it('a multi-slide demo pages via arrow keys too (not just click) — confirmed on Milestones, not just Approvals', () => {
@@ -253,6 +259,68 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
     cy.get('@overlay').find('[data-testid="stats-member-row"]').should('have.length', 3);
     cy.get('@overlay').find('button[aria-label="Show stats for Jane Smith"]').click();
     cy.get('@overlay').find('[data-testid="stats-member-filter"]').should('contain.text', 'Jane Smith');
+  });
+
+  it('the Approvals card describes completion approval (JOB-331)', () => {
+    cy.visit('/features');
+    cy.contains('h3', APPROVALS_CARD_TITLE).parents('.rounded-2xl')
+      .contains("Optionally require Owner/Admin approval before a Member's job can be completed")
+      .should('be.visible');
+  });
+
+  it("the Approvals demo's pending queue labels the completion request \"Completion\" (JOB-331)", () => {
+    cy.visit('/features');
+    openDemo(APPROVALS_CARD_TITLE, 'Ready to delete the old CMS export');
+    cy.get('@overlay').contains('Renew SSL certificate for staging').should('be.visible');
+    cy.get('@overlay').contains('New certificate is installed and QA confirmed HTTPS works on staging.').should('be.visible');
+    cy.get('@overlay').find('[data-testid="approval-kind-completion"]').should('have.length', 1).and('have.text', 'Completion');
+  });
+
+  it("the Approvals demo's completion slide shows the request banner, and approving completes the job on sample data only (JOB-331)", () => {
+    // Decide and withdraw alike; a regex so Vite serving /src/api/approvals.ts can't match.
+    cy.intercept({ url: /\/api\/projects\/[^/]+\/jobs\/[^/]+\/approvals/ }, cy.spy().as('realApprovalsEndpoint'));
+    cy.visit('/features');
+    openDemo(APPROVALS_CARD_TITLE, 'Ready to delete the old CMS export');
+    cy.get('@overlay').find('button[aria-label="Next example"]').click();
+    cy.get('@overlay').find('button[aria-label="Next example"]').click();
+    cy.get('@overlay').contains('Completion approval on a job').should('be.visible');
+
+    cy.get('@overlay').find('[data-testid="completion-request-banner"]').as('banner');
+    cy.get('@banner').should('contain.text', 'Completion requested by Alex Johnson')
+      .and('contain.text', '"New certificate is installed and QA confirmed HTTPS works on staging."');
+    cy.get('@banner').contains('button', 'Approve').click();
+    cy.get('[role="dialog"][aria-modal="true"]').within(() => cy.contains('button', 'Approve').click());
+
+    cy.get('@overlay').find('[data-testid="completion-request-banner"]').should('not.exist');
+    cy.get('@overlay').contains('button', 'Reopen').should('be.visible');
+    // The decided request stays in the job's approvals, labelled as a completion approval.
+    cy.get('@overlay').find('[data-testid="approval-kind-completion"]').as('completionLabel');
+    cy.get('@completionLabel').scrollIntoView();
+    cy.get('@completionLabel').should('be.visible');
+    cy.get('@overlay').contains('Approved by John Doe').as('approvedBy');
+    cy.get('@approvedBy').scrollIntoView();
+    cy.get('@approvedBy').should('be.visible');
+
+    cy.get('@realApprovalsEndpoint').should('not.have.been.called');
+  });
+
+  it("rejecting in the Approvals demo's completion slide keeps the job In Progress, and reopening resets the request (JOB-331)", () => {
+    cy.visit('/features');
+    openDemo(APPROVALS_CARD_TITLE, 'Ready to delete the old CMS export');
+    cy.get('body').type('{rightarrow}{rightarrow}');
+    cy.get('@overlay').contains('3/3').should('be.visible');
+    cy.get('@overlay').find('[data-testid="completion-request-banner"]').contains('button', 'Reject').click();
+    cy.get('[role="dialog"][aria-modal="true"]').within(() => cy.contains('button', 'Reject').click());
+    cy.get('@overlay').find('[data-testid="completion-request-banner"]').should('not.exist');
+    cy.get('@overlay').contains('button', 'Complete').should('be.visible');
+    cy.get('@overlay').contains('Rejected by John Doe').as('rejectedBy');
+    cy.get('@rejectedBy').scrollIntoView();
+    cy.get('@rejectedBy').should('be.visible');
+    closeDemo();
+
+    openDemo(APPROVALS_CARD_TITLE, 'Ready to delete the old CMS export');
+    cy.get('body').type('{rightarrow}{rightarrow}');
+    cy.get('@overlay').find('[data-testid="completion-request-banner"]').should('be.visible');
   });
 
   it('the Notifications card is an Included (core) feature, not an add-on (JOB-330)', () => {

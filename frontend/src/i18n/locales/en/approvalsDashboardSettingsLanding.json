@@ -255,7 +255,7 @@
   "productPricing": {
     "addonTaglines": {
       "DASHBOARD": "Ops overview and completion trends",
-      "APPROVALS": "Sign-off workflows with logged decisions",
+      "APPROVALS": "Sign-offs and completion approval, all logged",
       "NOTES": "Immutable audit trail on any job",
       "JOB_STATUS_HISTORY": "Full chronological status log",
       "MILESTONES": "Group jobs into phases (max 5 per project)",
@@ -304,6 +304,7 @@
       "slideLabels": {
         "pendingApprovals": "Pending approvals",
         "approvalHistory": "Approval history on a job",
+        "completionApproval": "Completion approval on a job",
         "jobTracking": "Job list",
         "milestones": "Milestones",
         "milestoneGrouping": "Jobs grouped by milestone",
@@ -343,7 +344,7 @@
       },
       "approvals": {
         "name": "Approvals",
-        "description": "Structured sign-off directly on the job. Employees request, you decide, everything is logged permanently with your comment. No ambiguity about what was decided or when."
+        "description": "Structured sign-off directly on the job. Employees request, you decide, everything is logged permanently with your comment. No ambiguity about what was decided or when. Optionally require Owner/Admin approval before a Member's job can be completed, per project: one click to request, and the job completes automatically on approval."
       },
       "notes": {
         "name": "Notes",
