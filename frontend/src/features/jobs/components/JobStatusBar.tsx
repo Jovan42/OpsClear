@@ -16,6 +16,12 @@ interface Props {
   isPending: boolean;
   projectCompleted?: boolean;
   canRequestApproval: boolean;
+  /**
+   * ADR-0052: this user's Complete needs approval (gated project, APPROVALS add-on, Member).
+   * Complete then reads "Request completion", or "Approval requested" while one is pending.
+   */
+  requiresCompletionApproval?: boolean;
+  onRequestCompletion?: () => void;
 }
 
 export default function JobStatusBar({
@@ -28,6 +34,8 @@ export default function JobStatusBar({
   isPending,
   projectCompleted,
   canRequestApproval,
+  requiresCompletionApproval = false,
+  onRequestCompletion,
 }: Props) {
   const { t } = useTranslation('jobsComponents');
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
@@ -51,9 +59,21 @@ export default function JobStatusBar({
 
         {job.status === 'IN_PROGRESS' && canAct && (
           <>
-            <Button onClick={() => setConfirmComplete(true)} loading={isPending} size="sm">
-              {t('jobsComponents:jobStatusBar.complete')}
-            </Button>
+            {!requiresCompletionApproval && (
+              <Button onClick={() => setConfirmComplete(true)} loading={isPending} size="sm">
+                {t('jobsComponents:jobStatusBar.complete')}
+              </Button>
+            )}
+            {requiresCompletionApproval && !job.pendingCompletionApproval && (
+              <Button onClick={onRequestCompletion} size="sm">
+                {t('jobsComponents:jobStatusBar.requestCompletion')}
+              </Button>
+            )}
+            {requiresCompletionApproval && job.pendingCompletionApproval && (
+              <Button size="sm" disabled>
+                {t('jobsComponents:jobStatusBar.approvalRequested')}
+              </Button>
+            )}
             <Button variant="secondary" onClick={onBlock} size="sm">
               {t('jobsComponents:jobStatusBar.block')}
             </Button>

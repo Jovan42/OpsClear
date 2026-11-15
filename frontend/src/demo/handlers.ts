@@ -141,6 +141,10 @@ function toApprovalResponse(a: DemoApproval): ApprovalResponse {
     comment: a.comment,
     requestedAt: a.requestedAt,
     decidedAt: a.decidedAt,
+    // The demo only has manual approvals (ADR-0052 completion approvals aren't simulated).
+    kind: 'MANUAL',
+    completionApplied: null,
+    completionNotAppliedReason: null,
   };
 }
 
@@ -549,6 +553,7 @@ export const demoHandlers = [
       relationships: [],
       links: [],
       sourceScheduleId: schedule.id,
+      pendingCompletionApproval: null,
     };
     demoStore.jobs.push(job);
 
@@ -746,6 +751,7 @@ export const demoHandlers = [
       relationships: [],
       links: [],
       sourceScheduleId: null,
+      pendingCompletionApproval: null,
     };
     demoStore.jobs.push(job);
 
@@ -1010,7 +1016,7 @@ export const demoHandlers = [
     const jobId = resolveJobId(params.jobId as string);
     const { approvalId } = params as { approvalId: string };
     if (!jobId) return new HttpResponse(null, { status: 404 });
-    const body = (await request.json()) as { status: ApprovalStatus; comment?: string };
+    const body = (await request.json()) as { status: Extract<ApprovalStatus, 'APPROVED' | 'REJECTED'>; comment?: string };
 
     const approval = demoStore.approvals.find((a) => a.id === approvalId);
     if (!approval || approval.status !== 'PENDING') {
@@ -1137,6 +1143,7 @@ export const demoHandlers = [
       relationships: [],
       links: [],
       sourceScheduleId: null,
+      pendingCompletionApproval: null,
     };
     demoStore.trackingJobs.push(job);
 

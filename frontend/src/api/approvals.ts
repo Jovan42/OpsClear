@@ -25,6 +25,14 @@ export const approvalsApi = {
       )
       .then((r) => r.data),
 
+  /** ADR-0052: withdraw a pending completion approval (requester or Owner/Admin). */
+  cancel: (projectId: string, jobId: string, approvalId: string) =>
+    apiClient
+      .post<ApprovalResponse>(
+        `/api/projects/${projectId}/jobs/${jobId}/approvals/${approvalId}/cancel`,
+      )
+      .then((r) => r.data),
+
   listPending: (projectId: string) =>
     apiClient
       .get<PendingApprovalResponse[]>(`/api/projects/${projectId}/approvals/pending`)

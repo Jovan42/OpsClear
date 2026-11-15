@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import { useDecideApproval } from '../useApprovals';
+import { STATUS_KEYS } from '../../notifications/notificationContent';
+import type { JobStatus } from '../../../types';
 
 interface Props {
   open: boolean;
@@ -23,7 +26,7 @@ export default function ApprovalDecisionModal({
   approvalId,
   decision,
 }: Props) {
-  const { t } = useTranslation(['jobsComponents', 'common']);
+  const { t } = useTranslation(['jobsComponents', 'common', 'shared2']);
   const [comment, setComment] = useState('');
   const { mutate: decide, isPending, error, reset } = useDecideApproval(projectId, jobId);
 
@@ -38,7 +41,23 @@ export default function ApprovalDecisionModal({
   function handleSubmit() {
     decide(
       { approvalId, status: decision, comment: comment.trim() || undefined },
-      { onSuccess: () => { handleClose(); onSuccess?.(); } },
+      {
+        onSuccess: (approval) => {
+          // ADR-0052: an approved completion approval is "not applied" when the job left
+          // In Progress meanwhile (e.g. it was blocked). The approver is told right away.
+          if (approval.completionApplied === false) {
+            const reason = approval.completionNotAppliedReason;
+            const statusKey = reason && reason in STATUS_KEYS ? STATUS_KEYS[reason as JobStatus] : null;
+            toast.warning(
+              t('jobsComponents:approvalDecisionModal.completionNotApplied', {
+                status: statusKey ? t(statusKey) : (reason ?? '—'),
+              }),
+            );
+          }
+          handleClose();
+          onSuccess?.();
+        },
+      },
     );
   }
 

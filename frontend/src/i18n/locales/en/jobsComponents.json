@@ -29,7 +29,8 @@
     "approveCommentPlaceholder": "e.g. Approved, order within budget",
     "rejectCommentPlaceholder": "e.g. Use alternative supplier",
     "approve": "Approve",
-    "reject": "Reject"
+    "reject": "Reject",
+    "completionNotApplied": "Approved, but the job wasn't completed because it is {{status}}."
   },
   "approvalList": {
     "noRequests": "No approval requests.",
@@ -39,8 +40,10 @@
     "status": {
       "pending": "Pending",
       "approved": "Approved",
-      "rejected": "Rejected"
-    }
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "cancelledBy": "Cancelled by {{name}}"
   },
   "blockedBanner": {
     "blockedSince": "Blocked since {{date}}"
@@ -65,7 +68,9 @@
     "unblockModal": {
       "title": "Unblock Job",
       "message": "Unblock this job and resume work?"
-    }
+    },
+    "requestCompletion": "Request completion",
+    "approvalRequested": "Approval requested"
   },
   "linksSection": {
     "noLinks": "No links yet.",
@@ -109,5 +114,21 @@
     "durationIn": "{{duration}} in {{status}}",
     "unknown": "Unknown",
     "reason": "Reason: {{reason}}"
+  },
+  "completionRequestBanner": {
+    "requestedBy": "Completion requested by {{name}} · {{time}}",
+    "withdraw": "Withdraw",
+    "withdrawModal": {
+      "title": "Withdraw completion request",
+      "message": "Withdraw this completion request? The job stays In Progress and completion can be requested again."
+    }
+  },
+  "requestCompletionModal": {
+    "title": "Request completion",
+    "explanation": "This project needs an Owner or Admin to approve completing jobs. The job stays In Progress until the request is approved, then it is completed automatically.",
+    "messageLabel": "Message",
+    "messagePlaceholder": "e.g. All checks done, ready for sign-off",
+    "submit": "Request completion",
+    "requestedToast": "Completion requested"
   }
 }

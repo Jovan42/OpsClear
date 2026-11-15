@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { jobsApi } from '../../api/jobs';
 import { jobLinksApi } from '../../api/links';
 import { useCurrentOrg } from '../org/OrgContext';
-import type { JobPriority, JobRelationshipType, JobStatus } from '../../types';
+import type { JobPriority, JobRelationshipType, JobResponse, JobStatus } from '../../types';
 
 export function useJobList(projectId: string, q?: string, priority?: JobPriority, milestoneId?: string, typeId?: string) {
   return useQuery({
@@ -65,6 +65,13 @@ export function useUpdateJob(projectId: string) {
   });
 }
 
+/**
+ * `jobId` should be the same id the job's detail query is keyed by (the route's friendly id on
+ * the job page), so the returned job can be written straight into that cache entry.
+ *
+ * ADR-0052: on a gated project a Member's COMPLETED answers 202 with the job still IN_PROGRESS
+ * and its `pendingCompletionApproval` set; use {@link isCompletionRequested} to tell it apart.
+ */
 export function useUpdateJobStatus(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -72,20 +79,31 @@ export function useUpdateJobStatus(projectId: string) {
       jobId,
       status,
       reason,
+      message,
     }: {
       jobId: string;
       status: JobStatus;
       reason?: string;
-    }) => jobsApi.updateStatus(projectId, jobId, { status, reason }),
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, variables.jobId] });
+      message?: string;
+    }) => jobsApi.updateStatus(projectId, jobId, { status, reason, message }),
+    onSuccess: (job, variables) => {
+      queryClient.setQueryData(['jobs', projectId, variables.jobId], job);
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       if (variables.status === 'BLOCKED') {
         void queryClient.invalidateQueries({ queryKey: ['block-reasons', projectId] });
       }
+      // A completion request creates an approval; a direct completion auto-cancels a pending one.
+      if (variables.status === 'COMPLETED') {
+        void queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      }
     },
   });
+}
+
+/** ADR-0052: true when a COMPLETED request created a completion approval instead (the 202 case). */
+export function isCompletionRequested(job: JobResponse): boolean {
+  return job.status !== 'COMPLETED' && job.pendingCompletionApproval !== null;
 }
 
 export function useDeleteJob(projectId: string) {

@@ -12,6 +12,8 @@ import StatusBadge from '../../components/StatusBadge';
 import JobTypeBadge from '../../components/JobTypeBadge';
 import NewJobModal from './NewJobModal';
 import BlockedBanner from './components/BlockedBanner';
+import CompletionRequestBanner from './components/CompletionRequestBanner';
+import RequestCompletionModal from './components/RequestCompletionModal';
 import JobStatusBar from './components/JobStatusBar';
 import BlockModal from './components/BlockModal';
 import NoteThread from './components/NoteThread';
@@ -33,6 +35,7 @@ import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import Markdown from '../../components/Markdown';
 import LockedSectionRow from '../../components/LockedSectionRow';
 import { useCurrentOrg } from '../org/OrgContext';
+import { canActOnCompletionRequest, requiresCompletionApproval } from './completionApproval';
 import type { JobStatus } from '../../types';
 
 function formatDate(dateStr: string | null) {
@@ -70,6 +73,7 @@ export default function JobDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const [approvalOpen, setApprovalOpen] = useState(false);
+  const [requestCompletionOpen, setRequestCompletionOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [approvalsExpanded, setApprovalsExpanded] = useState(false);
@@ -77,12 +81,20 @@ export default function JobDetailPage() {
   const [kebabOpen, setKebabOpen] = useState(false);
   const [addRelOpen, setAddRelOpen] = useState(false);
 
-  const { hasAddon } = useCurrentOrg();
+  const { hasAddon, isAddonUsableForWrites } = useCurrentOrg();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
   const { data: sourceSchedule } = useSchedule(projectId, job?.sourceScheduleId ?? null);
   const isProjectCompleted = project?.status === 'COMPLETED';
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
+  // ADR-0052: on a gated project a Member's Complete becomes a completion request. Uses the
+  // write-usable check (false while PAST_DUE) to match the backend gate.
+  const approvalsWritable = isAddonUsableForWrites('APPROVALS');
+  const requiresCompletion = requiresCompletionApproval(
+    !!project?.requireCompletionApproval,
+    approvalsWritable,
+    role,
+  );
 
   // Sections open by default once they already have content, stay collapsed when
   // empty — can't be a useState initializer since notes/approvals/history each load
@@ -126,12 +138,12 @@ export default function JobDetailPage() {
 
   function handleStatusChange(status: JobStatus) {
     if (!job) return;
-    updateStatus({ jobId: job.id, status });
+    updateStatus({ jobId, status });
   }
 
   function handleBlock(reason: string) {
     if (!job) return;
-    updateStatus({ jobId: job.id, status: 'BLOCKED', reason }, { onSuccess: () => setBlockOpen(false) });
+    updateStatus({ jobId, status: 'BLOCKED', reason }, { onSuccess: () => setBlockOpen(false) });
   }
 
   function handleDelete() {
@@ -255,6 +267,16 @@ export default function JobDetailPage() {
       {/* Blocked banner */}
       <BlockedBanner job={job} />
 
+      {/* Pending completion approval (ADR-0052) */}
+      <CompletionRequestBanner
+        job={job}
+        projectId={projectId}
+        jobId={jobId}
+        role={role}
+        userId={userId}
+        canAct={canActOnCompletionRequest(approvalsWritable, isProjectCompleted)}
+      />
+
       {/* Info section */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-6 py-4 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
@@ -303,6 +325,8 @@ export default function JobDetailPage() {
           isPending={isStatusPending}
           projectCompleted={isProjectCompleted}
           canRequestApproval={hasAddon('APPROVALS')}
+          requiresCompletionApproval={requiresCompletion}
+          onRequestCompletion={() => setRequestCompletionOpen(true)}
         />
       </div>
 
@@ -415,6 +439,13 @@ export default function JobDetailPage() {
       <RequestApprovalModal
         open={approvalOpen}
         onClose={() => setApprovalOpen(false)}
+        projectId={projectId}
+        jobId={jobId}
+      />
+
+      <RequestCompletionModal
+        open={requestCompletionOpen}
+        onClose={() => setRequestCompletionOpen(false)}
         projectId={projectId}
         jobId={jobId}
       />

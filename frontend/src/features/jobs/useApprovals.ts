@@ -37,8 +37,23 @@ export function useDecideApproval(projectId: string, jobId: string) {
       comment?: string;
     }) => approvalsApi.decide(projectId, jobId, approvalId, { status, comment }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId, jobId, 'approvals'] });
-      void queryClient.invalidateQueries({ queryKey: ['approvals', projectId, 'pending'] });
+      // ['jobs', projectId] covers the job itself (approving a completion approval can complete
+      // it, ADR-0052), its approvals and the job lists. ['approvals'] covers both pending queues.
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
+    },
+  });
+}
+
+/** ADR-0052: withdraw a pending completion approval (requester or Owner/Admin). */
+export function useCancelApproval(projectId: string, jobId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (approvalId: string) => approvalsApi.cancel(projectId, jobId, approvalId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['approvals'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
   });

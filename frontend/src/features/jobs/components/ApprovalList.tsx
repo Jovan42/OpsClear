@@ -23,15 +23,17 @@ function memberName(members: ProjectMemberResponse[], userId: string, t: TFuncti
 }
 
 function StatusBadge({ status, t }: { status: ApprovalResponse['status']; t: TFunction }) {
-  const config = {
+  const config: Record<ApprovalResponse['status'], string> = {
     PENDING: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     APPROVED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    CANCELLED: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
   };
-  const labels = {
+  const labels: Record<ApprovalResponse['status'], string> = {
     PENDING: t('jobsComponents:approvalList.status.pending'),
     APPROVED: t('jobsComponents:approvalList.status.approved'),
     REJECTED: t('jobsComponents:approvalList.status.rejected'),
+    CANCELLED: t('jobsComponents:approvalList.status.cancelled'),
   };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config[status]}`}>
@@ -39,6 +41,14 @@ function StatusBadge({ status, t }: { status: ApprovalResponse['status']; t: TFu
     </span>
   );
 }
+
+// ADR-0052: a CANCELLED completion approval records who cancelled it as the approver: the
+// requester or an Owner/Admin withdrawing it, or the Owner/Admin who completed or deleted the job.
+const DECIDED_BY_KEYS = {
+  APPROVED: 'jobsComponents:approvalList.approvedBy',
+  REJECTED: 'jobsComponents:approvalList.rejectedBy',
+  CANCELLED: 'jobsComponents:approvalList.cancelledBy',
+} as const;
 
 interface Props {
   projectId: string;
@@ -78,9 +88,7 @@ export default function ApprovalList({ projectId, jobId, role, members }: Props)
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {approval.approverId && (
                   <span>
-                    {approval.status === 'APPROVED'
-                      ? t('jobsComponents:approvalList.approvedBy', { name: memberName(members, approval.approverId, t) })
-                      : t('jobsComponents:approvalList.rejectedBy', { name: memberName(members, approval.approverId, t) })}
+                    {t(DECIDED_BY_KEYS[approval.status], { name: memberName(members, approval.approverId, t) })}
                     {approval.decidedAt && ` · ${formatDateTime(approval.decidedAt)}`}
                   </span>
                 )}
