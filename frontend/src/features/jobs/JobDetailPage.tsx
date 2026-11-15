@@ -36,6 +36,7 @@ import Markdown from '../../components/Markdown';
 import LockedSectionRow from '../../components/LockedSectionRow';
 import { useCurrentOrg } from '../org/OrgContext';
 import { canActOnCompletionRequest, requiresCompletionApproval } from './completionApproval';
+import { useSectionVisibility } from './useSectionVisibility';
 import type { JobStatus } from '../../types';
 
 function formatDate(dateStr: string | null) {
@@ -58,7 +59,7 @@ export default function JobDetailPage() {
   const queryClient = useQueryClient();
 
   const { data: job, isLoading, isError, isFetching, dataUpdatedAt, refetch } = useJob(projectId, jobId);
-  const { data: project } = useProject(projectId);
+  const { data: project, isLoading: projectLoading } = useProject(projectId);
   const { data: members = [] } = useProjectMembers(projectId);
   const { data: approvals = [], isLoading: approvalsLoading } = useApprovals(projectId, jobId);
   const { data: notes = [], isLoading: notesLoading } = useNotes(projectId, jobId);
@@ -81,7 +82,10 @@ export default function JobDetailPage() {
   const [kebabOpen, setKebabOpen] = useState(false);
   const [addRelOpen, setAddRelOpen] = useState(false);
 
-  const { hasAddon, isAddonUsableForWrites } = useCurrentOrg();
+  const { isAddonUsableForWrites } = useCurrentOrg();
+  // ADR-0053: a section shows only if the org has its add-on and the project doesn't hide it.
+  // The completion gate (ADR-0052) stays independent of this.
+  const { isVisible, isLocked } = useSectionVisibility(project);
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
   const { data: sourceSchedule } = useSchedule(projectId, job?.sourceScheduleId ?? null);
@@ -129,11 +133,11 @@ export default function JobDetailPage() {
   }, [isLoading]);
 
   const lockedSections = [
-    !hasAddon('NOTES') && t('jobDetailPage.notesSection'),
-    !hasAddon('APPROVALS') && t('jobDetailPage.approvalsSection'),
-    !hasAddon('JOB_STATUS_HISTORY') && t('jobDetailPage.jobHistorySection'),
-    !hasAddon('JOB_RELATIONSHIPS') && t('jobDetailPage.relationshipsSection'),
-    !hasAddon('JOB_LINKS') && t('jobDetailPage.linksSection'),
+    isLocked('NOTES') && t('jobDetailPage.notesSection'),
+    isLocked('APPROVALS') && t('jobDetailPage.approvalsSection'),
+    isLocked('STATUS_HISTORY') && t('jobDetailPage.jobHistorySection'),
+    isLocked('RELATIONSHIPS') && t('jobDetailPage.relationshipsSection'),
+    isLocked('LINKS') && t('jobDetailPage.linksSection'),
   ].filter((s): s is string => Boolean(s));
 
   function handleStatusChange(status: JobStatus) {
@@ -157,7 +161,9 @@ export default function JobDetailPage() {
   // mounts for the first time only once its data is ready — its defaultExpanded
   // prop is only read on mount, so mounting it early with a not-yet-loaded history
   // would permanently lock it collapsed even once entries arrive a moment later.
-  if (isLoading || historyLoading) {
+  // projectLoading too: section visibility (ADR-0053) needs the project, and the
+  // history query only starts once it's known.
+  if (isLoading || historyLoading || projectLoading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="flex items-center gap-3">
@@ -324,14 +330,14 @@ export default function JobDetailPage() {
           onRequestApproval={() => setApprovalOpen(true)}
           isPending={isStatusPending}
           projectCompleted={isProjectCompleted}
-          canRequestApproval={hasAddon('APPROVALS')}
+          canRequestApproval={isVisible('APPROVALS')}
           requiresCompletionApproval={requiresCompletion}
           onRequestCompletion={() => setRequestCompletionOpen(true)}
         />
       </div>
 
       {/* Relationships */}
-      {hasAddon('JOB_RELATIONSHIPS') && (
+      {isVisible('RELATIONSHIPS') && (
         <RelationshipsSection
           projectId={projectId}
           jobId={jobId}
@@ -344,7 +350,7 @@ export default function JobDetailPage() {
       )}
 
       {/* Notes accordion */}
-      {hasAddon('NOTES') && (
+      {isVisible('NOTES') && (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
           <button
             onClick={() => setNotesExpanded((v) => !v)}
@@ -362,7 +368,7 @@ export default function JobDetailPage() {
       )}
 
       {/* Approvals accordion */}
-      {hasAddon('APPROVALS') && (
+      {isVisible('APPROVALS') && (
         <div id="approvals" className="scroll-mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
           <button
             onClick={() => setApprovalsExpanded((v) => !v)}
@@ -387,7 +393,7 @@ export default function JobDetailPage() {
       )}
 
       {/* Links accordion */}
-      {hasAddon('JOB_LINKS') && (
+      {isVisible('LINKS') && (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
           <button
             onClick={() => setLinksExpanded((v) => !v)}
@@ -412,7 +418,7 @@ export default function JobDetailPage() {
       )}
 
       {/* Status history — kept last: the least frequently acted-on section */}
-      {hasAddon('JOB_STATUS_HISTORY') && (
+      {isVisible('STATUS_HISTORY') && (
         <StatusHistory projectId={projectId} jobId={jobId} defaultExpanded={history.length > 0} />
       )}
 

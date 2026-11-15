@@ -1,7 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobsApi } from '../../api/jobs';
 import { jobLinksApi } from '../../api/links';
-import { useCurrentOrg } from '../org/OrgContext';
+import { useProject } from '../projects/useProjects';
+import { useSectionVisibility } from './useSectionVisibility';
 import type { JobPriority, JobRelationshipType, JobResponse, JobStatus } from '../../types';
 
 export function useJobList(projectId: string, q?: string, priority?: JobPriority, milestoneId?: string, typeId?: string) {
@@ -174,10 +175,11 @@ export function useDeleteJobLink(projectId: string, jobId: string) {
 }
 
 export function useJobHistory(projectId: string, jobId: string) {
-  const { hasAddon } = useCurrentOrg();
+  const { data: project } = useProject(projectId);
+  const { isVisible } = useSectionVisibility(project);
   return useQuery({
     queryKey: ['jobs', projectId, jobId, 'history'],
     queryFn: () => jobsApi.history(projectId, jobId),
-    enabled: !!projectId && !!jobId && hasAddon('JOB_STATUS_HISTORY'),
+    enabled: !!projectId && !!jobId && isVisible('STATUS_HISTORY'),
   });
 }
