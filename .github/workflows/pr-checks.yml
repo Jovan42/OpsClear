@@ -1,0 +1,37 @@
+# Checks PR title, branch, body and layer separation (ADR-0056).
+# The job name "Process check" is the required status name: keep it stable.
+name: PR checks
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  process-check:
+    name: Process check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # main's scripts/, not the PR's: a PR can't loosen the rules it's checked against.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          sparse-checkout: scripts
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      # PR text is read from the event file by the script, never interpolated into the shell.
+      - name: Check PR against the dev process
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/opsclear pr check --event "$GITHUB_EVENT_PATH" --summary "$GITHUB_STEP_SUMMARY"
