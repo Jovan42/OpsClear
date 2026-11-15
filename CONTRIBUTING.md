@@ -5,6 +5,7 @@
 Day-to-day workflow, job conventions, and layer-specific technical conventions live in
 `docs/dev/process/`, not here:
 
+- [AGENTS.md](docs/dev/process/AGENTS.md) — Claude Code skills, agents, permissions and machine setup
 - [WORKFLOW.md](docs/dev/process/WORKFLOW.md) — feature/maintenance tracks, phase planning, ADR-first
 - [JOBS.md](docs/dev/process/JOBS.md) — job naming, splitting, and dependency conventions
 - [BACKEND.md](docs/dev/process/BACKEND.md) — backend technical conventions
@@ -126,8 +127,8 @@ Closes JOB-123
   Other mentions in the body (e.g. "see JOB-123") are not references. The keywords are read from
   the body lines at merge time, so adding one after opening the PR works. Text inside
   `<!-- -->` comments is ignored (ADR-0055)
-- **No tool/AI attribution** in commits or PR descriptions: no `Co-Authored-By` trailer for Claude or any AI tool, and no "Generated with Claude Code" line.
-  `.claude/settings.json` turns Claude Code's own footers off; don't add them by hand
+- **No tool/AI attribution** in commits or PR descriptions: no `Co-Authored-By` trailer for Claude or any AI tool, and no
+  "Generated with Claude Code" line. `.claude/settings.json` turns Claude Code's own footers off; don't add them by hand
 - **PR title = commit subject** for single-commit PRs
 - **Process check:** CI runs `scripts/opsclear pr check` on every PR (title, branch, body, layers).
   Run it locally first: `scripts/opsclear pr check --title '<title>' --body-file pr.md`. Details:

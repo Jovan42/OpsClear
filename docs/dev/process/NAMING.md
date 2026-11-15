@@ -82,7 +82,9 @@ chore(deps): upgrade Spring Boot to 3.4.1 (JOB-310)
 - No unfilled `JOB-___` placeholder.
 - Text inside `<!-- -->` is ignored.
 - **No AI attribution:** no `Co-Authored-By` line for an AI tool (Claude, Anthropic, Copilot,
-  OpenAI, ChatGPT, Gemini, Cursor) and no "Generated with Claude Code" line, in commits or PRs.
+  OpenAI, ChatGPT, Gemini, Cursor) and no "Generated with Claude Code" line, in commits or PRs. Don't quote these phrases in a PR
+  body either: the check matches the "generated with ... claude code" phrase anywhere in the body,
+  quoted or not.
 
 Template and the other sections: [CONTRIBUTING.md](../../../CONTRIBUTING.md#pull-requests).
 

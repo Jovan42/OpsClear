@@ -94,6 +94,6 @@ All shared types live in `src/types/index.ts`. Add new API response interfaces a
 ## Definition of done
 
 - `npm run lint` clean
-- `tsc -b` passes
+- `npm run type-check` passes
 - `npm test` passes (Vitest unit tests: `src/**/*.test.ts`, next to the code they test)
 - Manual testing checklist in the job description verified before opening the PR

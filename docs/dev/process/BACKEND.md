@@ -66,8 +66,8 @@ Spring Boot 3.x · Java 21 · jOOQ · Flyway · PostgreSQL 16
 
 ## Flyway migrations
 
-- File naming: `V{n}__{description}.sql` — increment `n` by 1 from the last migration
-- Description uses underscores: `V020__org_level_templates.sql`
+- File naming: `V{nnn}__{description}.sql` (three digits) — increment `nnn` by 1 from the last migration
+- Description uses underscores: `V043__project_hidden_job_sections.sql`
 - Never modify an existing migration — always add a new one
 - After adding a migration, regenerate jOOQ: `./gradlew generateJooq`
 
