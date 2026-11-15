@@ -31,7 +31,10 @@ the checks to run.
 7. **Open the PR** with `gh pr create`: title = commit subject. The body uses CONTRIBUTING.md's
    template:
    a `Closes JOB-x` line (or `Part of JOB-x` for a partial PR), Summary, References (job and ADR),
-   and a Test plan listing what you actually ran.
+   and a Test plan listing what you actually ran. Write the body to a file first and run
+   `scripts/opsclear pr check --title '<title>' --body-file <file>`; fix what it reports (a PR
+   that can't be split needs the `cross-layer` label, add `--labels cross-layer`). Then pass the
+   same file to the PR command with `--body-file`.
 8. **Update OpsClear:**
    - `scripts/opsclear link add <JOB> <PR url> --label "PR #N"`
    - `scripts/opsclear job status <JOB> IN_PROGRESS` (skip if already In Progress)

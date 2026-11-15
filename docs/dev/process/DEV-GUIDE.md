@@ -51,12 +51,20 @@ Prefer to code a change by hand, or with Claude in the main chat? Make the chang
 In Progress.
 Close it with `/finish JOB-x` after merging.
 
+## The process check
+
+CI runs `scripts/opsclear pr check` on every PR: title, branch name, body (`Closes JOB-x`, no
+placeholder) and one layer per PR. The skills and agents run it before opening the PR; to run it
+yourself: `scripts/opsclear pr check --title '<title>' --body-file pr.md`. A PR that really can't
+be split (migration plus its backend test) gets the `cross-layer` label. Rules:
+[WORKFLOW.md](WORKFLOW.md#process-checks), [NAMING.md](NAMING.md).
+
 ## When something goes wrong
 
 - **An agent stopped.** The report says why (job unclear, blocker not done, app bug found). Fix
   the cause, usually by updating the job or ADR, then run `/implement` again. Don't ask it to guess.
 - **A job was skipped.** Its blocker isn't Completed, or the title has no layer prefix.
-- **Checks fail on the PR.** Ask Claude in the main chat to fix it on that branch, then push.
+- **Checks fail on the PR.** The `Process check` summary says what to fix. Ask Claude in the main chat to fix it on that branch, then push.
 - **Claude asks for permission.** Anything that writes to OpsClear or GitHub beyond the usual
   flow needs your OK ([AGENTS.md § Permissions](AGENTS.md#permissions)). That's on purpose.
 

@@ -81,6 +81,30 @@ Body bullets and other details: [CONTRIBUTING.md](../../../CONTRIBUTING.md#commi
 
 One PR per job, always (never push directly to `main`). The PR title is the commit subject (see [NAMING.md](NAMING.md)). The PR description references the OpsClear job it implements and the ADR it is based on. The body has a `Closes JOB-x` line (merging finishes the job; the default) or `Part of JOB-x` (more PRs follow on the job). Several jobs: `Closes JOB-1, JOB-2` (comma-separated) or one line per job. The keywords are read from body lines at merge time; text inside `<!-- -->` is ignored. See [ADR-0055](../decisions/0055-github-job-sync.md). Template and rules: [CONTRIBUTING.md](../../../CONTRIBUTING.md#pull-requests).
 
+### Process checks
+
+The `Process check` workflow (`.github/workflows/pr-checks.yml`) runs `scripts/opsclear pr check`
+on every PR to `main`, per [ADR-0056](../decisions/0056-ci-process-checks.md). It fails on any
+violation of:
+
+- **Title:** `<type>(<scope>): <summary> (JOB-x)` with a type and scope from the fixed lists.
+- **Branch:** `<prefix>/<job-id>-<slug>`, the job being one of the title's jobs.
+- **Body:** a `Closes JOB-x` or `Part of JOB-x` line naming a title job, no `JOB-___` placeholder,
+  no AI attribution.
+- **Layers:** at most one of db / backend / frontend per PR.
+
+Rules and layer paths: [NAMING.md](NAMING.md). Check locally first (no API key needed):
+`scripts/opsclear pr check --title '<title>' --body-file pr.md [--labels cross-layer]`.
+
+- **`cross-layer` label:** the only escape hatch, and only for the layer check. Use it when a PR
+  can't be split (a migration plus its backend integration test).
+- **Required check, admin bypass:** `Process check` is a required status on `main`; admins can
+  bypass it (`enforce_admins` off) for emergencies. Only the maintainer changes this setting.
+- **Rule changes lag one PR:** the workflow runs `main`'s `scripts/`, so a change to the rules
+  applies to PRs only after it merges. The PR that changes a rule is still checked by the old one.
+- **Revert PRs:** GitHub's "Revert" button creates a branch name that can't be changed and fails
+  the branch check. The maintainer bypasses the check for it.
+
 ### GitHub job sync
 
 A workflow (`.github/workflows/job-sync.yml`) keeps the OpsClear jobs in step with the PR, per [ADR-0055](../decisions/0055-github-job-sync.md). A PR references the jobs in its branch name, title and `Closes` / `Part of` lines. For each one:
