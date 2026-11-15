@@ -129,6 +129,10 @@ public class NotificationStreamRegistry {
         return SseEmitter.event().comment(HEARTBEAT_COMMENT);
     }
 
+    /**
+     * Writes one event to one stream and never throws, so a dead stream can't stop {@link #sendToUser} or
+     * {@link #sendHeartbeat} from reaching the streams after it.
+     */
     private void send(UUID userId, SseEmitter emitter, SseEmitter.SseEventBuilder event) {
         try {
             emitter.send(event);
@@ -136,7 +140,13 @@ public class NotificationStreamRegistry {
             // IOException: the client went away. IllegalStateException: the emitter has already completed.
             log.debug("Dropping notification stream of user {}: {}", userId, e.getMessage());
             unregister(userId, emitter);
-            emitter.completeWithError(e);
+            try {
+                emitter.completeWithError(e);
+            } catch (Exception completeFailure) {
+                // The container has already errored the async request, so it can't be completed from this thread.
+                log.debug("Could not complete dropped notification stream of user {}: {}",
+                        userId, completeFailure.getMessage());
+            }
         }
     }
 }

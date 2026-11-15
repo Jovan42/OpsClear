@@ -33,9 +33,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockAsyncContext;
@@ -44,7 +47,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -80,6 +85,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@ExtendWith(OutputCaptureExtension.class)
 @DisplayName("Notification SSE stream")
 // Safety net: a stream left open must fail its test quickly instead of blocking the build until it times out.
 @Timeout(60)
@@ -384,6 +390,61 @@ class NotificationStreamIntegrationTest {
     }
 
     @Test
+    @DisplayName("A dead stream that can't be completed is dropped without stopping events or heartbeats (JOB-329)")
+    void deadStreamFailingToComplete_shouldNotStopDelivery() throws Exception {
+        // Each user's dead stream comes first, so an exception escaping it would skip the streams after it.
+        DeadStream deadAssignee = registerDeadStream(assigneeId);
+        MvcResult alive = openStream(assigneeId);
+        DeadStream deadAdmin = registerDeadStream(adminId);
+        MvcResult adminAlive = openStream(adminId);
+
+        addNote(ownerId, "Found the cause");
+
+        assertThat(events(alive, NOTIFICATION)).hasSize(1);
+        assertThat(deadAssignee.completionAttempted).isTrue();
+        assertThat(streamRegistry.streamCount(assigneeId)).isEqualTo(1);
+
+        int assigneeBefore = heartbeats(alive);
+        int adminBefore = heartbeats(adminAlive);
+        streamRegistry.sendHeartbeat();
+
+        assertThat(heartbeats(alive)).isGreaterThan(assigneeBefore);
+        assertThat(heartbeats(adminAlive)).isGreaterThan(adminBefore);
+        assertThat(deadAdmin.completionAttempted).isTrue();
+        assertThat(streamRegistry.streamCount(adminId)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("A stream whose client went away ends quietly: no ERROR log and no error body (JOB-329)")
+    void clientGone_shouldEndStreamQuietly(CapturedOutput output) throws Exception {
+        MvcResult stream = openStream(assigneeId);
+        AsyncRequestNotUsableException disconnect = new AsyncRequestNotUsableException(
+                "ServletOutputStream failed to flush: java.io.IOException: Broken pipe",
+                new IOException("Broken pipe"));
+
+        failStream(stream, disconnect);
+
+        MvcResult end = dispatchCompleted(stream).andReturn();
+        assertThat(end.getResolvedException()).isSameAs(disconnect);
+        assertThat(body(stream)).isEqualTo(":heartbeat\n\n");
+        assertThat(output.getOut()).doesNotContain("Unexpected error");
+        assertThat(streamRegistry.streamCount(assigneeId)).isZero();
+    }
+
+    @Test
+    @DisplayName("Another error on a stream is logged at ERROR but writes no JSON body into it (JOB-329)")
+    void otherStreamError_shouldBeLoggedWithoutBody(CapturedOutput output) throws Exception {
+        MvcResult stream = openStream(assigneeId);
+
+        failStream(stream, new IllegalStateException("stream exploded"));
+
+        MvcResult end = dispatchCompleted(stream).andReturn();
+        assertThat(end.getResolvedException()).hasMessage("stream exploded");
+        assertThat(body(stream)).isEqualTo(":heartbeat\n\n");
+        assertThat(output.getOut()).contains("ERROR").contains("Unexpected error: stream exploded");
+    }
+
+    @Test
     @DisplayName("A stream is unregistered when it completes, times out or fails")
     void lifecycleCallbacks_shouldUnregister() throws Exception {
         MvcResult completed = openStream(assigneeId);
@@ -451,6 +512,41 @@ class NotificationStreamIntegrationTest {
     private ResultActions dispatchCompleted(MvcResult stream) throws Exception {
         stream.getAsyncResult(COMPLETION_WAIT.toMillis());
         return mockMvc.perform(asyncDispatch(stream));
+    }
+
+    /**
+     * Registers a stream whose client went away while it is still registered: writing to it fails with a broken pipe,
+     * and completing it fails the way Tomcat does once it has errored the async request. MockMvc's response can't be
+     * made to fail a write, so the stream is registered directly.
+     */
+    private DeadStream registerDeadStream(UUID userId) {
+        DeadStream dead = new DeadStream();
+        ReflectionTestUtils.invokeMethod(streamRegistry, "register", userId, dead);
+        return dead;
+    }
+
+    private static final class DeadStream extends SseEmitter {
+        private volatile boolean completionAttempted;
+
+        @Override
+        public void send(SseEventBuilder builder) throws IOException {
+            throw new IOException("Broken pipe");
+        }
+
+        @Override
+        public void completeWithError(Throwable ex) {
+            completionAttempted = true;
+            throw new IllegalStateException("A non-container (application) thread attempted to use the AsyncContext"
+                    + " after an error had occurred and the call to AsyncListener.onError() had returned");
+        }
+    }
+
+    /** Has the container report an error on the stream's async request, as it does when the connection fails. */
+    private static void failStream(MvcResult stream, Throwable error) throws IOException {
+        MockAsyncContext context = asyncContext(stream);
+        for (AsyncListener listener : List.copyOf(context.getListeners())) {
+            listener.onError(new AsyncEvent(context, error));
+        }
     }
 
     private static MockAsyncContext asyncContext(MvcResult stream) {

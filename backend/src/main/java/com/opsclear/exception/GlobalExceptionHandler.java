@@ -1,16 +1,20 @@
 package com.opsclear.exception;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.util.DisconnectedClientHelper;
 
 @RestControllerAdvice
 @Slf4j
@@ -105,8 +109,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
-        log.error("Unexpected error: {}", ex.getMessage(), ex);
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletResponse response) {
+        // A client that went away (broken pipe, typically on the notification SSE stream) is not a server error.
+        boolean clientGone = DisconnectedClientHelper.isClientDisconnectedException(ex);
+        if (clientGone) {
+            log.debug("Client went away: {}", ex.getMessage());
+        } else {
+            log.error("Unexpected error: {}", ex.getMessage(), ex);
+        }
+        // Nothing can be written to a gone client, and a JSON body can't go into a committed response or an SSE
+        // stream (no converter for text/event-stream), so write nothing and let the request end.
+        boolean eventStream =
+                StringUtils.startsWithIgnoreCase(response.getContentType(), MediaType.TEXT_EVENT_STREAM_VALUE);
+        if (clientGone || response.isCommitted() || eventStream) {
+            return null;
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponse.of("Internal Server Error", "An unexpected error occurred"));
     }
