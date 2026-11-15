@@ -22,9 +22,11 @@ export interface ProjectResponse {
 /** ADR-0053: an optional job-detail section a project can hide. */
 export type JobSection = 'NOTES' | 'APPROVALS' | 'RELATIONSHIPS' | 'LINKS' | 'STATUS_HISTORY';
 
-/** ADR-0052: body of PATCH /api/projects/{id}/settings. A missing field is left unchanged. */
+/** ADR-0052/0053: body of PATCH /api/projects/{id}/settings. A missing field is left unchanged. */
 export interface UpdateProjectSettingsRequest {
   requireCompletionApproval?: boolean;
+  /** The full list of hidden sections (replaces the stored one). `[]` shows every section. */
+  hiddenJobSections?: JobSection[];
 }
 
 // ADR-0045: org-wide project directory (Owner/Admin only), regardless of the
