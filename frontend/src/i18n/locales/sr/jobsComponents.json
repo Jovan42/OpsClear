@@ -43,7 +43,7 @@
       "rejected": "Odbijeno",
       "cancelled": "Otkazano"
     },
-    "withdrawnBy": "Povukao {{name}}"
+    "cancelledBy": "Otkazao {{name}}"
   },
   "blockedBanner": {
     "blockedSince": "Blokirano od {{date}}"

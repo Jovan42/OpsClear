@@ -214,7 +214,8 @@ export function formatRelativeTime(iso: string, language: string, now = Date.now
   return formatDate(iso, intlLocale(language)) ?? '';
 }
 
-const STATUS_KEYS: Record<JobStatus, string> = {
+/** i18n keys for each job status label (also used by ApprovalDecisionModal's toast). */
+export const STATUS_KEYS: Record<JobStatus, string> = {
   NEW: 'shared2:status.new',
   IN_PROGRESS: 'shared2:status.inProgress',
   BLOCKED: 'shared2:status.blocked',

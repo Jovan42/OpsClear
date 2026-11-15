@@ -4,14 +4,8 @@ import { toast } from 'sonner';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import { useDecideApproval } from '../useApprovals';
+import { STATUS_KEYS } from '../../notifications/notificationContent';
 import type { JobStatus } from '../../../types';
-
-const STATUS_LABEL_KEYS: Record<JobStatus, string> = {
-  NEW: 'shared2:status.new',
-  IN_PROGRESS: 'shared2:status.inProgress',
-  BLOCKED: 'shared2:status.blocked',
-  COMPLETED: 'shared2:status.completed',
-};
 
 interface Props {
   open: boolean;
@@ -53,7 +47,7 @@ export default function ApprovalDecisionModal({
           // In Progress meanwhile (e.g. it was blocked). The approver is told right away.
           if (approval.completionApplied === false) {
             const reason = approval.completionNotAppliedReason;
-            const statusKey = reason && reason in STATUS_LABEL_KEYS ? STATUS_LABEL_KEYS[reason as JobStatus] : null;
+            const statusKey = reason && reason in STATUS_KEYS ? STATUS_KEYS[reason as JobStatus] : null;
             toast.warning(
               t('jobsComponents:approvalDecisionModal.completionNotApplied', {
                 status: statusKey ? t(statusKey) : (reason ?? '—'),

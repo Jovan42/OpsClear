@@ -42,11 +42,12 @@ function StatusBadge({ status, t }: { status: ApprovalResponse['status']; t: TFu
   );
 }
 
-// ADR-0052: a CANCELLED (withdrawn) completion approval records the canceller as the approver.
+// ADR-0052: a CANCELLED completion approval records who cancelled it as the approver: the
+// requester or an Owner/Admin withdrawing it, or the Owner/Admin who completed or deleted the job.
 const DECIDED_BY_KEYS = {
   APPROVED: 'jobsComponents:approvalList.approvedBy',
   REJECTED: 'jobsComponents:approvalList.rejectedBy',
-  CANCELLED: 'jobsComponents:approvalList.withdrawnBy',
+  CANCELLED: 'jobsComponents:approvalList.cancelledBy',
 } as const;
 
 interface Props {

@@ -5,13 +5,10 @@ import Button from '../../../components/Button';
 import ConfirmModal from '../../../components/ConfirmModal';
 import ApprovalDecisionModal from './ApprovalDecisionModal';
 import { useCancelApproval } from '../useApprovals';
+import { completionRequestMessage } from '../completionApproval';
 import type { JobResponse } from '../../../types';
 
 type Role = 'OWNER' | 'ADMIN' | 'MEMBER' | null;
-
-// The backend stores this text when a completion request has no message (ApprovalService).
-// It isn't shown in the banner: it adds nothing and isn't translated.
-const DEFAULT_COMPLETION_MESSAGE = 'Requesting to complete this job';
 
 function formatDateTime(dateStr: string) {
   return new Date(dateStr).toLocaleString(undefined, {
@@ -52,7 +49,7 @@ export default function CompletionRequestBanner({ job, projectId, jobId, role, u
   const isRequester = userId !== null && pending.requesterId === userId;
   const canDecide = canAct && isOwnerOrAdmin;
   const canWithdraw = canAct && (isOwnerOrAdmin || isRequester);
-  const message = pending.message && pending.message !== DEFAULT_COMPLETION_MESSAGE ? pending.message : null;
+  const message = completionRequestMessage(pending.message);
 
   function handleWithdraw() {
     if (!pending) return;

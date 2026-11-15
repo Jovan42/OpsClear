@@ -21,7 +21,8 @@ import {
 } from '../../support/orgApi';
 
 const banner = () => cy.get('[data-testid="completion-request-banner"]');
-const modal = () => cy.get('.z-50:visible');
+// The shared Modal (aria-modal), not the notification bell's non-modal popover dialog
+const modal = () => cy.get('[role="dialog"][aria-modal="true"]');
 
 /**
  * Owner + Member in an org with every add-on, a gated project, and an In Progress job assigned

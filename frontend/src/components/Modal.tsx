@@ -17,6 +17,9 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
     >
       <div className="absolute inset-0 bg-black/40" />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="relative z-10 w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >

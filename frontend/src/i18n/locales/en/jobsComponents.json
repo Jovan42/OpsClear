@@ -43,7 +43,7 @@
       "rejected": "Rejected",
       "cancelled": "Cancelled"
     },
-    "withdrawnBy": "Withdrawn by {{name}}"
+    "cancelledBy": "Cancelled by {{name}}"
   },
   "blockedBanner": {
     "blockedSince": "Blocked since {{date}}"

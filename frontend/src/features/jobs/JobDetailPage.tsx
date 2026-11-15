@@ -35,6 +35,7 @@ import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import Markdown from '../../components/Markdown';
 import LockedSectionRow from '../../components/LockedSectionRow';
 import { useCurrentOrg } from '../org/OrgContext';
+import { canActOnCompletionRequest, requiresCompletionApproval } from './completionApproval';
 import type { JobStatus } from '../../types';
 
 function formatDate(dateStr: string | null) {
@@ -80,16 +81,20 @@ export default function JobDetailPage() {
   const [kebabOpen, setKebabOpen] = useState(false);
   const [addRelOpen, setAddRelOpen] = useState(false);
 
-  const { hasAddon } = useCurrentOrg();
+  const { hasAddon, isAddonUsableForWrites } = useCurrentOrg();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
   const { data: sourceSchedule } = useSchedule(projectId, job?.sourceScheduleId ?? null);
   const isProjectCompleted = project?.status === 'COMPLETED';
   const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
-  // ADR-0052: on a gated project a Member's Complete becomes a completion request. Not enforced
-  // without the APPROVALS add-on (nobody could decide it); Owners/Admins always complete directly.
-  const requiresCompletionApproval =
-    !!project?.requireCompletionApproval && hasAddon('APPROVALS') && role === 'MEMBER';
+  // ADR-0052: on a gated project a Member's Complete becomes a completion request. Uses the
+  // write-usable check (false while PAST_DUE) to match the backend gate.
+  const approvalsWritable = isAddonUsableForWrites('APPROVALS');
+  const requiresCompletion = requiresCompletionApproval(
+    !!project?.requireCompletionApproval,
+    approvalsWritable,
+    role,
+  );
 
   // Sections open by default once they already have content, stay collapsed when
   // empty — can't be a useState initializer since notes/approvals/history each load
@@ -269,7 +274,7 @@ export default function JobDetailPage() {
         jobId={jobId}
         role={role}
         userId={userId}
-        canAct={hasAddon('APPROVALS') && !isProjectCompleted}
+        canAct={canActOnCompletionRequest(approvalsWritable, isProjectCompleted)}
       />
 
       {/* Info section */}
@@ -320,7 +325,7 @@ export default function JobDetailPage() {
           isPending={isStatusPending}
           projectCompleted={isProjectCompleted}
           canRequestApproval={hasAddon('APPROVALS')}
-          requiresCompletionApproval={requiresCompletionApproval}
+          requiresCompletionApproval={requiresCompletion}
           onRequestCompletion={() => setRequestCompletionOpen(true)}
         />
       </div>
