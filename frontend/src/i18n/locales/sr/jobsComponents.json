@@ -45,6 +45,15 @@
     },
     "cancelledBy": "Otkazao {{name}}"
   },
+  "approvalState": {
+    "completion": "Završetak",
+    "approvedNotApplied": "Odobreno, nije primenjeno",
+    "notAppliedReason": "Zadatak nije završen jer je status bio {{status}}.",
+    "defaultCompletionDescription": "Zahtev za završetak zadatka",
+    "completedDirectly": "Zadatak je završen direktno.",
+    "jobDeleted": "Zadatak je obrisan.",
+    "awaitingCompletion": "Čeka odobrenje završetka"
+  },
   "blockedBanner": {
     "blockedSince": "Blokirano od {{date}}"
   },

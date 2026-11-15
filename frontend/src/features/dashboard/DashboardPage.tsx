@@ -12,6 +12,8 @@ import RefreshButton from '../../components/RefreshButton';
 import Skeleton from '../../components/Skeleton';
 import UpgradeCard from '../../components/UpgradeCard';
 import { useDashboard } from './useDashboard';
+import { ApprovalKindBadge } from '../jobs/components/ApprovalBadges';
+import { approvalDescription } from '../jobs/completionApproval';
 import { useProject, useProjectRole } from '../projects/useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from '../org/OrgContext';
@@ -238,10 +240,14 @@ function PendingApprovalRow({
   projectId: string;
 }>) {
   const navigate = useNavigate();
+  const { t } = useTranslation(['approvalsDashboardSettingsLanding', 'jobsComponents']);
   return (
     <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{approval.description}</p>
+        <div className="flex items-center gap-2">
+          <p className="min-w-0 text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{approvalDescription(approval, t)}</p>
+          <ApprovalKindBadge kind={approval.kind} />
+        </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {approval.jobTitle} · {formatDate(approval.requestedAt)}
         </p>

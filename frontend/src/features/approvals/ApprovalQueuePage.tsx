@@ -8,6 +8,8 @@ import PageError from '../../components/PageError';
 import RefreshButton from '../../components/RefreshButton';
 import Skeleton from '../../components/Skeleton';
 import ApprovalDecisionModal from '../jobs/components/ApprovalDecisionModal';
+import { ApprovalKindBadge } from '../jobs/components/ApprovalBadges';
+import { approvalDescription } from '../jobs/completionApproval';
 import UpgradeCard from '../../components/UpgradeCard';
 import { useApprovalQueue } from './useApprovalQueue';
 import { useProject, useProjectMembers, useProjectRole } from '../projects/useProjects';
@@ -44,10 +46,11 @@ interface ApprovalCardProps {
 }
 
 function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalCardProps) {
-  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  const { t } = useTranslation(['approvalsDashboardSettingsLanding', 'jobsComponents']);
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
-      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{approval.description}</p>
+      <ApprovalKindBadge kind={approval.kind} className="mb-1" />
+      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{approvalDescription(approval, t)}</p>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
         {t('approvals.requestedBy', {
           name: memberName(members, approval.requesterId),

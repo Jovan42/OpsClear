@@ -7,6 +7,8 @@ import Skeleton from '../../components/Skeleton';
 import Button from '../../components/Button';
 import PageError from '../../components/PageError';
 import { usePendingApprovalsAcrossOrgs } from '../approvals/useApprovalQueue';
+import { ApprovalKindBadge } from '../jobs/components/ApprovalBadges';
+import { approvalDescription } from '../jobs/completionApproval';
 
 const PAGE_SIZE = 10;
 
@@ -21,7 +23,7 @@ function formatDateTime(dateStr: string) {
 }
 
 export default function PendingApprovalsSection() {
-  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  const { t } = useTranslation(['approvalsDashboardSettingsLanding', 'jobsComponents']);
   const navigate = useNavigate();
   const { data: approvals = [], isLoading, isError, refetch } = usePendingApprovalsAcrossOrgs();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -76,7 +78,10 @@ export default function PendingApprovalsSection() {
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{approval.jobTitle}</p>
                   <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{approval.projectName}</span>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1 truncate">{approval.description}</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="min-w-0 text-sm text-gray-600 dark:text-gray-300 truncate">{approvalDescription(approval, t)}</p>
+                  <ApprovalKindBadge kind={approval.kind} />
+                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {t('overview.requestedAt', { date: formatDateTime(approval.requestedAt) })}
                 </p>

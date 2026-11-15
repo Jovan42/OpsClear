@@ -18,7 +18,9 @@ import {
   UserPlus,
   Gift,
 } from 'lucide-react';
+import { autoCancelReason, completionRequestMessage } from '../jobs/completionApproval';
 import type {
+  ApprovalDecidedPayload,
   JobNotificationPayload,
   JobPriority,
   JobStatus,
@@ -222,6 +224,15 @@ export const STATUS_KEYS: Record<JobStatus, string> = {
   COMPLETED: 'shared2:status.completed',
 };
 
+/**
+ * A job status sent as a plain string (e.g. a completion approval's "not applied" reason) as its
+ * translated label. An unknown value is shown as is, a missing one as a dash.
+ */
+export function jobStatusLabel(status: string | null | undefined, t: TFunction): string {
+  if (!status) return '—';
+  return status in STATUS_KEYS ? t(STATUS_KEYS[status as JobStatus]) : status;
+}
+
 const PRIORITY_KEYS: Record<JobPriority, string> = {
   LOW: 'shared2:priority.low',
   MEDIUM: 'shared2:priority.medium',
@@ -240,6 +251,46 @@ function label(id: string | undefined, title: string | undefined): string | null
   return id ?? title ?? null;
 }
 
+type NotificationsT = TFunction<['notifications', 'shared2']>;
+
+/**
+ * ADR-0052 text for a decided completion approval, or null to use the manual approval text
+ * (manual approvals, and rejected completion approvals, which read the same as manual ones).
+ *
+ * The backend sends CANCELLED only when someone other than the requester cancelled the request:
+ * an Owner/Admin withdrawing it, or completing the job directly. (Deleting the job also cancels
+ * it, but no notification is sent for a deleted job.) So the text says "cancelled", which fits
+ * every case, and an automatic cancellation's reason goes in the detail line.
+ */
+function completionDecisionContent(
+  p: ApprovalDecidedPayload,
+  job: string,
+  t: NotificationsT,
+): { text: string; detail: string | null } | null {
+  if (p.kind !== 'COMPLETION') return null;
+  const comment = p.comment ?? null;
+  if (p.decision === 'APPROVED') {
+    if (p.completionApplied === false) {
+      return {
+        text: t('notifications:text.COMPLETION_APPROVAL.approvedNotApplied', {
+          job,
+          status: jobStatusLabel(p.completionNotAppliedReason, t),
+        }),
+        detail: comment,
+      };
+    }
+    return { text: t('notifications:text.COMPLETION_APPROVAL.approved', { job }), detail: comment };
+  }
+  if (p.decision === 'CANCELLED') {
+    const reason = autoCancelReason(comment);
+    let detail = comment;
+    if (reason === 'COMPLETED_DIRECTLY') detail = t('notifications:detail.completedDirectly');
+    else if (reason === 'JOB_DELETED') detail = t('notifications:detail.jobDeleted');
+    return { text: t('notifications:text.COMPLETION_APPROVAL.cancelled', { job }), detail };
+  }
+  return null;
+}
+
 /**
  * Builds the text for one notification from its type and payload snapshot, in the
  * viewer's language. Every payload key may be missing, so each falls back to a generic
@@ -247,7 +298,7 @@ function label(id: string | undefined, title: string | undefined): string | null
  */
 export function buildNotificationContent(
   n: NotificationResponse,
-  t: TFunction<['notifications', 'shared2']>,
+  t: NotificationsT,
   language: string,
   viewerOrgRole: OrgRole | null = null,
 ): NotificationContent {
@@ -270,10 +321,22 @@ export function buildNotificationContent(
 
   switch (n.type) {
     case 'APPROVAL_REQUESTED':
-      text = t('notifications:text.APPROVAL_REQUESTED', { job });
-      details.push(n.payload.description);
+      if (n.payload.kind === 'COMPLETION') {
+        // ADR-0052. The backend's default text means no message was given, so it isn't shown.
+        text = t('notifications:text.COMPLETION_APPROVAL.requested', { job });
+        details.push(completionRequestMessage(n.payload.description));
+      } else {
+        text = t('notifications:text.APPROVAL_REQUESTED', { job });
+        details.push(n.payload.description);
+      }
       break;
     case 'APPROVAL_DECIDED': {
+      const completion = completionDecisionContent(n.payload, job, t);
+      if (completion) {
+        text = completion.text;
+        details.push(completion.detail);
+        break;
+      }
       const decision = n.payload.decision;
       const key = decision === 'APPROVED' ? 'approved' : decision === 'REJECTED' ? 'rejected' : 'decided';
       text = t(`notifications:text.APPROVAL_DECIDED.${key}`, { job });

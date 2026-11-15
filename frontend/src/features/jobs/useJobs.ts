@@ -114,6 +114,8 @@ export function useDeleteJob(projectId: string) {
       queryClient.removeQueries({ queryKey: ['jobs', projectId, jobId] });
       void queryClient.invalidateQueries({ queryKey: ['jobs', projectId], exact: true });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
+      // Deleting a job cancels its pending completion approval (ADR-0052), so refresh the queues.
+      void queryClient.invalidateQueries({ queryKey: ['approvals'] });
     },
   });
 }

@@ -45,6 +45,15 @@
     },
     "cancelledBy": "Cancelled by {{name}}"
   },
+  "approvalState": {
+    "completion": "Completion",
+    "approvedNotApplied": "Approved, not applied",
+    "notAppliedReason": "The job wasn't completed because it was {{status}}.",
+    "defaultCompletionDescription": "Requesting to complete this job",
+    "completedDirectly": "The job was completed directly.",
+    "jobDeleted": "The job was deleted.",
+    "awaitingCompletion": "Awaiting completion approval"
+  },
   "blockedBanner": {
     "blockedSince": "Blocked since {{date}}"
   },
