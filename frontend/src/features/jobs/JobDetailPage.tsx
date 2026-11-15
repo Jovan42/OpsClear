@@ -116,12 +116,13 @@ export default function JobDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [approvalsLoading]);
   // Re-runs per navigation (location.key), so a notification click while already on
-  // this job still opens and scrolls to the section. Waits for the page to render it.
+  // this job still opens and scrolls to the section. Waits for the page to render it, so it
+  // uses the same loading flags as the skeleton below (projectLoading: ADR-0053 visibility).
   useEffect(() => {
-    if (!wantsApprovals || isLoading || historyLoading) return;
+    if (!wantsApprovals || isLoading || historyLoading || projectLoading) return;
     setApprovalsExpanded(true);
     document.getElementById('approvals')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [wantsApprovals, isLoading, historyLoading, location.key]);
+  }, [wantsApprovals, isLoading, historyLoading, projectLoading, location.key]);
   useEffect(() => {
     // Depends on the job's own isLoading flag (stable after the first successful
     // load — TanStack Query v5 doesn't flip it back to true on background
