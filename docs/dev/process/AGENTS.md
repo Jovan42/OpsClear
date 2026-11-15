@@ -218,3 +218,4 @@ scripts/opsclear milestone create PRJ-013 --name "…" --deadline 2026-12-01
 - `job get` without `--project` searches your projects (active first). Pass `--project PRJ-013` to
   skip the search.
 - Exit codes: 0 ok, 1 error, 2 usage error, 3 not applied (re-run with `--yes`).
+
