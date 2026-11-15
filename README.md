@@ -87,6 +87,7 @@ Three sections, visible at a glance:
 - Goes to owner
 - Two actions: Approve / Reject
 - Decision is logged
+- Optional per-project setting "Require approval to complete jobs": a Member's Complete becomes a completion request that an Owner/Admin approves or rejects, and the job completes automatically on approval
 
 ### 4. Quick Notes / Agreements
 - Attach notes to any job

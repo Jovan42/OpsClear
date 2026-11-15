@@ -1,5 +1,7 @@
 import type {
   ApiKeyResponse,
+  ApprovalKind,
+  ApprovalStatus,
   FeedbackSubmissionResponse,
   JobHistoryEntry,
   JobResponse,
@@ -105,7 +107,8 @@ const BASE_PROJECT: ProjectResponse = {
   ownerName: DEMO_USERS.ana.name,
   status: 'ACTIVE',
   createdAt: hoursAgo(24 * 90),
-  requireCompletionApproval: false,
+  // ADR-0052: gated, so Members' completions need Owner/Admin sign-off (the Approvals demo).
+  requireCompletionApproval: true,
   links: [
     {
       id: 'demo-link-figma',
@@ -316,8 +319,9 @@ const JOB_SEEDS: DemoJobSeed[] = [
     description: 'Staging cert expired last week — blocking QA from testing over HTTPS.',
     status: 'IN_PROGRESS',
     priority: 'HIGH',
-    assignedTo: DEMO_USERS.marko.id,
-    assignedToName: DEMO_USERS.marko.name,
+    // A Member's job, so completing it needs sign-off on this gated project (ADR-0052).
+    assignedTo: DEMO_USERS.iva.id,
+    assignedToName: DEMO_USERS.iva.name,
     milestoneId: null,
     milestoneName: null,
     typeId: 'demo-job-type-03',
@@ -695,10 +699,15 @@ export interface DemoApproval {
   requesterId: string;
   approverId: string | null;
   description: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: ApprovalStatus;
   comment: string | null;
   requestedAt: string;
   decidedAt: string | null;
+  /** ADR-0052: defaults to MANUAL. A pending COMPLETION one is also embedded in its job as
+   *  `pendingCompletionApproval` (see freshStore), which the handlers keep in step. */
+  kind?: ApprovalKind;
+  completionApplied?: boolean | null;
+  completionNotAppliedReason?: string | null;
 }
 
 const BASE_APPROVALS: DemoApproval[] = [
@@ -752,7 +761,39 @@ const BASE_APPROVALS: DemoApproval[] = [
     requestedAt: hoursAgo(26),
     decidedAt: hoursAgo(25),
   },
+  // ADR-0052 gated completion (JOB-331): Alex (a Member) tried to complete the SSL job on
+  // this gated project, so it stays In Progress until an Owner/Admin signs off. Shown with
+  // the "Completion" label in the pending queue, and as the banner on the job's own page.
+  {
+    id: 'demo-approval-completion-01',
+    jobId: 'demo-job-09',
+    jobTitle: 'Renew SSL certificate for staging',
+    requesterId: DEMO_USERS.iva.id,
+    approverId: null,
+    description: 'New certificate is installed and QA confirmed HTTPS works on staging.',
+    status: 'PENDING',
+    comment: null,
+    requestedAt: hoursAgo(2),
+    decidedAt: null,
+    kind: 'COMPLETION',
+    completionApplied: null,
+    completionNotAppliedReason: null,
+  },
 ];
+
+/** The job's embedded pending completion approval, as the real job response carries it. */
+function pendingCompletionOf(jobId: string, approvals: DemoApproval[]): JobResponse['pendingCompletionApproval'] {
+  const pending = approvals.find((a) => a.jobId === jobId && a.kind === 'COMPLETION' && a.status === 'PENDING');
+  if (!pending) return null;
+  const requester = Object.values(DEMO_USERS).find((u) => u.id === pending.requesterId);
+  return {
+    id: pending.id,
+    requesterId: pending.requesterId,
+    requesterName: requester?.name ?? null,
+    requestedAt: pending.requestedAt,
+    message: pending.description,
+  };
+}
 
 // ---- Templates, recurring schedules, API keys (JOB-145) ----
 // Each of these is its own small, self-contained mock slice per ADR-0040's
@@ -1213,7 +1254,10 @@ function freshStore(): DemoStore {
     project: structuredClone(BASE_PROJECT),
     members: structuredClone(BASE_MEMBERS),
     milestones: structuredClone(BASE_MILESTONES),
-    jobs: structuredClone(BASE_JOBS),
+    jobs: BASE_JOBS.map((job) => ({
+      ...structuredClone(job),
+      pendingCompletionApproval: pendingCompletionOf(job.id, BASE_APPROVALS),
+    })),
     notesByJobId: structuredClone(BASE_NOTES),
     historyByJobId: structuredClone(BASE_HISTORY),
     approvals: structuredClone(BASE_APPROVALS),

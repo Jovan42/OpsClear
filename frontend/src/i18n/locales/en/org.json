@@ -146,7 +146,7 @@
 
   "addonTaglines": {
     "DASHBOARD": "Single-screen ops overview",
-    "APPROVALS": "Sign-off workflows with logged decisions",
+    "APPROVALS": "Sign-offs and completion approval, all logged",
     "NOTES": "Immutable audit trail on any job",
     "JOB_STATUS_HISTORY": "Full chronological status log",
     "MILESTONES": "Group jobs into phases (max 5 per project)",
