@@ -86,7 +86,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -122,7 +122,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -139,7 +139,7 @@ jobs:
         run: ./gradlew test -PexcludeIntegrationTests jacocoServiceTestReport jacocoServiceCoverageVerification jacocoSecurityTestReport jacocoSecurityCoverageVerification
 
       - name: Publish unit test results
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         if: always()
         with:
           name: Unit Test Results
@@ -147,14 +147,14 @@ jobs:
           reporter: java-junit
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: unit-test-results
           path: backend/build/reports/tests/
 
       - name: Publish unit test coverage (service)
-        uses: madrapps/jacoco-report@v1.7.2
+        uses: madrapps/jacoco-report@v1.8.0
         if: always()
         with:
           paths: backend/build/reports/jacoco/service/jacocoServiceReport.xml
@@ -164,7 +164,7 @@ jobs:
           min-coverage-overall: 90
 
       - name: Publish unit test coverage (security)
-        uses: madrapps/jacoco-report@v1.7.2
+        uses: madrapps/jacoco-report@v1.8.0
         if: always()
         with:
           paths: backend/build/reports/jacoco/security/jacocoSecurityReport.xml
@@ -209,7 +209,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -232,7 +232,7 @@ jobs:
         run: ./gradlew test -PonlyIntegrationTests jacocoTestCoverageVerification
 
       - name: Publish integration test results
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         if: always()
         with:
           name: Integration Test Results
@@ -240,14 +240,14 @@ jobs:
           reporter: java-junit
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: integration-test-results
           path: backend/build/reports/tests/
 
       - name: Publish integration test coverage
-        uses: madrapps/jacoco-report@v1.7.2
+        uses: madrapps/jacoco-report@v1.8.0
         if: always()
         with:
           paths: backend/build/reports/jacoco/test/jacocoTestReport.xml
@@ -272,7 +272,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Cache Gradle packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -289,7 +289,7 @@ jobs:
         run: ./gradlew checkstyleMain checkstyleTest
 
       - name: Upload Checkstyle results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: checkstyle-results
