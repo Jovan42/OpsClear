@@ -80,7 +80,7 @@ Three sections, visible at a glance:
 - Mark job as "Blocked"
 - Capture: Who is blocking, Why, Since when
 - Auto-highlight blocked jobs
-- Send notifications
+- Notify the assignee and project Owners/Admins in-app (urgent style), and the assignees of waiting jobs once the blocker completes
 
 ### 3. Simple Approvals
 - Button: "Needs approval"
@@ -194,12 +194,19 @@ No complex permission system in MVP.
 
 ## Notifications (Minimal)
 
-Only for important events:
-- Job blocked
-- Waiting longer than X days
-- Approval requested
+An in-app notification centre, included in every plan:
+- A bell in the header with an unread count and the latest notifications, plus a full Notifications page (all / unread, filter by type)
+- Updates arrive live, without a refresh
+- Sent only for important events:
+  - A job assigned to you, its status changed, its deadline or priority changed, or it was deleted
+  - A job blocked, or a job yours was waiting on completed
+  - An approval requested from you, or a decision on your request
+  - A note added to your job or to a thread you wrote in
+  - A deadline tomorrow, or a deadline passed (overdue)
+  - Added to a project, a scheduled run missed, an invite accepted, feedback resolved, a billing problem
+- Mute any type you don't need in Settings (billing problems can't be muted)
 
-NOT for every change.
+NOT for every change. No email or push notifications.
 
 ---
 

@@ -41,6 +41,16 @@ function buildCards(t: TFunction): FeatureCard[] {
       previewScale: 0.4,
     },
     {
+      // Core, not an add-on (ADR-0051): no addonKey, so it gets the "Included" badge.
+      id: 'notifications',
+      name: t('featuresPage.cards.notifications.name'),
+      description: t('featuresPage.cards.notifications.description'),
+      loadSlides: () => import('../../demo/NotificationsDemo'),
+      previewNaturalWidth: 640,
+      previewNaturalHeight: 520,
+      previewScale: 0.42,
+    },
+    {
       id: 'feedback-credits',
       name: t('featuresPage.cards.feedback-credits.name'),
       description: t('featuresPage.cards.feedback-credits.description'),

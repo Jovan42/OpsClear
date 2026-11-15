@@ -318,6 +318,9 @@
         "links": "Job links",
         "jobTypes": "Job types",
         "jobTypesInJobList": "Type badges & filter on the job list",
+        "notificationBell": "Notification bell",
+        "notificationsPage": "Notifications page",
+        "notificationSettings": "Mute notification types",
         "feedbackCredits": "Feedback hub"
       }
     },
@@ -325,6 +328,10 @@
       "job-tracking": {
         "name": "Job tracking",
         "description": "See all your jobs in one place. Filter by status, priority, or assignee, and see exactly when something's blocked and why — no spreadsheets, no chasing."
+      },
+      "notifications": {
+        "name": "Notifications",
+        "description": "A bell in the header with an unread count, for the events that matter: a job assigned to you, status changes, a job blocked or unblocked, approvals requested or decided, notes on your jobs, deadline alerts and missed scheduled runs. Updates arrive live without a refresh, and you can mute any type you don't need in Settings. Only important events, not every change."
       },
       "feedback-credits": {
         "name": "Feedback & Credits",

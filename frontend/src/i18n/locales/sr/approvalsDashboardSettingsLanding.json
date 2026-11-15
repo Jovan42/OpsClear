@@ -318,6 +318,9 @@
         "links": "Veze na poslu",
         "jobTypes": "Tipovi poslova",
         "jobTypesInJobList": "Oznake tipova i filter na listi poslova",
+        "notificationBell": "Zvonce za obaveštenja",
+        "notificationsPage": "Stranica obaveštenja",
+        "notificationSettings": "Isključivanje vrsta obaveštenja",
         "feedbackCredits": "Centar za povratne informacije"
       }
     },
@@ -325,6 +328,10 @@
       "job-tracking": {
         "name": "Praćenje poslova",
         "description": "Vidite sve svoje poslove na jednom mestu. Filtrirajte po statusu, prioritetu ili izvršiocu, i vidite tačno kada je nešto blokirano i zašto — bez tabela, bez jurenja."
+      },
+      "notifications": {
+        "name": "Obaveštenja",
+        "description": "Zvonce u zaglavlju sa brojem nepročitanih, za događaje koji su bitni: dodeljen vam je posao, promena statusa, posao blokiran ili odblokiran, zatraženo ili doneto odobrenje, beleške na vašim poslovima, upozorenja o rokovima i propuštena zakazana pokretanja. Stižu odmah, bez osvežavanja stranice, a svaku vrstu koja vam ne treba možete isključiti u Podešavanjima. Samo važni događaji, ne svaka promena."
       },
       "feedback-credits": {
         "name": "Povratne informacije i krediti",

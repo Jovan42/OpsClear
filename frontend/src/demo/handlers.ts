@@ -33,6 +33,9 @@ import type {
   LinkResponse,
   MilestoneResponse,
   NoteResponse,
+  NotificationPageResponse,
+  NotificationSettings,
+  NotificationType,
   PendingApprovalResponse,
   RecurringScheduleResponse,
   ScheduleStatus,
@@ -628,6 +631,60 @@ export const demoHandlers = [
     // Newest first, matching the real backend's findBySubmittedBy ordering.
     demoStore.feedbackSubmissions.unshift(submission);
     return HttpResponse.json(submission, { status: 201 });
+  }),
+
+  // Notification centre (ADR-0051, JOB-330). Not project-scoped, like api-keys and
+  // feedback above. There's deliberately no `/api/notifications/stream` handler: the demo
+  // never mounts useNotificationStream, so the bell and page run on these REST calls only.
+  http.get('*/api/notifications', ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const unread = params.get('unread') === 'true';
+    const type = params.get('type') as NotificationType | null;
+    const page = Math.max(0, Number(params.get('page') ?? 0));
+    const size = Math.max(1, Number(params.get('size') ?? 20));
+
+    const matching = demoStore.notifications.filter((n) => (!unread || !n.read) && (!type || n.type === type));
+    const response: NotificationPageResponse = {
+      items: matching.slice(page * size, page * size + size),
+      page,
+      size,
+      totalElements: matching.length,
+      totalPages: Math.ceil(matching.length / size),
+    };
+    return HttpResponse.json(response);
+  }),
+
+  http.get('*/api/notifications/unread-count', () =>
+    HttpResponse.json({ count: demoStore.notifications.filter((n) => !n.read).length }),
+  ),
+
+  http.post('*/api/notifications/read-all', () => {
+    demoStore.notifications.forEach((n) => {
+      n.read = true;
+    });
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.patch('*/api/notifications/:notificationId', async ({ params, request }) => {
+    const notification = demoStore.notifications.find((n) => n.id === params.notificationId);
+    if (!notification) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as { read: boolean };
+    notification.read = body.read;
+    return HttpResponse.json(notification);
+  }),
+
+  http.get('*/api/user/notification-settings', () => {
+    const response: NotificationSettings = { muted: demoStore.notificationMuted };
+    return HttpResponse.json(response);
+  }),
+
+  http.put('*/api/user/notification-settings', async ({ request }) => {
+    const body = (await request.json()) as NotificationSettings;
+    // Same rule as the backend: billing problems can't be muted.
+    if (body.muted.includes('SUBSCRIPTION_PAST_DUE')) return new HttpResponse(null, { status: 400 });
+    demoStore.notificationMuted = [...new Set(body.muted)];
+    const response: NotificationSettings = { muted: demoStore.notificationMuted };
+    return HttpResponse.json(response);
   }),
 
   http.get(`${base}/jobs`, ({ request }) => {
