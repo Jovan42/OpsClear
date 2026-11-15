@@ -64,46 +64,22 @@ Tech debt that grows large enough to need an ADR graduates to a feature phase.
 
 ## Branch naming
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| Feature (incl. ADR, DB, Backend, Frontend jobs) | `feature/<job-id>-<short-description>` | `feature/JOB-109-org-templates-backend` |
-| Bug fix | `fix/<job-id>-<short-description>` | `fix/JOB-115-slug-validation` |
-| E2E | `e2e/<job-id>-<short-description>` | `e2e/JOB-224-approvals-flow` |
-| Chore / Tech debt | `chore/<job-id>-<short-description>` | `chore/JOB-310-testcontainers-docker29` |
-
-Every branch starts from the latest `main` and carries its OpsClear job ID.
+`<feature|fix|e2e|chore>/<job-id>-<slug>`, always starting from the latest `main` and carrying the
+OpsClear job ID. Prefix per job type, examples and slug rules: [NAMING.md](NAMING.md#branch-names).
 
 ---
 
 ## Commit format
 
-```
-<type>(<scope>): <short summary> (JOB-123)
-```
-
-**Types:** `feat` `fix` `docs` `refactor` `test` `chore`
-
-**Scopes (fixed list):** `backend` `frontend` `db` `auth` `config` `ci` `docs` `deps` `infra` `adr`
-
-Scope is always the layer or area — never the feature name. `adr` is for ADR documents
-(`docs(adr): …`). End the subject with the OpsClear job ID when there is one. Body bullets and
-other details: [CONTRIBUTING.md](../../../CONTRIBUTING.md#commit-messages).
-
-Examples:
-```
-feat(backend): add org-level template CRUD (JOB-109)
-feat(db): V020 make project_id nullable, add org_id
-feat(frontend): org templates section in OrgSettingsPage
-fix(backend): return 404 when template belongs to different org
-docs(adr): add ADR-0054 for Claude Code agents and skills (JOB-293)
-chore(deps): upgrade Spring Boot to 3.4.1
-```
+`<type>(<scope>): <short summary> (JOB-123)`, with the scope always the layer or area (fixed list,
+including `e2e`). Types, scopes and examples: [NAMING.md](NAMING.md#commit-subjects-and-pr-titles).
+Body bullets and other details: [CONTRIBUTING.md](../../../CONTRIBUTING.md#commit-messages).
 
 ---
 
 ## Pull requests
 
-One PR per job, always (never push directly to `main`). The PR title mirrors the commit subject. The PR description references the OpsClear job it implements and the ADR it is based on. The body has a `Closes JOB-x` line (merging finishes the job; the default) or `Part of JOB-x` (more PRs follow on the job). Several jobs: `Closes JOB-1, JOB-2` (comma-separated) or one line per job. The keywords are read from body lines at merge time; text inside `<!-- -->` is ignored. See [ADR-0055](../decisions/0055-github-job-sync.md). Template and rules: [CONTRIBUTING.md](../../../CONTRIBUTING.md#pull-requests).
+One PR per job, always (never push directly to `main`). The PR title is the commit subject (see [NAMING.md](NAMING.md)). The PR description references the OpsClear job it implements and the ADR it is based on. The body has a `Closes JOB-x` line (merging finishes the job; the default) or `Part of JOB-x` (more PRs follow on the job). Several jobs: `Closes JOB-1, JOB-2` (comma-separated) or one line per job. The keywords are read from body lines at merge time; text inside `<!-- -->` is ignored. See [ADR-0055](../decisions/0055-github-job-sync.md). Template and rules: [CONTRIBUTING.md](../../../CONTRIBUTING.md#pull-requests).
 
 ### GitHub job sync
 
