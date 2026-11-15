@@ -15,7 +15,12 @@ export interface ProjectResponse {
   /** ADR-0052: Members' completions need Owner/Admin approval. Enforced only while the
    *  org's APPROVALS add-on is usable (not past due). */
   requireCompletionApproval: boolean;
+  /** ADR-0053: job-detail sections this project hides. Empty = every section is shown. */
+  hiddenJobSections: JobSection[];
 }
+
+/** ADR-0053: an optional job-detail section a project can hide. */
+export type JobSection = 'NOTES' | 'APPROVALS' | 'RELATIONSHIPS' | 'LINKS' | 'STATUS_HISTORY';
 
 /** ADR-0052: body of PATCH /api/projects/{id}/settings. A missing field is left unchanged. */
 export interface UpdateProjectSettingsRequest {

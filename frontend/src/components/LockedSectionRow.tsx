@@ -10,7 +10,7 @@ export default function LockedSectionRow({ sections }: Props) {
   const { t } = useTranslation('shared2');
   if (sections.length === 0) return null;
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-3.5 flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+    <div data-testid="locked-section-row" className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-3.5 flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         className="w-3.5 h-3.5 shrink-0 text-gray-400 dark:text-gray-500"

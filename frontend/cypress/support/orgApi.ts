@@ -812,11 +812,15 @@ export function getProjectAs(email: string, projectId: string) {
 
 /** Updates a project's settings (ADR-0052, `PATCH /api/projects/{id}/settings`), acting
  *  as `email` (Owner/Admin). Turning `requireCompletionApproval` on needs the APPROVALS
- *  add-on, so callers should use an org created via createOrgWithFullAccess. */
+ *  add-on, so callers should use an org created via createOrgWithFullAccess.
+ *  `hiddenJobSections` (ADR-0053) isn't add-on gated. */
 export function updateProjectSettingsAs(
   email: string,
   projectId: string,
-  body: { requireCompletionApproval?: boolean },
+  body: {
+    requireCompletionApproval?: boolean;
+    hiddenJobSections?: Array<'NOTES' | 'APPROVALS' | 'RELATIONSHIPS' | 'LINKS' | 'STATUS_HISTORY'>;
+  },
 ) {
   return tokenFor(email).then((token) =>
     cy.request({

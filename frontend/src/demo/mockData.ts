@@ -109,6 +109,7 @@ const BASE_PROJECT: ProjectResponse = {
   createdAt: hoursAgo(24 * 90),
   // ADR-0052: gated, so Members' completions need Owner/Admin sign-off (the Approvals demo).
   requireCompletionApproval: true,
+  hiddenJobSections: [],
   links: [
     {
       id: 'demo-link-figma',
@@ -406,6 +407,7 @@ const BASE_TRACKING_PROJECT: ProjectResponse = {
   status: 'ACTIVE',
   createdAt: hoursAgo(24 * 30),
   requireCompletionApproval: false,
+  hiddenJobSections: [],
   links: [],
 };
 
