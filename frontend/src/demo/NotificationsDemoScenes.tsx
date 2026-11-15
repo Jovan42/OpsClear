@@ -24,8 +24,16 @@ export function BellScene() {
     ref.current?.querySelector<HTMLButtonElement>('[data-testid="notification-bell"]')?.click();
   }, []);
 
+  // The card preview is mounted inside DemoTrigger's clickable box, so without this the
+  // mount click above (and any click in the scene) bubbles up and opens the full demo on
+  // page load. The bell's own handler runs first, so it still opens.
   return (
-    <div ref={ref} className="min-h-[520px] bg-gray-50 dark:bg-gray-900" style={{ transform: 'translateZ(0)' }}>
+    <div
+      ref={ref}
+      onClick={(e) => e.stopPropagation()}
+      className="min-h-[520px] bg-gray-50 dark:bg-gray-900"
+      style={{ transform: 'translateZ(0)' }}
+    >
       <div className="px-4 text-white" style={{ backgroundColor: 'var(--brand)' }}>
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-2 min-w-0">

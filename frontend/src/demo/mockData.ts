@@ -1043,7 +1043,7 @@ const NOTIFIED = {
   cleared: jobNotification('DEMO-106', DEMO_USERS.iva),
   completed: jobNotification('DEMO-107', DEMO_USERS.marko),
   decided: jobNotification('DEMO-111', DEMO_USERS.marko),
-  dueSoon: jobNotification('DEMO-105', null),
+  dueSoon: jobNotification('DEMO-109', null),
 };
 
 const BASE_NOTIFICATIONS: NotificationResponse[] = [
@@ -1150,12 +1150,12 @@ const BASE_NOTIFICATIONS: NotificationResponse[] = [
     id: 'demo-notification-09',
     type: 'JOB_DEADLINE_SOON',
     read: true,
-    createdAt: hoursAgo(52),
+    createdAt: hoursAgo(72),
     actor: NOTIFIED.dueSoon.actor,
     projectFriendlyId: NOTIFIED.dueSoon.projectFriendlyId,
     jobFriendlyId: NOTIFIED.dueSoon.jobFriendlyId,
     approvalId: null,
-    payload: { ...NOTIFIED.dueSoon.snapshot, deadline: daysFromNow(-1) },
+    payload: { ...NOTIFIED.dueSoon.snapshot, deadline: daysFromNow(-2) },
   },
   {
     id: 'demo-notification-10',

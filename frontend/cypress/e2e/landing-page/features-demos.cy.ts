@@ -260,6 +260,18 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
     cy.contains('h3', NOTIFICATIONS_CARD_TITLE).parent().contains('Included').should('be.visible');
   });
 
+  it('the Notifications preview opens its bell without opening the full demo on page load (JOB-330)', () => {
+    cy.visit('/features');
+    // The preview's bell is opened by a click on mount; it must not bubble to the card trigger.
+    cy.contains('h3', NOTIFICATIONS_CARD_TITLE)
+      .parents('.rounded-2xl')
+      .find('[role="button"]')
+      .first()
+      .contains('Fix mobile navigation bug', { timeout: 10000 })
+      .should('exist');
+    cy.get('.fixed.inset-0.z-50').should('not.exist');
+  });
+
   it('the Notifications demo pages through the bell, the Notifications page and the mute settings on sample data, with no real notification requests (JOB-330)', () => {
     // Covers the list, count, read-state and stream endpoints alike. A regex, not a glob:
     // `**/api/notifications**` would also match Vite serving /src/api/notifications.ts.
@@ -276,7 +288,9 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
       .should('have.length', 10);
     // An item opens its job inside the demo (and is marked read on the way).
     cy.get('@overlay').find('[data-testid="notification-dropdown"]').contains('Fix mobile navigation bug').click();
-    cy.get('@overlay').contains('Waiting on design review from John').should('be.visible');
+    // The block reason is also in the dropdown item, so check the job page's own content.
+    cy.get('@overlay').find('[data-testid="notification-dropdown"]').should('not.exist');
+    cy.get('@overlay').contains('Hamburger menu overlaps the logo below 375px width.').should('be.visible');
 
     // Slide 2: the full page, all 11 items, the Unread filter and Mark all as read.
     cy.get('@overlay').find('button[aria-label="Next example"]').click();
