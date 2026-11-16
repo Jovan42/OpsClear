@@ -53,7 +53,7 @@
     "blockReasonsHeading": "Block Reasons",
     "blockReasonsHelp": "Pre-configured reasons team members can select when blocking a job.",
     "noBlockReasons": "No block reasons configured. Set them when creating the project.",
-    "workflowHeading": "Workflow",
+    "jobScreenHeading": "Job screen",
     "dangerZoneHeading": "Danger zone",
     "reactivateProjectTitle": "Reactivate this project",
     "completeProjectTitle": "Complete this project",
@@ -81,5 +81,20 @@
     "readOnly": "Only project Owners and Admins can change this.",
     "enabledToast": "Jobs now need approval to complete",
     "disabledToast": "Jobs no longer need approval to complete"
+  },
+  "jobSections": {
+    "label": "Sections shown on jobs",
+    "help": "Hide sections this project doesn't use. Nothing is deleted; turning a section back on shows its data again.",
+    "notInPlan": "Not in your plan",
+    "readOnly": "Only project Owners and Admins can change this.",
+    "shownToast": "{{section}} now shown on jobs",
+    "hiddenToast": "{{section}} now hidden on jobs",
+    "names": {
+      "NOTES": "Notes",
+      "APPROVALS": "Approvals",
+      "RELATIONSHIPS": "Relationships",
+      "LINKS": "Links",
+      "STATUS_HISTORY": "Job status history"
+    }
   }
 }

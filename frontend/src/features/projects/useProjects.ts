@@ -72,17 +72,40 @@ export function useUpdateProjectStatus(projectId: string) {
 }
 
 /**
- * ADR-0052 per-project settings. The PATCH response has `links: []`, so only the settings
+ * ADR-0052/0053 per-project settings. The PATCH response has `links: []`, so only the settings
  * fields are merged into the cached project (not the whole response), then the project
  * list is refetched.
+ *
+ * `hiddenJobSections` is applied optimistically (open job screens read the same cached
+ * project, so they update at once) and rolled back if the request fails. The API client
+ * shows the error toast.
  */
 export function useUpdateProjectSettings(projectId: string) {
   const queryClient = useQueryClient();
+  const key = ['projects', projectId];
   return useMutation({
     mutationFn: (body: UpdateProjectSettingsRequest) => projectsApi.updateSettings(projectId, body),
+    onMutate: async (body) => {
+      if (body.hiddenJobSections === undefined) return undefined;
+      await queryClient.cancelQueries({ queryKey: key, exact: true });
+      const previous = queryClient.getQueryData<ProjectResponse>(key);
+      queryClient.setQueryData<ProjectResponse>(key, (old) =>
+        old ? { ...old, hiddenJobSections: body.hiddenJobSections ?? [] } : old,
+      );
+      return { previous };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+    },
     onSuccess: (data) => {
-      queryClient.setQueryData<ProjectResponse>(['projects', projectId], (old) =>
-        old ? { ...old, requireCompletionApproval: data.requireCompletionApproval } : old,
+      queryClient.setQueryData<ProjectResponse>(key, (old) =>
+        old
+          ? {
+              ...old,
+              requireCompletionApproval: data.requireCompletionApproval,
+              hiddenJobSections: data.hiddenJobSections,
+            }
+          : old,
       );
       void queryClient.invalidateQueries({
         queryKey: ['projects'],

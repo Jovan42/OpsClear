@@ -13,6 +13,7 @@ import Skeleton from '../../components/Skeleton';
 import RoleBadge from '../../components/RoleBadge';
 import AddMemberForm from './AddMemberForm';
 import CompletionApprovalSetting from './CompletionApprovalSetting';
+import JobSectionsSetting from './JobSectionsSetting';
 import {
   useProject,
   useProjectMembers,
@@ -289,18 +290,26 @@ export default function ProjectSettingsPage() {
         </section>
       )}
 
-      {/* ── Workflow (ADR-0052; moves into the "Job screen" section with ADR-0053) ── */}
+      {/* ── Job screen (ADR-0053 section toggles + ADR-0052 completion gate) ── */}
       {project && (
-        <section>
+        <section data-testid="job-screen-section">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">
-            {t('projects:projectSettingsPage.workflowHeading')}
+            {t('projects:projectSettingsPage.jobScreenHeading')}
           </h2>
-          <CompletionApprovalSetting
-            projectId={projectId}
-            project={project}
-            canEdit={canEdit}
-            isCompleted={isCompleted}
-          />
+          <div className="space-y-4">
+            <JobSectionsSetting
+              projectId={projectId}
+              project={project}
+              canEdit={canEdit}
+              isCompleted={isCompleted}
+            />
+            <CompletionApprovalSetting
+              projectId={projectId}
+              project={project}
+              canEdit={canEdit}
+              isCompleted={isCompleted}
+            />
+          </div>
         </section>
       )}
 

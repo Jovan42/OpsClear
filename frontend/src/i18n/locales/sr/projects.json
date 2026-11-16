@@ -53,7 +53,7 @@
     "blockReasonsHeading": "Razlozi blokiranja",
     "blockReasonsHelp": "Unapred definisani razlozi koje članovi tima mogu izabrati prilikom blokiranja posla.",
     "noBlockReasons": "Nema definisanih razloga blokiranja. Podesite ih prilikom kreiranja projekta.",
-    "workflowHeading": "Tok rada",
+    "jobScreenHeading": "Ekran posla",
     "dangerZoneHeading": "Opasna zona",
     "reactivateProjectTitle": "Ponovo aktiviraj ovaj projekat",
     "completeProjectTitle": "Završi ovaj projekat",
@@ -81,5 +81,20 @@
     "readOnly": "Samo vlasnici i administratori projekta mogu ovo da promene.",
     "enabledToast": "Poslovi sada zahtevaju odobrenje za završetak",
     "disabledToast": "Poslovi više ne zahtevaju odobrenje za završetak"
+  },
+  "jobSections": {
+    "label": "Odeljci prikazani na poslovima",
+    "help": "Sakrijte odeljke koje ovaj projekat ne koristi. Ništa se ne briše; kada ponovo uključite odeljak, njegovi podaci se opet prikazuju.",
+    "notInPlan": "Nije u vašem paketu",
+    "readOnly": "Samo vlasnici i administratori projekta mogu ovo da promene.",
+    "shownToast": "Odeljak „{{section}}“ se sada prikazuje na poslovima",
+    "hiddenToast": "Odeljak „{{section}}“ je sada skriven na poslovima",
+    "names": {
+      "NOTES": "Beleške",
+      "APPROVALS": "Odobrenja",
+      "RELATIONSHIPS": "Veze",
+      "LINKS": "Linkovi",
+      "STATUS_HISTORY": "Istorija statusa posla"
+    }
   }
 }
