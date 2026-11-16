@@ -241,3 +241,6 @@ scripts/opsclear milestone create PRJ-013 --name "…" --deadline 2026-12-01
 - `job get` without `--project` searches your projects (active first). Pass `--project PRJ-013` to
   skip the search.
 - Exit codes: 0 ok, 1 error, 2 usage error, 3 not applied (re-run with `--yes`).
+- **Rate limit** (ADR-0058): each API key gets a burst of 60 requests, then 120 per minute. Over that the
+  API answers 429 with a `Retry-After` header (seconds). Keys of internal orgs (`is_internal`, e.g. the
+  OpsClear org the CLI and job sync use) are exempt.
