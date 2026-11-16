@@ -38,6 +38,7 @@
 | **Backend Unit/Integration** | JUnit 5 + Testcontainers | Tests against real Postgres in containers |
 | **Frontend Unit** | Vitest + React Testing Library | Fast, Vite-native |
 | **E2E** | Cypress | Browser-based full flow testing |
+| **Frontend E2E coverage** | Istanbul (`vite-plugin-istanbul`), `@cypress/code-coverage`, `nyc` | Report only, merged across `e2e-full` shards in CI (ADR-0057) |
 
 ---
 

@@ -47,11 +47,24 @@ if (typeof window !== 'undefined') {
  * start-stop warnings seen in practice.
  */
 let refCount = 0;
+
+/**
+ * `onUnhandledRequest: 'error'` for everything except Cypress's own `/__cypress/` requests.
+ * The worker's scope is the whole origin, and MSW routes a request from any controlled
+ * client (including the Cypress spec frame) to the demo page. Under E2E coverage
+ * (ADR-0057) `cy.task()` first POSTs to `/__cypress/add-verified-command` from the spec
+ * frame, and erroring on that request makes every task fail with "must only be invoked
+ * from the spec file". Letting those pass through to the network changes nothing for users.
+ */
+function onUnhandledRequest(request: Request, print: { error: () => void }): void {
+  if (new URL(request.url).pathname.startsWith('/__cypress/')) return;
+  print.error();
+}
 let startPromise: ReturnType<typeof demoWorker.start> | null = null;
 
 export function acquireDemoWorker(): ReturnType<typeof demoWorker.start> {
   refCount += 1;
-  startPromise ??= demoWorker.start({ onUnhandledRequest: 'error', quiet: true });
+  startPromise ??= demoWorker.start({ onUnhandledRequest, quiet: true });
   return startPromise;
 }
 

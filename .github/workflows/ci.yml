@@ -597,3 +597,65 @@ jobs:
           spec-pattern: ${{ join(matrix.shard.spec-pattern, ',') }}
           artifact-name: e2e-full-${{ matrix.shard.name }}
           paddle-api-key: ${{ secrets.PADDLE_API_KEY }}
+          coverage: 'true'
+
+  # ADR-0057 (JOB-328): merge the per-shard raw coverage from e2e-full into one report-only
+  # number. Never fails on coverage: missing shards or artifacts only change the summary text.
+  e2e-coverage:
+    name: E2E Coverage
+    needs: e2e-full
+    if: always() && needs.e2e-full.result != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Download raw coverage
+        uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          pattern: e2e-coverage-raw-*
+          path: raw-coverage
+
+      # Each artifact is a shard's .nyc_output/ (the Cypress task's out.json). Copy each into
+      # one shared .nyc_output/ under a unique name so nyc merges them.
+      - name: Merge and report
+        id: report
+        working-directory: frontend
+        env:
+          EXPECTED_SHARDS: '4'
+        run: |
+          mkdir -p .nyc_output
+          found=0
+          if [ -d ../raw-coverage ]; then
+            for d in ../raw-coverage/*/; do
+              [ -f "${d}out.json" ] || continue
+              cp "${d}out.json" ".nyc_output/$(basename "$d").json"
+              found=$((found + 1))
+            done
+          fi
+          echo "Shards with coverage: $found of $EXPECTED_SHARDS"
+          if [ "$found" -gt 0 ]; then
+            npx nyc report || echo "nyc report failed (report only, not failing the job)"
+          fi
+          node ../.github/scripts/e2e-coverage-summary.mjs coverage/coverage-summary.json "$found" "$EXPECTED_SHARDS" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: e2e-coverage-report
+          path: frontend/coverage
+          if-no-files-found: ignore
+          retention-days: 30
