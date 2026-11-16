@@ -211,6 +211,10 @@ full HTML and `lcov.info` report is the `e2e-coverage-report` artifact (30 days)
   no raw coverage at all it says "No coverage collected". Neither fails the job.
 - **On a branch.** Run `CI` with `workflow_dispatch` on the branch (Actions tab, or
   `gh workflow run ci.yml --ref <branch>`); `e2e-full` and `E2E Coverage` run there.
+- **MSW and `cy.task()`.** The `/features` demo's service worker covers the whole origin, so
+  Cypress's own `/__cypress/add-verified-command` request would hit its `onUnhandledRequest:
+  'error'` and every `cy.task()` after it fails with "must only be invoked from the spec file".
+  `src/demo/browser.ts` lets `/__cypress/` requests through. Keep that if you change the worker.
 - The merge script is `.github/scripts/e2e-coverage-summary.mjs`; the shard count (4) is
   `EXPECTED_SHARDS` in the `e2e-coverage` job, so change it when adding a shard.
 
