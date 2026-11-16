@@ -153,6 +153,45 @@ change can break a frontend flow with no frontend diff to show for it.
 
 ---
 
+## Coverage
+
+ADR-0057 ([0057-frontend-e2e-code-coverage.md](../decisions/0057-frontend-e2e-code-coverage.md))
+measures which frontend code the Cypress suite runs. Instrumentation is Istanbul through
+`vite-plugin-istanbul` on the dev server, collection is `@cypress/code-coverage`, and the report is
+`nyc`. All three are opt-in, so plain `npm run dev` and `npm run e2e:run` stay uninstrumented.
+
+**What it measures: reach, not assertions.** A line counts as covered when any spec makes the
+browser run it, whether or not anything asserts on the result. Use it to find screens and code
+paths no spec reaches, not as proof that something is tested. Every `src/**/*.ts(x)` file counts,
+so files no spec loads show up at 0% instead of disappearing. `src/main.tsx` (bootstrap only) and
+`*.d.ts` are excluded (`frontend/.nycrc.json`; `src/main.tsx` also in the plugin's `exclude` in
+`vite.config.ts`, since the local report doesn't apply nyc's `exclude` to instrumented files).
+
+**Report only.** Coverage never fails a run, a CI job or a PR. There's no threshold.
+
+### Running it locally
+
+```bash
+cd frontend
+npm run dev:coverage      # instrumented dev server, in one terminal; leave running
+npm run e2e:coverage      # in another terminal; collects and writes coverage/
+npm run e2e:coverage -- --spec 'cypress/e2e/dashboard/**/*.cy.ts'   # only some specs
+```
+
+- `dev:coverage` sets `COVERAGE=true VITE_COVERAGE=true`. The plugin reads `VITE_COVERAGE`
+  (`requireEnv: true` in `vite.config.ts`) and only instruments the dev server, never
+  `npm run build`. In the browser console, `window.__coverage__` exists only in this mode. The
+  plugin's "Sourcemaps was automatically enabled" warning at startup is expected here.
+- `e2e:coverage` sets `COVERAGE=true`, which `cypress.config.ts` passes to the browser as
+  `Cypress.expose('coverage')`. Without it the coverage hooks skip themselves.
+- Output: `coverage/index.html` (per file and line), `coverage/lcov.info`,
+  `coverage/coverage-summary.json`, and the totals in the terminal. Raw data goes to
+  `.nyc_output/`. Both folders are git-ignored. The raw data accumulates across runs: delete
+  `.nyc_output/` for a fresh number.
+- A run with `--spec` gives a partial number by design: it only counts the specs that ran.
+- Point Cypress at another port with `CYPRESS_BASE_URL` as usual. Specs that log in need a port
+  that Keycloak's redirect URIs and the backend's CORS allow (only `5173` locally).
+
 ## Job type: `E2E`
 
 `E2E` is now a standing job type, alongside `ADR`/`DB`/`Backend`/`Frontend` (see `JOBS.md` and

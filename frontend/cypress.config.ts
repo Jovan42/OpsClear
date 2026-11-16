@@ -1,6 +1,7 @@
 import { defineConfig } from 'cypress';
 import { Client } from 'pg';
 import { plugin as cypressGrepPlugin } from '@cypress/grep/plugin';
+import registerCodeCoverageTasks from '@cypress/code-coverage/task';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -25,6 +26,14 @@ export default defineConfig({
       // e2e-smoke passes this env var, e2e-full doesn't, so both jobs scan the same
       // spec files but run a different subset of the tests inside them.
       cypressGrepPlugin(config);
+
+      // ADR-0057 (JOB-327): E2E code coverage, opt-in via `npm run e2e:coverage`
+      // (COVERAGE=true) against the instrumented `npm run dev:coverage` server. The
+      // tasks are always registered; the support-file hooks only collect when
+      // `coverage` is true. @cypress/code-coverage 4.x on Cypress 15 reads this flag
+      // from `expose` (Cypress.expose('coverage')), not the older `env`.
+      registerCodeCoverageTasks(on, config);
+      config.expose.coverage = process.env.COVERAGE === 'true';
 
       // JOB-209: a handful of things a spec needs (an invite's raw token, backdating
       // an invite's expiry to test the 7-day window) have no API surface at all —
