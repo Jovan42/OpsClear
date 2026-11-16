@@ -105,3 +105,4 @@ Status is as recorded in each ADR. New ADRs: add a row here in the same PR.
 | 0056 | [CI Process Checks](0056-ci-process-checks.md) | Proposed | 2026-11-08 |
 | 0057 | [Frontend E2E Code Coverage](0057-frontend-e2e-code-coverage.md) | Proposed | 2026-11-08 |
 | 0058 | [API Rate Limiting](0058-api-rate-limiting.md) | Proposed | 2026-11-15 |
+| 0059 | [Email Verification and Transactional Email](0059-email-verification-and-transactional-email.md) | Proposed | 2026-11-16 |
