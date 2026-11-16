@@ -26,6 +26,13 @@ inputs:
       separate glob. Left empty runs every test in every matched spec, tagged or not.
     required: false
     default: ''
+  coverage:
+    description: >
+      'true' collects frontend E2E code coverage (ADR-0057, JOB-328): starts the dev server
+      instrumented, runs Cypress with COVERAGE=true and uploads frontend/.nyc_output/ as
+      e2e-coverage-raw-<artifact-name>. Report only, never fails the run. e2e-full passes it.
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -168,6 +175,10 @@ runs:
     - name: Start frontend
       shell: bash
       working-directory: frontend
+      # VITE_COVERAGE must be a real environment variable: vite.config.ts reads it from
+      # process.env, not from .env files. Empty string leaves the plugin unregistered.
+      env:
+        VITE_COVERAGE: ${{ inputs.coverage == 'true' && 'true' || '' }}
       run: nohup npm run dev > frontend.log 2>&1 &
 
     - name: Wait for frontend
@@ -188,6 +199,8 @@ runs:
     - name: Run Cypress
       shell: bash
       working-directory: frontend
+      env:
+        COVERAGE: ${{ inputs.coverage == 'true' && 'true' || '' }}
       run: |
         if [ -n "${{ inputs.grep-tags }}" ]; then
           npx cypress run --spec "${{ inputs.spec-pattern }}" --expose grepTags="${{ inputs.grep-tags }}"
@@ -212,3 +225,13 @@ runs:
           frontend/cypress/screenshots
           frontend/cypress/videos
         if-no-files-found: ignore
+
+    - name: Upload raw E2E coverage
+      uses: actions/upload-artifact@v7
+      if: always() && inputs.coverage == 'true'
+      with:
+        name: e2e-coverage-raw-${{ inputs.artifact-name }}
+        path: frontend/.nyc_output/
+        if-no-files-found: ignore
+        retention-days: 7
+        include-hidden-files: true

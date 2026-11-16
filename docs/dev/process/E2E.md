@@ -191,6 +191,28 @@ npm run e2e:coverage -- --spec 'cypress/e2e/dashboard/**/*.cy.ts'   # only some 
 - A run with `--spec` gives a partial number by design: it only counts the specs that ran.
 - Point Cypress at another port with `CYPRESS_BASE_URL` as usual. Specs that log in need a port
   that Keycloak's redirect URIs and the backend's CORS allow (only `5173` locally).
+- Set `VITE_COVERAGE` in the shell (the scripts do), not in `.env.local`: `vite.config.ts` reads
+  `process.env`, so a value in an `.env` file silently instruments nothing and the report is empty.
+
+### In CI
+
+`e2e-full` (merge to `main`, nightly, manual dispatch) runs every shard instrumented: the `e2e-run`
+action takes `coverage: 'true'`, starts the dev server with `VITE_COVERAGE=true`, runs Cypress with
+`COVERAGE=true` and uploads `frontend/.nyc_output/` as `e2e-coverage-raw-e2e-full-<shard>` (7 days).
+`e2e-smoke` on PRs stays uninstrumented.
+
+The `E2E Coverage` job (after all shards, even if some failed) copies each shard's `out.json`,
+runs `npx nyc report` (same `.nycrc.json` as locally), and writes the result to the run's job
+summary: overall lines/statements/functions/branches and one row per top-level `src/` folder. The
+full HTML and `lcov.info` report is the `e2e-coverage-report` artifact (30 days).
+
+- **Incomplete runs.** If fewer than the 4 shards uploaded raw coverage (a shard crashed before
+  Cypress ran, say), the summary says "Incomplete" with the count, and the numbers undercount. With
+  no raw coverage at all it says "No coverage collected". Neither fails the job.
+- **On a branch.** Run `CI` with `workflow_dispatch` on the branch (Actions tab, or
+  `gh workflow run ci.yml --ref <branch>`); `e2e-full` and `E2E Coverage` run there.
+- The merge script is `.github/scripts/e2e-coverage-summary.mjs`; the shard count (4) is
+  `EXPECTED_SHARDS` in the `e2e-coverage` job, so change it when adding a shard.
 
 ## Job type: `E2E`
 
