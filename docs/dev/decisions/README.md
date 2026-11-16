@@ -108,3 +108,4 @@ Status is as recorded in each ADR. New ADRs: add a row here in the same PR.
 | 0059 | [Email Verification and Transactional Email](0059-email-verification-and-transactional-email.md) | Proposed | 2026-11-16 |
 | 0060 | [Configurable ID Prefixes](0060-configurable-id-prefixes.md) | Proposed | 2026-11-16 |
 | 0061 | [Additional User Preferences and Server-Synced Settings](0061-additional-user-preferences.md) | Proposed | 2026-11-16 |
+| 0062 | [User Guide](0062-user-guide.md) | Proposed | 2026-11-16 |
