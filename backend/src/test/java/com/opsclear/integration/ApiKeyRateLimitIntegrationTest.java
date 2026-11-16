@@ -23,9 +23,12 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -36,6 +39,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import static com.opsclear.generated.jooq.Tables.ORG_SUBSCRIPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,10 +58,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "opsclear.rate-limit.enabled=true",
-        "opsclear.rate-limit.api-key.capacity=3",
-        "opsclear.rate-limit.api-key.refill-per-minute=1"
+    "opsclear.rate-limit.enabled=true",
+    "opsclear.rate-limit.api-key.capacity=3",
+    "opsclear.rate-limit.api-key.refill-per-minute=1"
 })
+@ExtendWith(OutputCaptureExtension.class)
 @DisplayName("API key rate limit")
 class ApiKeyRateLimitIntegrationTest {
 
@@ -161,6 +166,24 @@ class ApiKeyRateLimitIntegrationTest {
         getProjects(rawKey).andExpect(status().isTooManyRequests());
 
         assertThat(apiKeyRepository.findById(keyId).orElseThrow().getLastUsedAt()).isEqualTo(lastUsedBefore);
+    }
+
+    @Test
+    @DisplayName("Repeated rejections of a key should log one WARN a minute, with the key prefix only")
+    void apiKeyRequest_repeatedRejections_shouldLogOneWarnWithPrefixOnly(CapturedOutput output) throws Exception {
+        String rawKey = createKey(userId, "runaway key");
+        String prefix = rawKey.substring(0, 12);
+
+        for (int i = 0; i < CAPACITY; i++) {
+            getProjects(rawKey).andExpect(status().isOk());
+        }
+        getProjects(rawKey).andExpect(status().isTooManyRequests());
+        getProjects(rawKey).andExpect(status().isTooManyRequests());
+        getProjects(rawKey).andExpect(status().isTooManyRequests());
+
+        String warning = "Rate limit exceeded for API key '" + prefix + "'";
+        assertThat(output.getAll().split(Pattern.quote(warning), -1)).hasSize(2);
+        assertThat(output.getAll()).doesNotContain(rawKey);
     }
 
     @Test

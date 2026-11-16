@@ -43,9 +43,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "opsclear.rate-limit.enabled=false",
-        "opsclear.rate-limit.api-key.capacity=3",
-        "opsclear.rate-limit.api-key.refill-per-minute=1"
+    "opsclear.rate-limit.enabled=false",
+    "opsclear.rate-limit.api-key.capacity=3",
+    "opsclear.rate-limit.api-key.refill-per-minute=1"
 })
 @DisplayName("API key rate limit, disabled")
 class ApiKeyRateLimitDisabledIntegrationTest {

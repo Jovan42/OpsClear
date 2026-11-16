@@ -72,6 +72,20 @@ class ApiKeyRateLimiterTest {
     }
 
     @Test
+    @DisplayName("The Spring constructor should use the system clock and limit as configured")
+    void publicConstructor_shouldLimitWithSystemClock() {
+        userInRegularOrg(userId);
+        ApiKeyRateLimiter limiter = new ApiKeyRateLimiter(
+                new RateLimitProperties(true, new RateLimitProperties.ApiKey(1, 1)),
+                organisationRepository, addonAccessChecker);
+
+        assertThat(limiter.tryConsume(keyId, userId).allowed()).isTrue();
+        ApiKeyRateLimiter.Decision rejected = limiter.tryConsume(keyId, userId);
+        assertThat(rejected.allowed()).isFalse();
+        assertThat(rejected.retryAfterSeconds()).isBetween(1L, 60L);
+    }
+
+    @Test
     @DisplayName("Allowed decisions carry no wait and no warning")
     void tryConsume_allowedDecision_shouldHaveNoWaitAndNoWarning() {
         userInRegularOrg(userId);

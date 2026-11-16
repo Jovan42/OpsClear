@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Per-API-key rate limit (ADR-0058): one in-memory Bucket4j token bucket per API key ID, with greedy refill.
@@ -34,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ApiKeyRateLimiter {
 
     private static final long WARN_INTERVAL_NANOS = Duration.ofMinutes(1).toNanos();
-    private static final long NEVER_WARNED = -1L;
 
     private final RateLimitProperties properties;
     private final OrganisationRepository organisationRepository;
@@ -87,7 +85,7 @@ public class ApiKeyRateLimiter {
 
     private KeyLimit newKeyLimit(UUID userId) {
         if (isInternalUser(userId)) {
-            return new KeyLimit(null, null);
+            return new KeyLimit(null);
         }
         RateLimitProperties.ApiKey config = properties.apiKey();
         Bandwidth bandwidth = Bandwidth.builder()
@@ -98,7 +96,7 @@ public class ApiKeyRateLimiter {
                 .addLimit(bandwidth)
                 .withCustomTimePrecision(timeMeter)
                 .build();
-        return new KeyLimit(bucket, new AtomicLong(NEVER_WARNED));
+        return new KeyLimit(bucket);
     }
 
     private boolean isInternalUser(UUID userId) {
@@ -134,11 +132,12 @@ public class ApiKeyRateLimiter {
     private final class KeyLimit {
 
         private final Bucket bucket;
-        private final AtomicLong lastWarnNanos;
+        // Starts a full interval in the past, so the key's first rejection is always due a warning.
+        private long lastWarnNanos;
 
-        private KeyLimit(Bucket bucket, AtomicLong lastWarnNanos) {
+        private KeyLimit(Bucket bucket) {
             this.bucket = bucket;
-            this.lastWarnNanos = lastWarnNanos;
+            this.lastWarnNanos = timeMeter.currentTimeNanos() - WARN_INTERVAL_NANOS;
         }
 
         private boolean isUnlimited() {
@@ -149,12 +148,14 @@ public class ApiKeyRateLimiter {
             return bucket;
         }
 
-        /** {@code true} at most once per minute for this key; only one of several racing callers wins. */
-        private boolean claimWarning() {
+        /** {@code true} at most once per minute for this key. Check and update are atomic per key. */
+        private synchronized boolean claimWarning() {
             long now = timeMeter.currentTimeNanos();
-            long last = lastWarnNanos.get();
-            boolean due = last == NEVER_WARNED || now - last >= WARN_INTERVAL_NANOS;
-            return due && lastWarnNanos.compareAndSet(last, now);
+            if (now - lastWarnNanos < WARN_INTERVAL_NANOS) {
+                return false;
+            }
+            lastWarnNanos = now;
+            return true;
         }
     }
 }
