@@ -118,6 +118,23 @@ describe('Login', () => {
     });
   });
 
+  // JOB-344 (ADR-0059): with verifyEmail on, an account whose email was never verified
+  // (e.g. registered before verification was turned on) is stopped at the branded
+  // verify-email page instead of reaching the app, and gets a verification email.
+  it('an existing user with an unverified email is sent to the verify-email page', () => {
+    const email = `e2e-unverified-${Date.now()}@example.com`;
+    cy.createKeycloakUser(email, 'E2E', 'Unverified', 'password123', { emailVerified: false });
+    cy.visit('/');
+    submitLoginForm(email, 'password123');
+    cy.origin('http://localhost:8180', { args: { email } }, ({ email }) => {
+      cy.get('h1').should('contain.text', 'Verify your email');
+      cy.get('#kc-verify-email-address').should('have.text', email);
+      cy.url().should('include', '/realms/opsclear');
+    });
+    cy.mailpitLink(email, '/login-actions/action-token').should('include', 'localhost:8180');
+    cy.deleteKeycloakUser(email);
+  });
+
   // ADR-0049 Appendix §1: a deep link visited while unauthenticated should land back
   // on that exact path after login, not a generic home page. Was broken (JOB-237,
   // fixed in PR #417) — RequireAuth now saves the intended path to sessionStorage

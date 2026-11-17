@@ -23,6 +23,8 @@ This folder contains Keycloak realm configuration for OpsClear.
 |---------|-------|
 | User registration | Enabled |
 | Email as username | Yes |
+| Email verification | On (ADR-0059). Dev and CI mail goes to Mailpit, http://localhost:8025 |
+| Login and email theme | `opsclear` (`themes/opsclear/login`, `themes/opsclear/email`), en and sr |
 | Password policy | Min 8 characters |
 | Access token lifespan | 5 minutes |
 | Refresh token lifespan | 30 days |
