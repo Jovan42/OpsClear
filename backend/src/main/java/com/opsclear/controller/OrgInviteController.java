@@ -1,6 +1,7 @@
 package com.opsclear.controller;
 
 import com.opsclear.dto.OrgInviteResponse;
+import com.opsclear.dto.ResendInviteRequest;
 import com.opsclear.dto.SendInviteRequest;
 import com.opsclear.security.SecurityUtils;
 import com.opsclear.service.OrgInviteService;
@@ -55,6 +56,18 @@ public class OrgInviteController {
         UUID callerId = SecurityUtils.resolveUserId(auth);
         orgInviteService.revokeInvite(orgId, callerId, inviteId);
         return ResponseEntity.noContent().build();
+    }
+
+    // The body is optional: no body means the email goes out in English
+    @PostMapping("/api/organisations/{orgId}/invites/{inviteId}/resend")
+    public ResponseEntity<OrgInviteResponse> resendInvite(
+            @PathVariable UUID orgId,
+            @PathVariable UUID inviteId,
+            @Valid @RequestBody(required = false) ResendInviteRequest request,
+            Authentication auth) {
+        UUID callerId = SecurityUtils.resolveUserId(auth);
+        String language = request != null ? request.getLanguage() : null;
+        return ResponseEntity.ok(OrgInviteResponse.from(orgInviteService.resend(orgId, inviteId, language, callerId)));
     }
 
     @PostMapping("/api/invites/{token}/accept")

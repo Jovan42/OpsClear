@@ -5,8 +5,10 @@ import com.opsclear.event.InviteAcceptedEvent;
 import com.opsclear.event.InviteEmailRequestedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.exception.TooManyRequestsException;
 import com.opsclear.model.OrgInviteModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
@@ -32,6 +34,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -279,6 +282,177 @@ class OrgInviteServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
+    // ─── resend ───────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("resend_shouldUpdateLastSentAtAndRequestEmail_whenCooldownOver")
+    void resend_shouldUpdateLastSentAtAndRequestEmail_whenCooldownOver() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        invite.setLastSentAt(Instant.now().minus(6, ChronoUnit.MINUTES));
+        String token = invite.getToken();
+        Instant expiresAt = invite.getExpiresAt();
+        stubResend(inviteId, invite);
+        Instant before = Instant.now().truncatedTo(ChronoUnit.MICROS);
+
+        OrgInviteModel result = service.resend(orgId, inviteId, "sr", ownerId);
+
+        ArgumentCaptor<Instant> sentAt = ArgumentCaptor.forClass(Instant.class);
+        verify(orgInviteRepository).updateLastSentAt(eq(inviteId), sentAt.capture());
+        assertThat(sentAt.getValue()).isBetween(before, Instant.now())
+                .isEqualTo(sentAt.getValue().truncatedTo(ChronoUnit.MICROS));
+        assertThat(result.getLastSentAt()).isEqualTo(sentAt.getValue());
+        assertThat(result.getToken()).isEqualTo(token);
+        assertThat(result.getExpiresAt()).isEqualTo(expiresAt);
+        verify(eventPublisher).publishEvent(new InviteEmailRequestedEvent(inviteId, "sr"));
+    }
+
+    @Test
+    @DisplayName("resend_shouldRequestEmailInEnglish_whenLanguageMissing")
+    void resend_shouldRequestEmailInEnglish_whenLanguageMissing() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        invite.setLastSentAt(Instant.now().minus(1, ChronoUnit.HOURS));
+        stubResend(inviteId, invite);
+
+        service.resend(orgId, inviteId, null, ownerId);
+
+        verify(eventPublisher).publishEvent(new InviteEmailRequestedEvent(inviteId, "en"));
+    }
+
+    @Test
+    @DisplayName("resend_shouldRequestEmail_whenInviteWasNeverSent")
+    void resend_shouldRequestEmail_whenInviteWasNeverSent() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        stubResend(inviteId, invite);
+
+        service.resend(orgId, inviteId, "en", ownerId);
+
+        verify(orgInviteRepository).updateLastSentAt(eq(inviteId), any(Instant.class));
+        verify(eventPublisher).publishEvent(new InviteEmailRequestedEvent(inviteId, "en"));
+    }
+
+    @Test
+    @DisplayName("resend_shouldAllowAdmin")
+    void resend_shouldAllowAdmin() {
+        UUID adminId = UUID.randomUUID();
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, adminId)).thenReturn(Optional.of(OrganisationRole.ADMIN));
+        when(orgInviteRepository.findById(inviteId)).thenReturn(Optional.of(invite));
+
+        service.resend(orgId, inviteId, "en", adminId);
+
+        verify(eventPublisher).publishEvent(new InviteEmailRequestedEvent(inviteId, "en"));
+    }
+
+    @Test
+    @DisplayName("resend_shouldThrowTooManyRequestsWithSecondsLeft_whenInsideCooldown")
+    void resend_shouldThrowTooManyRequestsWithSecondsLeft_whenInsideCooldown() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        invite.setLastSentAt(Instant.now().minus(1, ChronoUnit.MINUTES));
+        stubResend(inviteId, invite);
+
+        assertThatThrownBy(() -> service.resend(orgId, inviteId, "en", ownerId))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessage(ErrorMessages.OrgInvite.RESEND_COOLDOWN)
+                .extracting(e -> ((TooManyRequestsException) e).getRetryAfterSeconds())
+                .satisfies(seconds -> assertThat((long) seconds).isBetween(235L, 240L));
+
+        verify(orgInviteRepository, never()).updateLastSentAt(any(), any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    @DisplayName("resend_shouldRoundRetryAfterUpToOneSecond_whenCooldownAlmostOver")
+    void resend_shouldRoundRetryAfterUpToOneSecond_whenCooldownAlmostOver() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        invite.setLastSentAt(Instant.now().minus(OrgInviteService.RESEND_COOLDOWN).plusMillis(500));
+        stubResend(inviteId, invite);
+
+        assertThatThrownBy(() -> service.resend(orgId, inviteId, "en", ownerId))
+                .isInstanceOf(TooManyRequestsException.class)
+                .extracting(e -> ((TooManyRequestsException) e).getRetryAfterSeconds())
+                .isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("resend_shouldThrowConflict_whenInviteRevoked")
+    void resend_shouldThrowConflict_whenInviteRevoked() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        invite.setRevokedAt(Instant.now().minus(1, ChronoUnit.HOURS));
+        assertResendConflict(inviteId, invite);
+    }
+
+    @Test
+    @DisplayName("resend_shouldThrowConflict_whenInviteAccepted")
+    void resend_shouldThrowConflict_whenInviteAccepted() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        invite.setAcceptedAt(Instant.now().minus(1, ChronoUnit.HOURS));
+        assertResendConflict(inviteId, invite);
+    }
+
+    @Test
+    @DisplayName("resend_shouldThrowConflict_whenInviteExpired")
+    void resend_shouldThrowConflict_whenInviteExpired() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, "a@a.com", ownerId);
+        invite.setExpiresAt(Instant.now().minus(1, ChronoUnit.DAYS));
+        assertResendConflict(inviteId, invite);
+    }
+
+    @Test
+    @DisplayName("resend_shouldThrowNotFound_whenInviteBelongsToDifferentOrg")
+    void resend_shouldThrowNotFound_whenInviteBelongsToDifferentOrg() {
+        UUID inviteId = UUID.randomUUID();
+        OrgInviteModel invite = pendingInvite(inviteId, UUID.randomUUID(), "a@a.com", ownerId);
+        stubResend(inviteId, invite);
+
+        assertThatThrownBy(() -> service.resend(orgId, inviteId, "en", ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.OrgInvite.NOT_FOUND);
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    @DisplayName("resend_shouldThrowNotFound_whenInviteDoesNotExist")
+    void resend_shouldThrowNotFound_whenInviteDoesNotExist() {
+        UUID inviteId = UUID.randomUUID();
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgInviteRepository.findById(inviteId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resend(orgId, inviteId, "en", ownerId))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("resend_shouldThrowForbidden_whenCallerIsMember")
+    void resend_shouldThrowForbidden_whenCallerIsMember() {
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
+
+        assertThatThrownBy(() -> service.resend(orgId, UUID.randomUUID(), "en", memberId))
+                .isInstanceOf(ForbiddenException.class);
+        verify(orgInviteRepository, never()).updateLastSentAt(any(), any());
+    }
+
+    @Test
+    @DisplayName("resend_shouldThrowNotFound_whenOrgDoesNotExist")
+    void resend_shouldThrowNotFound_whenOrgDoesNotExist() {
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resend(orgId, UUID.randomUUID(), "en", ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.Organisation.NOT_FOUND);
+    }
+
     // ─── acceptInvite ─────────────────────────────────────────────────────────
 
     @Test
@@ -384,6 +558,22 @@ class OrgInviteServiceTest {
         when(orgInviteRepository.existsPendingByEmailAndOrgId(targetEmail, orgId)).thenReturn(false);
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
         when(orgInviteRepository.save(any())).thenReturn(saved);
+    }
+
+    private void stubResend(UUID inviteId, OrgInviteModel invite) {
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(orgInviteRepository.findById(inviteId)).thenReturn(Optional.of(invite));
+    }
+
+    private void assertResendConflict(UUID inviteId, OrgInviteModel invite) {
+        stubResend(inviteId, invite);
+
+        assertThatThrownBy(() -> service.resend(orgId, inviteId, "en", ownerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.OrgInvite.INVALID);
+        verify(orgInviteRepository, never()).updateLastSentAt(any(), any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     private OrgInviteModel pendingInvite(UUID orgId, String email, UUID invitedBy) {

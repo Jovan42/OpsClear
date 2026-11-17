@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.exception.ErrorResponse;
 import com.opsclear.exception.GlobalExceptionHandler;
+import com.opsclear.exception.TooManyRequestsException;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpInputMessage;
@@ -57,6 +59,19 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().message()).isEqualTo("An unexpected error occurred");
         assertThat(response.getBody().timestamp()).isNotBlank();
         assertThat(response.getBody().message()).doesNotContain("unexpected db failure");
+    }
+
+    @Test
+    @DisplayName("handleTooManyRequests_shouldReturn429_withRetryAfterAndJsonBody (JOB-343)")
+    void handleTooManyRequests_shouldReturn429_withRetryAfterAndJsonBody() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleTooManyRequests(new TooManyRequestsException("Slow down", 42));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("42");
+        assertThat(response.getBody().error()).isEqualTo("Too Many Requests");
+        assertThat(response.getBody().message()).isEqualTo("Slow down");
+        assertThat(response.getBody().timestamp()).isNotBlank();
     }
 
     @Test
