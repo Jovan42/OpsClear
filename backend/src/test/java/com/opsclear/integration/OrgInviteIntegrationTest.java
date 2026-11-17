@@ -263,7 +263,11 @@ class OrgInviteIntegrationTest {
         assertThat(part(email, "text/plain"))
                 .contains("Owner vas poziva da se pridružite organizaciji Acme Corp na OpsClear-u.")
                 .contains("http://app.test/invite/" + token);
-        assertThat(part(email, "text/html")).contains("href=\"http://app.test/invite/" + token + "\"");
+        assertThat(part(email, "text/html"))
+                .contains("href=\"http://app.test/invite/" + token + "\"")
+                .contains("background-color:#059669")
+                .contains("Ako dugme ne radi, kopirajte ovaj link u pregledač:<br>"
+                        + "<span style=\"word-break:break-all;\">http://app.test/invite/" + token + "</span>");
     }
 
     @Test
@@ -278,6 +282,10 @@ class OrgInviteIntegrationTest {
         assertThat(part(email, "text/plain"))
                 .contains("Owner has invited you to join Acme Corp on OpsClear.")
                 .contains("http://app.test/invite/" + token);
+        assertThat(part(email, "text/html"))
+                .contains("max-width:560px; background-color:#ffffff; border:1px solid #e5e7eb; border-radius:12px;")
+                .contains("If the button doesn't work, copy this link into your browser:<br>"
+                        + "<span style=\"word-break:break-all;\">http://app.test/invite/" + token + "</span>");
     }
 
     @Test

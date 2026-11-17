@@ -19,7 +19,8 @@ import java.util.Locale;
 
 /**
  * Sends transactional email from the backend over SMTP (ADR-0059): Mailpit in dev, Brevo on prod. Texts come from
- * the {@code mail/messages_*.properties} bundles (en, sr) and are put into a plain-text and a simple HTML part.
+ * the {@code mail/messages_*.properties} bundles (en, sr) and are put into a plain-text part and an HTML part with the
+ * same light layout as the Keycloak emails.
  * No template engine.
  *
  * <p>Sending is best-effort: a failure is logged at WARN with the invite ID only and never thrown, because the
@@ -38,6 +39,22 @@ public class EmailService {
     // The invitee's time zone is unknown, so the expiry shows date and time with an explicit UTC
     private static final DateTimeFormatter EN_DATE = DateTimeFormatter.ofPattern("MMMM d, yyyy, HH:mm 'UTC'", EN);
     private static final DateTimeFormatter SR_DATE = DateTimeFormatter.ofPattern("d.M.yyyy. 'u' HH:mm 'UTC'", SR);
+
+    private static final String FONT = "font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,"
+            + "Helvetica,Arial,sans-serif;";
+    private static final String SMALL_GREY = "font-size:13px; color:#6b7280;";
+    private static final String HTML_START = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n"
+            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n</head>\n"
+            + "<body style=\"margin:0; padding:0; background-color:#f3f4f6;\">\n"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\""
+            + " style=\"background-color:#f3f4f6;\">\n<tr>\n<td align=\"center\" style=\"padding:32px 16px;\">\n"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\""
+            + " style=\"max-width:560px; background-color:#ffffff; border:1px solid #e5e7eb; border-radius:12px;\">\n"
+            + "<tr>\n<td style=\"padding:24px 32px 0; " + FONT
+            + " font-size:18px; font-weight:700; color:#059669;\">OpsClear</td>\n</tr>\n"
+            + "<tr>\n<td style=\"padding:8px 32px 32px; " + FONT
+            + " font-size:15px; line-height:1.6; color:#374151;\">\n";
+    private static final String HTML_END = "\n</td>\n</tr>\n</table>\n</td>\n</tr>\n</table>\n</body>\n</html>\n";
 
     private final JavaMailSender mailSender;
     private final MessageSource messages;
@@ -91,18 +108,22 @@ public class EmailService {
                 text("invite.ignore", locale)) + "\n";
     }
 
+    // Same light layout, colours, spacing and font stack as the Keycloak emails (ADR-0059, amended 2026-11-17):
+    // keycloak/themes/opsclear/email/html/template.ftl and email-verification.ftl. Inline styles and tables only,
+    // because email clients ignore <style> blocks.
     private String inviteHtml(Locale locale, String inviter, String org, String link, String expiry) {
         String href = HtmlUtils.htmlEscape(link);
-        return "<!DOCTYPE html><html><body style=\"font-family: Arial, sans-serif; color: #1f2937;\">"
-                + "<p>" + html("invite.greeting", locale) + "</p>"
-                + "<p>" + html("invite.body", locale, inviter, org) + "</p>"
-                + "<p><a href=\"" + href + "\" style=\"display: inline-block; padding: 10px 18px;"
-                + " background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px;\">"
-                + html("invite.action", locale) + "</a></p>"
-                + "<p>" + html("invite.linkIntro", locale) + "<br><a href=\"" + href + "\">" + href + "</a></p>"
-                + "<p>" + html("invite.expiry", locale, expiry) + "</p>"
-                + "<p style=\"color: #6b7280; font-size: 12px;\">" + html("invite.ignore", locale) + "</p>"
-                + "</body></html>";
+        return HTML_START
+                + "<p style=\"margin:0 0 16px;\">" + html("invite.greeting", locale) + "</p>"
+                + "<p style=\"margin:0 0 24px;\">" + html("invite.body", locale, inviter, org) + "</p>"
+                + "<p style=\"margin:0 0 24px;\"><a href=\"" + href + "\" style=\"display:inline-block;"
+                + " background-color:#059669; color:#ffffff; font-weight:600; text-decoration:none; padding:12px 24px;"
+                + " border-radius:8px;\">" + html("invite.action", locale) + "</a></p>"
+                + "<p style=\"" + SMALL_GREY + " margin:0 0 16px;\">" + html("invite.linkFallback", locale)
+                + "<br><span style=\"word-break:break-all;\">" + href + "</span></p>"
+                + "<p style=\"" + SMALL_GREY + " margin:0 0 16px;\">" + html("invite.expiry", locale, expiry) + "</p>"
+                + "<p style=\"" + SMALL_GREY + " margin:0;\">" + html("invite.ignore", locale) + "</p>"
+                + HTML_END;
     }
 
     private String text(String key, Locale locale, Object... args) {

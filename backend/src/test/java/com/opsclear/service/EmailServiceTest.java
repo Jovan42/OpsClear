@@ -77,7 +77,38 @@ class EmailServiceTest {
                 .contains("Olivia Owner has invited you to join Acme Corp on OpsClear.")
                 .contains("href=\"https://app.example.com/invite/" + TOKEN + "\"")
                 .contains("Accept invite")
+                .contains("If the button doesn't work, copy this link into your browser:")
                 .contains("The invite expires on November 24, 2026, 10:15 UTC.");
+        assertThat(text).doesNotContain("If the button doesn't work");
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldUseBrandedLayout_whenBuildingHtml")
+    void sendInvite_shouldUseBrandedLayout_whenBuildingHtml() throws Exception {
+        String html = textPart(send(invite("en", "Acme Corp", "Olivia Owner")), "text/html");
+
+        assertThat(html)
+                // light grey background and centred white card
+                .contains("<body style=\"margin:0; padding:0; background-color:#f3f4f6;\">")
+                .contains("max-width:560px; background-color:#ffffff; border:1px solid #e5e7eb; border-radius:12px;")
+                // green header, body text in the Keycloak font stack
+                .contains("font-size:18px; font-weight:700; color:#059669;\">OpsClear</td>")
+                .contains("font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,"
+                        + "sans-serif; font-size:15px; line-height:1.6; color:#374151;")
+                // brand button
+                .contains("<a href=\"https://app.example.com/invite/" + TOKEN + "\" style=\"display:inline-block;"
+                        + " background-color:#059669; color:#ffffff; font-weight:600; text-decoration:none;"
+                        + " padding:12px 24px; border-radius:8px;\">Accept invite</a>")
+                // raw-link fallback that wraps on phones
+                .contains("<p style=\"font-size:13px; color:#6b7280; margin:0 0 16px;\">If the button doesn't work,"
+                        + " copy this link into your browser:<br><span style=\"word-break:break-all;\">"
+                        + "https://app.example.com/invite/" + TOKEN + "</span></p>")
+                // expiry and ignore lines in small grey text
+                .contains("<p style=\"font-size:13px; color:#6b7280; margin:0 0 16px;\">The invite expires on")
+                .contains("<p style=\"font-size:13px; color:#6b7280; margin:0;\">If you weren't expecting")
+                .doesNotContain("<style")
+                .doesNotContain("<img")
+                .doesNotContain("#2563eb");
     }
 
     @Test
@@ -97,6 +128,7 @@ class EmailServiceTest {
         String html = textPart(sent, "text/html");
         assertThat(html)
                 .contains("Prihvati pozivnicu")
+                .contains("Ako dugme ne radi, kopirajte ovaj link u pregledač:")
                 .contains("href=\"https://app.example.com/invite/" + TOKEN + "\"");
     }
 
@@ -128,7 +160,9 @@ class EmailServiceTest {
         assertThat(html)
                 .contains("Mallory &lt;script&gt; has invited you to join &lt;b&gt;Evil&lt;/b&gt; &amp; Co on OpsClear.")
                 .doesNotContain("<script>")
-                .doesNotContain("<b>Evil</b>");
+                .doesNotContain("<b>Evil</b>")
+                .contains("background-color:#059669")
+                .contains("word-break:break-all;");
         assertThat(textPart(sent, "text/plain")).contains("Mallory <script> has invited you to join <b>Evil</b> & Co");
     }
 
