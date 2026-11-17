@@ -244,3 +244,14 @@ scripts/opsclear milestone create PRJ-013 --name "…" --deadline 2026-12-01
 - **Rate limit** (ADR-0058): each API key gets a burst of 60 requests, then 120 per minute. Over that the
   API answers 429 with a `Retry-After` header (seconds). Keys of internal orgs (`is_internal`, e.g. the
   OpsClear org the CLI and job sync use) are exempt.
+
+**Dev emails.** `docker-compose up` also starts Mailpit (ADR-0059). Keycloak and the backend send
+all dev mail to it; read it at http://localhost:8025 (SMTP on `localhost:1025`).
+
+Existing local Keycloak databases won't pick up the realm's `smtpServer`, because `--import-realm`
+skips a realm that already exists. Either re-create the Keycloak volume (`docker-compose down -v`,
+which also wipes the local DB, then `./scripts/seed.sh`), or set SMTP in the admin console
+(Realm settings > Email: host `mailpit`, port `1025`, from `no-reply@opsclear.local`, no auth).
+
+Prod: a fresh realm import also points SMTP at `mailpit` until `scripts/keycloak-apply-email.sh` has
+run, so run it right after any fresh import (see its `--help`).
