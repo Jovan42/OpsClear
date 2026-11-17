@@ -9,6 +9,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
@@ -52,14 +53,16 @@ public class EmailService {
         this.messages = mailMessages();
         this.from = from;
         this.fromName = fromName;
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        this.baseUrl = baseUrl;
     }
 
     public void sendInvite(InviteEmail email) {
         try {
             boolean serbian = SERBIAN.equals(email.language());
             Locale locale = serbian ? SR : EN;
-            String link = baseUrl + "/invite/" + email.token();
+            // pathSegment joins with exactly one slash, whether or not the base URL ends with one
+            String link = UriComponentsBuilder.fromUriString(baseUrl).pathSegment("invite", email.token())
+                    .build().toUriString();
             String expiry = (serbian ? SR_DATE : EN_DATE).format(email.expiresAt().atZone(ZoneOffset.UTC));
 
             MimeMessage message = mailSender.createMimeMessage();
