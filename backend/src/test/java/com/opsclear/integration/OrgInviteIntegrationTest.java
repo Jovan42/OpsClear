@@ -1,6 +1,13 @@
 package com.opsclear.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icegreen.greenmail.junit5.GreenMailExtension;
+import com.icegreen.greenmail.util.ServerSetupTest;
+import com.opsclear.event.InviteEmailListener;
+import com.opsclear.event.InviteEmailRequestedEvent;
+import com.opsclear.model.OrgInviteModel;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.NotificationRepository;
@@ -17,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,9 +32,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import jakarta.mail.Multipart;
+import jakarta.mail.Part;
+import jakarta.mail.internet.MimeMessage;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -41,6 +58,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Org invite endpoint")
 class OrgInviteIntegrationTest {
 
+    private static final long MAIL_WAIT_MS = 5_000;
+
+    // In-memory SMTP on the test profile's spring.mail.port (3025), fresh for every test (JOB-342)
+    @RegisterExtension
+    static final GreenMailExtension GREEN_MAIL = new GreenMailExtension(ServerSetupTest.SMTP);
+
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private OrgInviteRepository orgInviteRepository;
@@ -53,6 +76,7 @@ class OrgInviteIntegrationTest {
     @Autowired private ProjectRepository projectRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private NotificationRepository notificationRepository;
+    @Autowired private InviteEmailListener inviteEmailListener;
 
     private UUID ownerId;
     private UUID adminId;
@@ -204,6 +228,160 @@ class OrgInviteIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("sendInvite_shouldReturnTokenAndSaveLastSentAt_whenInviteCreated")
+    void sendInvite_shouldReturnTokenAndSaveLastSentAt_whenInviteCreated() throws Exception {
+        Instant before = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+        JsonNode body = createInvite("newuser@example.com", null);
+
+        UUID inviteId = UUID.fromString(body.get("id").asText());
+        OrgInviteModel saved = orgInviteRepository.findById(inviteId).orElseThrow();
+        assertThat(body.get("token").asText()).hasSize(64).isEqualTo(saved.getToken());
+        assertThat(saved.getLastSentAt()).isNotNull()
+                .isAfterOrEqualTo(before.minusSeconds(1))
+                .isBeforeOrEqualTo(Instant.now());
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldEmailInviteInSerbian_whenLanguageIsSr")
+    void sendInvite_shouldEmailInviteInSerbian_whenLanguageIsSr() throws Exception {
+        JsonNode body = createInvite("novi@example.com", "sr");
+        String token = body.get("token").asText();
+
+        MimeMessage email = singleEmail();
+        assertThat(email.getAllRecipients()).extracting(Object::toString).containsExactly("novi@example.com");
+        assertThat(email.getSubject()).isEqualTo("Pozvani ste da se pridružite organizaciji Acme Corp na OpsClear-u");
+        assertThat(part(email, "text/plain"))
+                .contains("Owner vas poziva da se pridružite organizaciji Acme Corp na OpsClear-u.")
+                .contains("http://app.test/invite/" + token);
+        assertThat(part(email, "text/html")).contains("href=\"http://app.test/invite/" + token + "\"");
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldEmailInviteInEnglish_whenLanguageMissing")
+    void sendInvite_shouldEmailInviteInEnglish_whenLanguageMissing() throws Exception {
+        JsonNode body = createInvite("newuser@example.com", null);
+        String token = body.get("token").asText();
+
+        MimeMessage email = singleEmail();
+        assertThat(email.getAllRecipients()).extracting(Object::toString).containsExactly("newuser@example.com");
+        assertThat(email.getSubject()).isEqualTo("You're invited to join Acme Corp on OpsClear");
+        assertThat(part(email, "text/plain"))
+                .contains("Owner has invited you to join Acme Corp on OpsClear.")
+                .contains("http://app.test/invite/" + token);
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldEmailInviteInEnglish_whenLanguageIsEn")
+    void sendInvite_shouldEmailInviteInEnglish_whenLanguageIsEn() throws Exception {
+        createInvite("newuser@example.com", "en");
+
+        assertThat(singleEmail().getSubject()).isEqualTo("You're invited to join Acme Corp on OpsClear");
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldReturn400AndSendNothing_whenLanguageUnsupported")
+    void sendInvite_shouldReturn400AndSendNothing_whenLanguageUnsupported() throws Exception {
+        mockMvc.perform(post(ApiPaths.orgInvites(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("email", "newuser@example.com", "language", "fr"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("language: Language must be en or sr"));
+
+        assertThat(orgInviteRepository.findPendingByOrgId(orgId)).isEmpty();
+        assertThat(GREEN_MAIL.getReceivedMessages()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldSendNoEmail_whenInviteRejected")
+    void sendInvite_shouldSendNoEmail_whenInviteRejected() throws Exception {
+        mockMvc.perform(post(ApiPaths.orgInvites(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("email", "member@example.com"))))
+                .andExpect(status().isConflict());
+
+        assertThat(GREEN_MAIL.getReceivedMessages()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldStillReturn201_whenSmtpServerIsDown")
+    void sendInvite_shouldStillReturn201_whenSmtpServerIsDown() throws Exception {
+        GREEN_MAIL.stop();
+
+        JsonNode body = createInvite("newuser@example.com", "en");
+
+        UUID inviteId = UUID.fromString(body.get("id").asText());
+        assertThat(orgInviteRepository.findById(inviteId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("inviteEmailListener_shouldSendNothing_whenInviteRevokedOrMissing")
+    void inviteEmailListener_shouldSendNothing_whenInviteRevokedOrMissing() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+        assertThat(GREEN_MAIL.waitForIncomingEmail(MAIL_WAIT_MS, 1)).isTrue();
+        orgInviteRepository.markRevoked(inviteId);
+
+        inviteEmailListener.onInviteEmailRequested(new InviteEmailRequestedEvent(inviteId, "en"));
+        inviteEmailListener.onInviteEmailRequested(new InviteEmailRequestedEvent(UUID.randomUUID(), "en"));
+
+        assertThat(GREEN_MAIL.getReceivedMessages()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("inviteEmailListener_shouldSendNothing_whenOrganisationDeleted")
+    void inviteEmailListener_shouldSendNothing_whenOrganisationDeleted() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+        assertThat(GREEN_MAIL.waitForIncomingEmail(MAIL_WAIT_MS, 1)).isTrue();
+        OrganisationModel org = organisationRepository.findById(orgId).orElseThrow();
+        org.softDelete();
+        organisationRepository.save(org);
+
+        inviteEmailListener.onInviteEmailRequested(new InviteEmailRequestedEvent(inviteId, "en"));
+
+        assertThat(GREEN_MAIL.getReceivedMessages()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("repository_shouldReadBackLastSentAt_whenRowHasItSet")
+    void repository_shouldReadBackLastSentAt_whenRowHasItSet() {
+        Instant lastSentAt = Instant.parse("2026-11-10T08:30:15.123456Z");
+        OrgInviteModel saved = orgInviteRepository.save(OrgInviteModel.builder()
+                .organisationId(orgId)
+                .email("stored@example.com")
+                .invitedBy(ownerId)
+                .token("stored-token")
+                .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
+                .lastSentAt(lastSentAt)
+                .build());
+
+        assertThat(saved.getLastSentAt()).isEqualTo(lastSentAt);
+        assertThat(orgInviteRepository.findById(saved.getId()).orElseThrow().getLastSentAt()).isEqualTo(lastSentAt);
+        assertThat(orgInviteRepository.findByToken("stored-token").orElseThrow().getLastSentAt())
+                .isEqualTo(lastSentAt);
+        assertThat(orgInviteRepository.findPendingByOrgId(orgId)).singleElement()
+                .extracting(OrgInviteModel::getLastSentAt).isEqualTo(lastSentAt);
+    }
+
+    @Test
+    @DisplayName("repository_shouldReadBackNullLastSentAt_whenRowHasNone")
+    void repository_shouldReadBackNullLastSentAt_whenRowHasNone() {
+        OrgInviteModel saved = orgInviteRepository.save(OrgInviteModel.builder()
+                .organisationId(orgId)
+                .email("legacy@example.com")
+                .invitedBy(ownerId)
+                .token("legacy-token")
+                .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
+                .build());
+
+        assertThat(orgInviteRepository.findById(saved.getId()).orElseThrow().getLastSentAt()).isNull();
+    }
+
     // ─── listInvites ──────────────────────────────────────────────────────────
 
     @Test
@@ -221,7 +399,8 @@ class OrgInviteIntegrationTest {
                                 .claim("email", "owner@example.com").claim("name", "Owner"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].email").value("invite1@example.com"));
+                .andExpect(jsonPath("$[0].email").value("invite1@example.com"))
+                .andExpect(jsonPath("$[0].token").value(orgInviteRepository.findPendingByOrgId(orgId).get(0).getToken()));
     }
 
     @Test
@@ -309,9 +488,7 @@ class OrgInviteIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        String token = objectMapper.readTree(createResponse).get("token") != null
-                ? objectMapper.readTree(createResponse).get("token").asText()
-                : orgInviteRepository.findPendingByOrgId(orgId).get(0).getToken();
+        String token = objectMapper.readTree(createResponse).get("token").asText();
 
         mockMvc.perform(post(ApiPaths.acceptInvite(token))
                         .with(jwt().jwt(j -> j.subject(newUserId.toString())
@@ -365,5 +542,48 @@ class OrgInviteIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(outsiderId.toString())
                                 .claim("email", "outsider@example.com").claim("name", "Outsider"))))
                 .andExpect(status().isConflict());
+    }
+
+    // ─── helpers ─────────────────────────────────────────────────────────────
+
+    private JsonNode createInvite(String email, String language) throws Exception {
+        Map<String, String> request = language == null
+                ? Map.of("email", email)
+                : Map.of("email", email, "language", language);
+        String response = mockMvc.perform(post(ApiPaths.orgInvites(orgId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
+                                .claim("email", "owner@example.com").claim("name", "Owner")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response);
+    }
+
+    // The send runs after commit on the notification executor, so wait for it instead of asserting straight away
+    private static MimeMessage singleEmail() {
+        assertThat(GREEN_MAIL.waitForIncomingEmail(MAIL_WAIT_MS, 1)).as("invite email received").isTrue();
+        MimeMessage[] received = GREEN_MAIL.getReceivedMessages();
+        assertThat(received).hasSize(1);
+        return received[0];
+    }
+
+    private static String part(Part message, String mimeType) throws Exception {
+        List<String> found = new ArrayList<>();
+        collectParts(message, mimeType, found);
+        assertThat(found).as("%s parts", mimeType).hasSize(1);
+        return found.get(0);
+    }
+
+    private static void collectParts(Part part, String mimeType, List<String> found) throws Exception {
+        if (part.isMimeType(mimeType)) {
+            found.add((String) part.getContent());
+        } else if (part.isMimeType("multipart/*")) {
+            Multipart multipart = (Multipart) part.getContent();
+            for (int i = 0; i < multipart.getCount(); i++) {
+                collectParts(multipart.getBodyPart(i), mimeType, found);
+            }
+        }
     }
 }

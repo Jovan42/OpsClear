@@ -1123,6 +1123,160 @@
 				}
 			],
 			"description": "In-app notification centre (ADR-0051)"
+		},
+		{
+			"name": "Organisation Invites",
+			"item": [
+				{
+					"name": "Send Invite",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"inviteId\", jsonData.id);",
+									"    pm.environment.set(\"inviteToken\", jsonData.token);",
+									"}",
+									"",
+									"pm.test(\"Invite created with token\", function () {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(pm.response.json()).to.have.property('token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"invitee@example.com\",\n  \"language\": \"sr\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "organisations", "{{orgId}}", "invites"]
+						},
+						"description": "Owner/admin only. Creates a pending invite (expires after 7 days) and emails it after commit (ADR-0059): open Mailpit at http://localhost:8025 in dev. `language` is optional, `en` (default) or `sr`, the language of the email; any other value gives 400. The response includes `token`, used for the `/invite/{token}` link. A failed send never fails the request."
+					},
+					"response": [
+						{
+							"name": "201 invite created",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"invitee@example.com\",\n  \"language\": \"sr\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "invites"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"id\": \"8f6c2f0e-5d1a-4c9b-9a51-2f3e4d5c6b7a\",\n  \"organisationId\": \"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\",\n  \"email\": \"invitee@example.com\",\n  \"invitedBy\": \"0a1b2c3d-4e5f-4607-8192-a3b4c5d6e7f8\",\n  \"invitedByName\": \"Test User\",\n  \"token\": \"3f9a1c0b7e2d4a6f8c5b1e0d9a7f6c3b2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b\",\n  \"expiresAt\": \"2026-11-24T10:15:00Z\",\n  \"createdAt\": \"2026-11-17T10:15:00Z\"\n}"
+						},
+						{
+							"name": "400 unsupported language",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"invitee@example.com\",\n  \"language\": \"fr\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "invites"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Validation Error\",\n  \"message\": \"language: Language must be en or sr\",\n  \"timestamp\": \"2026-11-17T10:15:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "List Invites",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "organisations", "{{orgId}}", "invites"]
+						},
+						"description": "Owner/admin only. Pending invites, newest first. Each item includes `token`, so the UI can build the \"Copy link\" URL `/invite/{token}` (ADR-0059)."
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Invite",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites/{{inviteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "organisations", "{{orgId}}", "invites", "{{inviteId}}"]
+						},
+						"description": "Owner/admin only. Revokes a pending invite (204); revoking one that isn't pending gives 400."
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Invite",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/invites/{{inviteToken}}/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "invites", "{{inviteToken}}", "accept"]
+						},
+						"description": "Run as the invitee: the caller's email must match the invite's (403 otherwise). Adds the caller to the organisation as a member."
+					},
+					"response": []
+				}
+			],
+			"description": "Organisation invites (ADR-0026) and invite emails (ADR-0059)"
 		}
 	],
 	"auth": {

@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.dto.SendInviteRequest;
 import com.opsclear.event.InviteAcceptedEvent;
+import com.opsclear.event.InviteEmailRequestedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
@@ -31,6 +32,7 @@ import java.util.UUID;
 @Slf4j
 public class OrgInviteService {
 
+    static final String DEFAULT_LANGUAGE = "en";
     private static final int INVITE_EXPIRY_DAYS = 7;
     private static final int TOKEN_BYTES = 32;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -38,7 +40,6 @@ public class OrgInviteService {
     private final OrgInviteRepository orgInviteRepository;
     private final OrganisationRepository organisationRepository;
     private final UserRepository userRepository;
-    private final EmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -53,7 +54,8 @@ public class OrgInviteService {
                 .orElse("Unknown");
 
         String token = generateToken();
-        Instant expiresAt = Instant.now().plus(INVITE_EXPIRY_DAYS, ChronoUnit.DAYS);
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(INVITE_EXPIRY_DAYS, ChronoUnit.DAYS);
 
         OrgInviteModel invite = OrgInviteModel.builder()
                 .organisationId(orgId)
@@ -62,11 +64,13 @@ public class OrgInviteService {
                 .invitedByName(callerName)
                 .token(token)
                 .expiresAt(expiresAt)
+                .lastSentAt(now)
                 .build();
 
         OrgInviteModel saved = orgInviteRepository.save(invite);
-        log.info("Invite sent to {} for organisation {} by {}", request.getEmail(), orgId, callerId);
-        emailService.sendInvite(request.getEmail(), token);
+        log.info("Invite {} created for organisation {} by {}", saved.getId(), orgId, callerId);
+        // Sent after commit, asynchronously (ADR-0059): a failed send never fails the invite
+        eventPublisher.publishEvent(new InviteEmailRequestedEvent(saved.getId(), resolveLanguage(request)));
 
         return saved;
     }
@@ -110,6 +114,11 @@ public class OrgInviteService {
                 invite.getId(), invite.getOrganisationId(), callerId, invite.getInvitedBy()));
 
         return orgInviteRepository.findById(invite.getId()).orElseThrow();
+    }
+
+    // DTO validation allows only en/sr; a missing language means en
+    private static String resolveLanguage(SendInviteRequest request) {
+        return request.getLanguage() != null ? request.getLanguage() : DEFAULT_LANGUAGE;
     }
 
     // --- Business rule guards ---

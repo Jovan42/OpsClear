@@ -26,7 +26,7 @@ public class OrgInviteRepository {
     }
 
     private static LocalDateTime toLocalDateTime(Instant instant) {
-        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+        return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
     }
 
     public OrgInviteModel save(OrgInviteModel invite) {
@@ -36,6 +36,7 @@ public class OrgInviteRepository {
                 .set(ORGANISATION_INVITES.INVITED_BY, invite.getInvitedBy())
                 .set(ORGANISATION_INVITES.TOKEN, invite.getToken())
                 .set(ORGANISATION_INVITES.EXPIRES_AT, toLocalDateTime(invite.getExpiresAt()))
+                .set(ORGANISATION_INVITES.LAST_SENT_AT, toLocalDateTime(invite.getLastSentAt()))
                 .returning(ORGANISATION_INVITES.ID)
                 .fetchSingle()
                 .getId();
@@ -53,7 +54,8 @@ public class OrgInviteRepository {
                         ORGANISATION_INVITES.EXPIRES_AT,
                         ORGANISATION_INVITES.ACCEPTED_AT,
                         ORGANISATION_INVITES.REVOKED_AT,
-                        ORGANISATION_INVITES.CREATED_AT)
+                        ORGANISATION_INVITES.CREATED_AT,
+                        ORGANISATION_INVITES.LAST_SENT_AT)
                 .from(ORGANISATION_INVITES)
                 .leftJoin(USERS).on(ORGANISATION_INVITES.INVITED_BY.eq(USERS.ID))
                 .where(ORGANISATION_INVITES.ID.eq(id))
@@ -71,7 +73,8 @@ public class OrgInviteRepository {
                         ORGANISATION_INVITES.EXPIRES_AT,
                         ORGANISATION_INVITES.ACCEPTED_AT,
                         ORGANISATION_INVITES.REVOKED_AT,
-                        ORGANISATION_INVITES.CREATED_AT)
+                        ORGANISATION_INVITES.CREATED_AT,
+                        ORGANISATION_INVITES.LAST_SENT_AT)
                 .from(ORGANISATION_INVITES)
                 .leftJoin(USERS).on(ORGANISATION_INVITES.INVITED_BY.eq(USERS.ID))
                 .where(ORGANISATION_INVITES.TOKEN.eq(token))
@@ -89,7 +92,8 @@ public class OrgInviteRepository {
                         ORGANISATION_INVITES.EXPIRES_AT,
                         ORGANISATION_INVITES.ACCEPTED_AT,
                         ORGANISATION_INVITES.REVOKED_AT,
-                        ORGANISATION_INVITES.CREATED_AT)
+                        ORGANISATION_INVITES.CREATED_AT,
+                        ORGANISATION_INVITES.LAST_SENT_AT)
                 .from(ORGANISATION_INVITES)
                 .leftJoin(USERS).on(ORGANISATION_INVITES.INVITED_BY.eq(USERS.ID))
                 .where(ORGANISATION_INVITES.ORGANISATION_ID.eq(organisationId))
@@ -141,6 +145,7 @@ public class OrgInviteRepository {
                 .acceptedAt(toInstant(r.get(ORGANISATION_INVITES.ACCEPTED_AT)))
                 .revokedAt(toInstant(r.get(ORGANISATION_INVITES.REVOKED_AT)))
                 .createdAt(toInstant(r.get(ORGANISATION_INVITES.CREATED_AT)))
+                .lastSentAt(toInstant(r.get(ORGANISATION_INVITES.LAST_SENT_AT)))
                 .build();
     }
 }

@@ -2,6 +2,7 @@ package com.opsclear.service;
 
 import com.opsclear.dto.SendInviteRequest;
 import com.opsclear.event.InviteAcceptedEvent;
+import com.opsclear.event.InviteEmailRequestedEvent;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
@@ -31,8 +32,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,7 +43,6 @@ class OrgInviteServiceTest {
     @Mock private OrgInviteRepository orgInviteRepository;
     @Mock private OrganisationRepository organisationRepository;
     @Mock private UserRepository userRepository;
-    @Mock private EmailService emailService;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     private OrgInviteService service;
@@ -57,8 +55,7 @@ class OrgInviteServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OrgInviteService(orgInviteRepository, organisationRepository, userRepository, emailService,
-                eventPublisher);
+        service = new OrgInviteService(orgInviteRepository, organisationRepository, userRepository, eventPublisher);
 
         orgId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -71,8 +68,8 @@ class OrgInviteServiceTest {
     // ─── sendInvite ───────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("sendInvite_shouldCreateInviteAndSendEmail_whenOwnerInvitesNewEmail")
-    void sendInvite_shouldCreateInviteAndSendEmail_whenOwnerInvitesNewEmail() {
+    @DisplayName("sendInvite_shouldCreateInviteAndRequestEmail_whenOwnerInvitesNewEmail")
+    void sendInvite_shouldCreateInviteAndRequestEmail_whenOwnerInvitesNewEmail() {
         String targetEmail = "new@example.com";
         OrgInviteModel saved = pendingInvite(orgId, targetEmail, ownerId);
 
@@ -83,7 +80,7 @@ class OrgInviteServiceTest {
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
         when(orgInviteRepository.save(any())).thenReturn(saved);
 
-        OrgInviteModel result = service.sendInvite(orgId, ownerId, new SendInviteRequest(targetEmail));
+        OrgInviteModel result = service.sendInvite(orgId, ownerId, new SendInviteRequest(targetEmail, null));
 
         assertThat(result.getEmail()).isEqualTo(targetEmail);
         assertThat(result.getOrganisationId()).isEqualTo(orgId);
@@ -93,8 +90,55 @@ class OrgInviteServiceTest {
         OrgInviteModel toSave = captor.getValue();
         assertThat(toSave.getToken()).hasSize(64);
         assertThat(toSave.getExpiresAt()).isAfter(Instant.now().plus(6, ChronoUnit.DAYS));
+        assertThat(toSave.getLastSentAt()).isNotNull()
+                .isBetween(Instant.now().minusSeconds(5), Instant.now())
+                .isEqualTo(toSave.getExpiresAt().minus(7, ChronoUnit.DAYS));
+        assertThat(toSave.getInvitedByName()).isEqualTo("Owner");
 
-        verify(emailService).sendInvite(eq(targetEmail), anyString());
+        verify(eventPublisher).publishEvent(new InviteEmailRequestedEvent(saved.getId(), "en"));
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldRequestEmailInRequestedLanguage_whenLanguageIsSr")
+    void sendInvite_shouldRequestEmailInRequestedLanguage_whenLanguageIsSr() {
+        String targetEmail = "novi@example.com";
+        OrgInviteModel saved = pendingInvite(orgId, targetEmail, ownerId);
+        stubSendInviteHappyPath(targetEmail, saved);
+
+        service.sendInvite(orgId, ownerId, new SendInviteRequest(targetEmail, "sr"));
+
+        verify(eventPublisher).publishEvent(new InviteEmailRequestedEvent(saved.getId(), "sr"));
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldRequestEmailInEnglish_whenLanguageIsEn")
+    void sendInvite_shouldRequestEmailInEnglish_whenLanguageIsEn() {
+        String targetEmail = "new@example.com";
+        OrgInviteModel saved = pendingInvite(orgId, targetEmail, ownerId);
+        stubSendInviteHappyPath(targetEmail, saved);
+
+        service.sendInvite(orgId, ownerId, new SendInviteRequest(targetEmail, "en"));
+
+        verify(eventPublisher).publishEvent(new InviteEmailRequestedEvent(saved.getId(), "en"));
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldUseUnknownInviterName_whenCallerHasNoUserRow")
+    void sendInvite_shouldUseUnknownInviterName_whenCallerHasNoUserRow() {
+        String targetEmail = "new@example.com";
+        OrgInviteModel saved = pendingInvite(orgId, targetEmail, ownerId);
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(userRepository.findByEmail(targetEmail)).thenReturn(Optional.empty());
+        when(orgInviteRepository.existsPendingByEmailAndOrgId(targetEmail, orgId)).thenReturn(false);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.empty());
+        when(orgInviteRepository.save(any())).thenReturn(saved);
+
+        service.sendInvite(orgId, ownerId, new SendInviteRequest(targetEmail, null));
+
+        ArgumentCaptor<OrgInviteModel> captor = ArgumentCaptor.forClass(OrgInviteModel.class);
+        verify(orgInviteRepository).save(captor.capture());
+        assertThat(captor.getValue().getInvitedByName()).isEqualTo("Unknown");
     }
 
     @Test
@@ -103,10 +147,11 @@ class OrgInviteServiceTest {
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
         when(organisationRepository.findMemberRole(orgId, memberId)).thenReturn(Optional.of(OrganisationRole.MEMBER));
 
-        assertThatThrownBy(() -> service.sendInvite(orgId, memberId, new SendInviteRequest("x@x.com")))
+        assertThatThrownBy(() -> service.sendInvite(orgId, memberId, new SendInviteRequest("x@x.com", null)))
                 .isInstanceOf(ForbiddenException.class);
 
         verify(orgInviteRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
@@ -116,7 +161,7 @@ class OrgInviteServiceTest {
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
         when(organisationRepository.findMemberRole(orgId, outsider)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.sendInvite(orgId, outsider, new SendInviteRequest("x@x.com")))
+        assertThatThrownBy(() -> service.sendInvite(orgId, outsider, new SendInviteRequest("x@x.com", null)))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -131,7 +176,7 @@ class OrgInviteServiceTest {
         when(userRepository.findByEmail("existing@example.com")).thenReturn(Optional.of(existingUser));
         when(organisationRepository.existsMember(orgId, existingUserId)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.sendInvite(orgId, ownerId, new SendInviteRequest("existing@example.com")))
+        assertThatThrownBy(() -> service.sendInvite(orgId, ownerId, new SendInviteRequest("existing@example.com", null)))
                 .isInstanceOf(ConflictException.class);
     }
 
@@ -144,7 +189,7 @@ class OrgInviteServiceTest {
         when(userRepository.findByEmail(targetEmail)).thenReturn(Optional.empty());
         when(orgInviteRepository.existsPendingByEmailAndOrgId(targetEmail, orgId)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.sendInvite(orgId, ownerId, new SendInviteRequest(targetEmail)))
+        assertThatThrownBy(() -> service.sendInvite(orgId, ownerId, new SendInviteRequest(targetEmail, null)))
                 .isInstanceOf(ConflictException.class);
     }
 
@@ -153,7 +198,7 @@ class OrgInviteServiceTest {
     void sendInvite_shouldThrowNotFound_whenOrgDoesNotExist() {
         when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.sendInvite(orgId, ownerId, new SendInviteRequest("x@x.com")))
+        assertThatThrownBy(() -> service.sendInvite(orgId, ownerId, new SendInviteRequest("x@x.com", null)))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -331,6 +376,15 @@ class OrgInviteServiceTest {
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────
+
+    private void stubSendInviteHappyPath(String targetEmail, OrgInviteModel saved) {
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(userRepository.findByEmail(targetEmail)).thenReturn(Optional.empty());
+        when(orgInviteRepository.existsPendingByEmailAndOrgId(targetEmail, orgId)).thenReturn(false);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(orgInviteRepository.save(any())).thenReturn(saved);
+    }
 
     private OrgInviteModel pendingInvite(UUID orgId, String email, UUID invitedBy) {
         return pendingInvite(UUID.randomUUID(), orgId, email, invitedBy);

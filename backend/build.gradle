@@ -48,6 +48,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     // Database
     runtimeOnly 'org.postgresql:postgresql'
@@ -72,6 +73,8 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
+    // In-memory SMTP server for invite email tests (ADR-0059)
+    testImplementation 'com.icegreen:greenmail-junit5:2.1.5'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
