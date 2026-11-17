@@ -37,7 +37,15 @@
   "actionTokenGeneratedByAdminLifespan": 43200,
   "actionTokenGeneratedByUserLifespan": 300,
   "passwordPolicy": "length(8)",
-  "smtpServer": {},
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@opsclear.local",
+    "fromDisplayName": "OpsClear",
+    "auth": "false",
+    "starttls": "false",
+    "ssl": "false"
+  },
   "roles": {
     "realm": [],
     "client": {}

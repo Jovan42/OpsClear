@@ -56,6 +56,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Dev SMTP sink (ADR-0059). Keycloak reaches it as mailpit:1025, the backend on the host as
+  # localhost:1025. Read the mails at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: opsclear-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
 
   portainer:
     image: portainer/portainer-ce:latest

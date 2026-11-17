@@ -70,10 +70,21 @@ runs:
     # a second `keycloak` database on the calling job's Postgres service just to
     # mirror local dev exactly would add setup cost for no behavioral difference in
     # what's being tested.
+    # Mailpit and Keycloak share a Docker network so the realm's `mailpit` SMTP host
+    # resolves (ADR-0059). 8025 (UI/API, for Cypress) and 1025 (SMTP, for the backend)
+    # are published to the runner.
+    - name: Start Mailpit
+      shell: bash
+      run: |
+        docker network create opsclear-e2e
+        docker run -d --name mailpit --network opsclear-e2e \
+          -p 1025:1025 -p 8025:8025 \
+          axllent/mailpit:v1.27
+
     - name: Start Keycloak
       shell: bash
       run: |
-        docker run -d --name keycloak \
+        docker run -d --name keycloak --network opsclear-e2e \
           -p 8180:8080 \
           -e KEYCLOAK_ADMIN=admin \
           -e KEYCLOAK_ADMIN_PASSWORD=admin \

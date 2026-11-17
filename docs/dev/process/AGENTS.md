@@ -244,3 +244,6 @@ scripts/opsclear milestone create PRJ-013 --name "…" --deadline 2026-12-01
 - **Rate limit** (ADR-0058): each API key gets a burst of 60 requests, then 120 per minute. Over that the
   API answers 429 with a `Retry-After` header (seconds). Keys of internal orgs (`is_internal`, e.g. the
   OpsClear org the CLI and job sync use) are exempt.
+
+**Dev emails.** `docker-compose up` also starts Mailpit (ADR-0059). Keycloak and the backend send
+all dev mail to it; read it at http://localhost:8025 (SMTP on `localhost:1025`).

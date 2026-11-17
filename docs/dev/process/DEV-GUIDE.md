@@ -18,6 +18,9 @@ jobs, ADRs and code, opens PRs and keeps OpsClear up to date. Claude never merge
 Step-by-step commands: [AGENTS.md § Setup](AGENTS.md#setup). Check it works:
 `scripts/opsclear job get JOB-293`.
 
+Dev emails (Keycloak verification, invites) never leave your machine: `docker-compose up` starts
+Mailpit, and you read them at http://localhost:8025.
+
 ## The flow
 
 | Step | You type | Claude does | You do |

@@ -50,7 +50,7 @@ OpsClear/
 ├── keycloak/               # Realm export, themes
 ├── api/postman/            # Postman collection
 ├── .claude/                # Shared Claude Code settings (permissions)
-├── docker-compose.yml      # Local infra: postgres, keycloak, pgadmin, portainer
+├── docker-compose.yml      # Local infra: postgres, keycloak, mailpit, pgadmin, portainer
 ├── CLAUDE.md               # This file (Claude context)
 ├── TECHNICAL.md            # Technical decisions log
 └── README.md               # Project overview
@@ -106,7 +106,7 @@ Follow [docs/dev/process/WORKFLOW.md](docs/dev/process/WORKFLOW.md) (single sour
 ## Commands
 
 ```bash
-# Start local infra (postgres, keycloak, pgadmin, portainer); backend and frontend run on the host
+# Start local infra (postgres, keycloak, mailpit, pgadmin, portainer); backend and frontend run on the host
 docker-compose up
 
 # Development (backend only, requires running postgres + keycloak)
@@ -155,6 +155,7 @@ For OpsClear API work use `scripts/opsclear` (same doc), not raw curl.
 | Keycloak Auth | http://localhost:8180/realms/opsclear | — |
 | pgAdmin | http://localhost:5050 | admin@admin.com/admin |
 | Portainer | http://localhost:9000 | set on first run |
+| Mailpit (dev emails) | http://localhost:8025 | — |
 
 ## Demo Users
 
