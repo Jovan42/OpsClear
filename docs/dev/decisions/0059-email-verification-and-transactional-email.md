@@ -82,6 +82,8 @@ The export is what fresh installs, dev and CI get:
   - `passwordResetSubject`, `passwordResetBody`, `passwordResetBodyHtml`
 
   The texts are short, mention OpsClear, and keep Keycloak's `{0}` link and `{1}`/`{3}` expiry placeholders. No custom HTML email templates.
+
+  > **Amendment (2026-11-17, JOB-344):** after seeing the plain emails in Mailpit, the maintainer chose a light branded layout instead. `email/html/template.ftl` wraps every HTML email in a white card (about 560px) on a light grey background, with an "OpsClear" header, a sans-serif font stack and the login theme's brand colours. The verification and reset `*BodyHtml` texts put the link in a brand-coloured button and repeat the raw link under it for clients that block styling. Everything uses inline styles, because email clients ignore `<style>` blocks and CSS variables. There are no images. `email-verification.ftl` and `password-reset.ftl` are overridden only to skip `kcSanitize`, which strips the button's inline styles. The link is made safe for the attribute instead. The other base templates and the text bodies are unchanged.
 - **Email language:** Keycloak picks it from the user's locale (set from the registration page's language), falling back to `en`.
 
 ### Prod rollout script (`scripts/keycloak-apply-email.sh`)
