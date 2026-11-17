@@ -5,6 +5,7 @@
   "validationError": "Validation Error",
   "forbidden": "Forbidden",
   "internalServerError": "Internal Server Error",
+  "tooManyRequests": "Too many requests",
   "somethingWentWrong": "Something went wrong.",
   "networkError": "Network error — check your connection."
 }
