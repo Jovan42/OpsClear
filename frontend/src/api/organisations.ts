@@ -1,5 +1,6 @@
 import apiClient from './client';
 import type {
+  InviteLanguage,
   OrgInviteResponse,
   OrgMemberResponse,
   OrgRole,
@@ -42,9 +43,19 @@ export const organisationsApi = {
   listInvites: (orgId: string) =>
     apiClient.get<OrgInviteResponse[]>(`/api/organisations/${orgId}/invites`).then((r) => r.data),
 
-  sendInvite: (orgId: string, email: string) =>
+  sendInvite: (orgId: string, email: string, language: InviteLanguage) =>
     apiClient
-      .post<OrgInviteResponse>(`/api/organisations/${orgId}/invites`, { email })
+      .post<OrgInviteResponse>(`/api/organisations/${orgId}/invites`, { email, language })
+      .then((r) => r.data),
+
+  // The page shows its own cooldown message for a 429, so the global error toast skips it
+  resendInvite: (orgId: string, inviteId: string, language: InviteLanguage) =>
+    apiClient
+      .post<OrgInviteResponse>(
+        `/api/organisations/${orgId}/invites/${inviteId}/resend`,
+        { language },
+        { skipErrorToastStatuses: [429] },
+      )
       .then((r) => r.data),
 
   revokeInvite: (orgId: string, inviteId: string) =>

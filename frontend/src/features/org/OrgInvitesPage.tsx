@@ -2,12 +2,19 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import Button from '../../components/Button';
 import Modal from '../../components/Modal';
 import Skeleton from '../../components/Skeleton';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from './OrgContext';
-import { useOrgInvites, useSendOrgInvite, useRevokeOrgInvite } from './useOrganisation';
+import {
+  useOrgInvites,
+  useSendOrgInvite,
+  useRevokeOrgInvite,
+  useResendInvite,
+} from './useOrganisation';
+import { retryAfterMinutes, toInviteLanguage } from './inviteEmail';
 import type { OrgInviteResponse } from '../../types';
 import type { TFunction } from 'i18next';
 
@@ -20,7 +27,7 @@ function formatExpiry(expiresAt: string, t: TFunction): string {
 }
 
 export default function OrgInvitesPage() {
-  const { t } = useTranslation(['org', 'common']);
+  const { t, i18n } = useTranslation(['org', 'common']);
   const navigate = useNavigate();
   const { org } = useCurrentOrg();
   usePageTitle(t('org:invitesPageTitle'));
@@ -28,6 +35,11 @@ export default function OrgInvitesPage() {
   const { data: invites = [], isLoading } = useOrgInvites(org?.id ?? null);
   const { mutate: sendInvite, isPending: sending } = useSendOrgInvite(org?.id ?? '');
   const { mutate: revokeInvite, isPending: revoking } = useRevokeOrgInvite(org?.id ?? '');
+  const {
+    mutate: resendInvite,
+    isPending: resending,
+    variables: resendVariables,
+  } = useResendInvite(org?.id ?? '');
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -39,7 +51,7 @@ export default function OrgInvitesPage() {
       setEmailError(t('org:emailRequired'));
       return;
     }
-    sendInvite(email.trim(), {
+    sendInvite({ email: email.trim(), language: toInviteLanguage(i18n.resolvedLanguage) }, {
       onSuccess: () => setEmail(''),
       onError: (err) => {
         if (isAxiosError(err) && err.response?.data?.message) {
@@ -49,6 +61,31 @@ export default function OrgInvitesPage() {
         }
       },
     });
+  }
+
+  function handleCopyLink(invite: OrgInviteResponse) {
+    void navigator.clipboard
+      .writeText(`${window.location.origin}/invite/${invite.token}`)
+      .then(() => toast.success(t('org:inviteLinkCopied')));
+  }
+
+  function handleResend(invite: OrgInviteResponse) {
+    resendInvite(
+      { inviteId: invite.id, language: toInviteLanguage(i18n.resolvedLanguage) },
+      {
+        onSuccess: () => toast.success(t('org:inviteEmailSent')),
+        onError: (err) => {
+          // The interceptor skips its toast for this 429 (skipErrorToastStatuses), so this is the only one
+          if (!isAxiosError(err) || err.response?.status !== 429) return;
+          const minutes = retryAfterMinutes(err.response.headers['retry-after']);
+          toast.error(
+            minutes === null
+              ? t('org:resendCooldownSoon')
+              : t('org:resendCooldown', { count: minutes }),
+          );
+        },
+      },
+    );
   }
 
   function handleRevoke() {
@@ -154,12 +191,28 @@ export default function OrgInvitesPage() {
                     {formatExpiry(invite.expiresAt, t)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => setConfirmTarget(invite)}
-                      className="text-xs text-red-500 hover:text-red-700 transition-colors cursor-pointer"
-                    >
-                      {t('org:revoke')}
-                    </button>
+                    <div className="flex flex-wrap justify-end gap-x-3 gap-y-1">
+                      <button
+                        onClick={() => handleCopyLink(invite)}
+                        className="text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer"
+                      >
+                        {t('org:copyInviteLink')}
+                      </button>
+                      {/* Disabled while its request runs: a double click could otherwise send two emails */}
+                      <button
+                        onClick={() => handleResend(invite)}
+                        disabled={resending && resendVariables?.inviteId === invite.id}
+                        className="text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t('org:resendInviteEmail')}
+                      </button>
+                      <button
+                        onClick={() => setConfirmTarget(invite)}
+                        className="text-xs text-red-500 hover:text-red-700 transition-colors cursor-pointer"
+                      >
+                        {t('org:revoke')}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { organisationsApi } from '../../api/organisations';
-import type { OrgRole } from '../../types';
+import type { InviteLanguage, OrgRole } from '../../types';
 
 export function useMyOrg() {
   return useQuery({
@@ -105,7 +105,18 @@ export function useOrgInvites(orgId: string | null) {
 export function useSendOrgInvite(orgId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (email: string) => organisationsApi.sendInvite(orgId, email),
+    mutationFn: ({ email, language }: { email: string; language: InviteLanguage }) =>
+      organisationsApi.sendInvite(orgId, email, language),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'invites'] }),
+  });
+}
+
+export function useResendInvite(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ inviteId, language }: { inviteId: string; language: InviteLanguage }) =>
+      organisationsApi.resendInvite(orgId, inviteId, language),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'invites'] }),
   });

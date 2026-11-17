@@ -252,9 +252,14 @@ export interface OrgInviteResponse {
   email: string;
   invitedBy: string;
   invitedByName: string | null;
+  // Builds the "Copy link" URL (/invite/:token); only owners/admins see the invite list
+  token: string;
   expiresAt: string;
   createdAt: string;
 }
+
+// Language of the invite email: the inviter's UI language (ADR-0059)
+export type InviteLanguage = 'en' | 'sr';
 
 // ---- Subscriptions ----
 
