@@ -26,6 +26,7 @@ public class OrgInviteModel {
     private Instant acceptedAt;
     private Instant revokedAt;
     private Instant createdAt;
+    private Instant lastSentAt;
 
     public boolean isPending() {
         return acceptedAt == null && revokedAt == null && Instant.now().isBefore(expiresAt);
