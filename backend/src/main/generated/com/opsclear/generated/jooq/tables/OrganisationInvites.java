@@ -100,6 +100,11 @@ public class OrganisationInvites extends TableImpl<OrganisationInvitesRecord> {
      */
     public final TableField<OrganisationInvitesRecord, LocalDateTime> CREATED_AT = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "");
 
+    /**
+     * The column <code>public.organisation_invites.last_sent_at</code>.
+     */
+    public final TableField<OrganisationInvitesRecord, LocalDateTime> LAST_SENT_AT = createField(DSL.name("last_sent_at"), SQLDataType.LOCALDATETIME(6), this, "");
+
     private OrganisationInvites(Name alias, Table<OrganisationInvitesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
