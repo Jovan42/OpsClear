@@ -8,6 +8,7 @@ import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
+import com.opsclear.exception.TooManyRequestsException;
 import com.opsclear.model.OrgInviteModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
@@ -34,6 +36,8 @@ public class OrgInviteService {
 
     static final String DEFAULT_LANGUAGE = "en";
     private static final int INVITE_EXPIRY_DAYS = 7;
+    static final Duration RESEND_COOLDOWN = Duration.ofMinutes(5);
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
     private static final int TOKEN_BYTES = 32;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -70,9 +74,30 @@ public class OrgInviteService {
         OrgInviteModel saved = orgInviteRepository.save(invite);
         log.info("Invite {} created for organisation {} by {}", saved.getId(), orgId, callerId);
         // Sent after commit, asynchronously (ADR-0059): a failed send never fails the invite
-        eventPublisher.publishEvent(new InviteEmailRequestedEvent(saved.getId(), resolveLanguage(request)));
+        eventPublisher.publishEvent(
+                new InviteEmailRequestedEvent(saved.getId(), resolveLanguage(request.getLanguage())));
 
         return saved;
+    }
+
+    // Sends the invite email again (ADR-0059). The token and expiry stay the same.
+    @Transactional
+    public OrgInviteModel resend(UUID orgId, UUID inviteId, String language, UUID callerId) {
+        requireOrgExists(orgId);
+        requireOwnerOrAdmin(orgId, callerId);
+
+        OrgInviteModel invite = requireInviteRecord(orgId, inviteId);
+        requireInvitePendingForResend(invite);
+        // Postgres keeps microseconds: truncate so the response matches the stored value
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        requireResendCooldownOver(invite, now);
+
+        orgInviteRepository.updateLastSentAt(inviteId, now);
+        invite.setLastSentAt(now);
+        log.info("Invite {} email resent by {} in organisation {}", inviteId, callerId, orgId);
+        eventPublisher.publishEvent(new InviteEmailRequestedEvent(inviteId, resolveLanguage(language)));
+
+        return invite;
     }
 
     @Transactional(readOnly = true)
@@ -117,8 +142,8 @@ public class OrgInviteService {
     }
 
     // DTO validation allows only en/sr; a missing language means en
-    private static String resolveLanguage(SendInviteRequest request) {
-        return request.getLanguage() != null ? request.getLanguage() : DEFAULT_LANGUAGE;
+    private static String resolveLanguage(String language) {
+        return language != null ? language : DEFAULT_LANGUAGE;
     }
 
     // --- Business rule guards ---
@@ -141,6 +166,24 @@ public class OrgInviteService {
     private void requireInvitePending(OrgInviteModel invite) {
         if (!invite.isPending()) {
             throw new BadRequestException(ErrorMessages.OrgInvite.INVALID);
+        }
+    }
+
+    // Resend answers 409 for an invite that's accepted, revoked or expired (ADR-0059)
+    private void requireInvitePendingForResend(OrgInviteModel invite) {
+        if (!invite.isPending()) {
+            throw new ConflictException(ErrorMessages.OrgInvite.INVALID);
+        }
+    }
+
+    // A row with no last_sent_at has never been emailed, so it has no cooldown
+    private void requireResendCooldownOver(OrgInviteModel invite, Instant now) {
+        if (invite.getLastSentAt() == null) {
+            return;
+        }
+        Duration remaining = Duration.between(now, invite.getLastSentAt().plus(RESEND_COOLDOWN));
+        if (remaining.isPositive()) {
+            throw new TooManyRequestsException(ErrorMessages.OrgInvite.RESEND_COOLDOWN, roundUpToSeconds(remaining));
         }
     }
 
@@ -171,6 +214,11 @@ public class OrgInviteService {
         if (role == OrganisationRole.MEMBER) {
             throw new ForbiddenException(ErrorMessages.Organisation.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
         }
+    }
+
+    // Retry-After is whole seconds: round up so a client that waits that long is past the cooldown
+    private static long roundUpToSeconds(Duration duration) {
+        return (duration.toNanos() + NANOS_PER_SECOND - 1) / NANOS_PER_SECOND;
     }
 
     // --- Token generation ---

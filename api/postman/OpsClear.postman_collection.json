@@ -1262,6 +1262,127 @@
 					"response": []
 				},
 				{
+					"name": "Resend Invite Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"language\": \"en\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites/{{inviteId}}/resend",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "organisations", "{{orgId}}", "invites", "{{inviteId}}", "resend"]
+						},
+						"description": "Owner/admin only. Emails a pending invite again after commit (ADR-0059): open Mailpit at http://localhost:8025 in dev. The token and expiry don't change. The body is optional: `language` is `en` (default) or `sr`; any other value gives 400. 409 if the invite is accepted, revoked or expired. 429 with `Retry-After` (seconds left) if the invite email was sent less than 5 minutes ago, which includes right after creating it."
+					},
+					"response": [
+						{
+							"name": "200 invite email resent",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"language\": \"en\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites/{{inviteId}}/resend",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "invites", "{{inviteId}}", "resend"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"id\": \"8f6c2f0e-5d1a-4c9b-9a51-2f3e4d5c6b7a\",\n  \"organisationId\": \"1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9\",\n  \"email\": \"invitee@example.com\",\n  \"invitedBy\": \"0a1b2c3d-4e5f-4607-8192-a3b4c5d6e7f8\",\n  \"invitedByName\": \"Test User\",\n  \"token\": \"3f9a1c0b7e2d4a6f8c5b1e0d9a7f6c3b2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b\",\n  \"expiresAt\": \"2026-11-24T10:15:00Z\",\n  \"createdAt\": \"2026-11-17T10:15:00Z\"\n}"
+						},
+						{
+							"name": "429 inside the cooldown",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"language\": \"en\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites/{{inviteId}}/resend",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "invites", "{{inviteId}}", "resend"]
+								}
+							},
+							"status": "Too Many Requests",
+							"code": 429,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Retry-After",
+									"value": "237"
+								}
+							],
+							"body": "{\n  \"error\": \"Too Many Requests\",\n  \"message\": \"This invite email was sent recently. Try again in a few minutes\",\n  \"timestamp\": \"2026-11-17T10:16:03Z\"\n}"
+						},
+						{
+							"name": "409 invite not pending",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"language\": \"en\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/invites/{{inviteId}}/resend",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "invites", "{{inviteId}}", "resend"]
+								}
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Conflict\",\n  \"message\": \"This invite is no longer valid\",\n  \"timestamp\": \"2026-11-17T10:30:00Z\"\n}"
+						}
+					]
+				},
+				{
 					"name": "Accept Invite",
 					"request": {
 						"method": "POST",

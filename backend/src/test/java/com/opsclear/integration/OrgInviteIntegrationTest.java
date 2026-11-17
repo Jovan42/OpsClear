@@ -6,6 +6,7 @@ import com.icegreen.greenmail.junit5.GreenMailExtension;
 import com.icegreen.greenmail.util.ServerSetupTest;
 import com.opsclear.event.InviteEmailListener;
 import com.opsclear.event.InviteEmailRequestedEvent;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.model.OrgInviteModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
@@ -28,14 +29,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import jakarta.mail.Multipart;
 import jakarta.mail.Part;
 import jakarta.mail.internet.MimeMessage;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -45,10 +50,12 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -59,6 +66,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OrgInviteIntegrationTest {
 
     private static final long MAIL_WAIT_MS = 5_000;
+    private static final Duration OUTSIDE_COOLDOWN = Duration.ofMinutes(6);
 
     // In-memory SMTP on the test profile's spring.mail.port (3025), fresh for every test (JOB-342)
     @RegisterExtension
@@ -472,6 +480,234 @@ class OrgInviteIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ─── resendInvite ─────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn200AndDeliverSecondEmail_whenCooldownOver")
+    void resendInvite_shouldReturn200AndDeliverSecondEmail_whenCooldownOver() throws Exception {
+        JsonNode created = createInvite("newuser@example.com", "en");
+        UUID inviteId = UUID.fromString(created.get("id").asText());
+        String token = created.get("token").asText();
+        singleEmail();
+        moveLastSentAtBack(inviteId, OUTSIDE_COOLDOWN);
+        Instant before = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, inviteId))
+                        .with(ownerJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("language", "sr"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(inviteId.toString()))
+                .andExpect(jsonPath("$.email").value("newuser@example.com"))
+                .andExpect(jsonPath("$.token").value(token))
+                .andExpect(jsonPath("$.expiresAt").value(created.get("expiresAt").asText()));
+
+        OrgInviteModel saved = orgInviteRepository.findById(inviteId).orElseThrow();
+        assertThat(saved.getLastSentAt()).isAfterOrEqualTo(before.minusSeconds(1)).isBeforeOrEqualTo(Instant.now());
+        assertThat(saved.getToken()).isEqualTo(token);
+
+        assertThat(GREEN_MAIL.waitForIncomingEmail(MAIL_WAIT_MS, 2)).as("resent email received").isTrue();
+        MimeMessage[] received = GREEN_MAIL.getReceivedMessages();
+        assertThat(received).hasSize(2);
+        MimeMessage resent = received[1];
+        assertThat(resent.getAllRecipients()).extracting(Object::toString).containsExactly("newuser@example.com");
+        assertThat(resent.getSubject()).isEqualTo("Pozvani ste da se pridružite organizaciji Acme Corp na OpsClear-u");
+        assertThat(part(resent, "text/plain")).contains("http://app.test/invite/" + token);
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldSendEnglishEmail_whenAdminResendsWithoutBody")
+    void resendInvite_shouldSendEnglishEmail_whenAdminResendsWithoutBody() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "sr").get("id").asText());
+        singleEmail();
+        moveLastSentAtBack(inviteId, OUTSIDE_COOLDOWN);
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, inviteId))
+                        .with(jwt().jwt(j -> j.subject(adminId.toString())
+                                .claim("email", "admin@example.com").claim("name", "Admin"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(inviteId.toString()));
+
+        assertThat(GREEN_MAIL.waitForIncomingEmail(MAIL_WAIT_MS, 2)).as("resent email received").isTrue();
+        assertThat(GREEN_MAIL.getReceivedMessages()[1].getSubject())
+                .isEqualTo("You're invited to join Acme Corp on OpsClear");
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn200_whenInviteWasNeverEmailed")
+    void resendInvite_shouldReturn200_whenInviteWasNeverEmailed() throws Exception {
+        OrgInviteModel legacy = orgInviteRepository.save(OrgInviteModel.builder()
+                .organisationId(orgId)
+                .email("legacy@example.com")
+                .invitedBy(ownerId)
+                .token("legacy-token")
+                .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
+                .build());
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, legacy.getId()))
+                        .with(ownerJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("language", "en"))))
+                .andExpect(status().isOk());
+
+        assertThat(orgInviteRepository.findById(legacy.getId()).orElseThrow().getLastSentAt()).isNotNull();
+        assertThat(singleEmail().getAllRecipients()).extracting(Object::toString)
+                .containsExactly("legacy@example.com");
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn429WithRetryAfter_whenInsideCooldown")
+    void resendInvite_shouldReturn429WithRetryAfter_whenInsideCooldown() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+        singleEmail();
+        moveLastSentAtBack(inviteId, Duration.ofMinutes(1));
+        Instant lastSentAt = orgInviteRepository.findById(inviteId).orElseThrow().getLastSentAt();
+
+        MvcResult result = mockMvc.perform(post(ApiPaths.resendInvite(orgId, inviteId))
+                        .with(ownerJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("language", "en"))))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists(HttpHeaders.RETRY_AFTER))
+                .andExpect(jsonPath("$.error").value("Too Many Requests"))
+                .andExpect(jsonPath("$.message").value(ErrorMessages.OrgInvite.RESEND_COOLDOWN))
+                .andExpect(jsonPath("$.timestamp").isNotEmpty())
+                .andReturn();
+
+        long retryAfter = Long.parseLong(result.getResponse().getHeader(HttpHeaders.RETRY_AFTER));
+        assertThat(retryAfter).isBetween(230L, 240L);
+        assertThat(orgInviteRepository.findById(inviteId).orElseThrow().getLastSentAt()).isEqualTo(lastSentAt);
+        assertThat(GREEN_MAIL.waitForIncomingEmail(1_000, 2)).as("no second email").isFalse();
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn429_whenResentRightAfterCreate")
+    void resendInvite_shouldReturn429_whenResentRightAfterCreate() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, inviteId)).with(ownerJwt()))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string(HttpHeaders.RETRY_AFTER, matchesPattern("29\\d|300")));
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn409_whenInviteRevoked")
+    void resendInvite_shouldReturn409_whenInviteRevoked() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+        singleEmail();
+        orgInviteRepository.markRevoked(inviteId);
+
+        assertResendConflict(inviteId);
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn409_whenInviteAccepted")
+    void resendInvite_shouldReturn409_whenInviteAccepted() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+        singleEmail();
+        orgInviteRepository.markAccepted(inviteId);
+
+        assertResendConflict(inviteId);
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn409_whenInviteExpired")
+    void resendInvite_shouldReturn409_whenInviteExpired() throws Exception {
+        OrgInviteModel expired = orgInviteRepository.save(OrgInviteModel.builder()
+                .organisationId(orgId)
+                .email("expired@example.com")
+                .invitedBy(ownerId)
+                .token("expired-token")
+                .expiresAt(Instant.now().minus(1, ChronoUnit.DAYS))
+                .lastSentAt(Instant.now().minus(8, ChronoUnit.DAYS))
+                .build());
+
+        assertResendConflict(expired.getId());
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn403_whenCallerIsMember")
+    void resendInvite_shouldReturn403_whenCallerIsMember() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+        singleEmail();
+        moveLastSentAtBack(inviteId, OUTSIDE_COOLDOWN);
+        Instant lastSentAt = orgInviteRepository.findById(inviteId).orElseThrow().getLastSentAt();
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, inviteId))
+                        .with(jwt().jwt(j -> j.subject(memberId.toString())
+                                .claim("email", "member@example.com").claim("name", "Member"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Forbidden"));
+
+        assertThat(orgInviteRepository.findById(inviteId).orElseThrow().getLastSentAt()).isEqualTo(lastSentAt);
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn403_whenCallerIsNotMember")
+    void resendInvite_shouldReturn403_whenCallerIsNotMember() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, inviteId))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString())
+                                .claim("email", "outsider@example.com").claim("name", "Outsider"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn404_whenInviteBelongsToAnotherOrg")
+    void resendInvite_shouldReturn404_whenInviteBelongsToAnotherOrg() throws Exception {
+        String response = mockMvc.perform(post(ApiPaths.ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString())
+                                .claim("email", "outsider@example.com").claim("name", "Outsider")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Other Corp", "slug", "OTH"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID otherOrgId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
+        OrgInviteModel otherInvite = orgInviteRepository.save(OrgInviteModel.builder()
+                .organisationId(otherOrgId)
+                .email("someone@example.com")
+                .invitedBy(outsiderId)
+                .token("other-org-token")
+                .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
+                .lastSentAt(Instant.now().minus(1, ChronoUnit.HOURS))
+                .build());
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, otherInvite.getId())).with(ownerJwt()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.OrgInvite.NOT_FOUND));
+
+        assertThat(GREEN_MAIL.waitForIncomingEmail(1_000, 1)).as("no email").isFalse();
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn404_whenInviteDoesNotExist")
+    void resendInvite_shouldReturn404_whenInviteDoesNotExist() throws Exception {
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, UUID.randomUUID())).with(ownerJwt()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn404_whenOrgDoesNotExist")
+    void resendInvite_shouldReturn404_whenOrgDoesNotExist() throws Exception {
+        mockMvc.perform(post(ApiPaths.resendInvite(UUID.randomUUID(), UUID.randomUUID())).with(ownerJwt()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.Organisation.NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("resendInvite_shouldReturn400_whenLanguageUnsupported")
+    void resendInvite_shouldReturn400_whenLanguageUnsupported() throws Exception {
+        UUID inviteId = UUID.fromString(createInvite("newuser@example.com", "en").get("id").asText());
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, inviteId))
+                        .with(ownerJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("language", "fr"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("language: Language must be en or sr"));
+    }
+
     // ─── acceptInvite ─────────────────────────────────────────────────────────
 
     @Test
@@ -559,6 +795,29 @@ class OrgInviteIntegrationTest {
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response);
+    }
+
+    private RequestPostProcessor ownerJwt() {
+        return jwt().jwt(j -> j.subject(ownerId.toString())
+                .claim("email", "owner@example.com").claim("name", "Owner"));
+    }
+
+    private void moveLastSentAtBack(UUID inviteId, Duration ago) {
+        orgInviteRepository.updateLastSentAt(inviteId, Instant.now().minus(ago));
+    }
+
+    private void assertResendConflict(UUID inviteId) throws Exception {
+        int emailsBefore = GREEN_MAIL.getReceivedMessages().length;
+
+        mockMvc.perform(post(ApiPaths.resendInvite(orgId, inviteId))
+                        .with(ownerJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("language", "en"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflict"))
+                .andExpect(jsonPath("$.message").value(ErrorMessages.OrgInvite.INVALID));
+
+        assertThat(GREEN_MAIL.waitForIncomingEmail(1_000, emailsBefore + 1)).as("no resent email").isFalse();
     }
 
     // The send runs after commit on the notification executor, so wait for it instead of asserting straight away

@@ -148,6 +148,8 @@ public final class ErrorMessages {
         public static final String INVALID = "This invite is no longer valid";
         public static final String EMAIL_MISMATCH =
                 "This invite was sent to a different email address";
+        public static final String RESEND_COOLDOWN =
+                "This invite email was sent recently. Try again in a few minutes";
 
         private OrgInvite() {
         }

@@ -214,6 +214,10 @@ final class ApiPaths {
         return "/api/organisations/" + orgId + "/invites/" + inviteId;
     }
 
+    static String resendInvite(UUID orgId, UUID inviteId) {
+        return orgInvite(orgId, inviteId) + "/resend";
+    }
+
     static String acceptInvite(String token) {
         return "/api/invites/" + token + "/accept";
     }

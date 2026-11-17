@@ -129,6 +129,13 @@ public class OrgInviteRepository {
                 .execute();
     }
 
+    public void updateLastSentAt(UUID id, Instant lastSentAt) {
+        dsl.update(ORGANISATION_INVITES)
+                .set(ORGANISATION_INVITES.LAST_SENT_AT, toLocalDateTime(lastSentAt))
+                .where(ORGANISATION_INVITES.ID.eq(id))
+                .execute();
+    }
+
     public void deleteAll() {
         dsl.deleteFrom(ORGANISATION_INVITES).execute();
     }
