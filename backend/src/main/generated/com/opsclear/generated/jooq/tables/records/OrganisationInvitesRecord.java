@@ -156,6 +156,21 @@ public class OrganisationInvitesRecord extends UpdatableRecordImpl<OrganisationI
         return (LocalDateTime) get(8);
     }
 
+    /**
+     * Setter for <code>public.organisation_invites.last_sent_at</code>.
+     */
+    public OrganisationInvitesRecord setLastSentAt(LocalDateTime value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.organisation_invites.last_sent_at</code>.
+     */
+    public LocalDateTime getLastSentAt() {
+        return (LocalDateTime) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -179,7 +194,7 @@ public class OrganisationInvitesRecord extends UpdatableRecordImpl<OrganisationI
     /**
      * Create a detached, initialised OrganisationInvitesRecord
      */
-    public OrganisationInvitesRecord(UUID id, UUID organisationId, String email, UUID invitedBy, String token, LocalDateTime expiresAt, LocalDateTime acceptedAt, LocalDateTime revokedAt, LocalDateTime createdAt) {
+    public OrganisationInvitesRecord(UUID id, UUID organisationId, String email, UUID invitedBy, String token, LocalDateTime expiresAt, LocalDateTime acceptedAt, LocalDateTime revokedAt, LocalDateTime createdAt, LocalDateTime lastSentAt) {
         super(OrganisationInvites.ORGANISATION_INVITES);
 
         setId(id);
@@ -191,6 +206,7 @@ public class OrganisationInvitesRecord extends UpdatableRecordImpl<OrganisationI
         setAcceptedAt(acceptedAt);
         setRevokedAt(revokedAt);
         setCreatedAt(createdAt);
+        setLastSentAt(lastSentAt);
         resetChangedOnNotNull();
     }
 }
