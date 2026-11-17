@@ -60,16 +60,6 @@ runs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    # Run directly via `docker run`, not a `services:` entry — GitHub Actions service
-    # containers have no way to pass a command/CMD (only `image`, `env`, `ports`, and
-    # `options`, the last of which maps to `docker create` flags, not positional
-    # args), and Keycloak's image requires `start-dev` as an explicit argument to
-    # actually launch — with none given it just prints help and exits. No KC_DB env
-    # vars here (unlike docker-compose's Postgres-backed Keycloak) — `start-dev` falls
-    # back to its own ephemeral dev-file store, which is all this needs; provisioning
-    # a second `keycloak` database on the calling job's Postgres service just to
-    # mirror local dev exactly would add setup cost for no behavioral difference in
-    # what's being tested.
     # Mailpit and Keycloak share a Docker network so the realm's `mailpit` SMTP host
     # resolves (ADR-0059). 8025 (UI/API, for Cypress) and 1025 (SMTP, for the backend)
     # are published to the runner.
@@ -81,6 +71,16 @@ runs:
           -p 1025:1025 -p 8025:8025 \
           axllent/mailpit:v1.27
 
+    # Run directly via `docker run`, not a `services:` entry — GitHub Actions service
+    # containers have no way to pass a command/CMD (only `image`, `env`, `ports`, and
+    # `options`, the last of which maps to `docker create` flags, not positional
+    # args), and Keycloak's image requires `start-dev` as an explicit argument to
+    # actually launch — with none given it just prints help and exits. No KC_DB env
+    # vars here (unlike docker-compose's Postgres-backed Keycloak) — `start-dev` falls
+    # back to its own ephemeral dev-file store, which is all this needs; provisioning
+    # a second `keycloak` database on the calling job's Postgres service just to
+    # mirror local dev exactly would add setup cost for no behavioral difference in
+    # what's being tested.
     - name: Start Keycloak
       shell: bash
       run: |

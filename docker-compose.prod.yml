@@ -90,7 +90,7 @@ services:
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
       SMTP_AUTH: ${SMTP_AUTH:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-}
-      APP_BASE_URL: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
+      APP_BASE_URL: ${APP_BASE_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

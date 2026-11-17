@@ -19,7 +19,8 @@ Step-by-step commands: [AGENTS.md § Setup](AGENTS.md#setup). Check it works:
 `scripts/opsclear job get JOB-293`.
 
 Dev emails (Keycloak verification, invites) never leave your machine: `docker-compose up` starts
-Mailpit, and you read them at http://localhost:8025.
+Mailpit, and you read them at http://localhost:8025. An existing local Keycloak keeps its old SMTP
+settings, see [AGENTS.md](AGENTS.md#setup).
 
 ## The flow
 

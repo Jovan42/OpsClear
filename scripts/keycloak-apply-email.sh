@@ -22,10 +22,17 @@ Two-run rollout:
   3. Run again with --enable-verification to turn verification on.
 Safe to run again at any point.
 
+Fresh realm imports: keycloak/realm-export.json points SMTP at the dev host "mailpit". A fresh prod
+import (new volume or database) therefore has a dead SMTP host until this script has run, so run it
+right after any fresh import, before enabling verification.
+
 Environment:
   ENV_FILE            env file to read (default .env.prod)
-  KEYCLOAK_CONTAINER  container name (default: the "keycloak" service of docker-compose.prod.yml)
+  COMPOSE_FILE        compose file used to find the container (default docker-compose.prod.yml)
+  KEYCLOAK_CONTAINER  container name (default: the "keycloak" service of the compose file)
   KEYCLOAK_REALM      realm (default opsclear)
+Required in the env file (no defaults): KEYCLOAK_ADMIN_PASSWORD, SMTP_HOST, SMTP_PORT, SMTP_USER,
+SMTP_PASSWORD, SMTP_FROM, SMTP_FROM_NAME. Values must not contain a double quote or a backslash.
 USAGE
 }
 
@@ -46,40 +53,53 @@ set -a
 set +a
 
 REALM=${KEYCLOAK_REALM:-opsclear}
-for v in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD SMTP_FROM SMTP_FROM_NAME; do
-  [ -n "${!v:-}" ] || { echo "$v is empty in $ENV_FILE" >&2; exit 1; }
+for v in KEYCLOAK_ADMIN_PASSWORD SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD SMTP_FROM SMTP_FROM_NAME; do
+  [ -n "${!v:-}" ] || { echo "$v is empty or unset in $ENV_FILE" >&2; exit 1; }
+done
+# The values go into a JSON document built by printf, so reject characters that would break it.
+for v in REALM SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD SMTP_FROM SMTP_FROM_NAME; do
+  case "${!v}" in
+    *\"*|*\\*) echo "$v must not contain a double quote or a backslash" >&2; exit 1 ;;
+  esac
 done
 
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.prod.yml}
 CONTAINER=${KEYCLOAK_CONTAINER:-$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps -q keycloak 2>/dev/null | head -n1)}
 [ -n "$CONTAINER" ] || { echo "Keycloak container not found (set KEYCLOAK_CONTAINER)" >&2; exit 1; }
 
-# Secrets reach the container as env vars (-e VAR takes the value from this shell), so they never
-# appear in argv or in the output.
-KC_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
-KC_SMTP_PASSWORD=$SMTP_PASSWORD
-export KC_ADMIN_PASSWORD KC_SMTP_PASSWORD SMTP_HOST SMTP_PORT SMTP_USER SMTP_FROM SMTP_FROM_NAME REALM
 KCADM=/opt/keycloak/bin/kcadm.sh
-ENVS=(-e KC_ADMIN_PASSWORD -e KC_SMTP_PASSWORD -e SMTP_HOST -e SMTP_PORT -e SMTP_USER -e SMTP_FROM -e SMTP_FROM_NAME -e REALM)
 
+# Secrets never go in argv: kcadm reads the admin password from its stdin prompt, and the SMTP
+# update goes in as JSON on stdin (printf is a shell builtin). Nothing secret is printed.
 kc() {
-  docker exec -i "${ENVS[@]}" "$CONTAINER" "$KCADM" "$@"
+  docker exec -i "$CONTAINER" "$KCADM" "$@"
 }
 
 echo "Logging in to Keycloak..."
-docker exec -i "${ENVS[@]}" "$CONTAINER" sh -c \
-  "$KCADM config credentials --server http://localhost:8080 --realm master --user admin --password \"\$KC_ADMIN_PASSWORD\"" >/dev/null
+printf '%s\n' "$KEYCLOAK_ADMIN_PASSWORD" \
+  | kc config credentials --server http://localhost:8080 --realm master --user admin >/dev/null
 
 echo "Setting emailTheme and smtpServer on realm $REALM..."
-# The realm update goes in as JSON on stdin (printf is a builtin, so the password never shows in
-# any argv). The values come from the env file and must not contain double quotes or backslashes.
 printf '{"emailTheme":"opsclear","smtpServer":{"host":"%s","port":"%s","user":"%s","password":"%s","from":"%s","fromDisplayName":"%s","auth":"true","starttls":"true","ssl":"false"}}' \
   "$SMTP_HOST" "$SMTP_PORT" "$SMTP_USER" "$SMTP_PASSWORD" "$SMTP_FROM" "$SMTP_FROM_NAME" \
   | kc update "realms/$REALM" -f -
 
 echo
 echo "Users with emailVerified=false (they will have to verify):"
-kc get users -r "$REALM" -q emailVerified=false --fields username,email --format csv --noquotes || true
+# Paged, 100 at a time. A failing kcadm call stops the script (set -e).
+offset=0
+total=0
+while :; do
+  page=$(kc get users -r "$REALM" -q emailVerified=false --fields username,email \
+    --format csv --noquotes --offset "$offset" --limit 100)
+  [ -n "$page" ] || break
+  printf '%s\n' "$page"
+  n=$(printf '%s\n' "$page" | wc -l | tr -d ' ')
+  total=$((total + n))
+  [ "$n" -ge 100 ] || break
+  offset=$((offset + 100))
+done
+echo "($total users)"
 
 echo
 if $ENABLE; then
