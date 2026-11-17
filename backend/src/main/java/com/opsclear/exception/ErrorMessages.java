@@ -75,6 +75,7 @@ public final class ErrorMessages {
 
     public static final class ApiKey {
         public static final String NOT_FOUND = "API key not found";
+        public static final String RATE_LIMIT_EXCEEDED = "Rate limit exceeded. Try again in %d second(s).";
 
         private ApiKey() {
         }

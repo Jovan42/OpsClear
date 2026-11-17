@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "opsclear-api-collection",
 		"name": "OpsClear API",
-		"description": "API collection for OpsClear - Operational tracking for SMBs.\n\n## Usage\n\n1. Import this collection into Postman\n2. Import the environment file from `environments/`\n3. Run \"Login\" request to get JWT token\n4. Token is auto-saved to environment variable\n5. All other requests use the token automatically\n\n## Structure\n\nFolders match API modules:\n- Auth: Login, token refresh\n- Projects: CRUD for projects\n- Members: Project membership management\n- Jobs: Job CRUD and status\n- Notes: Immutable notes on jobs\n- Approvals: Approval workflow",
+		"description": "API collection for OpsClear - Operational tracking for SMBs.\n\n## Usage\n\n1. Import this collection into Postman\n2. Import the environment file from `environments/`\n3. Run \"Login\" request to get JWT token\n4. Token is auto-saved to environment variable\n5. All other requests use the token automatically\n\n## Structure\n\nFolders match API modules:\n- Auth: Login, token refresh\n- Projects: CRUD for projects\n- Members: Project membership management\n- Jobs: Job CRUD and status\n- Notes: Immutable notes on jobs\n- Approvals: Approval workflow\n\n## Rate limits\n\nAny request authenticated by `X-Api-Key` can return **429 Too Many Requests** with a `Retry-After` header (seconds to wait) and the standard JSON error body (ADR-0058). Each API key gets a burst of 60 requests, then 120 per minute. Keys of internal orgs are exempt. JWT requests are not limited per user.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
