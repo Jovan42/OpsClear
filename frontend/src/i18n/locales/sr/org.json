@@ -47,6 +47,7 @@
   "revokeInviteMessageSuffix": "? Više neće moći da se pridruže koristeći ovaj link.",
   "copyInviteLink": "Kopiraj link",
   "inviteLinkCopied": "Link je kopiran",
+  "inviteLinkCopyFailed": "Kopiranje linka nije uspelo",
   "resendInviteEmail": "Pošalji ponovo",
   "inviteEmailSent": "Email sa pozivnicom je poslat",
   "resendCooldown_one": "Možete ponovo poslati za {{count}} minut",

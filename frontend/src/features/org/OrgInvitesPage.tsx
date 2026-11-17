@@ -13,8 +13,9 @@ import {
   useSendOrgInvite,
   useRevokeOrgInvite,
   useResendInvite,
+  useResendingInviteIds,
 } from './useOrganisation';
-import { retryAfterMinutes, toInviteLanguage } from './inviteEmail';
+import { toInviteLanguage } from './inviteEmail';
 import type { OrgInviteResponse } from '../../types';
 import type { TFunction } from 'i18next';
 
@@ -35,11 +36,14 @@ export default function OrgInvitesPage() {
   const { data: invites = [], isLoading } = useOrgInvites(org?.id ?? null);
   const { mutate: sendInvite, isPending: sending } = useSendOrgInvite(org?.id ?? '');
   const { mutate: revokeInvite, isPending: revoking } = useRevokeOrgInvite(org?.id ?? '');
-  const {
-    mutate: resendInvite,
-    isPending: resending,
-    variables: resendVariables,
-  } = useResendInvite(org?.id ?? '');
+  const { mutate: resendInvite } = useResendInvite(org?.id ?? '', {
+    sent: () => toast.success(t('org:inviteEmailSent')),
+    cooldown: (minutes) =>
+      toast.error(
+        minutes === null ? t('org:resendCooldownSoon') : t('org:resendCooldown', { count: minutes }),
+      ),
+  });
+  const resendingIds = useResendingInviteIds(org?.id ?? '');
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -66,26 +70,14 @@ export default function OrgInvitesPage() {
   function handleCopyLink(invite: OrgInviteResponse) {
     void navigator.clipboard
       .writeText(`${window.location.origin}/invite/${invite.token}`)
-      .then(() => toast.success(t('org:inviteLinkCopied')));
+      .then(
+        () => toast.success(t('org:inviteLinkCopied')),
+        () => toast.error(t('org:inviteLinkCopyFailed')),
+      );
   }
 
   function handleResend(invite: OrgInviteResponse) {
-    resendInvite(
-      { inviteId: invite.id, language: toInviteLanguage(i18n.resolvedLanguage) },
-      {
-        onSuccess: () => toast.success(t('org:inviteEmailSent')),
-        onError: (err) => {
-          // The interceptor skips its toast for this 429 (skipErrorToastStatuses), so this is the only one
-          if (!isAxiosError(err) || err.response?.status !== 429) return;
-          const minutes = retryAfterMinutes(err.response.headers['retry-after']);
-          toast.error(
-            minutes === null
-              ? t('org:resendCooldownSoon')
-              : t('org:resendCooldown', { count: minutes }),
-          );
-        },
-      },
-    );
+    resendInvite({ inviteId: invite.id, language: toInviteLanguage(i18n.resolvedLanguage) });
   }
 
   function handleRevoke() {
@@ -201,7 +193,7 @@ export default function OrgInvitesPage() {
                       {/* Disabled while its request runs: a double click could otherwise send two emails */}
                       <button
                         onClick={() => handleResend(invite)}
-                        disabled={resending && resendVariables?.inviteId === invite.id}
+                        disabled={resendingIds.includes(invite.id)}
                         className="text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t('org:resendInviteEmail')}

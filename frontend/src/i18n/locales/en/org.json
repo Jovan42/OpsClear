@@ -47,6 +47,7 @@
   "revokeInviteMessageSuffix": "? They will no longer be able to join using this link.",
   "copyInviteLink": "Copy link",
   "inviteLinkCopied": "Link copied",
+  "inviteLinkCopyFailed": "Couldn't copy the link",
   "resendInviteEmail": "Resend email",
   "inviteEmailSent": "Invite email sent",
   "resendCooldown_one": "You can resend in {{count}} minute",
