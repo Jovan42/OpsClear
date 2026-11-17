@@ -1,6 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { organisationsApi } from '../../api/organisations';
-import type { OrgRole } from '../../types';
+import { retryAfterMinutes } from './inviteEmail';
+import type { InviteLanguage, OrgRole } from '../../types';
 
 export function useMyOrg() {
   return useQuery({
@@ -105,9 +113,65 @@ export function useOrgInvites(orgId: string | null) {
 export function useSendOrgInvite(orgId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (email: string) => organisationsApi.sendInvite(orgId, email),
+    mutationFn: ({ email, language }: { email: string; language: InviteLanguage }) =>
+      organisationsApi.sendInvite(orgId, email, language),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'invites'] }),
+  });
+}
+
+export const resendInviteKey = (orgId: string) => ['organisations', orgId, 'invites', 'resend'];
+
+export interface ResendInviteVariables {
+  inviteId: string;
+  language: InviteLanguage;
+}
+
+/** What the page shows for a resend. Other errors get the API client's generic toast. */
+export interface ResendInviteFeedback {
+  sent: () => void;
+  /** A 429 inside the cooldown; minutes is null when `Retry-After` can't be read. */
+  cooldown: (minutes: number | null) => void;
+}
+
+/**
+ * Mutation options for resending an invite email. Exported for the unit tests; components
+ * use `useResendInvite`. The feedback lives here, not in `mutate()` callbacks: TanStack
+ * Query v5 only runs those for the latest call, so a second resend started before the
+ * first returns would drop the first one's toast.
+ */
+export function resendInviteMutationOptions(
+  queryClient: QueryClient,
+  orgId: string,
+  feedback: ResendInviteFeedback,
+) {
+  return {
+    mutationKey: resendInviteKey(orgId),
+    mutationFn: ({ inviteId, language }: ResendInviteVariables) =>
+      organisationsApi.resendInvite(orgId, inviteId, language),
+    onSuccess: () => feedback.sent(),
+    onError: (err: unknown) => {
+      // The client skips its toast for this 429 (skipErrorToastStatuses), so this is the only one
+      if (isAxiosError(err) && err.response?.status === 429) {
+        feedback.cooldown(retryAfterMinutes(err.response.headers['retry-after']));
+      }
+    },
+    // Also after an error: a 409 means the invite is no longer pending, so its row should go
+    onSettled: () =>
+      void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'invites'] }),
+  };
+}
+
+export function useResendInvite(orgId: string, feedback: ResendInviteFeedback) {
+  const queryClient = useQueryClient();
+  return useMutation(resendInviteMutationOptions(queryClient, orgId, feedback));
+}
+
+/** IDs of the invites with a resend request running, one entry per running request. */
+export function useResendingInviteIds(orgId: string): string[] {
+  return useMutationState({
+    filters: { mutationKey: resendInviteKey(orgId), status: 'pending' },
+    select: (mutation) => (mutation.state.variables as ResendInviteVariables).inviteId,
   });
 }
 

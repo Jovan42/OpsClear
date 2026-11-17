@@ -3,6 +3,17 @@ import { toast } from 'sonner';
 import keycloak from '../auth/keycloak';
 import i18n from '../i18n';
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * Error statuses the caller handles itself, so the response interceptor shows no toast
+     * for them (e.g. `[429]` when the page shows its own cooldown message). Other errors
+     * still toast as usual.
+     */
+    skipErrorToastStatuses?: number[];
+  }
+}
+
 // Keys into the `errors` i18n namespace. Only the coarse category is translated —
 // the detailed `message` text stays English (ADR-0037's deliberate scope cut).
 const ERROR_CATEGORY_KEYS: Record<string, string> = {
@@ -62,6 +73,9 @@ apiClient.interceptors.response.use(
       if (status === 401) return Promise.reject(error);
       if (status === 404 && method === 'get') return Promise.reject(error);
       if (status === 403 && url.includes('/super-admin/')) return Promise.reject(error);
+      if (status !== undefined && error.config?.skipErrorToastStatuses?.includes(status)) {
+        return Promise.reject(error);
+      }
 
       const data = error.response?.data as { error?: string; message?: string } | undefined;
       const message: string = data?.message ?? error.message ?? i18n.t('errors:somethingWentWrong');
