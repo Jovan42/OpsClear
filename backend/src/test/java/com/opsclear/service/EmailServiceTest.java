@@ -69,7 +69,7 @@ class EmailServiceTest {
         assertThat(text)
                 .contains("Olivia Owner has invited you to join Acme Corp on OpsClear.")
                 .contains("https://app.example.com/invite/" + TOKEN)
-                .contains("The invite expires on November 24, 2026.")
+                .contains("The invite expires on November 24, 2026, 10:15 UTC.")
                 .contains("If you weren't expecting this invite, you can ignore this email.");
 
         String html = textPart(sent, "text/html");
@@ -77,7 +77,7 @@ class EmailServiceTest {
                 .contains("Olivia Owner has invited you to join Acme Corp on OpsClear.")
                 .contains("href=\"https://app.example.com/invite/" + TOKEN + "\"")
                 .contains("Accept invite")
-                .contains("The invite expires on November 24, 2026.");
+                .contains("The invite expires on November 24, 2026, 10:15 UTC.");
     }
 
     @Test
@@ -91,7 +91,7 @@ class EmailServiceTest {
         assertThat(text)
                 .contains("Olivia Owner vas poziva da se pridružite organizaciji Acme Corp na OpsClear-u.")
                 .contains("https://app.example.com/invite/" + TOKEN)
-                .contains("Pozivnica ističe 24.11.2026.")
+                .contains("Pozivnica ističe 24.11.2026. u 10:15 UTC.")
                 .contains("Ako niste očekivali ovu pozivnicu, možete zanemariti ovaj email.");
 
         String html = textPart(sent, "text/html");

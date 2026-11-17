@@ -35,8 +35,9 @@ public class EmailService {
 
     private static final Locale EN = Locale.ENGLISH;
     private static final Locale SR = Locale.forLanguageTag("sr-Latn");
-    private static final DateTimeFormatter EN_DATE = DateTimeFormatter.ofPattern("MMMM d, yyyy", EN);
-    private static final DateTimeFormatter SR_DATE = DateTimeFormatter.ofPattern("d.M.yyyy.", SR);
+    // The invitee's time zone is unknown, so the expiry shows date and time with an explicit UTC
+    private static final DateTimeFormatter EN_DATE = DateTimeFormatter.ofPattern("MMMM d, yyyy, HH:mm 'UTC'", EN);
+    private static final DateTimeFormatter SR_DATE = DateTimeFormatter.ofPattern("d.M.yyyy. 'u' HH:mm 'UTC'", SR);
 
     private final JavaMailSender mailSender;
     private final MessageSource messages;
