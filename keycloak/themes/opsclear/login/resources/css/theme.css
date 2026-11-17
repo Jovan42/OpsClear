@@ -257,3 +257,28 @@ a:hover {
   color: var(--oc-brand-dark);
   border: 1px solid var(--oc-brand);
 }
+
+/* login-verify-email.ftl and info.ftl (ADR-0059) */
+.instruction {
+  font-size: 0.875rem;
+  color: var(--oc-gray-700);
+  line-height: 1.5;
+  margin: 0 0 0.75rem;
+}
+
+.oc-verify-email-address {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--oc-gray-900);
+  word-break: break-all;
+  margin: 0 0 0.75rem;
+}
+
+#kc-info .instruction {
+  font-size: inherit;
+  color: inherit;
+}
+
+#kc-info-message a {
+  font-weight: 600;
+}

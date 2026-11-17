@@ -11,7 +11,11 @@ describe('Registration', () => {
     cy.visit('http://localhost:8180/realms/opsclear/protocol/openid-connect/logout?client_id=opsclear-frontend&post_logout_redirect_uri=http://localhost:5173');
   });
 
-  it('self-registers with a unique email/password, redirected into the app authenticated', { tags: '@smoke' }, () => {
+  // JOB-344 (ADR-0059): the realm has verifyEmail on, so registering stops on the branded
+  // "check your inbox" page until the link from the verification email (sent to Mailpit
+  // in dev and CI) is opened. Opened in the same browser, Keycloak finishes the login and
+  // redirects straight into the app.
+  it('self-registers, verifies the email through the link in Mailpit, redirected into the app authenticated', { tags: '@smoke' }, () => {
     const email = `e2e-newuser-${Date.now()}@example.com`;
     cy.visit('/');
     cy.contains('Log in').click();
@@ -23,14 +27,26 @@ describe('Registration', () => {
       cy.get('#firstName').type('E2E');
       cy.get('#lastName').type('Newuser');
       cy.get('#kc-form-buttons').find('input[type=submit]').click();
-      cy.url().should('not.include', 'localhost:8180');
+      cy.get('h1').should('contain.text', 'Verify your email');
+      cy.get('#kc-verify-email-address').should('have.text', email);
+      cy.get('#kc-verify-email-resend').should('be.visible');
+    });
+    cy.mailpitLink(email, '/login-actions/action-token').then((link) => {
+      cy.origin('http://localhost:8180', { args: { link } }, ({ link }) => {
+        // Navigates the page itself, as clicking the link would, so Keycloak's redirect
+        // back to the app happens the same way as after a form submit.
+        cy.window().then((win) => {
+          win.location.href = link;
+        });
+        cy.url().should('not.include', 'localhost:8180');
+      });
     });
     // First-login user with no org membership is auto-redirected to create one
     // (OrgRequiredRoute) — never lands directly on a project/job page (ADR-0049
     // Appendix §1 happy path); also implicitly proves UserSyncService.syncFromJwt
     // upserted a users row on first login, since OrgRequiredRoute's own check
     // requires a successful authenticated API call to get this far.
-    cy.url().should('include', 'localhost:5173/onboarding');
+    cy.url({ timeout: 10000 }).should('include', 'localhost:5173/onboarding');
     cy.deleteKeycloakUser(email);
   });
 

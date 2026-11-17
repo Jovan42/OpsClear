@@ -81,11 +81,15 @@ runs:
     # a second `keycloak` database on the calling job's Postgres service just to
     # mirror local dev exactly would add setup cost for no behavioral difference in
     # what's being tested.
+    #
+    # The OpsClear theme is mounted like docker-compose does, so CI serves the branded login,
+    # verify-email and info pages and the `opsclear` email theme (ADR-0059).
     - name: Start Keycloak
       shell: bash
       run: |
         docker run -d --name keycloak --network opsclear-e2e \
           -p 8180:8080 \
+          -v "$GITHUB_WORKSPACE/keycloak/themes:/opt/keycloak/themes:ro" \
           -e KEYCLOAK_ADMIN=admin \
           -e KEYCLOAK_ADMIN_PASSWORD=admin \
           quay.io/keycloak/keycloak:24.0 start-dev
@@ -115,10 +119,8 @@ runs:
     # runs on the same runner's `localhost`, exactly like local dev's networking
     # model, just without Docker Compose's service-name hostnames.
     #
-    # The realm's `loginTheme: opsclear` custom theme isn't mounted here (that's local
-    # dev's `keycloak/themes` volume) — Keycloak falls back to its built-in theme when
-    # a named one isn't found, which only matters once a spec actually renders the
-    # login page (JOB-208).
+    # The realm's `loginTheme`/`emailTheme: opsclear` come from the `keycloak/themes`
+    # mount on the Keycloak container above (JOB-344), the same as local dev.
     - name: Import Keycloak realm
       shell: bash
       run: |

@@ -124,8 +124,17 @@ Cypress.Commands.add('deleteKeycloakUser', (email: string) => {
  * disposable user with a known-empty org state, since the 5 standard seed users'
  * org membership isn't predictable (other specs, and local manual testing, can leave
  * them already in an org). Pair with cy.deleteKeycloakUser() for cleanup.
+ *
+ * `emailVerified: false` (JOB-344) creates a user Keycloak sends to the verify-email page
+ * at login, like an account registered before verification was turned on (ADR-0059).
  */
-Cypress.Commands.add('createKeycloakUser', (email: string, firstName: string, lastName: string, password = 'password123') => {
+Cypress.Commands.add('createKeycloakUser', (
+  email: string,
+  firstName: string,
+  lastName: string,
+  password = 'password123',
+  options: { emailVerified?: boolean } = {},
+) => {
   cy.request({
     method: 'POST',
     url: `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
@@ -142,7 +151,7 @@ Cypress.Commands.add('createKeycloakUser', (email: string, firstName: string, la
         firstName,
         lastName,
         enabled: true,
-        emailVerified: true,
+        emailVerified: options.emailVerified ?? true,
         credentials: [{ type: 'password', value: password, temporary: false }],
       },
     });
@@ -173,6 +182,61 @@ Cypress.Commands.add('setUpOrgSubscription', (orgId: string, ownerToken: string)
   });
 });
 
+const MAILPIT_URL = Cypress.env('MAILPIT_URL') ?? 'http://localhost:8025';
+// Keycloak and the backend send mail after the request returns, so a message can take a
+// moment to show up in Mailpit.
+const MAILPIT_POLL_ATTEMPTS = 20;
+const MAILPIT_POLL_INTERVAL_MS = 1000;
+
+interface MailpitSearchResponse {
+  messages: Array<{ ID: string }>;
+}
+
+interface MailpitMessage {
+  HTML: string;
+}
+
+/** ID of the newest Mailpit message to `to` (search results are newest first), polling
+ *  until one arrives. */
+function newestMailpitMessageId(to: string, attempt = 1): Cypress.Chainable<string> {
+  return cy
+    .request<MailpitSearchResponse>({
+      url: `${MAILPIT_URL}/api/v1/search`,
+      qs: { query: `to:${to}` },
+      log: false,
+    })
+    .then(({ body }): Cypress.Chainable<string> => {
+      if (body.messages.length > 0) return cy.wrap(body.messages[0].ID, { log: false });
+      if (attempt >= MAILPIT_POLL_ATTEMPTS) {
+        throw new Error(`No email to ${to} arrived in Mailpit (${MAILPIT_URL}) after ${attempt} attempts`);
+      }
+      // Mail is sent asynchronously; there's no request or element to wait on instead.
+      // eslint-disable-next-line cypress/no-unnecessary-waiting
+      cy.wait(MAILPIT_POLL_INTERVAL_MS, { log: false });
+      return newestMailpitMessageId(to, attempt + 1);
+    });
+}
+
+/**
+ * JOB-344 (ADR-0059): returns the first link containing `pathFragment` in the newest email
+ * Mailpit received for `to`. Dev and CI send all Keycloak and backend mail to Mailpit
+ * (UI/API on localhost:8025). Use a unique recipient per test so an older message can't
+ * be picked up.
+ */
+Cypress.Commands.add('mailpitLink', (to: string, pathFragment: string) => {
+  Cypress.log({ name: 'mailpitLink', message: `${to} ${pathFragment}` });
+  return newestMailpitMessageId(to).then((id) =>
+    cy.request<MailpitMessage>({ url: `${MAILPIT_URL}/api/v1/message/${id}`, log: false }).then(({ body }) => {
+      const links = [...body.HTML.matchAll(/href="([^"]+)"/g)].map(([, href]) => href.replaceAll('&amp;', '&'));
+      const link = links.find((href) => href.includes(pathFragment));
+      if (!link) {
+        throw new Error(`The newest email to ${to} has no link containing "${pathFragment}"`);
+      }
+      return link;
+    }),
+  );
+});
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
@@ -185,7 +249,16 @@ declare global {
       deleteKeycloakUser(email: string): Chainable<void>;
       /** Creates a real, enabled Keycloak user via the Admin API — for specs needing
        *  a disposable user with predictable (empty) org state (JOB-209). */
-      createKeycloakUser(email: string, firstName: string, lastName: string, password?: string): Chainable<void>;
+      createKeycloakUser(
+        email: string,
+        firstName: string,
+        lastName: string,
+        password?: string,
+        options?: { emailVerified?: boolean },
+      ): Chainable<void>;
+      /** First link containing `pathFragment` in the newest Mailpit email to `to`,
+       *  polling until the email arrives (JOB-344). */
+      mailpitLink(to: string, pathFragment: string): Chainable<string>;
       /** Gives an org a real (non-Paddle) subscription so its OWNER can get past
        *  SubscriptionWall onto the actual org-management pages (JOB-209). */
       setUpOrgSubscription(orgId: string, ownerToken: string): Chainable<void>;
