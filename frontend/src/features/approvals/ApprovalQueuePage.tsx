@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2 } from 'lucide-react';
 import Button from '../../components/Button';
@@ -86,10 +86,9 @@ export default function ApprovalQueuePage() {
 
   if (!hasAddon('APPROVALS')) return <UpgradeCard featureName={t('approvals.pageTitle')} />;
 
-  if (role === 'MEMBER') {
-    navigate(`/projects/${projectId}/jobs`, { replace: true });
-    return null;
-  }
+  // <Navigate>, not navigate() during render: React Router ignores navigate() on a component's
+  // first render, and the page can first render with the MEMBER role already known (JOB-387).
+  if (role === 'MEMBER') return <Navigate to={`/projects/${projectId}/jobs`} replace />;
 
   if (isLoading) {
     return (
