@@ -100,8 +100,18 @@ describe('Overview approvals preference', () => {
           cy.visit(`/projects/${projectId}/jobs`);
           cy.get('nav').contains('a', 'Approvals').should('contain.text', '1');
 
+          // The row is hidden until the org members (the caller's role) have loaded, so only
+          // check it's absent once they have, and the response says this user is a Member.
+          cy.intercept('GET', `**/api/organisations/${orgId}/members`).as('orgMembers');
           cy.loginAs(memberEmail);
           cy.visit('/settings');
+          userIdFor(memberEmail).then((memberId) => {
+            cy.wait('@orgMembers')
+              .its('response.body')
+              .should((members: { userId: string; role: string }[]) => {
+                expect(members.find((m) => m.userId === memberId)?.role).to.eq('MEMBER');
+              });
+          });
           cy.contains('p', 'Default range').should('be.visible');
           cy.contains('Show approvals on Overview').should('not.exist');
         }),
