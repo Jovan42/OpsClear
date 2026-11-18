@@ -1,0 +1,71 @@
+{
+  "title": "Vodič",
+  "heading": "Korisnički vodič",
+  "sections": {
+    "getting-started": "Prvi koraci",
+    "daily-work": "Svakodnevni rad",
+    "planning": "Planiranje",
+    "admin-settings": "Administracija i podešavanja",
+    "account-more": "Nalog i ostalo"
+  },
+  "pages": {
+    "index": "Prvi koraci sa OpsClear-om",
+    "sign-up": "Registracija i potvrda email adrese",
+    "create-organisation": "Napravite svoju organizaciju",
+    "invite-team": "Pozovite svoj tim",
+    "first-project": "Napravite projekat i dodajte članove",
+    "create-job": "Napravite i dodelite posao",
+    "job-done": "Posao od početka do kraja",
+    "job-blocked": "Kada je posao blokiran",
+    "job-approval": "Kada posao traži odobrenje",
+    "finding-jobs": "Pronalaženje poslova",
+    "dashboard": "Kontrolna tabla",
+    "notifications": "Obaveštenja",
+    "notes-links-history": "Beleške, linkovi i istorija",
+    "milestones": "Etape",
+    "templates-and-types": "Šabloni i tipovi poslova",
+    "recurring-jobs": "Ponavljajući poslovi",
+    "job-relationships": "Povezivanje poslova",
+    "roles-permissions": "Uloge i dozvole",
+    "project-settings": "Podešavanja projekta",
+    "organisation-settings": "Podešavanja organizacije",
+    "preferences": "Vaša podešavanja",
+    "subscription": "Pretplata i dodaci",
+    "stats-overview": "Statistika i Pregled",
+    "api-keys": "API ključevi",
+    "faq": "Česta pitanja i rešavanje problema"
+  },
+  "search": {
+    "label": "Pretraži vodič",
+    "placeholder": "Pretraži vodič…",
+    "loading": "Učitavanje…",
+    "noResults": "Nema rezultata za „{{query}}“"
+  },
+  "onThisPage": "Na ovoj stranici",
+  "previous": "Prethodna",
+  "next": "Sledeća",
+  "seeItInAction": "Pogledajte kako radi",
+  "howToUseIt": "Kako se koristi",
+  "howDoesThisWork": "Kako ovo funkcioniše?",
+  "comingSoon": {
+    "title": "Uskoro",
+    "body": "Ova stranica se još piše. Do tada počnite od Prvih koraka."
+  },
+  "notYetTranslated": "Još nije prevedeno. Stranica je prikazana na engleskom.",
+  "language": "Jezik",
+  "openMenu": "Otvori meni vodiča",
+  "closeMenu": "Zatvori meni vodiča",
+  "toggleSection": "Prikaži ili sakrij: {{section}}",
+  "loadError": "Stranica nije mogla da se učita.",
+  "retry": "Pokušaj ponovo",
+  "whoCanDoThis": "Ko može ovo da uradi",
+  "callout": {
+    "tip": "Savet",
+    "note": "Napomena",
+    "warning": "Upozorenje"
+  },
+  "entry": {
+    "userMenu": "Pomoć i vodič",
+    "nav": "Vodič"
+  }
+}

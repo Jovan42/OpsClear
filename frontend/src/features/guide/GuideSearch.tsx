@@ -1,0 +1,95 @@
+import { useId, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Search } from 'lucide-react';
+import { usePreferences } from '../../hooks/usePreferences';
+import { guidePath } from '../../guide/pages';
+import { buildGuideSearch, type GuideSearch as SearchFn, type GuideSearchResult } from '../../guide/searchIndex';
+
+/**
+ * ADR-0062: search over the guide pages in the current language. The index is built in the
+ * browser on the first focus of the box (and again after a language change).
+ */
+export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {
+  const { t } = useTranslation('guide');
+  const { prefs } = usePreferences();
+  const navigate = useNavigate();
+  const lang = prefs.locale;
+  const [index, setIndex] = useState<{ lang: string; search: SearchFn } | null>(null);
+  const [loadingLang, setLoadingLang] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const inputId = useId();
+
+  const ready = index?.lang === lang ? index.search : null;
+  const trimmed = query.trim();
+  const results: GuideSearchResult[] = ready && trimmed ? ready(trimmed) : [];
+
+  function ensureIndex() {
+    if (ready || loadingLang === lang) return;
+    setLoadingLang(lang);
+    void buildGuideSearch(lang, (slug) => t(`pages.${slug}`)).then((search) => {
+      setIndex({ lang, search });
+      setLoadingLang(null);
+    });
+  }
+
+  function open(result: GuideSearchResult) {
+    setQuery('');
+    onNavigate?.();
+    navigate(guidePath(result.slug, result.anchor ?? undefined));
+  }
+
+  return (
+    <div className="relative">
+      <label className="sr-only" htmlFor={inputId}>{t('search.label')}</label>
+      <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" aria-hidden />
+      <input
+        id={inputId}
+        type="search"
+        data-testid="guide-search"
+        value={query}
+        placeholder={t('search.placeholder')}
+        autoComplete="off"
+        onFocus={ensureIndex}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          ensureIndex(); // the language may have changed since the box was focused
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && results[0]) open(results[0]);
+          if (e.key === 'Escape') setQuery('');
+        }}
+        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-2 pl-8 pr-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40"
+      />
+      {trimmed && (
+        <div
+          className="absolute left-0 right-0 z-20 mt-1 max-h-80 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg"
+          data-testid="guide-search-results"
+        >
+          {!ready ? (
+            <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{t('search.loading')}</p>
+          ) : results.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{t('search.noResults', { query: trimmed })}</p>
+          ) : (
+            <ul>
+              {results.map((r) => (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => open(r)}
+                    className="block w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                  >
+                    <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">{r.pageTitle}</span>
+                    {r.heading && r.heading !== r.pageTitle && (
+                      <span className="block text-xs text-gray-500 dark:text-gray-400"># {r.heading}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

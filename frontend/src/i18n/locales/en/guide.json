@@ -1,0 +1,71 @@
+{
+  "title": "Guide",
+  "heading": "User guide",
+  "sections": {
+    "getting-started": "Getting started",
+    "daily-work": "Daily work",
+    "planning": "Planning",
+    "admin-settings": "Admin & settings",
+    "account-more": "Account & more"
+  },
+  "pages": {
+    "index": "Getting started with OpsClear",
+    "sign-up": "Sign up and verify your email",
+    "create-organisation": "Create your organisation",
+    "invite-team": "Invite your team",
+    "first-project": "Create a project and add members",
+    "create-job": "Create and assign a job",
+    "job-done": "A job from start to finish",
+    "job-blocked": "When a job is blocked",
+    "job-approval": "When a job needs approval",
+    "finding-jobs": "Finding your jobs",
+    "dashboard": "The dashboard",
+    "notifications": "Notifications",
+    "notes-links-history": "Notes, links and history",
+    "milestones": "Milestones",
+    "templates-and-types": "Job templates and job types",
+    "recurring-jobs": "Recurring jobs",
+    "job-relationships": "Linking jobs together",
+    "roles-permissions": "Roles and permissions",
+    "project-settings": "Project settings",
+    "organisation-settings": "Organisation settings",
+    "preferences": "Your preferences",
+    "subscription": "Subscription and add-ons",
+    "stats-overview": "Stats and the Overview",
+    "api-keys": "API keys",
+    "faq": "FAQ and troubleshooting"
+  },
+  "search": {
+    "label": "Search the guide",
+    "placeholder": "Search the guide…",
+    "loading": "Loading…",
+    "noResults": "No results for “{{query}}”"
+  },
+  "onThisPage": "On this page",
+  "previous": "Previous",
+  "next": "Next",
+  "seeItInAction": "See it in action",
+  "howToUseIt": "How to use it",
+  "howDoesThisWork": "How does this work?",
+  "comingSoon": {
+    "title": "Coming soon",
+    "body": "This page is still being written. In the meantime, start with Getting started."
+  },
+  "notYetTranslated": "Not yet translated. This page is shown in English.",
+  "language": "Language",
+  "openMenu": "Open the guide menu",
+  "closeMenu": "Close the guide menu",
+  "toggleSection": "Show or hide {{section}}",
+  "loadError": "This page couldn't be loaded.",
+  "retry": "Try again",
+  "whoCanDoThis": "Who can do this",
+  "callout": {
+    "tip": "Tip",
+    "note": "Note",
+    "warning": "Warning"
+  },
+  "entry": {
+    "userMenu": "Help & guide",
+    "nav": "Guide"
+  }
+}

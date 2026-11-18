@@ -2,12 +2,9 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../auth/AuthContext';
-import { useMyOrg } from '../features/org/useOrganisation';
-import { useOrgSubscription } from '../features/org/useSubscription';
 import { useCurrentOrg } from '../features/org/OrgContext';
-import UserMenu from './UserMenu';
-import NotificationBell from '../features/notifications/NotificationBell';
+import AppHeader from './AppHeader';
+import OrgLoader from './OrgLoader';
 import { useNotificationStream } from '../features/notifications/useNotificationStream';
 import ProjectSwitcher from './ProjectSwitcher';
 import ProjectNavItemView from './ProjectNavItemView';
@@ -96,23 +93,6 @@ function NavDrawer({
   );
 }
 
-function OrgLoader() {
-  const { setOrg, setSubscription, clearOrg } = useCurrentOrg();
-  const { data: myOrg } = useMyOrg();
-  const { data: sub } = useOrgSubscription(myOrg?.id ?? null);
-
-  useEffect(() => {
-    if (myOrg) setOrg(myOrg);
-    else if (myOrg === null) clearOrg();
-  }, [myOrg, setOrg, clearOrg]);
-
-  useEffect(() => {
-    if (sub !== undefined) setSubscription(sub);
-  }, [sub, setSubscription]);
-
-  return null;
-}
-
 // App-wide, not buried in org settings (JOB-179) — a subscription already went
 // past due should be visible wherever the user happens to be, not just on the one
 // page where they'd think to look for it.
@@ -134,7 +114,6 @@ function PastDueBanner() {
 
 export default function AppLayout() {
   useTheme();
-  const { name } = useAuth();
   const location = useLocation();
   // Live notification updates for the bell and the Notifications page (ADR-0051).
   useNotificationStream();
@@ -161,50 +140,35 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <nav
-        className="shrink-0 px-4 text-white"
-        style={{ backgroundColor: 'var(--brand)' }}
-      >
-        {/* Main header row */}
-        <div className="flex items-center justify-between h-14">
-          <div className="flex items-center gap-2 min-w-0">
-            {projectId && (
-              <button
-                onClick={() => setDrawerOpen(true)}
-                className="relative md:hidden -ml-1 p-1.5 text-white/80 hover:text-white transition-colors cursor-pointer"
-                aria-label={t('openNavMenu')}
-                aria-expanded={drawerOpen}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-                {showApprovalsBadge && (
-                  <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-orange-500" />
-                )}
-              </button>
-            )}
-            <Link
-              to="/projects"
-              className="font-semibold text-lg tracking-tight text-white hover:text-white/80 transition-colors shrink-0"
+      <AppHeader
+        start={
+          projectId && (
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="relative md:hidden -ml-1 p-1.5 text-white/80 hover:text-white transition-colors cursor-pointer"
+              aria-label={t('openNavMenu')}
+              aria-expanded={drawerOpen}
             >
-              OpsClear
-            </Link>
-            {projectId && <ProjectSwitcher projectId={projectId} />}
-          </div>
-
-          <div className="flex items-center gap-4 sm:gap-6">
-            {projectId && (
-              <div className="hidden md:block">
-                <ProjectNav projectId={projectId} navData={navData} />
-              </div>
-            )}
-            <NotificationBell />
-            <UserMenu name={name ?? ''} />
-          </div>
-        </div>
-      </nav>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+              {showApprovalsBadge && (
+                <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-orange-500" />
+              )}
+            </button>
+          )
+        }
+        afterLogo={projectId && <ProjectSwitcher projectId={projectId} />}
+        end={
+          projectId && (
+            <div className="hidden md:block">
+              <ProjectNav projectId={projectId} navData={navData} />
+            </div>
+          )
+        }
+      />
       {projectId && (
         <NavDrawer
           projectId={projectId}

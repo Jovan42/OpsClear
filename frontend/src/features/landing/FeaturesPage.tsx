@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
 import { useCatalog } from '../org/useSubscription';
 import DemoTrigger from '../../demo/DemoTrigger';
+import { BookOpen } from 'lucide-react';
+import { guidePageForCard, guidePath } from '../../guide/pages';
 import type { DemoSlide } from '../../demo/types';
 import type { AddonCode, SubscriptionAddonResponse } from '../../types';
 
@@ -191,6 +193,8 @@ function badgeFor(card: FeatureCard, addons: SubscriptionAddonResponse[]): Badge
 
 function Card({ card, badge }: { card: FeatureCard; badge: Badge }) {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  const { t: tGuide } = useTranslation('guide');
+  const guidePage = guidePageForCard(card.id);
   const comingSoon = badge === 'coming-soon';
   const badgeLabel = badge === 'base' ? t('featuresPage.badges.base') : badge === 'addon' ? t('featuresPage.badges.addon') : t('featuresPage.badges.comingSoon');
 
@@ -209,7 +213,8 @@ function Card({ card, badge }: { card: FeatureCard; badge: Badge }) {
   );
 
   return (
-    <div className={`bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${comingSoon ? 'opacity-60' : ''}`}>
+    // `id`: the guide's "See it in action" links land on the card (`/features#<id>`).
+    <div id={card.id} data-testid={`feature-card-${card.id}`} className={`scroll-mt-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${comingSoon ? 'opacity-60' : ''}`}>
       {card.loadSlides ? (
         <DemoTrigger
           loadSlides={card.loadSlides}
@@ -227,6 +232,17 @@ function Card({ card, badge }: { card: FeatureCard; badge: Badge }) {
           </span>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{card.description}</p>
+        {guidePage && (
+          <Link
+            to={guidePath(guidePage.slug)}
+            data-testid="feature-card-guide-link"
+            className="mt-auto inline-flex items-center gap-1 text-sm font-medium hover:underline"
+            style={{ color: 'var(--brand)' }}
+          >
+            <BookOpen className="w-4 h-4" aria-hidden />
+            {tGuide('howToUseIt')}
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -243,6 +259,15 @@ export default function FeaturesPage() {
   // shared MSW worker mid-request, producing the "creating one record creates several,
   // and the count is random" bug.
   const CARDS = useMemo(() => buildCards(t), [t]);
+  const { hash } = useLocation();
+  const cardsReady = !!catalog;
+
+  // The guide's "See it in action" links point at a card (`/features#notes`). The cards
+  // only render once the catalog loads, after the browser's own jump to the hash.
+  useEffect(() => {
+    if (!cardsReady || !hash) return;
+    document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ block: 'start' });
+  }, [cardsReady, hash]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">

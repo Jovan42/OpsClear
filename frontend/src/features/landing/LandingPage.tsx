@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import keycloak from '../../auth/keycloak';
@@ -55,6 +55,7 @@ function ProblemStatement() {
 
 function CTAFooter() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  const { t: tGuide } = useTranslation('guide');
   return (
     <footer className="px-6 py-20 text-center" style={{ backgroundColor: 'var(--brand)' }}>
       <h2 className="text-3xl font-bold text-white mb-3">{t('landing.cta.heading')}</h2>
@@ -66,6 +67,11 @@ function CTAFooter() {
       >
         {t('landing.cta.button')}
       </button>
+      <div className="mt-10">
+        <Link to="/guide" className="text-sm text-white/80 hover:text-white underline-offset-4 hover:underline">
+          {tGuide('entry.nav')}
+        </Link>
+      </div>
     </footer>
   );
 }

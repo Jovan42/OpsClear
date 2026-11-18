@@ -9,13 +9,14 @@ const THEME_ORDER: Theme[] = ['light', 'dark', 'system'];
 const THEME_ICON: Record<Theme, string> = { light: '☀️', dark: '🌙', system: '🖥️' };
 
 /**
- * Shared header for the public marketing pages (Landing, Features). Unlike the
+ * Shared header for the public pages (Landing, Features, and the Guide when logged out). Unlike the
  * authenticated app shell (AppLayout), nothing here calls useTheme() by default —
  * these pages previously rendered outside any dark-mode-aware context, so a visitor
  * toggling theme from here needs this component to apply it itself.
  */
 export default function PublicNav() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  const { t: tGuide } = useTranslation('guide');
   const { authenticated } = useAuth();
   const { prefs, update } = usePreferences();
   useTheme();
@@ -33,6 +34,9 @@ export default function PublicNav() {
     <nav className="px-6 h-14 flex items-center justify-between shrink-0" style={{ backgroundColor: 'var(--brand)' }}>
       <Link to="/" className="font-semibold text-lg tracking-tight text-white">OpsClear</Link>
       <div className="flex items-center gap-3">
+        <Link to="/guide" className="text-sm text-white/80 hover:text-white transition-colors">
+          {tGuide('entry.nav')}
+        </Link>
         {/* Logged-in visitors already have theme/language controls in Settings —
             only surface the quick switcher here for visitors who don't. */}
         {!authenticated && (
