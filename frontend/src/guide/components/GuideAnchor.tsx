@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 
 /** In-app links (`/guide/faq`, `/features`) navigate inside the SPA; other links open in a new tab. */
 export function GuideAnchor({ href = '', children, ...rest }: ComponentProps<'a'>) {
-  if (href.startsWith('/')) {
+  // `//host/path` is protocol-relative, i.e. another site, not an in-app path.
+  if (href.startsWith('/') && !href.startsWith('//')) {
     return (
       <Link to={href} {...rest}>
         {children}

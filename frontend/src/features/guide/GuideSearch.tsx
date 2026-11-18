@@ -4,33 +4,37 @@ import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { usePreferences } from '../../hooks/usePreferences';
 import { guidePath } from '../../guide/pages';
-import { buildGuideSearch, type GuideSearch as SearchFn, type GuideSearchResult } from '../../guide/searchIndex';
+import { buildGuideSearch, type GuideSearchResult } from '../../guide/searchIndex';
+import { buildIndexState, shouldBuildIndex, type SearchIndexState } from '../../guide/searchLoader';
 
 /**
  * ADR-0062: search over the guide pages in the current language. The index is built in the
- * browser on the first focus of the box (and again after a language change).
+ * browser on the first focus of the box (and again after a language change). If it fails to
+ * load, the box says so and the next focus tries again.
  */
 export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {
   const { t } = useTranslation('guide');
   const { prefs } = usePreferences();
   const navigate = useNavigate();
   const lang = prefs.locale;
-  const [index, setIndex] = useState<{ lang: string; search: SearchFn } | null>(null);
-  const [loadingLang, setLoadingLang] = useState<string | null>(null);
+  const [indexState, setIndexState] = useState<SearchIndexState>({ status: 'idle' });
   const [query, setQuery] = useState('');
   const inputId = useId();
 
-  const ready = index?.lang === lang ? index.search : null;
+  const ready = indexState.status === 'ready' && indexState.lang === lang ? indexState.search : null;
+  const failed = indexState.status === 'error' && indexState.lang === lang;
   const trimmed = query.trim();
   const results: GuideSearchResult[] = ready && trimmed ? ready(trimmed) : [];
 
-  function ensureIndex() {
-    if (ready || loadingLang === lang) return;
-    setLoadingLang(lang);
-    void buildGuideSearch(lang, (slug) => t(`pages.${slug}`)).then((search) => {
-      setIndex({ lang, search });
-      setLoadingLang(null);
-    });
+  /** `retryError`: retry a failed build (on focus), not on every keystroke. */
+  function ensureIndex(retryError: boolean) {
+    if (!shouldBuildIndex(indexState, lang, retryError)) return;
+    void buildIndexState(
+      lang,
+      () => buildGuideSearch(lang, (slug) => t(`pages.${slug}`)),
+      // A slower build for a language the user has since switched away from mustn't win.
+      (next) => setIndexState((prev) => (prev.status === 'loading' && (next.status === 'ready' || next.status === 'error') && prev.lang !== next.lang ? prev : next)),
+    );
   }
 
   function open(result: GuideSearchResult) {
@@ -50,10 +54,10 @@ export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () =
         value={query}
         placeholder={t('search.placeholder')}
         autoComplete="off"
-        onFocus={ensureIndex}
+        onFocus={() => ensureIndex(true)}
         onChange={(e) => {
           setQuery(e.target.value);
-          ensureIndex(); // the language may have changed since the box was focused
+          ensureIndex(false); // the language may have changed since the box was focused
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && results[0]) open(results[0]);
@@ -66,7 +70,9 @@ export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () =
           className="absolute left-0 right-0 z-20 mt-1 max-h-80 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg"
           data-testid="guide-search-results"
         >
-          {!ready ? (
+          {failed ? (
+            <p className="px-3 py-2 text-sm text-red-600 dark:text-red-400" data-testid="guide-search-error">{t('search.error')}</p>
+          ) : !ready ? (
             <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{t('search.loading')}</p>
           ) : results.length === 0 ? (
             <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{t('search.noResults', { query: trimmed })}</p>

@@ -107,7 +107,8 @@ function GuideArticle({ page }: Readonly<{ page: GuidePageEntry }>) {
   }, [isLoading, contentKey, hash]);
 
   return (
-    <GuideLayout current={page} aside={<OnThisPage headings={currentHeadings} />}>
+    // No right column without headings (e.g. a "Coming soon" page), rather than an empty one.
+    <GuideLayout current={page} aside={currentHeadings.length > 0 ? <OnThisPage headings={currentHeadings} /> : undefined}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm font-medium text-brand dark:text-green-400">{t(`sections.${page.section}`)}</p>
         <LanguageSwitch />

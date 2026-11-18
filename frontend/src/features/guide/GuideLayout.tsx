@@ -67,7 +67,8 @@ export default function GuideLayout({ current, aside, children }: Readonly<Guide
         )}
       </div>
 
-      <div className={`fixed inset-0 z-50 md:hidden ${drawerOpen ? '' : 'pointer-events-none'}`} aria-hidden={!drawerOpen}>
+      {/* `inert` while closed: the off-screen close button mustn't take keyboard focus. */}
+      <div className={`fixed inset-0 z-50 md:hidden ${drawerOpen ? '' : 'pointer-events-none'}`} aria-hidden={!drawerOpen} inert={!drawerOpen}>
         <div
           className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${drawerOpen ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setDrawerOpen(false)}
