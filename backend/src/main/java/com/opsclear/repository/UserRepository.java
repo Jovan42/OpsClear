@@ -99,6 +99,18 @@ public class UserRepository {
                 .fetchOptional(r -> r.value1().data());
     }
 
+    /**
+     * Like {@link #findPreferences}, but locks the user row ({@code SELECT … FOR UPDATE}) until the surrounding
+     * transaction ends, so concurrent read-merge-write updates of {@code preferences} can't overwrite each other.
+     */
+    public Optional<String> findPreferencesForUpdate(UUID id) {
+        return dsl.select(USERS.PREFERENCES)
+                .from(USERS)
+                .where(USERS.ID.eq(id))
+                .forUpdate()
+                .fetchOptional(r -> r.value1().data());
+    }
+
     /** Replaces the user's whole {@code preferences} JSONB with {@code preferencesJson}. */
     public void updatePreferences(UUID id, String preferencesJson) {
         dsl.update(USERS)
