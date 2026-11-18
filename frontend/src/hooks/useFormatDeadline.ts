@@ -1,41 +1,40 @@
 import type { JobStatus } from '../types';
 import { usePreferences } from './usePreferences';
-import { isPastDeadline } from '../utils/deadline';
+import { deadlineState, type DeadlineState } from '../utils/deadline';
 import { formatDate, type DatePrefs } from '../utils/formatDate';
 
 export interface FormattedDeadline {
   text: string;
-  overdue: boolean;
+  /** Overdue, due soon (ADR-0061) or normal; see `deadlineState`. */
+  state: DeadlineState;
 }
 
 function formatAbsolute(deadline: string, prefs: DatePrefs): string {
   return formatDate(deadline, prefs);
 }
 
-function formatRelative(deadline: string, prefs: DatePrefs, status?: JobStatus): FormattedDeadline {
+function formatRelative(deadline: string, prefs: DatePrefs, state: DeadlineState): string {
   const diffDays = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000);
-  const isCompleted = status === 'COMPLETED';
 
-  if (!isCompleted && isPastDeadline(deadline)) {
+  if (state === 'overdue') {
     const n = Math.max(1, Math.abs(diffDays));
-    return { text: `${n} day${n === 1 ? '' : 's'} overdue`, overdue: true };
+    return `${n} day${n === 1 ? '' : 's'} overdue`;
   }
-  if (diffDays <= 0) return { text: formatAbsolute(deadline, prefs), overdue: false };
-  if (diffDays === 1) return { text: 'in 1 day', overdue: false };
-  return { text: `in ${diffDays} days`, overdue: false };
+  if (diffDays <= 0) return formatAbsolute(deadline, prefs);
+  if (diffDays === 1) return 'in 1 day';
+  return `in ${diffDays} days`;
 }
 
 export function useFormatDeadline() {
   const { prefs } = usePreferences();
 
   return (deadline: string | null, status?: JobStatus): FormattedDeadline => {
-    if (!deadline) return { text: '—', overdue: false };
+    if (!deadline) return { text: '—', state: 'normal' };
 
-    if (prefs.deadlineFormat === 'RELATIVE') {
-      return formatRelative(deadline, prefs, status);
-    }
-
-    const overdue = status !== 'COMPLETED' && isPastDeadline(deadline);
-    return { text: formatAbsolute(deadline, prefs), overdue };
+    const state = deadlineState(deadline, status, prefs.dueSoonDays);
+    const text = prefs.deadlineFormat === 'RELATIVE'
+      ? formatRelative(deadline, prefs, state)
+      : formatAbsolute(deadline, prefs);
+    return { text, state };
   };
 }

@@ -79,6 +79,20 @@
         "deadlineDesc": "Rok ↓",
         "priority": "Prioritet",
         "newestFirst": "Najnovije prvo"
+      },
+      "defaultAssigneeFilter": {
+        "label": "Podrazumevani filter odgovornih",
+        "description": "Da li se lista poslova otvara sa poslovima svih ili samo onima za koje ste vi odgovorni.",
+        "everyone": "Svi",
+        "mine": "Moji"
+      },
+      "dueSoon": {
+        "label": "Isticanje bliskog roka",
+        "description": "Rokovi ovoliko blizu prikazuju se narandžasto uz oznaku „Rok uskoro”. Prekoračeni ostaju crveni.",
+        "off": "Isključeno",
+        "days_one": "{{count}} dan",
+        "days_few": "{{count}} dana",
+        "days_other": "{{count}} dana"
       }
     },
     "dashboardSection": {

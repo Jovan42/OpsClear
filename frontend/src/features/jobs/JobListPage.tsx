@@ -13,16 +13,21 @@ import Skeleton from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
 import { AwaitingCompletionBadge } from './components/ApprovalBadges';
 import JobTypeBadge from '../../components/JobTypeBadge';
+import DueSoonHint from '../../components/DueSoonHint';
 import NewJobModal from './NewJobModal';
 import { useJobList } from './useJobs';
 import { useMilestones } from './useMilestones';
 import { useJobTypes } from '../jobTypes/useJobTypes';
 import { useProject } from '../projects/useProjects';
 import { useCurrentOrg } from '../org/OrgContext';
+import { useAuth } from '../../auth/AuthContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { usePreferences, type SortOrder, type ProgressFormat, type RowDensity } from '../../hooks/usePreferences';
+import {
+  usePreferences, type AssigneeFilter, type SortOrder, type ProgressFormat, type RowDensity,
+} from '../../hooks/usePreferences';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
+import { deadlineTextClass } from '../../utils/deadline';
 import type { JobPriority, JobResponse, JobStatus, MilestoneResponse } from '../../types';
 
 function JobListSkeleton() {
@@ -159,8 +164,9 @@ function JobCard({ job, projectId, showMilestoneChip = false }: JobCardProps) {
           <span className="text-xs text-gray-500 dark:text-gray-400">{job.assignedToName}</span>
         )}
         {job.deadline && (
-          <span className={`text-xs ${deadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+          <span data-testid="job-deadline" className={`inline-flex items-center gap-1.5 text-xs ${deadlineTextClass(deadline.state, 'text-gray-500 dark:text-gray-400')}`}>
             {deadline.text}
+            <DueSoonHint state={deadline.state} />
           </span>
         )}
         {showMilestoneChip && job.milestoneName && (
@@ -205,8 +211,11 @@ function JobRow({ job, projectId, showMilestoneChip = false, showType = false }:
       </td>
       <td className={`${cell} text-gray-500 dark:text-gray-400`}>{job.client ?? '—'}</td>
       <td className={`${cell} text-gray-500 dark:text-gray-400`}>{job.assignedToName ?? '—'}</td>
-      <td className={`${cell} ${deadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-        {deadline.text}
+      <td data-testid="job-deadline" className={`${cell} ${deadlineTextClass(deadline.state, 'text-gray-500 dark:text-gray-400')}`}>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          {deadline.text}
+          <DueSoonHint state={deadline.state} />
+        </div>
       </td>
       <td className={cell}>
         <PriorityBadge priority={job.priority} />
@@ -286,8 +295,9 @@ function GroupSection({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{title}</span>
+            {/* Milestone deadlines only turn red when overdue; the due-soon highlight is for jobs. */}
             {deadline && (
-              <span className={`text-xs ${formattedDeadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+              <span className={`text-xs ${formattedDeadline.state === 'overdue' ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
                 {formattedDeadline.text}
               </span>
             )}
@@ -357,6 +367,7 @@ export default function JobListPage() {
   const filters = useMemo(() => getFilters(t), [t]);
   const priorityFilters = useMemo(() => getPriorityFilters(t), [t]);
   const { hasAddon } = useCurrentOrg();
+  const { userId } = useAuth();
   const { data: jobTypes = [] } = useJobTypes(projectId);
   const hasTypes = hasAddon('JOB_TYPES') && jobTypes.length > 0;
   const tableHeaders = useMemo(() => getTableHeaders(t, hasTypes), [t, hasTypes]);
@@ -404,6 +415,10 @@ export default function JobListPage() {
 
   // viewMode: preference drives the default; user toggle sets an explicit override
   const [viewModeOverride, setViewModeOverride] = useState<ViewMode | null>(null);
+
+  // Everyone / Mine (ADR-0061): starts on the preference; switching here doesn't change it.
+  const [assigneeOverride, setAssigneeOverride] = useState<AssigneeFilter | null>(null);
+  const assigneeFilter: AssigneeFilter = assigneeOverride ?? prefs.defaultAssigneeFilter;
   const viewMode: ViewMode = viewModeOverride ?? (prefs.defaultViewMode === 'GROUPED' && hasMilestones ? 'grouped' : 'flat');
 
   // collapsedGroups: derive from preference + user toggles (XOR: toggling flips the preference default)
@@ -435,7 +450,7 @@ export default function JobListPage() {
     });
   }
 
-  const { data: jobs = [], isLoading, isError, isFetching, dataUpdatedAt, refetch } = useJobList(
+  const { data: fetchedJobs = [], isLoading, isError, isFetching, dataUpdatedAt, refetch } = useJobList(
     projectId,
     debouncedSearch || undefined,
     priorityFilter !== 'ALL' ? priorityFilter : undefined,
@@ -443,6 +458,8 @@ export default function JobListPage() {
     typeFilter !== 'ALL' ? typeFilter : undefined,
   );
   const { data: allJobs = [] } = useJobList(projectId);
+  // Mine = I'm the responsible person; filtered in the browser, so the tab counts follow it.
+  const jobs = assigneeFilter === 'MINE' ? fetchedJobs.filter((j) => j.assignedTo === userId) : fetchedJobs;
 
   const counts: Record<JobStatus, number> = {
     NEW: jobs.filter((j) => j.status === 'NEW').length,
@@ -544,9 +561,10 @@ export default function JobListPage() {
         )}
       </div>
 
-      {/* Status filter tabs */}
-      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-      <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 min-w-max sm:min-w-0">
+      {/* Status filter tabs + Everyone/Mine toggle */}
+      <div className="flex flex-col-reverse sm:flex-row sm:items-end gap-2 mb-4">
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 flex-1 min-w-0">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 min-w-max sm:min-w-0">
         {filters.map(({ key, label }) => {
           const count = key === 'ALL' ? allCount : counts[key as JobStatus];
           const isActive = filter === key;
@@ -578,6 +596,29 @@ export default function JobListPage() {
             </button>
           );
         })}
+      </div>
+      </div>
+      <div
+        role="group"
+        aria-label={t('jobListPage.assigneeFilterLabel')}
+        className="flex self-start sm:self-auto sm:mb-1 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shrink-0"
+      >
+        {(['EVERYONE', 'MINE'] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={assigneeFilter === value}
+            data-testid={`assignee-filter-${value.toLowerCase()}`}
+            onClick={() => setAssigneeOverride(value)}
+            className={`px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
+              assigneeFilter === value
+                ? 'bg-brand text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            {value === 'EVERYONE' ? t('jobListPage.assigneeEveryone') : t('jobListPage.assigneeMine')}
+          </button>
+        ))}
       </div>
       </div>
 
@@ -662,12 +703,12 @@ export default function JobListPage() {
               message={
                 debouncedSearch
                   ? t('jobListPage.noResultsFor', { query: debouncedSearch })
-                  : jobs.length === 0
+                  : fetchedJobs.length === 0
                     ? t('jobListPage.noJobsYet')
                     : t('jobListPage.noJobsMatchFilter')
               }
               action={
-                !debouncedSearch && jobs.length === 0
+                !debouncedSearch && fetchedJobs.length === 0
                   ? { label: t('jobListPage.createFirstJob'), onClick: () => setModalOpen(true) }
                   : undefined
               }

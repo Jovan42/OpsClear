@@ -54,7 +54,10 @@
     "createFirstJob": "Create first job",
     "ungroupedGroupTitle": "Ungrouped",
     "noJobsInGroup": "No jobs in this group.",
-    "failedToLoad": "Failed to load jobs."
+    "failedToLoad": "Failed to load jobs.",
+    "assigneeFilterLabel": "Show jobs for",
+    "assigneeEveryone": "Everyone",
+    "assigneeMine": "Mine"
   },
 
   "jobDetailPage": {

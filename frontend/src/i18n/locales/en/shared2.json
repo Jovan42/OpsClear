@@ -40,5 +40,8 @@
   "upgradeCard": {
     "notIncluded": "{{featureName}} is not included in your plan",
     "description": "Add this feature to your subscription to unlock it for your team."
+  },
+  "deadline": {
+    "dueSoon": "Due soon"
   }
 }

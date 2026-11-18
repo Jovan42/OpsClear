@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
+import { deadlineTextClass } from '../../utils/deadline';
+import DueSoonHint from '../../components/DueSoonHint';
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { CheckCircle2, ListTodo } from 'lucide-react';
 import EmptyState from '../../components/EmptyState';
@@ -172,9 +174,29 @@ function SummaryCards({
 
 // ---- Blocked jobs ----
 
+/** A dashboard row's deadline ("· due …"), coloured by its state (ADR-0061). */
+function JobRowDeadline({ job }: Readonly<{ job: JobSummary }>) {
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  const formatDeadline = useFormatDeadline();
+  if (!job.deadline) return null;
+  const deadline = formatDeadline(job.deadline, job.status);
+  return (
+    <>
+      {' '}
+      <span data-testid="job-deadline" className={deadlineTextClass(deadline.state, '')}>
+        {t('dashboard.dueSuffix', { time: deadline.text })}
+      </span>
+      <DueSoonHint state={deadline.state} className="ml-1.5" />
+    </>
+  );
+}
+
 function BlockedJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId: string }>) {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const navigate = useNavigate();
+  const formatDeadline = useFormatDeadline();
+  // Blocked rows show the deadline only when it needs attention (due soon or overdue).
+  const showDeadline = job.deadline !== null && formatDeadline(job.deadline, job.status).state !== 'normal';
   return (
     <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
@@ -182,6 +204,7 @@ function BlockedJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {job.assignedToName ?? t('dashboard.unassigned')}
           {job.blockedAt && <> {t('dashboard.blockedSuffix', { time: blockedFor(job.blockedAt) })}</>}
+          {showDeadline && <JobRowDeadline job={job} />}
         </p>
         {job.blockedReason && (
           <p className="text-xs text-red-600 dark:text-red-400 mt-1 italic">"{job.blockedReason}"</p>
@@ -202,14 +225,13 @@ function BlockedJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId
 function OverdueJobRow({ job, projectId }: Readonly<{ job: JobSummary; projectId: string }>) {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const navigate = useNavigate();
-  const formatDeadline = useFormatDeadline();
   return (
     <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{job.title}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {job.assignedToName ?? t('dashboard.unassigned')}
-          {job.deadline && <> {t('dashboard.dueSuffix', { time: formatDeadline(job.deadline, job.status).text })}</>}
+          <JobRowDeadline job={job} />
         </p>
       </div>
       <button

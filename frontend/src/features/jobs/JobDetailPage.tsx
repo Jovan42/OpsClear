@@ -32,6 +32,8 @@ import { useAuth } from '../../auth/AuthContext';
 import { useApprovals } from './useApprovals';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
+import { deadlineTextClass } from '../../utils/deadline';
+import DueSoonHint from '../../components/DueSoonHint';
 import Markdown from '../../components/Markdown';
 import LockedSectionRow from '../../components/LockedSectionRow';
 import { useCurrentOrg } from '../org/OrgContext';
@@ -294,8 +296,12 @@ export default function JobDetailPage() {
             {(() => {
               const d = formatDeadline(job.deadline, job.status);
               return (
-                <p className={`font-medium mt-0.5 ${d.overdue ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}`}>
+                <p
+                  data-testid="job-deadline"
+                  className={`font-medium mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 ${deadlineTextClass(d.state, 'text-gray-900 dark:text-gray-100')}`}
+                >
                   {d.text}
+                  <DueSoonHint state={d.state} />
                 </p>
               );
             })()}
