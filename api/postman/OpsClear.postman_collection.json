@@ -1125,6 +1125,262 @@
 			"description": "In-app notification centre (ADR-0051)"
 		},
 		{
+			"name": "User Preferences",
+			"item": [
+				{
+					"name": "Get User Preferences",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/preferences",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"preferences"
+							]
+						},
+						"description": "The caller's own UI preferences: `{ \"ui\": { ... } }`, stored opaquely in `users.preferences.ui` (ADR-0061). `ui` is `{}` when nothing has been saved. The frontend owns the keys and defaults."
+					},
+					"response": [
+						{
+							"name": "200 preferences",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/user/preferences",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"preferences"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"ui\": {\n    \"theme\": \"dark\",\n    \"dueSoonDays\": 5,\n    \"showOverviewApprovals\": false\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Update User Preferences (set values)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ui\": {\n    \"theme\": \"dark\",\n    \"dueSoonDays\": 5,\n    \"showOverviewApprovals\": false\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/preferences",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"preferences"
+							]
+						},
+						"description": "Merges the top-level keys of `ui` into the caller's stored preferences and returns the full `ui`. A `null` value removes the key. Keys must be 1-64 letters, digits or underscores; values a string (at most 256 characters), number, boolean or null (nested objects and arrays give 400). At most 100 keys and 16 KB after the merge. 400 when `ui` is missing or isn't an object. The `notifications` key (notification mutes) is never touched (ADR-0061)."
+					},
+					"response": [
+						{
+							"name": "200 values set",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ui\": {\n    \"theme\": \"dark\",\n    \"dueSoonDays\": 5,\n    \"showOverviewApprovals\": false\n  }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/user/preferences",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"preferences"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"ui\": {\n    \"theme\": \"dark\",\n    \"dueSoonDays\": 5,\n    \"showOverviewApprovals\": false\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Update User Preferences (remove with null)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ui\": {\n    \"dueSoonDays\": 7,\n    \"rowDensity\": null\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/preferences",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"preferences"
+							]
+						},
+						"description": "Sets `dueSoonDays` and removes `rowDensity`: a `null` value removes the key, so the frontend default applies again. Returns the full stored `ui`."
+					},
+					"response": [
+						{
+							"name": "200 key removed",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ui\": {\n    \"dueSoonDays\": 7,\n    \"rowDensity\": null\n  }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/user/preferences",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"preferences"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"ui\": {\n    \"theme\": \"dark\",\n    \"dueSoonDays\": 7,\n    \"showOverviewApprovals\": false\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Update User Preferences (nested value, 400)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ui\": {\n    \"nested\": {\n      \"a\": 1\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user/preferences",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"preferences"
+							]
+						},
+						"description": "Nested objects and arrays aren't allowed as values: 400, and nothing is saved."
+					},
+					"response": [
+						{
+							"name": "400 nested value",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ui\": {\n    \"nested\": {\n      \"a\": 1\n    }\n  }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/user/preferences",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"user",
+										"preferences"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Bad Request\",\n  \"message\": \"Invalid value for preference 'nested': must be a string, number, boolean or null\",\n  \"timestamp\": \"2026-11-18T10:15:00Z\"\n}"
+						}
+					]
+				}
+			],
+			"description": "The caller's server-synced UI preferences (ADR-0061)"
+		},
+		{
 			"name": "Organisation Invites",
 			"item": [
 				{

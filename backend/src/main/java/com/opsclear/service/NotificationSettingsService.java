@@ -43,7 +43,8 @@ public class NotificationSettingsService {
      */
     @Transactional(readOnly = true)
     public Set<NotificationType> getMutedTypes(UUID userId) {
-        JsonNode muted = readPreferences(userId).path(NOTIFICATIONS_KEY).path(MUTED_KEY);
+        JsonNode muted = readPreferences(userRepository.findPreferences(userId))
+                .path(NOTIFICATIONS_KEY).path(MUTED_KEY);
         Set<NotificationType> types = EnumSet.noneOf(NotificationType.class);
         if (muted.isArray()) {
             for (JsonNode name : muted) {
@@ -64,7 +65,8 @@ public class NotificationSettingsService {
             types.add(requireMutableType(name));
         }
 
-        ObjectNode preferences = readPreferences(userId);
+        // Row lock: UserPreferencesService writes the same column (ADR-0061), so neither can overwrite the other.
+        ObjectNode preferences = readPreferences(userRepository.findPreferencesForUpdate(userId));
         JsonNode existing = preferences.get(NOTIFICATIONS_KEY);
         ObjectNode notifications = existing instanceof ObjectNode node ? node : objectMapper.createObjectNode();
         ArrayNode mutedArray = notifications.putArray(MUTED_KEY);
@@ -79,8 +81,8 @@ public class NotificationSettingsService {
     // Stored preferences are a JSON object by schema default; anything else is treated as empty. The column is
     // JSONB, so it always holds valid JSON: @SneakyThrows avoids an unreachable catch for JsonProcessingException.
     @lombok.SneakyThrows
-    private ObjectNode readPreferences(UUID userId) {
-        String json = userRepository.findPreferences(userId)
+    private ObjectNode readPreferences(Optional<String> stored) {
+        String json = stored
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
         JsonNode node = objectMapper.readTree(json);
         return node instanceof ObjectNode object ? object : objectMapper.createObjectNode();
