@@ -15,6 +15,7 @@ dist-ssr
 # Cypress run artifacts
 cypress/videos
 cypress/screenshots
+cypress/screenshots-guide
 cypress/downloads
 cypress/results
 
