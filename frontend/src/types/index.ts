@@ -237,6 +237,23 @@ export interface OrganisationResponse {
   createdAt: string;
 }
 
+/** ADR-0060: the org's friendly-ID prefixes, plus the next ID per type (a preview, not a reservation). */
+export interface OrgSettings {
+  projectPrefix: string;
+  jobPrefix: string;
+  milestonePrefix: string;
+  templatePrefix: string;
+  nextProjectId: string;
+  nextJobId: string;
+  nextMilestoneId: string;
+  nextTemplateId: string;
+}
+
+/** PATCH body for the org settings: omitted fields don't change. */
+export type UpdateOrgSettingsRequest = Partial<
+  Pick<OrgSettings, 'projectPrefix' | 'jobPrefix' | 'milestonePrefix' | 'templatePrefix'>
+>;
+
 export interface OrgMemberResponse {
   organisationId: string;
   userId: string;

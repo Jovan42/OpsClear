@@ -5,7 +5,9 @@ import type {
   OrgMemberResponse,
   OrgRole,
   OrganisationResponse,
+  OrgSettings,
   ProjectDirectoryEntryResponse,
+  UpdateOrgSettingsRequest,
 } from '../types';
 
 export const organisationsApi = {
@@ -25,6 +27,18 @@ export const organisationsApi = {
 
   delete: (id: string) =>
     apiClient.delete(`/api/organisations/${id}`),
+
+  getOrgSettings: (orgId: string) =>
+    apiClient.get<OrgSettings>(`/api/organisations/${orgId}/settings`).then((r) => r.data),
+
+  // The ID prefixes section shows a 400's message on the field it names (or its own
+  // toast), so the global error toast skips it
+  updateOrgSettings: (orgId: string, patch: UpdateOrgSettingsRequest) =>
+    apiClient
+      .patch<OrgSettings>(`/api/organisations/${orgId}/settings`, patch, {
+        skipErrorToastStatuses: [400],
+      })
+      .then((r) => r.data),
 
   listMembers: (orgId: string) =>
     apiClient.get<OrgMemberResponse[]>(`/api/organisations/${orgId}/members`).then((r) => r.data),
