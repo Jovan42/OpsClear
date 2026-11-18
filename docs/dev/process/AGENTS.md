@@ -43,7 +43,7 @@ and branch, can't ask questions mid-run, and reports back once.
 |---|---|---|
 | `db-migration` | `DB:` jobs: Flyway migration + jOOQ regeneration | Sonnet |
 | `backend-dev` | `Backend:` jobs, including unit and integration tests | Opus |
-| `frontend-dev` | `Frontend:` jobs, including the manual test checklist and E2E | Opus |
+| `frontend-dev` | `Frontend:` and `UX:` jobs, including the manual test checklist and E2E | Opus |
 | `e2e-dev` | `E2E:` jobs | Sonnet |
 | `bug-fixer` | `Bug:` jobs: reproduce, fix, regression test | Opus |
 | `chore-dev` | `Chore:` and `Tech debt:` jobs | Sonnet |

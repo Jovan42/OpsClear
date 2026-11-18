@@ -28,6 +28,7 @@ Job titles follow the pattern `<Layer>: <short description>`.
 | Frontend | `Frontend:` | `Frontend: org templates section in OrgSettingsPage` |
 | E2E | `E2E:` | `E2E: cy.loginAs() custom command via Keycloak token grant` |
 | Bug fix | `Bug:` | `Bug: 404 not returned for wrong-org template` |
+| UX improvement | `UX:` | `UX: show the Complete button label on narrow screens` |
 | Chore | `Chore:` | `Chore: upgrade Spring Boot to 3.4.1` |
 | Tech debt | `Tech debt:` | `Tech debt: replace raw jOOQ inserts with model builder` |
 | Future Consideration | (free title) | `Org-level job templates` |
@@ -42,7 +43,7 @@ title's jobs. Every branch starts from the latest `main`.
 | Type | Pattern | Example |
 |------|---------|---------|
 | Feature (incl. ADR, DB, Backend, Frontend jobs) | `feature/<job-id>-<slug>` | `feature/JOB-109-org-templates-backend` |
-| Bug fix | `fix/<job-id>-<slug>` | `fix/JOB-115-slug-validation` |
+| Bug fix, UX improvement | `fix/<job-id>-<slug>` | `fix/JOB-115-slug-validation` |
 | E2E | `e2e/<job-id>-<slug>` | `e2e/JOB-224-approvals-flow` |
 | Chore / Tech debt | `chore/<job-id>-<slug>` | `chore/JOB-310-testcontainers-docker29` |
 
