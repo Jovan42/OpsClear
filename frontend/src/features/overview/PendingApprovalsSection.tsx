@@ -9,21 +9,14 @@ import PageError from '../../components/PageError';
 import { usePendingApprovalsAcrossOrgs } from '../approvals/useApprovalQueue';
 import { ApprovalKindBadge } from '../jobs/components/ApprovalBadges';
 import { approvalDescription } from '../jobs/completionApproval';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDateTime } from '../../utils/formatDate';
 
 const PAGE_SIZE = 10;
 
-function formatDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 export default function PendingApprovalsSection() {
   const { t } = useTranslation(['approvalsDashboardSettingsLanding', 'jobsComponents']);
+  const { prefs } = usePreferences();
   const navigate = useNavigate();
   const { data: approvals = [], isLoading, isError, refetch } = usePendingApprovalsAcrossOrgs();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -83,7 +76,7 @@ export default function PendingApprovalsSection() {
                   <ApprovalKindBadge kind={approval.kind} />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('overview.requestedAt', { date: formatDateTime(approval.requestedAt) })}
+                  {t('overview.requestedAt', { date: formatDateTime(approval.requestedAt, prefs) })}
                 </p>
               </button>
             ))}

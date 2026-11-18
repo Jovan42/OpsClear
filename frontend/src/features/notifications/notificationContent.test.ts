@@ -138,3 +138,24 @@ describe('buildNotificationContent for approvals', () => {
       .toBe('Rejected your request on JOB-7 Fix roof');
   });
 });
+
+// ADR-0061 (JOB-352): payload dates follow the viewer's date format.
+describe('buildNotificationContent dates', () => {
+  const t = i18n.getFixedT('en', ['notifications', 'shared2']) as TFunction<['notifications', 'shared2']>;
+  const assigned = {
+    id: 'n2',
+    read: false,
+    createdAt: '2026-11-15T10:00:00Z',
+    actor: { id: 'u1', name: 'Alice' },
+    projectFriendlyId: 'PRJ-1',
+    jobFriendlyId: 'JOB-7',
+    type: 'JOB_ASSIGNED',
+    // A local date-time, so the expected date doesn't depend on the machine's zone.
+    payload: { jobFriendlyId: 'JOB-7', jobTitle: 'Fix roof', deadline: '2026-11-20T12:00:00', priority: 'HIGH' },
+  } as NotificationResponse;
+
+  it('shows the deadline in the chosen format, and in the language style on Auto', () => {
+    expect(buildNotificationContent(assigned, t, 'en', null, 'DMY_DOT').details[0]).toBe('Due 20.11.2026');
+    expect(buildNotificationContent(assigned, t, 'en').details[0]).toBe('Due 20 Nov 2026');
+  });
+});

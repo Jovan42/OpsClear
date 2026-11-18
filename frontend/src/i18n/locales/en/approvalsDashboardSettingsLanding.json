@@ -25,6 +25,20 @@
         "label": "Language",
         "description": "Choose the language used across OpsClear."
       },
+      "dateFormat": {
+        "label": "Date format",
+        "description": "How dates are shown across OpsClear. Auto follows the language.",
+        "auto": "Auto",
+        "dmyDot": "DD.MM.YYYY",
+        "dmySlash": "DD/MM/YYYY",
+        "mdySlash": "MM/DD/YYYY"
+      },
+      "rowDensity": {
+        "label": "Row density",
+        "description": "Row spacing in the job table on desktop.",
+        "comfortable": "Comfortable",
+        "compact": "Compact"
+      },
       "deadlineFormat": {
         "label": "Deadline format",
         "description": "How deadlines are displayed across the app.",

@@ -9,19 +9,11 @@ import MarkdownEditor from '../../../components/MarkdownEditor';
 import { useNotes, useAddNote } from '../useNotes';
 import type { ProjectMemberResponse } from '../../../types';
 import type { TFunction } from 'i18next';
+import { usePreferences } from '../../../hooks/usePreferences';
+import { formatDateTime } from '../../../utils/formatDate';
 
 const NOTE_MAX = 10000;
 const SESSION_KEY = 'note_immutability_confirmed';
-
-function formatDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function memberName(members: ProjectMemberResponse[], userId: string, t: TFunction): string {
   return members.find((m) => m.userId === userId)?.userName ?? t('jobsComponents:unknownUser');
@@ -36,6 +28,7 @@ interface Props {
 
 export default function NoteThread({ projectId, jobId, members, projectCompleted }: Props) {
   const { t } = useTranslation('jobsComponents');
+  const { prefs } = usePreferences();
   const { data: notes = [] } = useNotes(projectId, jobId);
   const { mutate: addNote, isPending } = useAddNote(projectId, jobId);
   const [content, setContent] = useState('');
@@ -79,7 +72,7 @@ export default function NoteThread({ projectId, jobId, members, projectCompleted
             <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
               {memberName(members, note.authorId, t)}
             </span>
-            <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateTime(note.createdAt)}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{formatDateTime(note.createdAt, prefs)}</span>
           </div>
           <Markdown className="text-sm text-gray-700 dark:text-gray-300">{note.content}</Markdown>
         </div>

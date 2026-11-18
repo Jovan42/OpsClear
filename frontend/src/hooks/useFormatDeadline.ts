@@ -1,21 +1,18 @@
 import type { JobStatus } from '../types';
 import { usePreferences } from './usePreferences';
 import { isPastDeadline } from '../utils/deadline';
+import { formatDate, type DatePrefs } from '../utils/formatDate';
 
 export interface FormattedDeadline {
   text: string;
   overdue: boolean;
 }
 
-function formatAbsolute(deadline: string): string {
-  return new Date(deadline).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+function formatAbsolute(deadline: string, prefs: DatePrefs): string {
+  return formatDate(deadline, prefs);
 }
 
-function formatRelative(deadline: string, status?: JobStatus): FormattedDeadline {
+function formatRelative(deadline: string, prefs: DatePrefs, status?: JobStatus): FormattedDeadline {
   const diffDays = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000);
   const isCompleted = status === 'COMPLETED';
 
@@ -23,7 +20,7 @@ function formatRelative(deadline: string, status?: JobStatus): FormattedDeadline
     const n = Math.max(1, Math.abs(diffDays));
     return { text: `${n} day${n === 1 ? '' : 's'} overdue`, overdue: true };
   }
-  if (diffDays <= 0) return { text: formatAbsolute(deadline), overdue: false };
+  if (diffDays <= 0) return { text: formatAbsolute(deadline, prefs), overdue: false };
   if (diffDays === 1) return { text: 'in 1 day', overdue: false };
   return { text: `in ${diffDays} days`, overdue: false };
 }
@@ -35,10 +32,10 @@ export function useFormatDeadline() {
     if (!deadline) return { text: '—', overdue: false };
 
     if (prefs.deadlineFormat === 'RELATIVE') {
-      return formatRelative(deadline, status);
+      return formatRelative(deadline, prefs, status);
     }
 
     const overdue = status !== 'COMPLETED' && isPastDeadline(deadline);
-    return { text: formatAbsolute(deadline), overdue };
+    return { text: formatAbsolute(deadline, prefs), overdue };
   };
 }

@@ -25,6 +25,20 @@
         "label": "Jezik",
         "description": "Izaberite jezik koji se koristi u celoj aplikaciji OpsClear."
       },
+      "dateFormat": {
+        "label": "Format datuma",
+        "description": "Kako se datumi prikazuju u celoj aplikaciji OpsClear. Automatski prati jezik.",
+        "auto": "Automatski",
+        "dmyDot": "DD.MM.GGGG",
+        "dmySlash": "DD/MM/GGGG",
+        "mdySlash": "MM/DD/GGGG"
+      },
+      "rowDensity": {
+        "label": "Gustina redova",
+        "description": "Razmak između redova u tabeli poslova na računaru.",
+        "comfortable": "Udobno",
+        "compact": "Zbijeno"
+      },
       "deadlineFormat": {
         "label": "Format roka",
         "description": "Kako se rokovi prikazuju u celoj aplikaciji.",

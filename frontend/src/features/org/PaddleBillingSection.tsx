@@ -13,6 +13,8 @@ import {
   useCancelSubscription,
   useResumeSubscription,
 } from './usePaddleSubscription';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDate } from '../../utils/formatDate';
 
 const PROCESSING_POLL_MS = 2000;
 const PROCESSING_TIMEOUT_MS = 20000;
@@ -23,12 +25,9 @@ interface Props {
   orgId: string;
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
 export default function PaddleBillingSection({ orgId }: Props) {
   const { t } = useTranslation('org');
+  const { prefs } = usePreferences();
   const queryClient = useQueryClient();
   const [awaitingWebhook, setAwaitingWebhook] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -163,7 +162,7 @@ export default function PaddleBillingSection({ orgId }: Props) {
 
       {currentSub.paddleScheduledCancellationAt ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t('paddleCancelScheduledDesc', { date: formatDate(currentSub.paddleScheduledCancellationAt) })}
+          {t('paddleCancelScheduledDesc', { date: formatDate(currentSub.paddleScheduledCancellationAt, prefs) })}
         </p>
       ) : (
         justCancelled && (

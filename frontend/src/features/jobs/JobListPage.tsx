@@ -21,7 +21,7 @@ import { useProject } from '../projects/useProjects';
 import { useCurrentOrg } from '../org/OrgContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { usePreferences, type SortOrder, type ProgressFormat } from '../../hooks/usePreferences';
+import { usePreferences, type SortOrder, type ProgressFormat, type RowDensity } from '../../hooks/usePreferences';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import type { JobPriority, JobResponse, JobStatus, MilestoneResponse } from '../../types';
 
@@ -184,6 +184,8 @@ function JobRow({ job, projectId, showMilestoneChip = false, showType = false }:
   const navigate = useNavigate();
   const formatDeadline = useFormatDeadline();
   const deadline = formatDeadline(job.deadline, job.status);
+  const { prefs } = usePreferences();
+  const cell = prefs.rowDensity === 'COMPACT' ? 'px-4 py-1.5' : 'px-4 py-3';
   return (
     <tr
       onClick={() => navigate(`/projects/${projectId}/jobs/${job.friendlyId}`)}
@@ -191,7 +193,7 @@ function JobRow({ job, projectId, showMilestoneChip = false, showType = false }:
         job.status === 'BLOCKED' ? 'border-l-2 border-l-red-400' : ''
       }`}
     >
-      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+      <td className={`${cell} font-medium text-gray-900 dark:text-gray-100`}>
         <div className="flex items-center gap-2 flex-wrap">
           {job.title}
           {showMilestoneChip && job.milestoneName && (
@@ -201,22 +203,22 @@ function JobRow({ job, projectId, showMilestoneChip = false, showType = false }:
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.client ?? '—'}</td>
-      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{job.assignedToName ?? '—'}</td>
-      <td className={`px-4 py-3 ${deadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+      <td className={`${cell} text-gray-500 dark:text-gray-400`}>{job.client ?? '—'}</td>
+      <td className={`${cell} text-gray-500 dark:text-gray-400`}>{job.assignedToName ?? '—'}</td>
+      <td className={`${cell} ${deadline.overdue ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
         {deadline.text}
       </td>
-      <td className="px-4 py-3">
+      <td className={cell}>
         <PriorityBadge priority={job.priority} />
       </td>
       {showType && (
-        <td className="px-4 py-3 whitespace-nowrap">
+        <td className={`${cell} whitespace-nowrap`}>
           {job.typeId && job.typeName && job.typeColor ? (
             <JobTypeBadge name={job.typeName} color={job.typeColor} />
           ) : '—'}
         </td>
       )}
-      <td className="px-4 py-3 whitespace-nowrap">
+      <td className={`${cell} whitespace-nowrap`}>
         <div className="flex flex-col items-start gap-1">
           <StatusBadge status={job.status} />
           {job.pendingCompletionApproval && <AwaitingCompletionBadge />}
@@ -224,6 +226,11 @@ function JobRow({ job, projectId, showMilestoneChip = false, showType = false }:
       </td>
     </tr>
   );
+}
+
+/** Row density (ADR-0061): compact tables use smaller text; the cell padding is in `JobRow`. */
+function tableText(density: RowDensity): string {
+  return density === 'COMPACT' ? 'text-xs' : 'text-sm';
 }
 
 function getTableHeaders(t: TFunction, showType: boolean): { key: SortKey; label: string }[] {
@@ -264,6 +271,7 @@ function GroupSection({
 }: GroupSectionProps) {
   const { t } = useTranslation(['jobsPages']);
   const isCollapsed = collapsedGroups.has(groupKey);
+  const { prefs } = usePreferences();
   const formatDeadline = useFormatDeadline();
   const formattedDeadline = formatDeadline(deadline);
   const showProgress = groupKey !== '__ungrouped__';
@@ -303,7 +311,7 @@ function GroupSection({
 
           {/* Desktop table */}
           <div className="hidden md:block overflow-hidden">
-            <table className="w-full text-sm">
+            <table data-testid="job-table" className={`w-full ${tableText(prefs.rowDensity)}`}>
               <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   {tableHeaders.map(({ key, label }) => (
@@ -677,7 +685,7 @@ export default function JobListPage() {
 
           {/* Desktop table view */}
           <div className="hidden md:block border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+            <table data-testid="job-table" className={`w-full ${tableText(prefs.rowDensity)}`}>
               <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   {tableHeaders.map(({ key, label }) => (

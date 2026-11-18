@@ -38,18 +38,12 @@ import { useCurrentOrg } from '../org/OrgContext';
 import { canActOnCompletionRequest, requiresCompletionApproval } from './completionApproval';
 import { useSectionVisibility } from './useSectionVisibility';
 import type { JobStatus } from '../../types';
-
-function formatDate(dateStr: string | null) {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDate } from '../../utils/formatDate';
 
 export default function JobDetailPage() {
   const { t } = useTranslation(['jobsPages', 'common']);
+  const { prefs } = usePreferences();
   const { projectFriendlyId: projectId = '', jobFriendlyId: jobId = '' } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -308,7 +302,7 @@ export default function JobDetailPage() {
           </div>
           <div>
             <span className="text-gray-500 dark:text-gray-400">{t('jobDetailPage.createdLabel')}</span>
-            <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">{formatDate(job.createdAt)}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">{formatDate(job.createdAt, prefs)}</p>
           </div>
         </div>
 

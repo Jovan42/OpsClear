@@ -7,16 +7,8 @@ import { formatDuration } from '../../../utils/formatDuration';
 import EmptyState from '../../../components/EmptyState';
 import StatusBadge from '../../../components/StatusBadge';
 import type { JobHistoryEntry, JobStatus } from '../../../types';
-
-function formatDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
+import { usePreferences } from '../../../hooks/usePreferences';
+import { formatDateTime } from '../../../utils/formatDate';
 
 function TransitionLabel({ entry, t }: { entry: JobHistoryEntry; t: TFunction }) {
   if (entry.changedFrom === null) {
@@ -46,6 +38,7 @@ interface Props {
 
 export default function StatusHistory({ projectId, jobId, defaultExpanded = false }: Props) {
   const { t } = useTranslation(['jobsComponents', 'common']);
+  const { prefs } = usePreferences();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const { data: entries = [], isLoading } = useJobHistory(projectId, jobId);
 
@@ -102,7 +95,7 @@ export default function StatusHistory({ projectId, jobId, defaultExpanded = fals
                           <TransitionLabel entry={entry} t={t} />
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {entry.changedByName ?? t('jobsComponents:statusHistory.unknown')} · {formatDateTime(entry.changedAt)}
+                          {entry.changedByName ?? t('jobsComponents:statusHistory.unknown')} · {formatDateTime(entry.changedAt, prefs)}
                         </p>
                         {entry.blockReason && (
                           <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">

@@ -5,20 +5,14 @@ import NewApiKeyModal from './NewApiKeyModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import Button from '../../components/Button';
 import type { ApiKeyResponse } from '../../types';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDate } from '../../utils/formatDate';
 
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
 function isUnusedWarning(key: ApiKeyResponse): boolean {
   const reference = key.lastUsedAt ?? key.createdAt;
   return Date.now() - new Date(reference).getTime() > NINETY_DAYS_MS;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
 }
 
 interface KeyRowProps {
@@ -28,6 +22,7 @@ interface KeyRowProps {
 
 function KeyRow({ apiKey, onRevoke }: Readonly<KeyRowProps>) {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  const { prefs } = usePreferences();
   const warn = isUnusedWarning(apiKey);
 
   return (
@@ -45,10 +40,10 @@ function KeyRow({ apiKey, onRevoke }: Readonly<KeyRowProps>) {
         </div>
         <p className="text-xs font-mono text-gray-500 dark:text-gray-400">{apiKey.keyPrefix}…</p>
         <div className="flex gap-4 text-xs text-gray-400 dark:text-gray-500">
-          <span>{t('apiKeySection.created', { date: formatDate(apiKey.createdAt) })}</span>
+          <span>{t('apiKeySection.created', { date: formatDate(apiKey.createdAt, prefs) })}</span>
           <span>
             {apiKey.lastUsedAt
-              ? t('apiKeySection.lastUsed', { date: formatDate(apiKey.lastUsedAt) })
+              ? t('apiKeySection.lastUsed', { date: formatDate(apiKey.lastUsedAt, prefs) })
               : t('apiKeySection.neverUsed')}
           </span>
         </div>

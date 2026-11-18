@@ -7,7 +7,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { useCurrentOrg } from '../org/OrgContext';
 import type {
   Theme, Locale, ViewMode, AccordionState, StatusTab,
-  SortOrder, DeadlineFormat, ProjectPage, ProgressFormat,
+  SortOrder, DeadlineFormat, ProjectPage, ProgressFormat, DateFormat, RowDensity,
 } from '../../hooks/usePreferences';
 import { usePageTitle } from '../../hooks/usePageTitle';
 
@@ -43,11 +43,13 @@ interface SelectControlProps<T extends string> {
   value: T;
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
+  label?: string;
 }
 
-function SelectControl<T extends string>({ value, options, onChange }: SelectControlProps<T>) {
+function SelectControl<T extends string>({ value, options, onChange, label }: SelectControlProps<T>) {
   return (
     <select
+      aria-label={label}
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
       className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent shrink-0"
@@ -169,6 +171,18 @@ export default function SettingsPage() {
     { value: 'sr', label: 'Srpski' },
   ];
 
+  const DATE_FORMAT_OPTIONS: { value: DateFormat; label: string }[] = [
+    { value: 'AUTO', label: t('settings.appearance.dateFormat.auto') },
+    { value: 'DMY_DOT', label: t('settings.appearance.dateFormat.dmyDot') },
+    { value: 'DMY_SLASH', label: t('settings.appearance.dateFormat.dmySlash') },
+    { value: 'MDY_SLASH', label: t('settings.appearance.dateFormat.mdySlash') },
+  ];
+
+  const ROW_DENSITY_OPTIONS: { value: RowDensity; label: string }[] = [
+    { value: 'COMFORTABLE', label: t('settings.appearance.rowDensity.comfortable') },
+    { value: 'COMPACT', label: t('settings.appearance.rowDensity.compact') },
+  ];
+
   const VIEW_MODE_OPTIONS: { value: ViewMode; label: string }[] = [
     { value: 'GROUPED', label: t('settings.jobList.defaultViewMode.grouped') },
     { value: 'FLAT', label: t('settings.jobList.defaultViewMode.flat') },
@@ -244,6 +258,17 @@ export default function SettingsPage() {
             </SettingRow>
             <SettingRow label={t('settings.appearance.language.label')} description={t('settings.appearance.language.description')}>
               <SegmentedControl value={prefs.locale} options={LOCALE_OPTIONS} onChange={(v) => update({ locale: v })} />
+            </SettingRow>
+            <SettingRow label={t('settings.appearance.dateFormat.label')} description={t('settings.appearance.dateFormat.description')}>
+              <SelectControl
+                label={t('settings.appearance.dateFormat.label')}
+                value={prefs.dateFormat}
+                options={DATE_FORMAT_OPTIONS}
+                onChange={(v) => update({ dateFormat: v })}
+              />
+            </SettingRow>
+            <SettingRow label={t('settings.appearance.rowDensity.label')} description={t('settings.appearance.rowDensity.description')}>
+              <SegmentedControl value={prefs.rowDensity} options={ROW_DENSITY_OPTIONS} onChange={(v) => update({ rowDensity: v })} />
             </SettingRow>
           </SettingsSection>
 

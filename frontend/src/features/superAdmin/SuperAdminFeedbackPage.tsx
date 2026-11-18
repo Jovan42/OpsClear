@@ -15,6 +15,8 @@ import {
   useSuperAdminOrganisations,
 } from './useSuperAdminFeedback';
 import type { FeedbackStatus, FeedbackSubmissionResponse } from '../../types';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDate } from '../../utils/formatDate';
 
 function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
@@ -40,6 +42,7 @@ interface GrantContext {
 
 export default function SuperAdminFeedbackPage() {
   const { t } = useTranslation(['superAdmin', 'feedback']);
+  const { prefs } = usePreferences();
   const { data: submissions, isLoading: submissionsLoading, error: submissionsError } = useFeedbackSubmissions();
   const { data: orgs, isLoading: orgsLoading } = useSuperAdminOrganisations();
 
@@ -137,7 +140,7 @@ export default function SuperAdminFeedbackPage() {
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.title}</p>
                   <Markdown className="text-sm text-gray-600 dark:text-gray-300">{s.description}</Markdown>
                   <p className="text-xs text-gray-400 dark:text-gray-500">
-                    {s.submitterName} &middot; {new Date(s.createdAt).toLocaleDateString()}
+                    {s.submitterName} &middot; {formatDate(s.createdAt, prefs)}
                   </p>
                 </div>
               ))}
@@ -198,7 +201,7 @@ export default function SuperAdminFeedbackPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{entry.grantedByName}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(entry.createdAt).toLocaleDateString()}
+                      {formatDate(entry.createdAt, prefs)}
                     </td>
                   </tr>
                 ))}

@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import Skeleton from '../../components/Skeleton';
 import { useBillingHistory } from './useBilling';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDate } from '../../utils/formatDate';
 
 interface Props {
   orgId: string;
@@ -8,10 +10,6 @@ interface Props {
 
 function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 const SUCCESS_STATUSES = new Set(['completed', 'paid']);
@@ -29,6 +27,7 @@ function statusBadgeClass(status: string) {
 
 export default function BillingHistorySection({ orgId }: Props) {
   const { t } = useTranslation('org');
+  const { prefs } = usePreferences();
   const { data: transactions, isLoading } = useBillingHistory(orgId);
 
   if (isLoading) {
@@ -50,7 +49,7 @@ export default function BillingHistorySection({ orgId }: Props) {
         <div key={txn.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm text-gray-900 dark:text-gray-100">
-              {txn.billedAt ? formatDate(txn.billedAt) : t('billingHistoryNoDateYet')}
+              {txn.billedAt ? formatDate(txn.billedAt, prefs) : t('billingHistoryNoDateYet')}
             </p>
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${statusBadgeClass(txn.status)}`}

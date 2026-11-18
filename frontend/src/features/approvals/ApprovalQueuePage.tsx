@@ -17,16 +17,8 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import { useCurrentOrg } from '../org/OrgContext';
 import i18n from '../../i18n';
 import type { PendingApprovalResponse, ProjectMemberResponse } from '../../types';
-
-function formatDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDateTime } from '../../utils/formatDate';
 
 function memberName(members: ProjectMemberResponse[], userId: string): string {
   return members.find((m) => m.userId === userId)?.userName ?? i18n.t('approvalsDashboardSettingsLanding:approvals.unknownUser');
@@ -47,6 +39,7 @@ interface ApprovalCardProps {
 
 function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalCardProps) {
   const { t } = useTranslation(['approvalsDashboardSettingsLanding', 'jobsComponents']);
+  const { prefs } = usePreferences();
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <ApprovalKindBadge kind={approval.kind} className="mb-1" />
@@ -54,7 +47,7 @@ function ApprovalCard({ approval, members, isOwnerOrAdmin, onDecide }: ApprovalC
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
         {t('approvals.requestedBy', {
           name: memberName(members, approval.requesterId),
-          date: formatDateTime(approval.requestedAt),
+          date: formatDateTime(approval.requestedAt, prefs),
         })}
       </p>
       {isOwnerOrAdmin && (

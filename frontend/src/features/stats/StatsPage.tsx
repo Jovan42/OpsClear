@@ -17,6 +17,8 @@ import { EMPTY, formatAvg, formatLateRate } from './statsFormat';
 import { SUMMARY_VALUE_CLASSES, SUMMARY_VALUE_NEUTRAL_CLASS } from '../../utils/statusColors';
 import StatsMembersTable from './StatsMembersTable';
 import type { StatsBucket, StatsMember, StatsResponse, StatsSummary, StatsWeeks } from '../../types';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDayMonth, type DatePrefs } from '../../utils/formatDate';
 
 type StatsView = 'team' | 'members';
 
@@ -26,9 +28,9 @@ const DEFAULT_RANGE: StatsWeeks = 12;
 const COMPLETED_COLOR = '#22c55e';
 
 /** `weekStart` is a plain ISO date (the week's Monday in the viewer's zone), so parse it as a local date. */
-function formatWeek(weekStart: string, locale: string): string {
+function formatWeek(weekStart: string, prefs: DatePrefs): string {
   const [y, m, d] = weekStart.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  return formatDayMonth(new Date(y, m - 1, d), prefs);
 }
 
 // ---- Segmented controls (range, Team / By member) ----
@@ -170,8 +172,9 @@ function SummaryTiles({ summary }: Readonly<{ summary: StatsSummary }>) {
 // ---- Weekly chart ----
 
 function WeeklyChart({ buckets }: Readonly<{ buckets: StatsBucket[] }>) {
-  const { t, i18n } = useTranslation('approvalsDashboardSettingsLanding');
-  const data = buckets.map((b) => ({ week: formatWeek(b.weekStart, i18n.language), completed: b.completedCount }));
+  const { t } = useTranslation('approvalsDashboardSettingsLanding');
+  const { prefs } = usePreferences();
+  const data = buckets.map((b) => ({ week: formatWeek(b.weekStart, prefs), completed: b.completedCount }));
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
