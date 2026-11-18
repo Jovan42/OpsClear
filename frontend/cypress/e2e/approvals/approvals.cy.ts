@@ -378,6 +378,44 @@ describe('Approvals Workflow + Queue', () => {
     cy.deleteKeycloakUser(memberEmail);
   });
 
+  // JOB-387: the redirect used to be a navigate() call during render, which React Router ignores
+  // on a component's first render. A direct visit hits that only when the org context gets the
+  // subscription before OrgRequiredRoute renders the page, a race that made golden-path flaky.
+  // Opening the queue client-side, once the org context and project members are already loaded,
+  // makes the page's first render take the MEMBER branch every time.
+  it('a MEMBER opening the queue client-side, with the org and members already loaded, is still redirected to the job list', () => {
+    const ownerEmail = uniqueEmail('redirect-warm-owner');
+    const memberEmail = uniqueEmail('redirect-warm-member');
+    cy.createKeycloakUser(ownerEmail, 'E2E', 'Tester');
+    cy.createKeycloakUser(memberEmail, 'E2E', 'Tester');
+    createOrgWithFullAccess(ownerEmail, 'Swift Corp', uniqueSlug()).then((orgId) =>
+      createProjectAs(ownerEmail, 'Swift Project').then((projectId) =>
+        userIdFor(memberEmail).then((memberId) => {
+          addMember(orgId, ownerEmail, memberId, 'MEMBER');
+          addProjectMember(projectId, ownerEmail, memberId, 'MEMBER');
+
+          cy.intercept('GET', `**/api/projects/${projectId}/members`).as('members');
+          cy.loginAs(memberEmail);
+          // With ?status set, the job list doesn't rewrite the URL after this test changes it.
+          cy.visit(`/projects/${projectId}/jobs?status=ALL`);
+          cy.wait('@members');
+          cy.contains('nav a', 'Jobs').should('be.visible');
+
+          // A client-side route change (what the browser's back/forward buttons do).
+          cy.window().then((win) => {
+            win.history.pushState({}, '', `/projects/${projectId}/approvals`);
+            win.dispatchEvent(new PopStateEvent('popstate'));
+          });
+          cy.url().should('include', `/projects/${projectId}/jobs`);
+          cy.url().should('not.include', '/approvals');
+        }),
+      ),
+    );
+
+    cy.deleteKeycloakUser(ownerEmail);
+    cy.deleteKeycloakUser(memberEmail);
+  });
+
   it('a 409 on decide in the UI keeps the modal open with an inline banner, not the stale ADR-0016 "closes + toast" behavior', () => {
     const ownerEmail = uniqueEmail('ui-409-owner');
     const adminEmail = uniqueEmail('ui-409-admin');
