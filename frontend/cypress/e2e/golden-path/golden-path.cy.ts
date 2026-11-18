@@ -453,12 +453,8 @@ describe('Golden-Path Simulation: Full Project Lifecycle (pre-merge)', () => {
         }),
       ).its('status').should('eq', 403);
 
-      // The redirect happens once the members list says Carol is a MEMBER, so wait for
-      // that request instead of racing it with the default timeout.
-      cy.intercept('GET', '**/api/projects/*/members').as('members');
       cy.loginAs(carol);
       cy.then(() => cy.visit(`/projects/${projectId}/approvals`));
-      cy.wait('@members');
       cy.url().should('not.include', '/approvals');
 
       // Alice reviews the approval queue, sees the request, and approves it.

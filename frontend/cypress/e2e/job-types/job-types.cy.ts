@@ -311,7 +311,7 @@ describe('Job Types', () => {
             // doesn't block the next click), not something a spec can assert around, so
             // wait for the PUTs and the re-rendered order between clicks. This test pins
             // what the backend guarantees: two consecutive swaps never lose or duplicate
-            // an order.
+            // an order. The true rapid-click case is tracked in JOB-386.
             const expectOrder = (names: string[]) =>
               names.forEach((name, i) => cy.get('div.divide-y > div').eq(i).should('contain.text', name));
 
