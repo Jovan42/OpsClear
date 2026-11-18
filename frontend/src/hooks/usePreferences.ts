@@ -140,6 +140,12 @@ export function sanitize(raw: unknown): Preferences {
 export interface PreferencesContextValue {
   prefs: Preferences;
   update: (patch: Partial<Preferences>) => void;
+  /**
+   * False only while a logged-in user's preferences are still being loaded from the server
+   * (the cache is showing meanwhile). Something that acts once on a preference, like the
+   * landing redirect after login, waits for it.
+   */
+  synced: boolean;
 }
 
 export const PreferencesContext = createContext<PreferencesContextValue | null>(null);

@@ -106,6 +106,12 @@
       "pendingApprovalsSection": {
         "label": "Pending approvals section",
         "description": "Show or hide the pending approvals list on the dashboard."
+      },
+      "overviewApprovals": {
+        "label": "Show approvals on Overview",
+        "description": "Show the pending approvals from all your projects on the Overview page. The approvals badge in the menu stays either way.",
+        "on": "On",
+        "off": "Off"
       }
     },
     "showHide": {
@@ -119,6 +125,18 @@
         "dashboard": "Dashboard",
         "jobs": "Jobs",
         "approvals": "Approvals"
+      },
+      "landingProject": {
+        "label": "Landing project",
+        "description": "Where you land after logging in. A link you opened before logging in still wins.",
+        "list": "Project list",
+        "last": "Last opened",
+        "specific": "Specific"
+      },
+      "landingProjectPicker": {
+        "label": "Project",
+        "description": "The project to open after logging in, on your default project page. If you can't open it any more, you land on the project list.",
+        "placeholder": "Choose a project…"
       }
     },
     "milestonesSection": {
@@ -137,7 +155,13 @@
         "off": "Off"
       }
     },
-    "apiKeysFeatureName": "API Keys"
+    "apiKeysFeatureName": "API Keys",
+    "statsSection": {
+      "defaultRange": {
+        "label": "Default range",
+        "description": "The range Stats opens on. Changing it on the Stats page only lasts until you leave."
+      }
+    }
   },
   "apiKeySection": {
     "heading": "API Keys",

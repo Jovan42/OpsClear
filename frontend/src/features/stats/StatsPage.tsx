@@ -23,7 +23,6 @@ import { formatDayMonth, type DatePrefs } from '../../utils/formatDate';
 type StatsView = 'team' | 'members';
 
 const RANGES: StatsWeeks[] = [4, 12, 26];
-const DEFAULT_RANGE: StatsWeeks = 12;
 /** Same green the Dashboard's donut uses for Completed. */
 const COMPLETED_COLOR = '#22c55e';
 
@@ -222,7 +221,12 @@ export default function StatsPage() {
   const role = useProjectRole(projectId);
   const { hasAddon } = useCurrentOrg();
   const queryClient = useQueryClient();
-  const [weeks, setWeeks] = useState<StatsWeeks>(DEFAULT_RANGE);
+  // Starts on the user's default range (ADR-0061) and follows it until a range is picked here,
+  // so preferences arriving from the server after the first paint still apply. Picking a
+  // range on the page doesn't change the preference.
+  const { prefs } = usePreferences();
+  const [pickedWeeks, setWeeks] = useState<StatsWeeks | null>(null);
+  const weeks = pickedWeeks ?? prefs.statsDefaultRange;
 
   // View and drill-down live in the URL (?view=members&member=<id>) so refresh and back keep them.
   // Only Owner/Admin get the breakdown (ADR-0050); a Member's stale link just shows their own stats.

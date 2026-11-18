@@ -21,6 +21,18 @@ export function getPreferencesAs(email: string) {
   );
 }
 
+/** Stores UI preferences for a user straight through the API (PATCH merges them in). */
+export function setPreferencesAs(email: string, ui: Ui) {
+  return tokenFor(email).then((token) =>
+    cy.request({
+      method: 'PATCH',
+      url: `${API}/api/user/preferences`,
+      headers: { Authorization: `Bearer ${token}` },
+      body: { ui },
+    }),
+  );
+}
+
 /** Removes every stored UI preference (PATCH with nulls), so a user is back on the defaults. */
 export function resetPreferencesAs(email: string) {
   return getPreferencesAs(email).then((ui) => {

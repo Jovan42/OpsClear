@@ -5,10 +5,13 @@ import NotificationTypeSettings from './NotificationTypeSettings';
 import UpgradeCard from '../../components/UpgradeCard';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useCurrentOrg } from '../org/OrgContext';
+import { useOrgMembers } from '../org/useOrganisation';
+import { useProjectList } from '../projects/useProjects';
+import { useAuth } from '../../auth/AuthContext';
 import type {
   Theme, Locale, ViewMode, AccordionState, StatusTab,
   SortOrder, DeadlineFormat, ProjectPage, ProgressFormat, DateFormat, RowDensity,
-  AssigneeFilter, DueSoonDays,
+  AssigneeFilter, DueSoonDays, LandingProject, StatsRange,
 } from '../../hooks/usePreferences';
 import { usePageTitle } from '../../hooks/usePageTitle';
 
@@ -41,20 +44,26 @@ function SegmentedControl<T extends string>({ value, options, onChange }: Segmen
 }
 
 interface SelectControlProps<T extends string> {
-  value: T;
+  /** `''` shows the placeholder (when given). */
+  value: T | '';
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
   label?: string;
+  placeholder?: string;
+  className?: string;
 }
 
-function SelectControl<T extends string>({ value, options, onChange, label }: SelectControlProps<T>) {
+function SelectControl<T extends string>({ value, options, onChange, label, placeholder, className = '' }: SelectControlProps<T>) {
   return (
     <select
       aria-label={label}
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent shrink-0"
+      className={`rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent shrink-0 ${className}`}
     >
+      {placeholder !== undefined && (
+        <option value="" disabled>{placeholder}</option>
+      )}
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
       ))}
@@ -82,8 +91,8 @@ function SettingRow({ label, description, children }: SettingRowProps) {
 
 // ---- sections (ADR-0061) ----
 
-// Page order. Stats joins (between Milestones and Notifications) once it has a row.
-const SECTION_IDS = ['appearance', 'jobs', 'dashboard', 'navigation', 'milestones', 'notifications', 'api-keys'] as const;
+// Page order.
+const SECTION_IDS = ['appearance', 'jobs', 'dashboard', 'navigation', 'milestones', 'stats', 'notifications', 'api-keys'] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 
 const SECTION_LABEL_KEYS: Record<SectionId, string> = {
@@ -92,6 +101,7 @@ const SECTION_LABEL_KEYS: Record<SectionId, string> = {
   dashboard: 'dashboard',
   navigation: 'navigation',
   milestones: 'milestones',
+  stats: 'stats',
   notifications: 'notifications',
   'api-keys': 'apiKeys',
 };
@@ -159,7 +169,14 @@ export default function SettingsPage() {
   const { t } = useTranslation(['approvalsDashboardSettingsLanding']);
   usePageTitle(t('approvalsDashboardSettingsLanding:settings.pageTitle'));
   const { prefs, update } = usePreferences();
-  const { hasAddon } = useCurrentOrg();
+  const { org, hasAddon } = useCurrentOrg();
+  const { userId } = useAuth();
+  // Only org Owners/Admins see the Overview approvals, so only they get its setting.
+  const { data: orgMembers = [] } = useOrgMembers(org?.id ?? null);
+  const orgRole = orgMembers.find((m) => m.userId === userId)?.role ?? null;
+  const isOrgOwnerOrAdmin = orgRole === 'OWNER' || orgRole === 'ADMIN';
+  // The landing project picker lists the user's own active projects.
+  const { data: myProjects = [] } = useProjectList('ACTIVE', { enabled: prefs.landingProject === 'SPECIFIC' });
 
   const THEME_OPTIONS: { value: Theme; label: string }[] = [
     { value: 'light', label: t('settings.appearance.theme.light') },
@@ -239,6 +256,31 @@ export default function SettingsPage() {
     { value: 'DASHBOARD', label: t('settings.navigation.defaultProjectPage.dashboard') },
     { value: 'JOBS', label: t('settings.navigation.defaultProjectPage.jobs') },
     { value: 'APPROVALS', label: t('settings.navigation.defaultProjectPage.approvals') },
+  ];
+
+  const LANDING_PROJECT_OPTIONS: { value: LandingProject; label: string }[] = [
+    { value: 'LIST', label: t('settings.navigation.landingProject.list') },
+    { value: 'LAST', label: t('settings.navigation.landingProject.last') },
+    { value: 'SPECIFIC', label: t('settings.navigation.landingProject.specific') },
+  ];
+
+  const LANDING_PROJECT_PICKER_OPTIONS: { value: string; label: string }[] = [...myProjects]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((p) => ({ value: p.id, label: p.name }));
+  // A saved project the user no longer has shows the placeholder.
+  const pickedLandingProject = LANDING_PROJECT_PICKER_OPTIONS.some((o) => o.value === prefs.landingProjectId)
+    ? (prefs.landingProjectId ?? '')
+    : '';
+
+  const STATS_RANGES: StatsRange[] = [4, 12, 26];
+  const STATS_RANGE_OPTIONS: { value: `${StatsRange}`; label: string }[] = STATS_RANGES.map((weeks) => ({
+    value: `${weeks}`,
+    label: t(`stats.range.${weeks}`),
+  }));
+
+  const ON_OFF_OPTIONS: { value: 'true' | 'false'; label: string }[] = [
+    { value: 'true', label: t('settings.dashboardSection.overviewApprovals.on') },
+    { value: 'false', label: t('settings.dashboardSection.overviewApprovals.off') },
   ];
 
   const PROGRESS_FORMAT_OPTIONS: { value: ProgressFormat; label: string }[] = [
@@ -343,9 +385,38 @@ export default function SettingsPage() {
                 onChange={(v) => update({ showPendingApprovalsSection: v === 'true' })}
               />
             </SettingRow>
+            {isOrgOwnerOrAdmin && (
+              <SettingRow label={t('settings.dashboardSection.overviewApprovals.label')} description={t('settings.dashboardSection.overviewApprovals.description')}>
+                <SegmentedControl
+                  value={prefs.showOverviewApprovals ? 'true' : 'false'}
+                  options={ON_OFF_OPTIONS}
+                  onChange={(v) => update({ showOverviewApprovals: v === 'true' })}
+                />
+              </SettingRow>
+            )}
           </SettingsSection>
 
           <SettingsSection id="navigation" heading={t('settings.sections.navigation')}>
+            <SettingRow label={t('settings.navigation.landingProject.label')} description={t('settings.navigation.landingProject.description')}>
+              <SelectControl
+                label={t('settings.navigation.landingProject.label')}
+                value={prefs.landingProject}
+                options={LANDING_PROJECT_OPTIONS}
+                onChange={(v) => update({ landingProject: v })}
+              />
+            </SettingRow>
+            {prefs.landingProject === 'SPECIFIC' && (
+              <SettingRow label={t('settings.navigation.landingProjectPicker.label')} description={t('settings.navigation.landingProjectPicker.description')}>
+                <SelectControl
+                  label={t('settings.navigation.landingProjectPicker.label')}
+                  value={pickedLandingProject}
+                  options={LANDING_PROJECT_PICKER_OPTIONS}
+                  placeholder={t('settings.navigation.landingProjectPicker.placeholder')}
+                  className="max-w-48 truncate"
+                  onChange={(v) => update({ landingProjectId: v })}
+                />
+              </SettingRow>
+            )}
             <SettingRow label={t('settings.navigation.defaultProjectPage.label')} description={t('settings.navigation.defaultProjectPage.description')}>
               <SegmentedControl value={prefs.defaultProjectPage} options={PROJECT_PAGE_OPTIONS} onChange={(v) => update({ defaultProjectPage: v })} />
             </SettingRow>
@@ -360,7 +431,15 @@ export default function SettingsPage() {
             </SettingRow>
           </SettingsSection>
 
-          {/* Stats: hidden until it has a row (the default range, Frontend 4 of ADR-0061). */}
+          <SettingsSection id="stats" heading={t('settings.sections.stats')}>
+            <SettingRow label={t('settings.statsSection.defaultRange.label')} description={t('settings.statsSection.defaultRange.description')}>
+              <SegmentedControl
+                value={`${prefs.statsDefaultRange}`}
+                options={STATS_RANGE_OPTIONS}
+                onChange={(v) => update({ statsDefaultRange: Number(v) as StatsRange })}
+              />
+            </SettingRow>
+          </SettingsSection>
 
           <SettingsSection id="notifications" heading={t('settings.sections.notifications')}>
             <SettingRow label={t('settings.notificationsSection.sound.label')} description={t('settings.notificationsSection.sound.description')}>

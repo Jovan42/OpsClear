@@ -107,6 +107,12 @@
       "pendingApprovalsSection": {
         "label": "Sekcija odobrenja na čekanju",
         "description": "Prikaži ili sakrij listu odobrenja na čekanju na kontrolnoj tabli."
+      },
+      "overviewApprovals": {
+        "label": "Prikaži odobrenja na Pregledu",
+        "description": "Prikaži odobrenja na čekanju iz svih vaših projekata na stranici Pregled. Oznaka odobrenja u meniju ostaje u svakom slučaju.",
+        "on": "Uključeno",
+        "off": "Isključeno"
       }
     },
     "showHide": {
@@ -120,6 +126,18 @@
         "dashboard": "Kontrolna tabla",
         "jobs": "Poslovi",
         "approvals": "Odobrenja"
+      },
+      "landingProject": {
+        "label": "Početni projekat",
+        "description": "Gde stižete posle prijave. Link koji ste otvorili pre prijave i dalje ima prednost.",
+        "list": "Lista projekata",
+        "last": "Poslednji otvoren",
+        "specific": "Određeni"
+      },
+      "landingProjectPicker": {
+        "label": "Projekat",
+        "description": "Projekat koji se otvara posle prijave, na vašoj podrazumevanoj stranici projekta. Ako ga više ne možete otvoriti, stižete na listu projekata.",
+        "placeholder": "Izaberite projekat…"
       }
     },
     "milestonesSection": {
@@ -138,7 +156,13 @@
         "off": "Isključen"
       }
     },
-    "apiKeysFeatureName": "API ključevi"
+    "apiKeysFeatureName": "API ključevi",
+    "statsSection": {
+      "defaultRange": {
+        "label": "Podrazumevani period",
+        "description": "Period na kom se Statistika otvara. Promena na stranici Statistika važi samo dok je ne napustite."
+      }
+    }
   },
   "apiKeySection": {
     "heading": "API ključevi",

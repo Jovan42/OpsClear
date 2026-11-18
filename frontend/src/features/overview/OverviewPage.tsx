@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { useCurrentOrg } from '../org/OrgContext';
 import { useOrgMembers } from '../org/useOrganisation';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { usePreferences } from '../../hooks/usePreferences';
 import PendingApprovalsSection from './PendingApprovalsSection';
 import ProjectDirectorySection from './ProjectDirectorySection';
 
@@ -11,6 +12,7 @@ export default function OverviewPage() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
   const { userId } = useAuth();
   const { org } = useCurrentOrg();
+  const { prefs } = usePreferences();
   const { data: members = [], isLoading } = useOrgMembers(org?.id ?? null);
   usePageTitle(t('overview.pageTitle'));
 
@@ -32,7 +34,8 @@ export default function OverviewPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('overview.pageTitle')}</h1>
       <div className="space-y-10">
-        <PendingApprovalsSection />
+        {/* ADR-0061: a personal preference; the nav's pending-approvals badge stays either way. */}
+        {prefs.showOverviewApprovals && <PendingApprovalsSection />}
         <ProjectDirectorySection />
       </div>
     </div>

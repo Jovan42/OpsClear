@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
@@ -6,6 +6,10 @@ import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
 import ProductAndPricing from './ProductAndPricing';
 import { POST_LOGIN_REDIRECT_KEY } from '../../auth/postLoginRedirect';
+import { usePreferences } from '../../hooks/usePreferences';
+import { getMostRecentProject } from '../../hooks/useRecentProjects';
+import { useProjectList } from '../projects/useProjects';
+import { PROJECT_LIST_PATH, landingPath, landingProjectRef } from './landingTarget';
 
 function Hero() {
   const { t } = useTranslation('approvalsDashboardSettingsLanding');
@@ -66,25 +70,44 @@ function CTAFooter() {
   );
 }
 
+/**
+ * ADR-0061: the landing project (list, last opened or a chosen one) once the user's
+ * preferences have loaded from the server, so a fresh login in a new browser doesn't land
+ * on the list before its saved choice arrives.
+ */
+function LandingProjectRedirect() {
+  const { prefs, synced } = usePreferences();
+  // Read once: the visit recorded on the next page must not change the target.
+  const [mostRecent] = useState(getMostRecentProject);
+  const ref = synced ? landingProjectRef(prefs.landingProject, prefs.landingProjectId, mostRecent) : null;
+  const { data: projects, isError } = useProjectList('ACTIVE', { enabled: ref !== null });
+
+  if (!synced) return <div className="min-h-screen bg-gray-50 dark:bg-gray-900" />;
+  if (ref === null || isError) return <Navigate to={PROJECT_LIST_PATH} replace />;
+  if (!projects) return <div className="min-h-screen bg-gray-50 dark:bg-gray-900" />;
+  return <Navigate to={landingPath(ref, projects, prefs.defaultProjectPage)} replace />;
+}
+
+function AuthenticatedLanding() {
+  // JOB-237: RequireAuth saved the originally-requested deep link before bouncing
+  // through Keycloak's real (full-page) login — land back there instead of the
+  // landing project, when one was saved. Read once into state and cleared in an
+  // effect: clearing it during render broke under StrictMode's double render (the
+  // first pass consumed the key, so the second pass always saw null).
+  const [savedPath] = useState(() => sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY));
+  useEffect(() => {
+    sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+  }, []);
+
+  if (savedPath) return <Navigate to={savedPath} replace />;
+  return <LandingProjectRedirect />;
+}
+
 export default function LandingPage() {
   const { authenticated } = useAuth();
 
-  // JOB-237: clearing the saved key is a side effect and belongs in an effect, not the
-  // render body — doing both the read and the clear inline here made this component
-  // impure, which broke under StrictMode's double-render (the first pass consumed the
-  // key, so the second pass always saw null and fell through to the default).
-  useEffect(() => {
-    if (authenticated) sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
-  }, [authenticated]);
-
   // TODO MIL-012: branch on subscription state → setup wall
-  if (authenticated) {
-    // JOB-237: RequireAuth saved the originally-requested deep link before bouncing
-    // through Keycloak's real (full-page) login — land back there instead of always
-    // the generic default, when one was saved.
-    const savedPath = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY);
-    return <Navigate to={savedPath || '/projects'} replace />;
-  }
+  if (authenticated) return <AuthenticatedLanding />;
 
   return (
     <div className="min-h-screen flex flex-col">
