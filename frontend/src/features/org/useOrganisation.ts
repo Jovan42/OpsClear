@@ -8,7 +8,7 @@ import {
 import { isAxiosError } from 'axios';
 import { organisationsApi } from '../../api/organisations';
 import { retryAfterMinutes } from './inviteEmail';
-import type { InviteLanguage, OrgRole } from '../../types';
+import type { InviteLanguage, OrgRole, UpdateOrgSettingsRequest } from '../../types';
 
 export function useMyOrg() {
   return useQuery({
@@ -54,6 +54,23 @@ export function useDeleteOrganisation() {
       queryClient.removeQueries({ queryKey: ['organisations', id] });
       queryClient.setQueryData(['organisations', 'mine'], null);
     },
+  });
+}
+
+export function useOrgSettings(orgId: string | null) {
+  return useQuery({
+    queryKey: ['organisations', orgId, 'settings'],
+    queryFn: () => organisationsApi.getOrgSettings(orgId!),
+    enabled: !!orgId,
+  });
+}
+
+export function useUpdateOrgSettings(orgId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: UpdateOrgSettingsRequest) => organisationsApi.updateOrgSettings(orgId, patch),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'settings'] }),
   });
 }
 

@@ -17,6 +17,7 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import SubscriptionSection from './SubscriptionSection';
 import PaddleBillingSection from './PaddleBillingSection';
 import BillingHistorySection from './BillingHistorySection';
+import IdPrefixesSection from './IdPrefixesSection';
 import { useOrgCreditBalance } from './useCredits';
 import { useOrgTemplates, useDeleteOrgTemplate } from '../templates/useTemplates';
 import TemplateFormModal from '../templates/TemplateFormModal';
@@ -251,6 +252,9 @@ export default function OrgSettingsPage() {
           )}
         </form>
       </section>
+
+      {/* ── ID prefixes (ADR-0060) ── */}
+      <IdPrefixesSection orgId={org.id} isOwner={isOwner} />
 
       {/* ── Org Templates ── */}
       {hasAddon('JOB_TEMPLATES') && (
