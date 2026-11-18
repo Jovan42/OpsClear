@@ -1,11 +1,22 @@
 {
   "settings": {
     "pageTitle": "Settings",
+    "sections": {
+      "indexLabel": "Settings sections",
+      "appearance": "Appearance",
+      "jobs": "Jobs",
+      "dashboard": "Dashboard",
+      "navigation": "Navigation",
+      "milestones": "Milestones",
+      "stats": "Stats",
+      "notifications": "Notifications",
+      "apiKeys": "API keys"
+    },
+    "saveError": "Couldn't save your preferences",
     "appearance": {
-      "heading": "Appearance",
       "theme": {
         "label": "Theme",
-        "description": "Choose how OpsClear looks on this device.",
+        "description": "Choose how OpsClear looks.",
         "light": "Light",
         "dark": "Dark",
         "system": "System"
@@ -22,7 +33,6 @@
       }
     },
     "jobList": {
-      "heading": "Job list",
       "defaultViewMode": {
         "label": "Default view mode",
         "description": "How jobs are grouped when you open a project.",
@@ -58,7 +68,6 @@
       }
     },
     "dashboardSection": {
-      "heading": "Dashboard",
       "blockedSection": {
         "label": "Blocked jobs section",
         "description": "Show or hide the blocked jobs list on the dashboard."
@@ -77,7 +86,6 @@
       "hide": "Hide"
     },
     "navigation": {
-      "heading": "Navigation",
       "defaultProjectPage": {
         "label": "Default project page",
         "description": "Which page opens when you navigate to a project.",
@@ -87,7 +95,6 @@
       }
     },
     "milestonesSection": {
-      "heading": "Milestones",
       "progressFormat": {
         "label": "Progress format",
         "description": "How milestone progress is displayed (e.g. 4/6 or 67%).",
@@ -96,11 +103,9 @@
       }
     },
     "notificationsSection": {
-      "heading": "Notifications",
       "sound": {
         "label": "Notification sound",
-        "description": "Play a short sound when a new notification arrives in the tab you're using. Saved in this browser only, like theme and language.",
-        "scope": "This device only",
+        "description": "Play a short sound when a new notification arrives in the tab you're using.",
         "on": "On",
         "off": "Off"
       }

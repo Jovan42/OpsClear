@@ -765,6 +765,15 @@ export interface NotificationSettings {
   muted: NotificationType[];
 }
 
+/** A UI preference value the server stores (ADR-0061): flat, no nested objects or arrays. */
+export type UiPreferenceValue = string | number | boolean | null;
+
+/** `/api/user/preferences`: the caller's UI preferences, stored opaquely under `ui`.
+ *  `ui` is `{}` until something is saved. The frontend owns the fields (`usePreferences`). */
+export interface UserPreferencesResponse {
+  ui: Record<string, UiPreferenceValue>;
+}
+
 export interface NotificationListFilters {
   unread: boolean;
   type: NotificationType | null;

@@ -6,11 +6,10 @@
 // manual checklist.
 
 import { createOrgWithSubscription, uniqueEmail, uniqueSlug } from '../../support/orgApi';
-
-const STORAGE_KEY = 'opsclear:preferences';
+import { cachedPreferences } from '../../support/preferences';
 
 function storedSound(win: Window): unknown {
-  return JSON.parse(win.localStorage.getItem(STORAGE_KEY) ?? '{}').notificationSound;
+  return cachedPreferences(win).notificationSound;
 }
 
 describe('Notification sound setting', () => {

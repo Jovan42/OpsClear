@@ -24,16 +24,17 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <PreferencesProvider>
-        <AuthProvider>
+      <AuthProvider>
+        {/* Inside AuthProvider: preferences sync per user (ADR-0061). */}
+        <PreferencesProvider>
           <OrgProvider>
             <QueryClientProvider client={queryClient}>
               <RouterProvider router={router} />
               <ReactQueryDevtools initialIsOpen={false} />
             </QueryClientProvider>
           </OrgProvider>
-        </AuthProvider>
-      </PreferencesProvider>
+        </PreferencesProvider>
+      </AuthProvider>
     </ErrorBoundary>
   </StrictMode>,
 );
