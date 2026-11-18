@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useScheduleMissedRuns, useMaterializeMissedRun, useDismissMissedRun, useDismissAllMissedRuns } from './useSchedules';
 import Button from '../../components/Button';
 import type { JobResponse } from '../../types';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDateTime } from '../../utils/formatDate';
 
 interface Props {
   projectId: string;
@@ -13,6 +15,7 @@ interface Props {
 
 export default function MissedRunsPanel({ projectId, scheduleId, canManage }: Readonly<Props>) {
   const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
+  const { prefs } = usePreferences();
   const [open, setOpen] = useState(false);
   const [createdJob, setCreatedJob] = useState<JobResponse | null>(null);
 
@@ -87,14 +90,7 @@ export default function MissedRunsPanel({ projectId, scheduleId, canManage }: Re
                   className="flex items-center justify-between gap-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-3 py-2"
                 >
                   <span className="text-xs text-gray-600 dark:text-gray-300">
-                    {new Date(run.expectedAt).toLocaleString(undefined, {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {formatDateTime(run.expectedAt, prefs, { weekday: true })}
                   </span>
                   {canManage && (
                     <div className="flex items-center gap-1 shrink-0">

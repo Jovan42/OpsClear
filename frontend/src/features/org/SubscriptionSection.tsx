@@ -17,16 +17,14 @@ import {
   usePreviewPaddleSubscriptionUpdate,
   useUpdatePaddleSubscription,
 } from './usePaddleSubscription';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDate } from '../../utils/formatDate';
 
 const PROCESSING_POLL_MS = 2000;
 const PROCESSING_TIMEOUT_MS = 20000;
 
 function fmt(n: number) {
   return new Intl.NumberFormat('sr-RS').format(n);
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function tierPrice(tier: SubscriptionTierResponse, annual: boolean) {
@@ -59,6 +57,7 @@ interface Props {
 
 export default function SubscriptionSection({ orgId }: Props) {
   const { t } = useTranslation('org');
+  const { prefs } = usePreferences();
   const queryClient = useQueryClient();
   const { data: catalog, isLoading: catalogLoading } = useCatalog();
   const [awaitingWebhook, setAwaitingWebhook] = useState(false);
@@ -408,7 +407,7 @@ export default function SubscriptionSection({ orgId }: Props) {
             <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
               {t('pendingDowngradeDesc', {
                 date: currentSub?.paddlePendingDowngradeEffectiveAt
-                  ? formatDate(currentSub.paddlePendingDowngradeEffectiveAt)
+                  ? formatDate(currentSub.paddlePendingDowngradeEffectiveAt, prefs)
                   : '',
               })}
             </p>
@@ -658,7 +657,7 @@ export default function SubscriptionSection({ orgId }: Props) {
               </div>
             )
             : t('paddleUpdateConfirmDowngradeMessage', {
-                date: pendingPreview?.effectiveAt ? formatDate(pendingPreview.effectiveAt) : '',
+                date: pendingPreview?.effectiveAt ? formatDate(pendingPreview.effectiveAt, prefs) : '',
               })
         }
         confirmLabel={t('paddleUpdateConfirmButton')}

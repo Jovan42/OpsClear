@@ -19,6 +19,8 @@ import {
   Gift,
 } from 'lucide-react';
 import { autoCancelReason, completionRequestMessage } from '../jobs/completionApproval';
+import type { DateFormat } from '../../hooks/usePreferences';
+import { appLocale, formatDate, formatDateTime, intlLocale, type DatePrefs } from '../../utils/formatDate';
 import type {
   ApprovalDecidedPayload,
   JobNotificationPayload,
@@ -185,27 +187,22 @@ export interface NotificationContent {
   context: string | null;
 }
 
-/** BCP-47 locale for Intl formatting. The app's Serbian strings are in Latin script. */
-export function intlLocale(language: string): string {
-  return language.startsWith('sr') ? 'sr-Latn' : 'en-GB';
+/** A payload date in the viewer's date format, or null when it's missing or invalid. */
+function dateText(iso: string | undefined, prefs: DatePrefs): string | null {
+  return iso ? formatDate(iso, prefs) || null : null;
 }
 
-function formatDate(iso: string | undefined, locale: string): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+function dateTimeText(iso: string | undefined, prefs: DatePrefs): string | null {
+  return iso ? formatDateTime(iso, prefs) || null : null;
 }
 
-function formatDateTime(iso: string | undefined, locale: string): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleString(locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-/** "5 min ago" style time, in the viewer's language. */
-export function formatRelativeTime(iso: string, language: string, now = Date.now()): string {
+/** "5 min ago" style time, in the viewer's language; older than a week, the date in their date format. */
+export function formatRelativeTime(
+  iso: string,
+  language: string,
+  dateFormat: DateFormat = 'AUTO',
+  now = Date.now(),
+): string {
   const diffSec = Math.round((new Date(iso).getTime() - now) / 1000);
   const rtf = new Intl.RelativeTimeFormat(intlLocale(language), { numeric: 'auto', style: 'short' });
   const abs = Math.abs(diffSec);
@@ -213,7 +210,7 @@ export function formatRelativeTime(iso: string, language: string, now = Date.now
   if (abs < 3600) return rtf.format(Math.round(diffSec / 60), 'minute');
   if (abs < 86_400) return rtf.format(Math.round(diffSec / 3600), 'hour');
   if (abs < 7 * 86_400) return rtf.format(Math.round(diffSec / 86_400), 'day');
-  return formatDate(iso, intlLocale(language)) ?? '';
+  return formatDate(iso, { locale: appLocale(language), dateFormat });
 }
 
 /** i18n keys for each job status label (also used by ApprovalDecisionModal's toast). */
@@ -301,8 +298,9 @@ export function buildNotificationContent(
   t: NotificationsT,
   language: string,
   viewerOrgRole: OrgRole | null = null,
+  dateFormat: DateFormat = 'AUTO',
 ): NotificationContent {
-  const locale = intlLocale(language);
+  const datePrefs: DatePrefs = { locale: appLocale(language), dateFormat };
   const p = n.payload;
   const source = n.actor
     ? n.actor.name ?? p.actorName ?? t('notifications:fallback.someone')
@@ -345,7 +343,7 @@ export function buildNotificationContent(
     }
     case 'JOB_ASSIGNED': {
       text = t('notifications:text.JOB_ASSIGNED', { job });
-      const due = formatDate(n.payload.deadline, locale);
+      const due = dateText(n.payload.deadline, datePrefs);
       if (due) details.push(t('notifications:detail.due', { date: due }));
       details.push(priority(n.payload.priority));
       break;
@@ -378,7 +376,7 @@ export function buildNotificationContent(
       const changed = n.payload.changedFields ?? [];
       if (changed.includes('deadline')) {
         // A changed deadline with no value means it was cleared.
-        const due = formatDate(n.payload.deadline, locale);
+        const due = dateText(n.payload.deadline, datePrefs);
         details.push(due ? t('notifications:detail.newDeadline', { date: due }) : t('notifications:detail.deadlineRemoved'));
       }
       if (changed.includes('priority')) details.push(priority(n.payload.priority));
@@ -392,13 +390,13 @@ export function buildNotificationContent(
       break;
     case 'JOB_DEADLINE_SOON': {
       text = t('notifications:text.JOB_DEADLINE_SOON', { job });
-      const due = formatDate(n.payload.deadline, locale);
+      const due = dateText(n.payload.deadline, datePrefs);
       if (due) details.push(t('notifications:detail.due', { date: due }));
       break;
     }
     case 'JOB_OVERDUE': {
       text = t('notifications:text.JOB_OVERDUE', { job });
-      const due = formatDate(n.payload.deadline, locale);
+      const due = dateText(n.payload.deadline, datePrefs);
       if (due) details.push(t('notifications:detail.wasDue', { date: due }));
       break;
     }
@@ -415,7 +413,7 @@ export function buildNotificationContent(
       text = n.payload.scheduleName
         ? t('notifications:text.SCHEDULE_RUN_MISSED.named', { schedule: n.payload.scheduleName, project: name })
         : t('notifications:text.SCHEDULE_RUN_MISSED.generic', { project: name });
-      const missed = formatDateTime(n.payload.missedAt, locale);
+      const missed = dateTimeText(n.payload.missedAt, datePrefs);
       if (missed) details.push(t('notifications:detail.missedAt', { date: missed }));
       break;
     }

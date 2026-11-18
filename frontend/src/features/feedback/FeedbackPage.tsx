@@ -12,6 +12,8 @@ import MarkdownEditor from '../../components/MarkdownEditor';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useMyFeedbackSubmissions, useSubmitFeedback } from './useFeedback';
 import type { FeedbackStatus, FeedbackType } from '../../types';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDate } from '../../utils/formatDate';
 
 type View = 'mine' | 'new';
 
@@ -74,6 +76,7 @@ function StatusPill({ status }: Readonly<{ status: FeedbackStatus }>) {
 
 export default function FeedbackPage() {
   const { t } = useTranslation('feedback');
+  const { prefs } = usePreferences();
   usePageTitle(t('pageTitle'));
 
   const [view, setView] = useState<View>('mine');
@@ -147,7 +150,7 @@ export default function FeedbackPage() {
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.title}</p>
                 <Markdown className="text-sm text-gray-600 dark:text-gray-300">{s.description}</Markdown>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {new Date(s.createdAt).toLocaleDateString()}
+                  {formatDate(s.createdAt, prefs)}
                 </p>
               </div>
             ))}

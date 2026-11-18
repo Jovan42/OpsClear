@@ -7,18 +7,10 @@ import ApprovalDecisionModal from './ApprovalDecisionModal';
 import { useCancelApproval } from '../useApprovals';
 import { completionRequestMessage } from '../completionApproval';
 import type { JobResponse } from '../../../types';
+import { usePreferences } from '../../../hooks/usePreferences';
+import { formatDateTime } from '../../../utils/formatDate';
 
 type Role = 'OWNER' | 'ADMIN' | 'MEMBER' | null;
-
-function formatDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 interface Props {
   job: JobResponse;
@@ -37,6 +29,7 @@ interface Props {
  */
 export default function CompletionRequestBanner({ job, projectId, jobId, role, userId, canAct }: Props) {
   const { t } = useTranslation(['jobsComponents', 'common']);
+  const { prefs } = usePreferences();
   const queryClient = useQueryClient();
   const [decision, setDecision] = useState<'APPROVED' | 'REJECTED' | null>(null);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
@@ -77,7 +70,7 @@ export default function CompletionRequestBanner({ job, projectId, jobId, role, u
               <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
                 {t('jobsComponents:completionRequestBanner.requestedBy', {
                   name: pending.requesterName ?? t('jobsComponents:unknownUser'),
-                  time: formatDateTime(pending.requestedAt),
+                  time: formatDateTime(pending.requestedAt, prefs),
                 })}
               </p>
               {message && (

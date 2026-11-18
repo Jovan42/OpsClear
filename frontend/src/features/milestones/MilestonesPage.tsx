@@ -17,14 +17,7 @@ import ProgressBar from '../../components/ProgressBar';
 import UpgradeCard from '../../components/UpgradeCard';
 import { useCurrentOrg } from '../org/OrgContext';
 import type { MilestoneResponse } from '../../types';
-
-function formatDeadline(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
+import { formatDate } from '../../utils/formatDate';
 
 function LoadingSkeleton() {
   return (
@@ -75,8 +68,8 @@ function MilestoneRow({ milestone, projectId, completed, total, canManage, onEdi
             }`}
           >
             {overdue
-              ? t('milestonesTemplatesSchedules:milestonesPage.overdueDate', { date: formatDeadline(milestone.deadline) })
-              : t('milestonesTemplatesSchedules:milestonesPage.dueDate', { date: formatDeadline(milestone.deadline) })}
+              ? t('milestonesTemplatesSchedules:milestonesPage.overdueDate', { date: formatDate(milestone.deadline, prefs) })
+              : t('milestonesTemplatesSchedules:milestonesPage.dueDate', { date: formatDate(milestone.deadline, prefs) })}
           </p>
         )}
         <ProgressBar completed={completed} total={total} format={prefs.milestoneProgressFormat} />

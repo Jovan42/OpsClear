@@ -21,17 +21,9 @@ import { JOB_TYPE_HEX } from '../../utils/jobTypeColors';
 import { SUMMARY_VALUE_CLASSES } from '../../utils/statusColors';
 import i18n from '../../i18n';
 import type { DashboardSummary, JobSummary, JobTypeBreakdown, PendingApprovalResponse } from '../../types';
+import { formatDate } from '../../utils/formatDate';
 
 // ---- helpers ----
-
-function formatDate(dateStr: string | null) {
-  if (!dateStr) return null;
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 function blockedFor(blockedAt: string | null) {
   if (!blockedAt) return null;
@@ -241,6 +233,7 @@ function PendingApprovalRow({
 }>) {
   const navigate = useNavigate();
   const { t } = useTranslation(['approvalsDashboardSettingsLanding', 'jobsComponents']);
+  const { prefs } = usePreferences();
   return (
     <div className="flex items-start justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-800">
       <div className="min-w-0">
@@ -249,7 +242,7 @@ function PendingApprovalRow({
           <ApprovalKindBadge kind={approval.kind} />
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          {approval.jobTitle} · {formatDate(approval.requestedAt)}
+          {approval.jobTitle} · {formatDate(approval.requestedAt, prefs)}
         </p>
       </div>
       <button

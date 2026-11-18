@@ -6,6 +6,8 @@ import { useTemplates } from '../templates/useTemplates';
 import { useProjectMembers } from '../projects/useProjects';
 import { toReadable, buildCron, detectPreset, parseCronParams } from '../../utils/cron';
 import type { RecurringScheduleResponse, ProjectMemberResponse } from '../../types';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDateTime } from '../../utils/formatDate';
 
 const DAY_VALUES = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
 const DAY_LABEL_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
@@ -76,6 +78,7 @@ function AssigneeRow({
 
 export default function ScheduleFormModal({ open, onClose, projectId, schedule, initialTemplateId }: Readonly<Props>) {
   const { t } = useTranslation(['milestonesTemplatesSchedules', 'common', 'errors']);
+  const { prefs } = usePreferences();
   const isEdit = !!schedule;
   const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -368,14 +371,7 @@ export default function ScheduleFormModal({ open, onClose, projectId, schedule, 
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('milestonesTemplatesSchedules:scheduleModal.nextOccurrencesLabel')}</p>
                   {preview.nextRuns.map((occ) => (
                     <p key={occ} className="text-xs text-gray-700 dark:text-gray-300">
-                      {new Date(occ).toLocaleString(undefined, {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatDateTime(occ, prefs, { weekday: true })}
                     </p>
                   ))}
                 </div>

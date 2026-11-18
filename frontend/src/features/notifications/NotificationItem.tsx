@@ -10,6 +10,8 @@ import {
   notificationTarget,
 } from './notificationContent';
 import { useMarkRead, useViewerOrgRole } from './useNotifications';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDateTime } from '../../utils/formatDate';
 
 interface NotificationItemProps {
   notification: NotificationResponse;
@@ -27,9 +29,10 @@ interface NotificationItemProps {
 export default function NotificationItem({ notification: n, onNavigate, showReadToggle = false }: Readonly<NotificationItemProps>) {
   const { t, i18n } = useTranslation(['notifications', 'shared2']);
   const { mutate: markRead, isPending } = useMarkRead();
+  const { prefs } = usePreferences();
 
   const viewerOrgRole = useViewerOrgRole();
-  const content = buildNotificationContent(n, t, i18n.language, viewerOrgRole);
+  const content = buildNotificationContent(n, t, i18n.language, viewerOrgRole, prefs.dateFormat);
   const target = notificationTarget(n, viewerOrgRole);
   const urgent = isUrgent(n.type);
   const Icon = NOTIFICATION_ICONS[n.type];
@@ -58,8 +61,8 @@ export default function NotificationItem({ notification: n, onNavigate, showRead
             </>
           )}
           <span aria-hidden>·</span>
-          <time dateTime={n.createdAt} title={new Date(n.createdAt).toLocaleString()} className="shrink-0">
-            {formatRelativeTime(n.createdAt, i18n.language)}
+          <time dateTime={n.createdAt} title={formatDateTime(n.createdAt, prefs)} className="shrink-0">
+            {formatRelativeTime(n.createdAt, i18n.language, prefs.dateFormat)}
           </time>
         </div>
         <p

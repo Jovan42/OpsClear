@@ -8,18 +8,10 @@ import { useApprovals } from '../useApprovals';
 import { approvalDescription, autoCancelReason, isApprovedNotApplied } from '../completionApproval';
 import { jobStatusLabel } from '../../notifications/notificationContent';
 import type { ApprovalResponse, ProjectMemberResponse } from '../../../types';
+import { usePreferences } from '../../../hooks/usePreferences';
+import { formatDateTime } from '../../../utils/formatDate';
 
 type Role = 'OWNER' | 'ADMIN' | 'MEMBER' | null;
-
-function formatDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function memberName(members: ProjectMemberResponse[], userId: string, t: TFunction): string {
   return members.find((m) => m.userId === userId)?.userName ?? t('jobsComponents:unknownUser');
@@ -56,6 +48,7 @@ interface Props {
 
 export default function ApprovalList({ projectId, jobId, role, members }: Props) {
   const { t } = useTranslation(['jobsComponents', 'common', 'shared2']);
+  const { prefs } = usePreferences();
   const { data: approvals = [] } = useApprovals(projectId, jobId);
   const [decision, setDecision] = useState<{
     approvalId: string;
@@ -77,7 +70,7 @@ export default function ApprovalList({ projectId, jobId, role, members }: Props)
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
               <span>{t('jobsComponents:approvalList.requestedBy', { name: memberName(members, approval.requesterId, t) })}</span>
               <span>·</span>
-              <span>{formatDateTime(approval.requestedAt)}</span>
+              <span>{formatDateTime(approval.requestedAt, prefs)}</span>
               <ApprovalKindBadge kind={approval.kind} />
               <ApprovalStatusBadge approval={approval} />
             </div>
@@ -87,7 +80,7 @@ export default function ApprovalList({ projectId, jobId, role, members }: Props)
                 {approval.approverId && (
                   <span>
                     {t(DECIDED_BY_KEYS[approval.status], { name: memberName(members, approval.approverId, t) })}
-                    {approval.decidedAt && ` · ${formatDateTime(approval.decidedAt)}`}
+                    {approval.decidedAt && ` · ${formatDateTime(approval.decidedAt, prefs)}`}
                   </span>
                 )}
                 {isApprovedNotApplied(approval) && (

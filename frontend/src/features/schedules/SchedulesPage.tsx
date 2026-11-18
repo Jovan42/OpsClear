@@ -16,6 +16,8 @@ import EmptyState from '../../components/EmptyState';
 import UpgradeCard from '../../components/UpgradeCard';
 import PageError from '../../components/PageError';
 import type { RecurringScheduleResponse, ScheduleStatus } from '../../types';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDateTime } from '../../utils/formatDate';
 
 function StatusBadge({ status }: Readonly<{ status: ScheduleStatus }>) {
   const { t } = useTranslation('milestonesTemplatesSchedules');
@@ -77,6 +79,7 @@ function ScheduleRow({
   isResuming,
 }: Readonly<ScheduleRowProps>) {
   const { t } = useTranslation(['milestonesTemplatesSchedules', 'common']);
+  const { prefs } = usePreferences();
   const isPaused = schedule.status === 'PAUSED' || schedule.status === 'PAUSED_NO_ASSIGNEES';
 
   return (
@@ -94,13 +97,7 @@ function ScheduleRow({
         <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
           <span>
             {t('milestonesTemplatesSchedules:schedulesPage.nextLabel')}{' '}
-            {new Date(schedule.nextRunAt).toLocaleString(undefined, {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+            {formatDateTime(schedule.nextRunAt, prefs, { weekday: true })}
           </span>
           {schedule.assignees.length > 0 && <AssigneeAvatars assignees={schedule.assignees} />}
         </div>
