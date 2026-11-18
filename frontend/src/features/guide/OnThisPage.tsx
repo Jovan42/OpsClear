@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { GuideHeading } from './headings';
+import { pickActiveHeading, type GuideHeading } from './headings';
 
 /** Sticky "On this page" list that highlights the section being read. */
 export default function OnThisPage({ headings }: Readonly<{ headings: GuideHeading[] }>) {
@@ -13,27 +13,36 @@ export default function OnThisPage({ headings }: Readonly<{ headings: GuideHeadi
       .filter((el): el is HTMLElement => el !== null);
     if (elements.length === 0) return;
 
-    const visible = new Set<string>();
-    // A heading counts as "in view" while it's in the top 30% of the viewport. When none
-    // is, the last one that scrolled past stays active.
+    const ids = elements.map((el) => el.id);
+    const inView = new Set<string>();
+
+    function update() {
+      const root = document.documentElement;
+      const scrollable = root.scrollHeight > window.innerHeight + 2;
+      const atBottom = scrollable && window.innerHeight + window.scrollY >= root.scrollHeight - 2;
+      const passed = new Set(elements.filter((el) => el.getBoundingClientRect().top < 0).map((el) => el.id));
+      const next = pickActiveHeading({ ids, inView, passed, atBottom });
+      if (next) setActiveId(next);
+    }
+
+    // A heading counts as "in view" while it's in the top 30% of the viewport.
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) visible.add(entry.target.id);
-          else visible.delete(entry.target.id);
+          if (entry.isIntersecting) inView.add(entry.target.id);
+          else inView.delete(entry.target.id);
         }
-        const first = elements.find((el) => visible.has(el.id));
-        if (first) {
-          setActiveId(first.id);
-          return;
-        }
-        const passed = elements.filter((el) => el.getBoundingClientRect().top < 0);
-        if (passed.length > 0) setActiveId(passed[passed.length - 1].id);
+        update();
       },
       { rootMargin: '0px 0px -70% 0px' },
     );
     elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    // Only for reaching the bottom of the page, which the observer doesn't report.
+    window.addEventListener('scroll', update, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', update);
+    };
   }, [headings]);
 
   if (headings.length === 0) return null;

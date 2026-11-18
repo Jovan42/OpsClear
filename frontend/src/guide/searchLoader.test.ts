@@ -27,18 +27,16 @@ describe('buildIndexState', () => {
 
 describe('shouldBuildIndex', () => {
   it('builds on first use and after a language change', () => {
-    expect(shouldBuildIndex({ status: 'idle' }, 'en', false)).toBe(true);
-    expect(shouldBuildIndex({ status: 'ready', lang: 'en', search }, 'sr', false)).toBe(true);
-    expect(shouldBuildIndex({ status: 'loading', lang: 'en' }, 'sr', false)).toBe(true);
+    expect(shouldBuildIndex({ status: 'idle' }, 'en')).toBe(true);
+    expect(shouldBuildIndex({ status: 'ready', lang: 'en', search }, 'sr')).toBe(true);
+    expect(shouldBuildIndex({ status: 'loading', lang: 'en' }, 'sr')).toBe(true);
+    expect(shouldBuildIndex({ status: 'error', lang: 'en' }, 'sr')).toBe(true);
   });
 
-  it("doesn't rebuild while loading or once ready", () => {
-    expect(shouldBuildIndex({ status: 'loading', lang: 'en' }, 'en', true)).toBe(false);
-    expect(shouldBuildIndex({ status: 'ready', lang: 'en', search }, 'en', true)).toBe(false);
-  });
-
-  it('retries a failed build only when asked (the next focus)', () => {
-    expect(shouldBuildIndex({ status: 'error', lang: 'en' }, 'en', false)).toBe(false);
-    expect(shouldBuildIndex({ status: 'error', lang: 'en' }, 'en', true)).toBe(true);
+  it("doesn't rebuild while loading, once ready, or after a failure in the same language", () => {
+    expect(shouldBuildIndex({ status: 'loading', lang: 'en' }, 'en')).toBe(false);
+    expect(shouldBuildIndex({ status: 'ready', lang: 'en', search }, 'en')).toBe(false);
+    // A failed chunk import stays failed for the page's life; the retry is a reload.
+    expect(shouldBuildIndex({ status: 'error', lang: 'en' }, 'en')).toBe(false);
   });
 });

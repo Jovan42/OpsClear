@@ -9,14 +9,13 @@ export type SearchIndexState =
   | { status: 'error'; lang: string };
 
 /**
- * Whether to (re)build the index for `lang`. A build that failed for `lang` (e.g. a page chunk
- * didn't load) is only retried when `retryError` is set: on the next focus of the search box,
- * not on every keystroke.
+ * Whether to (re)build the index for `lang`: on first use and after a language change. A build
+ * that failed for `lang` isn't retried here: the browser caches a failed chunk import for the
+ * rest of the page's life, so importing it again fails the same way. The way to retry is a
+ * page reload (the search error's "Try again" button).
  */
-export function shouldBuildIndex(state: SearchIndexState, lang: string, retryError: boolean): boolean {
-  if (state.status === 'idle' || state.lang !== lang) return true;
-  if (state.status === 'error') return retryError;
-  return false;
+export function shouldBuildIndex(state: SearchIndexState, lang: string): boolean {
+  return state.status === 'idle' || state.lang !== lang;
 }
 
 /** Builds the index for `lang`, reporting `loading` and then `ready` or `error`. Never rejects. */

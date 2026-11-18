@@ -76,19 +76,51 @@ describe('User guide', () => {
     cy.contains('h1', 'Getting started with OpsClear').should('be.visible');
   });
 
-  it('"On this page" lists the headings and jumps to one', () => {
+  it('"On this page" jumps to a heading and highlights it, including the last one', () => {
     cy.visit('/guide');
-    cy.get('[data-testid=guide-on-this-page]').within(() => {
-      cy.contains('a', 'How this guide is organised').should('be.visible');
-      // Not the last heading: the page bottoms out before the last section can reach the top.
-      cy.contains('a', 'Your first steps').click();
-    });
+
+    // A heading with enough page below it scrolls to the top.
+    cy.get('[data-testid=guide-on-this-page]').contains('a', 'Your first steps').click();
     cy.location('hash').should('eq', '#your-first-steps');
     cy.get('#your-first-steps').should(($h) => {
       const top = $h[0].getBoundingClientRect().top;
       expect(top).to.be.within(-5, 200);
     });
     cy.get('[data-testid=guide-on-this-page] a[aria-current=location]').should('have.text', 'Your first steps');
+
+    // The last heading can't reach the top: the page bottoms out first. It's in view, the page
+    // is at the bottom, and it's the highlighted one, not the heading before it.
+    cy.get('[data-testid=guide-on-this-page]').contains('a', 'How this guide is organised').click();
+    cy.location('hash').should('eq', '#how-this-guide-is-organised');
+    cy.window().should((win) => {
+      const root = win.document.documentElement;
+      expect(win.innerHeight + win.scrollY, 'scrolled to the bottom').to.be.at.least(root.scrollHeight - 2);
+      const top = win.document.getElementById('how-this-guide-is-organised')!.getBoundingClientRect().top;
+      expect(top, 'heading in view').to.be.within(0, win.innerHeight);
+    });
+    cy.get('[data-testid=guide-on-this-page] a[aria-current=location]').should('have.text', 'How this guide is organised');
+  });
+
+  it('search shows an error when its index fails to load, and "Try again" reloads so it works', () => {
+    // Fail the first load of the index page's plain text (the `?raw` import search reads)
+    // with a 500 (a dropped connection gets retried by the browser on its own),
+    // then let the retry through.
+    cy.intercept({ method: 'GET', url: /\/src\/guide\/en\/00-index\.mdx\?.*raw/, times: 1 }, { statusCode: 500, body: 'unavailable' }).as('rawFail');
+    cy.visit('/guide/sign-up');
+    cy.get('[data-testid=guide-sidebar] [data-testid=guide-search]').focus();
+    cy.get('[data-testid=guide-sidebar] [data-testid=guide-search]').type('responsible person');
+    cy.wait('@rawFail');
+    cy.get('[data-testid=guide-search-error]').should('contain', "Search couldn't load.");
+
+    // "Try again" reloads the page (a failed chunk import stays failed until then); this time
+    // the text loads and search works.
+    cy.get('[data-testid=guide-search-error]').contains('button', 'Try again').click();
+    cy.location('pathname').should('eq', '/guide/sign-up');
+    cy.get('[data-testid=guide-sidebar] [data-testid=guide-search]').should('have.value', '');
+    cy.get('[data-testid=guide-sidebar] [data-testid=guide-search]').focus();
+    cy.get('[data-testid=guide-sidebar] [data-testid=guide-search]').type('responsible person');
+    cy.get('[data-testid=guide-search-error]').should('not.exist');
+    cy.get('[data-testid=guide-search-results]').should('contain', 'Getting started with OpsClear');
   });
 
   it('search finds text on the index page and goes to its heading', () => {

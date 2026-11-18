@@ -10,7 +10,7 @@ import { buildIndexState, shouldBuildIndex, type SearchIndexState } from '../../
 /**
  * ADR-0062: search over the guide pages in the current language. The index is built in the
  * browser on the first focus of the box (and again after a language change). If it fails to
- * load, the results show an error with a "Try again" button; the next focus also retries.
+ * load, the results show an error with a "Try again" button that reloads the page.
  */
 export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {
   const { t } = useTranslation('guide');
@@ -26,9 +26,8 @@ export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () =
   const trimmed = query.trim();
   const results: GuideSearchResult[] = ready && trimmed ? ready(trimmed) : [];
 
-  /** `retryError`: retry a failed build (on focus), not on every keystroke. */
-  function ensureIndex(retryError: boolean) {
-    if (!shouldBuildIndex(indexState, lang, retryError)) return;
+  function ensureIndex() {
+    if (!shouldBuildIndex(indexState, lang)) return;
     void buildIndexState(
       lang,
       () => buildGuideSearch(lang, (slug) => t(`pages.${slug}`)),
@@ -54,10 +53,10 @@ export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () =
         value={query}
         placeholder={t('search.placeholder')}
         autoComplete="off"
-        onFocus={() => ensureIndex(true)}
+        onFocus={ensureIndex}
         onChange={(e) => {
           setQuery(e.target.value);
-          ensureIndex(false); // the language may have changed since the box was focused
+          ensureIndex(); // the language may have changed since the box was focused
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && results[0]) open(results[0]);
@@ -73,10 +72,10 @@ export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () =
           {failed ? (
             <div className="flex items-center justify-between gap-2 px-3 py-2" data-testid="guide-search-error">
               <p className="text-sm text-red-600 dark:text-red-400">{t('search.error')}</p>
-              {/* The box usually still has focus here, so focusing it again can't be the retry. */}
+              {/* A reload: the browser keeps a failed chunk import failed for the page's life. */}
               <button
                 type="button"
-                onClick={() => ensureIndex(true)}
+                onClick={() => window.location.reload()}
                 className="shrink-0 text-sm font-medium text-brand dark:text-green-400 hover:underline cursor-pointer"
               >
                 {t('retry')}

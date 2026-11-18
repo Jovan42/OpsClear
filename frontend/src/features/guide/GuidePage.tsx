@@ -77,7 +77,7 @@ function GuideArticle({ page }: Readonly<{ page: GuidePageEntry }>) {
   const { prefs } = usePreferences();
   const { hash } = useLocation();
   const lang = prefs.locale;
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['guide', lang, page.slug],
     queryFn: () => loadGuidePage(lang, page.slug),
     staleTime: Infinity,
@@ -125,7 +125,8 @@ function GuideArticle({ page }: Readonly<{ page: GuidePageEntry }>) {
         <div className="py-12 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('loadError')}</p>
           <div className="mt-4">
-            <Button variant="secondary" onClick={() => void refetch()}>
+            {/* A reload, not a refetch: the browser keeps a failed chunk import failed. */}
+            <Button variant="secondary" onClick={() => window.location.reload()}>
               {t('retry')}
             </Button>
           </div>
