@@ -55,6 +55,8 @@ function PreferencesStore({ userId, children }: PreferencesStoreProps) {
   const cacheKey = userId ? userCacheKey(userId) : ANONYMOUS_CACHE_KEY;
   const [prefs, setPrefs] = useState<Preferences>(() => readFirstPaint(userId));
   const prefsRef = useRef(prefs);
+  // Anonymous visitors have nothing to load; a user is synced once the GET below settles.
+  const [synced, setSynced] = useState(userId === null);
   const [queue] = useState(
     () =>
       new PreferenceSaveQueue({
@@ -107,8 +109,11 @@ function PreferencesStore({ userId, children }: PreferencesStoreProps) {
         } else if (Object.keys(unsaved).length > 0) {
           void queue.flush();
         }
+        setSynced(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setSynced(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -125,7 +130,7 @@ function PreferencesStore({ userId, children }: PreferencesStoreProps) {
     [apply, userId, queue],
   );
 
-  const value = useMemo(() => ({ prefs, update }), [prefs, update]);
+  const value = useMemo(() => ({ prefs, update, synced }), [prefs, update, synced]);
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 }

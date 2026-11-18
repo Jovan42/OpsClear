@@ -16,4 +16,5 @@ export const mockPreferences: PreferencesContextValue = {
     milestoneAccordionState: 'EXPANDED',
   },
   update: () => {},
+  synced: true,
 };

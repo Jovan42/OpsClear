@@ -23,6 +23,13 @@ export function getLastVisitedProjects(): RecentProjectsMap {
   return load();
 }
 
+/** The id in the URL of the most recently opened project, or null if there's none (ADR-0061). */
+export function getMostRecentProject(): string | null {
+  const entries = Object.entries(load());
+  if (entries.length === 0) return null;
+  return entries.reduce((latest, entry) => (entry[1] > latest[1] ? entry : latest))[0];
+}
+
 export function recordProjectVisit(projectFriendlyId: string) {
   const map = load();
   map[projectFriendlyId] = Date.now();

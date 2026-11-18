@@ -6,10 +6,11 @@ import type { ProjectResponse, ProjectStatus, UpdateProjectSettingsRequest } fro
 
 const PROJECT_ID_RE = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[A-Za-z]{2,6}-\d+)$/i;
 
-export function useProjectList(status?: ProjectStatus | 'ALL') {
+export function useProjectList(status?: ProjectStatus | 'ALL', options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['projects', { status: status ?? 'ACTIVE' }],
     queryFn: () => projectsApi.list(status),
+    enabled: options?.enabled ?? true,
   });
 }
 
