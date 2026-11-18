@@ -20,7 +20,7 @@ Hand implementation jobs to the per-layer agents in `.claude/agents/`
    - any **"Blocked by"** job isn't COMPLETED (name the blocker and its status)
    - the title doesn't route (below), e.g. `ADR:` jobs, which need `/write-adr`
 3. **Route by title prefix.** Match the title against
-   `^(DB|Backend|Frontend|E2E|Bug|Chore|Tech debt)( \d+)?:` (numbered titles like `Backend 2:` count):
+   `^(DB|Backend|Frontend|E2E|Bug|UX|Chore|Tech debt)( \d+)?:` (numbered titles like `Backend 2:` count):
 
    | Prefix | Agent |
    |---|---|
@@ -29,6 +29,7 @@ Hand implementation jobs to the per-layer agents in `.claude/agents/`
    | `Frontend` | `frontend-dev` |
    | `E2E` | `e2e-dev` |
    | `Bug` | `bug-fixer` |
+   | `UX` | `frontend-dev` (commit `fix(frontend): …`; a fix that needs the backend is split into a `Backend:` job first) |
    | `Chore`, `Tech debt` | `chore-dev` |
 
 4. **Plan the run** and show it in one line per job (job, agent, run now / waits / skipped):
