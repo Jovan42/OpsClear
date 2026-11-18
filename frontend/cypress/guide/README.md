@@ -8,12 +8,17 @@ It has its own config, `cypress.guide.config.ts`.
 | File | What |
 |------|------|
 | `getting-started.cy.ts` | Guide pages `sign-up` to `job-approval`: register and verify, org, invite, project, job, done / blocked / approval |
+| `daily-work.cy.ts` | `finding-jobs`, `dashboard`, `notifications`, `notes-links-history` |
+| `planning.cy.ts` | `milestones`, `templates-and-types`, `recurring-jobs`, `job-relationships` |
+| `admin-settings.cy.ts` | `roles-permissions`, `project-settings`, `organisation-settings`, `preferences` |
+| `account.cy.ts` | `subscription` (billing history stubbed), `stats-overview`, `api-keys`, `faq` (stubbed 429 toast) |
+| `support/world.ts` | The sample workspace the four section specs share: org, team, project, a dozen jobs, milestones, types, notes, links, relationships, templates, schedules, a pending approval. Seeded through the API in `before` |
+| `support/steps.ts` | `visitAs`, `clickButton`, `dialog`, `showEmail`, `freeSampleSlug` |
 | `support/sample.ts` | The fixed sample data (org "Acme Plumbing", project "Kitchen refit", people, jobs), deadlines relative to today, the viewport |
 | `support/capture.ts` | `prepareCapture()` (viewport and `cy.clock`) and `shot(slug, n, target?)` |
 | `support/i18n.ts` | `tr('English label')`: the same label in `GUIDE_LANG`, read from the app's locale files |
 
-More sections (`daily-work`, `planning`, `admin-settings`, `account`) follow the same shape, one
-spec per sidebar section.
+One spec per sidebar section; the images are named after the guide page (`<slug>-<n>`).
 
 ## Run it
 
@@ -30,7 +35,7 @@ npm run guide:screenshots -- --convert-only              # convert the last run'
 
 The script runs the spec once per language, then converts the PNGs in
 `cypress/screenshots-guide/<lang>/` (git-ignored) to WebP at most 1280 px wide and copies them to
-`public/guide/<lang>/`. It fails if a spec fails or an image is over 150 KB.
+`public/guide/<lang>/`, first removing that page's older images (a page with fewer images keeps no extras). It fails if a spec fails or an image is over 150 KB.
 
 ## Refresh the images
 
@@ -42,13 +47,14 @@ matches the screen.
 
 - **Sample data only.** Names come from `support/sample.ts`, never from the seed script or a
   customer. Users are `guideEmail('...')` (`uniqueEmail('guide-...')`) and are deleted at the end.
-- **No secrets in an image.** Email links carry one-time tokens: `showEmail()` replaces them before
+- **No secrets in an image.** Email links carry one-time tokens: `showEmail()` (`support/steps.ts`) replaces them before
   the screenshot. API keys must be masked or fake.
 - **Fixed look.** 1280x800 viewport. `cy.clock` freezes the app's `Date` (only `Date`, so timers
   still work) five minutes after the test starts. The backend stamps rows with the real time, so a
   made-up date would show "116 days ago" and expired invites. Deadlines are set relative to today.
   The script runs Cypress with `TZ=UTC`, so times don't depend on the machine. The org slug is
-  `ACM` every run: the spec renames an older run's org first.
+  `ACM` every run: the spec renames an older run's org first (those old orgs stay in a local
+  database, like the ones the E2E specs leave).
 - **Language.** Never hard-code a label: use `tr()` / `exact()` so the same step runs in Serbian.
 - **Names.** `shot('create-job', 2)` writes `create-job-2`, the name the page uses (`<slug>` is the
   slug in `src/guide/pages.ts`). Screenshots inside `cy.origin()` (the Keycloak pages) call
