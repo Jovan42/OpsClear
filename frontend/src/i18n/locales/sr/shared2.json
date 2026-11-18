@@ -40,5 +40,8 @@
   "upgradeCard": {
     "notIncluded": "{{featureName}} nije uključeno u vaš plan",
     "description": "Dodajte ovu funkciju vašoj pretplati da je otključate za vaš tim."
+  },
+  "deadline": {
+    "dueSoon": "Rok uskoro"
   }
 }

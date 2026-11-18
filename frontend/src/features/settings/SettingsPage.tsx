@@ -8,6 +8,7 @@ import { useCurrentOrg } from '../org/OrgContext';
 import type {
   Theme, Locale, ViewMode, AccordionState, StatusTab,
   SortOrder, DeadlineFormat, ProjectPage, ProgressFormat, DateFormat, RowDensity,
+  AssigneeFilter, DueSoonDays,
 } from '../../hooks/usePreferences';
 import { usePageTitle } from '../../hooks/usePageTitle';
 
@@ -213,6 +214,17 @@ export default function SettingsPage() {
     { value: 'CREATED_DESC', label: t('settings.jobList.defaultSortOrder.newestFirst') },
   ];
 
+  const ASSIGNEE_FILTER_OPTIONS: { value: AssigneeFilter; label: string }[] = [
+    { value: 'EVERYONE', label: t('settings.jobList.defaultAssigneeFilter.everyone') },
+    { value: 'MINE', label: t('settings.jobList.defaultAssigneeFilter.mine') },
+  ];
+
+  const DUE_SOON_DAYS: DueSoonDays[] = [0, 1, 3, 5, 7];
+  const DUE_SOON_OPTIONS: { value: `${DueSoonDays}`; label: string }[] = DUE_SOON_DAYS.map((days) => ({
+    value: `${days}`,
+    label: days === 0 ? t('settings.jobList.dueSoon.off') : t('settings.jobList.dueSoon.days', { count: days }),
+  }));
+
   const DEADLINE_FORMAT_OPTIONS: { value: DeadlineFormat; label: string }[] = [
     { value: 'ABSOLUTE', label: t('settings.appearance.deadlineFormat.absolute') },
     { value: 'RELATIVE', label: t('settings.appearance.deadlineFormat.relative') },
@@ -289,8 +301,23 @@ export default function SettingsPage() {
             <SettingRow label={t('settings.jobList.defaultSortOrder.label')} description={t('settings.jobList.defaultSortOrder.description')}>
               <SelectControl value={prefs.defaultSortOrder} options={SORT_ORDER_OPTIONS} onChange={(v) => update({ defaultSortOrder: v })} />
             </SettingRow>
+            <SettingRow label={t('settings.jobList.defaultAssigneeFilter.label')} description={t('settings.jobList.defaultAssigneeFilter.description')}>
+              <SegmentedControl
+                value={prefs.defaultAssigneeFilter}
+                options={ASSIGNEE_FILTER_OPTIONS}
+                onChange={(v) => update({ defaultAssigneeFilter: v })}
+              />
+            </SettingRow>
             <SettingRow label={t('settings.appearance.deadlineFormat.label')} description={t('settings.appearance.deadlineFormat.description')}>
               <SegmentedControl value={prefs.deadlineFormat} options={DEADLINE_FORMAT_OPTIONS} onChange={(v) => update({ deadlineFormat: v })} />
+            </SettingRow>
+            <SettingRow label={t('settings.jobList.dueSoon.label')} description={t('settings.jobList.dueSoon.description')}>
+              <SelectControl
+                label={t('settings.jobList.dueSoon.label')}
+                value={`${prefs.dueSoonDays}`}
+                options={DUE_SOON_OPTIONS}
+                onChange={(v) => update({ dueSoonDays: Number(v) as DueSoonDays })}
+              />
             </SettingRow>
           </SettingsSection>
 

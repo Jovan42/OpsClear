@@ -79,6 +79,19 @@
         "deadlineDesc": "Deadline ↓",
         "priority": "Priority",
         "newestFirst": "Newest first"
+      },
+      "defaultAssigneeFilter": {
+        "label": "Default assignee filter",
+        "description": "Whether the job list opens on everyone's jobs or only the ones you're responsible for.",
+        "everyone": "Everyone",
+        "mine": "Mine"
+      },
+      "dueSoon": {
+        "label": "Due-soon highlight",
+        "description": "Show deadlines this close in amber with a \"Due soon\" hint. Overdue stays red.",
+        "off": "Off",
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days"
       }
     },
     "dashboardSection": {

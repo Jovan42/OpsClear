@@ -54,7 +54,10 @@
     "createFirstJob": "Kreiraj prvi posao",
     "ungroupedGroupTitle": "Negrupisano",
     "noJobsInGroup": "Nema poslova u ovoj grupi.",
-    "failedToLoad": "Neuspelo učitavanje poslova."
+    "failedToLoad": "Neuspelo učitavanje poslova.",
+    "assigneeFilterLabel": "Prikaži poslove za",
+    "assigneeEveryone": "Svi",
+    "assigneeMine": "Moji"
   },
 
   "jobDetailPage": {
