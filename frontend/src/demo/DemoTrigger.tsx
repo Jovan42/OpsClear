@@ -3,6 +3,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { useTranslation } from 'react-i18next';
 import DemoOverlay from './DemoOverlay';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { PreferencesContext } from '../hooks/usePreferences';
+import { mockPreferences } from './mockPreferences';
 import { resetDemoData } from './mockData';
 import { loadDemoWorkerModule } from './workerLoader';
 import type { DemoSlide } from './types';
@@ -41,6 +43,16 @@ const DEFAULT_PREVIEW_BOX_HEIGHT = 'h-56';
 const DEFAULT_NATURAL_WIDTH = 900;
 const DEFAULT_NATURAL_HEIGHT = 640;
 const DEFAULT_SCALE = 0.34;
+
+/**
+ * Gives every demo slide the fixed demo preferences (JOB-384). Each slide is mounted in
+ * its own standalone root (see DemoTrigger below), outside the app's PreferencesProvider,
+ * and many real components read usePreferences() (e.g. formatDate), so providing it here,
+ * at the one mount point every demo goes through, means no slide can render without it.
+ */
+function DemoPreferences({ children }: Readonly<{ children: ReactNode }>) {
+  return <PreferencesContext.Provider value={mockPreferences}>{children}</PreferencesContext.Provider>;
+}
 
 /**
  * Generic click-to-expand wrapper for every /features interactive demo (ADR-0040).
@@ -125,7 +137,9 @@ export default function DemoTrigger({
         key={previewGenerationRef.current}
         style={{ width: previewNaturalWidth, height: previewNaturalHeight, transform: `scale(${previewScale})`, transformOrigin: 'top left' }}
       >
-        <ErrorBoundary>{slides[0].render()}</ErrorBoundary>
+        <ErrorBoundary>
+          <DemoPreferences>{slides[0].render()}</DemoPreferences>
+        </ErrorBoundary>
       </div>,
     );
   }
@@ -163,7 +177,9 @@ export default function DemoTrigger({
             ErrorBoundary is keyed too, so switching away from a broken slide resets it
             rather than getting stuck showing the fallback forever. */}
         <ErrorBoundary key={index}>
-          <div>{slides[index].render()}</div>
+          <DemoPreferences>
+            <div>{slides[index].render()}</div>
+          </DemoPreferences>
         </ErrorBoundary>
       </DemoOverlay>,
     );
