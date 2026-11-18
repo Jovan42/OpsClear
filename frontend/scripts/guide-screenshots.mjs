@@ -96,6 +96,17 @@ for (const l of langs) {
     }
     const outDir = join(root, 'public/guide', l);
     mkdirSync(outDir, { recursive: true });
+    // A page that now has fewer images must not keep the old extras: clear each page's
+    // images (`<slug>-<n>.webp`) that this run produced, then copy the new ones.
+    const slugs = new Set(
+      [...pngs(specShots)]
+        .map((png) => png.split('/').pop().replace(/\.png$/, '').match(/^([a-z0-9-]+)-\d+$/)?.[1])
+        .filter(Boolean),
+    );
+    for (const file of readdirSync(outDir)) {
+      const slug = file.match(/^([a-z0-9-]+)-\d+\.webp$/)?.[1];
+      if (slug && slugs.has(slug)) rmSync(join(outDir, file));
+    }
     for (const png of pngs(specShots)) {
       const name = png.split('/').pop().replace(/\.png$/, '');
       if (!/^[a-z0-9-]+-\d+$/.test(name)) {

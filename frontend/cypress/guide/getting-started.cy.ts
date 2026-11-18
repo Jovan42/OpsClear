@@ -22,6 +22,7 @@ import {
 import { setPreferencesAs } from '../support/preferences';
 import { prepareCapture, shot } from './support/capture';
 import { exact, tr } from './support/i18n';
+import { clickButton, clickInDialog, dialog, freeSampleSlug, showEmail, visitAs } from './support/steps';
 import {
   APPROVAL_TEXT,
   BLOCK_REASON,
@@ -35,7 +36,6 @@ import {
 } from './support/sample';
 
 const KEYCLOAK_ORIGIN = 'http://localhost:8180';
-const MAILPIT = 'http://localhost:8025';
 const lang = guideLang();
 
 const owner = guideEmail('owner');
@@ -48,22 +48,6 @@ describe(`Guide screenshots: Getting started (${lang})`, { testIsolation: false 
   const jobIds: Record<string, string> = {};
 
   beforeEach(prepareCapture);
-
-  /** Logs in as `email` through the token endpoint and opens `path`. */
-  function visitAs(email: string, path: string) {
-    cy.loginAs(email);
-    cy.visit(path);
-  }
-
-  function clickButton(text: string, pick = 0) {
-    cy.contains('button', exact(text, pick)).click();
-  }
-
-  const dialog = () => cy.get('[role="dialog"]:visible');
-
-  function clickInDialog(text: string, pick = 0) {
-    dialog().contains('button', exact(text, pick)).click();
-  }
 
   /** The friendly id of the job called `title` in the sample project. */
   function jobIdOf(title: string) {
@@ -83,37 +67,8 @@ describe(`Guide screenshots: Getting started (${lang})`, { testIsolation: false 
     );
   }
 
-  /** Shows the newest email to `to` on the current page (its HTML, no inbox around it)
-   *  and returns the first link containing `fragment`. */
-  function showEmail(to: string, fragment: string) {
-    return cy.mailpitLink(to, fragment).then((link) => {
-      cy.request(`${MAILPIT}/api/v1/search?query=to:${to}`).then(({ body }) => {
-        cy.request(`${MAILPIT}/api/v1/message/${body.messages[0].ID}`).then(({ body: message }) => {
-          cy.document().then((doc) => {
-            doc.open();
-            doc.write(message.HTML);
-            doc.close();
-            // Links carry one-time tokens: never show them in a published image.
-            const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
-            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-              node.textContent = (node.textContent ?? '').replace(/https?:\/\/\S+/g, 'https://opsclear.example/…');
-            }
-            doc.querySelectorAll('a').forEach((a) => a.setAttribute('href', '#'));
-            // Shrink the page to the email itself, so the image has no empty space around it
-            doc.body.style.cssText += ';display:inline-block;padding:24px;margin:0';
-          });
-        });
-      });
-      return cy.wrap(link);
-    });
-  }
-
   before(() => {
-    // The sample org's slug is global: move an earlier run's org out of the way, so this one
-    // can be "ACM" again and every image shows the same job ids.
-    cy.task('queryDb', {
-      sql: "UPDATE organisations SET slug = 'R' || upper(substr(md5(random()::text), 1, 6)) WHERE slug = 'ACM'",
-    });
+    freeSampleSlug();
     cy.createKeycloakUser(teammate, PEOPLE.teammate.first, PEOPLE.teammate.last);
     cy.createKeycloakUser(member, PEOPLE.member.first, PEOPLE.member.last);
   });
@@ -135,7 +90,7 @@ describe(`Guide screenshots: Getting started (${lang})`, { testIsolation: false 
         win.localStorage.setItem('opsclear:preferences', JSON.stringify({ locale: lang, theme: 'light' }));
       },
     });
-    cy.contains('button', /^(Log in|Prijava)$/).click();
+    cy.contains('button', exact('Log in')).click();
     cy.origin(
       KEYCLOAK_ORIGIN,
       { args: { owner, first: PEOPLE.owner.first, last: PEOPLE.owner.last } },
@@ -168,7 +123,6 @@ describe(`Guide screenshots: Getting started (${lang})`, { testIsolation: false 
         win.location.href = link as unknown as string;
       });
     });
-    cy.wait(5000);
     cy.location('pathname', { timeout: 15000 }).should('eq', '/onboarding');
   });
 
