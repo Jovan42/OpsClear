@@ -33,6 +33,13 @@ import NotificationsPage from './features/notifications/NotificationsPage';
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage />, errorElement: <RouteErrorPage /> },
   { path: '/features', element: <FeaturesPage />, errorElement: <RouteErrorPage /> },
+  // ADR-0062: the user guide, public like /features. Lazy, so the guide's layout, search
+  // and zoom (and each page's content, loaded separately) stay out of the main bundle.
+  {
+    path: '/guide/:slug?',
+    lazy: async () => ({ Component: (await import('./features/guide/GuidePage')).default }),
+    errorElement: <RouteErrorPage />,
+  },
   { path: '/onboarding', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   { path: '/org/new', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   {

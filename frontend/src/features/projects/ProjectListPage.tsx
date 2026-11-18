@@ -10,6 +10,7 @@ import Skeleton from '../../components/Skeleton';
 import NewProjectModal from './NewProjectModal';
 import { useProjectList } from './useProjects';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { guidePath } from '../../guide/pages';
 import type { ProjectStatus } from '../../types';
 
 type FilterTab = ProjectStatus | 'ALL';
@@ -35,7 +36,7 @@ function ProjectListSkeleton() {
 }
 
 export default function ProjectListPage() {
-  const { t } = useTranslation(['projects', 'common']);
+  const { t } = useTranslation(['projects', 'common', 'guide']);
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<FilterTab>('ACTIVE');
   const { userId } = useAuth();
@@ -118,6 +119,11 @@ export default function ProjectListPage() {
           action={
             allProjects.length === 0
               ? { label: t('projects:projectListPage.createFirstProjectButton'), onClick: () => setModalOpen(true) }
+              : undefined
+          }
+          helpLink={
+            allProjects.length === 0
+              ? { to: guidePath('first-project'), label: t('guide:howDoesThisWork') }
               : undefined
           }
         />

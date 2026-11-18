@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
+import { UserPlus } from 'lucide-react';
 import Button from '../../components/Button';
+import EmptyState from '../../components/EmptyState';
 import Modal from '../../components/Modal';
 import RoleBadge from '../../components/RoleBadge';
 import Skeleton from '../../components/Skeleton';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { guidePath } from '../../guide/pages';
 import { useCurrentOrg } from './OrgContext';
 import AddOrgMemberForm from './AddOrgMemberForm';
 import {
@@ -19,7 +22,7 @@ import type { OrgMemberResponse, OrgRole } from '../../types';
 const ASSIGNABLE_ROLES: OrgRole[] = ['MEMBER', 'ADMIN'];
 
 export default function OrgMembersPage() {
-  const { t } = useTranslation(['org', 'common']);
+  const { t } = useTranslation(['org', 'common', 'guide']);
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { org } = useCurrentOrg();
@@ -159,6 +162,16 @@ export default function OrgMembersPage() {
           </tbody>
         </table>
       </div>
+
+      {members.length === 1 && callerRole === 'OWNER' && (
+        <EmptyState
+          icon={UserPlus}
+          message={t('org:aloneMessage')}
+          description={t('org:aloneDescription')}
+          helpLink={{ to: guidePath('invite-team'), label: t('guide:howDoesThisWork') }}
+          className="py-8"
+        />
+      )}
 
       <Modal
         open={!!confirmTarget}

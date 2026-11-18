@@ -15,6 +15,7 @@ import enJobTypes from './locales/en/jobTypes.json';
 import enSuperAdmin from './locales/en/superAdmin.json';
 import enFeedback from './locales/en/feedback.json';
 import enNotifications from './locales/en/notifications.json';
+import enGuide from './locales/en/guide.json';
 
 import srCommon from './locales/sr/common.json';
 import srErrors from './locales/sr/errors.json';
@@ -30,6 +31,7 @@ import srApprovalsDashboardSettingsLanding from './locales/sr/approvalsDashboard
 import srSuperAdmin from './locales/sr/superAdmin.json';
 import srFeedback from './locales/sr/feedback.json';
 import srNotifications from './locales/sr/notifications.json';
+import srGuide from './locales/sr/guide.json';
 
 export const NAMESPACES = [
   'common',
@@ -46,6 +48,7 @@ export const NAMESPACES = [
   'superAdmin',
   'feedback',
   'notifications',
+  'guide',
 ] as const;
 
 void i18n.use(initReactI18next).init({
@@ -65,6 +68,7 @@ void i18n.use(initReactI18next).init({
       superAdmin: enSuperAdmin,
       feedback: enFeedback,
       notifications: enNotifications,
+      guide: enGuide,
     },
     sr: {
       common: srCommon,
@@ -81,6 +85,7 @@ void i18n.use(initReactI18next).init({
       superAdmin: srSuperAdmin,
       feedback: srFeedback,
       notifications: srNotifications,
+      guide: srGuide,
     },
   },
   lng: 'en',

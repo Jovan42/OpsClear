@@ -560,6 +560,7 @@ jobs:
               - cypress/e2e/organisation-management/**/*.cy.ts
               - cypress/e2e/paddle-checkout/**/*.cy.ts
               - cypress/e2e/super-admin/**/*.cy.ts
+              - cypress/e2e/user-guide/**/*.cy.ts
           - name: shard-4
             spec-pattern:
               - cypress/e2e/api-keys/**/*.cy.ts

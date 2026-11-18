@@ -57,6 +57,8 @@
   "membersPageTitle": "Organisation members",
   "backToOrgSettings": "← Organisation settings",
   "membersHeading": "Members",
+  "aloneMessage": "You're the only member so far.",
+  "aloneDescription": "Invite your team to start tracking work together.",
   "colMember": "Member",
   "colRole": "Role",
   "removeMemberTitle": "Remove member?",

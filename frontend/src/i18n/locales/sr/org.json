@@ -58,6 +58,8 @@
   "membersPageTitle": "Članovi organizacije",
   "backToOrgSettings": "← Podešavanja organizacije",
   "membersHeading": "Članovi",
+  "aloneMessage": "Za sada ste jedini član.",
+  "aloneDescription": "Pozovite svoj tim da zajedno pratite posao.",
   "colMember": "Član",
   "colRole": "Uloga",
   "removeMemberTitle": "Ukloniti člana?",

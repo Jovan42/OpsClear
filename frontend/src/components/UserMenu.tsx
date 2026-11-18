@@ -18,6 +18,7 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
   const { userId } = useAuth();
   const { data: members = [] } = useOrgMembers(org?.id ?? null);
   const { t } = useTranslation('shared1');
+  const { t: tGuide } = useTranslation('guide');
 
   const callerRole = members.find((m) => m.userId === userId)?.role ?? null;
   const isOwnerOrAdmin = callerRole === 'OWNER' || callerRole === 'ADMIN';
@@ -77,6 +78,12 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
               {t('overview')}
             </button>
           )}
+          <button
+            onClick={() => { setOpen(false); navigate('/guide'); }}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+          >
+            {tGuide('entry.userMenu')}
+          </button>
           <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
           <button
             onClick={() => { setOpen(false); navigate('/settings'); }}

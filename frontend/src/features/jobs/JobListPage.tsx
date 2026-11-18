@@ -28,6 +28,7 @@ import {
 } from '../../hooks/usePreferences';
 import { useFormatDeadline } from '../../hooks/useFormatDeadline';
 import { deadlineTextClass } from '../../utils/deadline';
+import { guidePath } from '../../guide/pages';
 import type { JobPriority, JobResponse, JobStatus, MilestoneResponse } from '../../types';
 
 function JobListSkeleton() {
@@ -359,6 +360,7 @@ function GroupSection({
 
 export default function JobListPage() {
   const { t } = useTranslation(['jobsPages']);
+  const { t: tGuide } = useTranslation('guide');
   const { projectFriendlyId: projectId = '' } = useParams();
   const { data: project } = useProject(projectId);
   usePageTitle(t('jobListPage.heading'), project?.name);
@@ -478,6 +480,7 @@ export default function JobListPage() {
   // `allJobs` (fetched unfiltered for the milestone progress bars) is the only
   // reliable signal for "this project truly has no jobs at all".
   const isProjectEmpty = allJobs.length === 0;
+  const createJobHelpLink = { to: guidePath('create-job'), label: tGuide('howDoesThisWork') };
 
   if (isLoading) {
     return (
@@ -638,6 +641,7 @@ export default function JobListPage() {
               ? { label: t('jobListPage.createFirstJob'), onClick: () => setModalOpen(true) }
               : undefined
           }
+          helpLink={!debouncedSearch && isProjectEmpty ? createJobHelpLink : undefined}
         />
       ) : effectiveViewMode === 'grouped' ? (
         <div className="space-y-3">
@@ -712,6 +716,7 @@ export default function JobListPage() {
                   ? { label: t('jobListPage.createFirstJob'), onClick: () => setModalOpen(true) }
                   : undefined
               }
+              helpLink={!debouncedSearch && isProjectEmpty ? createJobHelpLink : undefined}
             />
           )}
         </div>

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { HelpCircle, type LucideIcon } from 'lucide-react';
 import Button from './Button';
 
 interface EmptyStateAction {
@@ -10,6 +11,12 @@ interface EmptyStateAction {
   canPerform?: boolean;
 }
 
+interface EmptyStateHelpLink {
+  /** Route to open, usually a user guide page (`guidePath(slug)`). */
+  to: string;
+  label: string;
+}
+
 interface EmptyStateProps {
   icon: LucideIcon;
   /** Usually a plain string, but ReactNode so call sites needing inline formatting
@@ -18,6 +25,8 @@ interface EmptyStateProps {
   message: ReactNode;
   description?: ReactNode;
   action?: EmptyStateAction;
+  /** "How does this work?" link to the user guide (ADR-0062), shown under the action. */
+  helpLink?: EmptyStateHelpLink;
   /** Override the default page-level padding — smaller inline sections (e.g. a
    *  card's own empty list) don't want the same py-16 a full page does. */
   className?: string;
@@ -36,7 +45,7 @@ const DEFAULT_ICON_CLASS = 'w-10 h-10 text-gray-300 dark:text-gray-600 mb-3';
  * across the app onto one component and one CTA-placement convention (co-located
  * inside the empty state itself, not decoupled into a section header).
  */
-export default function EmptyState({ icon: Icon, message, description, action, className, iconClassName }: Readonly<EmptyStateProps>) {
+export default function EmptyState({ icon: Icon, message, description, action, helpLink, className, iconClassName }: Readonly<EmptyStateProps>) {
   const canPerform = action?.canPerform ?? true;
 
   return (
@@ -54,6 +63,16 @@ export default function EmptyState({ icon: Icon, message, description, action, c
         <div className="mt-4">
           <Button onClick={action.onClick}>{action.label}</Button>
         </div>
+      )}
+      {helpLink && (
+        <Link
+          to={helpLink.to}
+          data-testid="empty-state-help-link"
+          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand dark:text-green-400 hover:underline"
+        >
+          <HelpCircle className="w-3.5 h-3.5" aria-hidden />
+          {helpLink.label}
+        </Link>
       )}
     </div>
   );
