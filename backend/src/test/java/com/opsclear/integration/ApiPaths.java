@@ -179,6 +179,10 @@ final class ApiPaths {
         return "/api/projects/" + projectId + "/jobs?typeId=" + typeId;
     }
 
+    // --- User preferences ---
+
+    static final String USER_PREFERENCES = "/api/user/preferences";
+
     // --- API keys ---
 
     static final String API_KEYS = "/api/user/api-keys";

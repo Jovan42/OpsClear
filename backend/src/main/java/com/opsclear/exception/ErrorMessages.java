@@ -28,6 +28,20 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class UserPreferences {
+        public static final String UI_REQUIRED = "ui is required and must be an object";
+        public static final String INVALID_KEY =
+                "Invalid preference key '%s': use 1-64 letters, digits or underscores";
+        public static final String INVALID_VALUE =
+                "Invalid value for preference '%s': must be a string, number, boolean or null";
+        public static final String STRING_TOO_LONG = "Value for preference '%s' is longer than %d characters";
+        public static final String TOO_MANY_KEYS = "Too many preferences: at most %d are allowed";
+        public static final String TOO_LARGE = "Preferences are too large: at most %d bytes are allowed";
+
+        private UserPreferences() {
+        }
+    }
+
     public static final class Member {
         public static final String NOT_FOUND = "Member not found";
         public static final String NOT_A_MEMBER = "You are not a member of this project";

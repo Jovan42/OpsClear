@@ -112,7 +112,7 @@ class NotificationSettingsServiceTest {
     @Test
     @DisplayName("replaceMutedTypes writes notifications.muted and keeps other preference keys")
     void replaceMutedTypes_shouldWriteList_andPreserveOtherKeys() throws Exception {
-        when(userRepository.findPreferences(userId)).thenReturn(Optional.of(
+        when(userRepository.findPreferencesForUpdate(userId)).thenReturn(Optional.of(
                 "{\"theme\":\"dark\",\"notifications\":{\"muted\":[\"JOB_UPDATED\"],\"other\":true}}"));
 
         Set<NotificationType> result = service.replaceMutedTypes(userId,
@@ -130,7 +130,7 @@ class NotificationSettingsServiceTest {
     @Test
     @DisplayName("replaceMutedTypes creates the notifications object when it's missing or not an object")
     void replaceMutedTypes_shouldCreateNotificationsObject() throws Exception {
-        when(userRepository.findPreferences(userId)).thenReturn(Optional.of("{\"notifications\":\"x\"}"));
+        when(userRepository.findPreferencesForUpdate(userId)).thenReturn(Optional.of("{\"notifications\":\"x\"}"));
 
         service.replaceMutedTypes(userId, List.of("JOB_DELETED"));
 
@@ -140,7 +140,7 @@ class NotificationSettingsServiceTest {
     @Test
     @DisplayName("replaceMutedTypes with an empty list unmutes everything")
     void replaceMutedTypes_shouldClear_whenEmptyList() throws Exception {
-        when(userRepository.findPreferences(userId))
+        when(userRepository.findPreferencesForUpdate(userId))
                 .thenReturn(Optional.of("{\"notifications\":{\"muted\":[\"JOB_UPDATED\"]}}"));
 
         assertThat(service.replaceMutedTypes(userId, List.of())).isEmpty();
@@ -150,7 +150,7 @@ class NotificationSettingsServiceTest {
     @Test
     @DisplayName("replaceMutedTypes accepts every type except SUBSCRIPTION_PAST_DUE")
     void replaceMutedTypes_shouldAcceptAllMutableTypes() {
-        when(userRepository.findPreferences(userId)).thenReturn(Optional.of("{}"));
+        when(userRepository.findPreferencesForUpdate(userId)).thenReturn(Optional.of("{}"));
         List<String> mutable = Arrays.stream(NotificationType.values())
                 .filter(NotificationType::isMutable)
                 .map(Enum::name)
@@ -180,7 +180,7 @@ class NotificationSettingsServiceTest {
     @Test
     @DisplayName("replaceMutedTypes throws 404 for an unknown user")
     void replaceMutedTypes_shouldThrowNotFound_whenUserMissing() {
-        when(userRepository.findPreferences(userId)).thenReturn(Optional.empty());
+        when(userRepository.findPreferencesForUpdate(userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.replaceMutedTypes(userId, List.of("NOTE_ADDED")))
                 .isInstanceOf(NotFoundException.class);
