@@ -5,7 +5,9 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "types": ["cypress", "node"],
-    "isolatedModules": false
+    "isolatedModules": false,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": ["**/*.ts", "../src/auth/e2eAuth.ts"]
 }
