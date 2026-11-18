@@ -1398,6 +1398,166 @@
 				}
 			],
 			"description": "Organisation invites (ADR-0026) and invite emails (ADR-0059)"
+		},
+		{
+			"name": "Organisation Settings",
+			"item": [
+				{
+					"name": "Get Org Settings (ID prefixes)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/organisations/{{orgId}}/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "organisations", "{{orgId}}", "settings"]
+						},
+						"description": "Any member of the org. Returns the four friendly-ID prefixes and a preview of the next ID per type (current prefix + `org_sequences.last_value + 1`, e.g. `JOB-347`). The preview reserves nothing. Non-members get 403, an unknown org 404 (ADR-0060)."
+					},
+					"response": [
+						{
+							"name": "200 settings",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/settings",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "settings"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"projectPrefix\": \"PRJ\",\n  \"jobPrefix\": \"JOB\",\n  \"milestonePrefix\": \"MIL\",\n  \"templatePrefix\": \"TPL\",\n  \"nextProjectId\": \"PRJ-015\",\n  \"nextJobId\": \"JOB-347\",\n  \"nextMilestoneId\": \"MIL-045\",\n  \"nextTemplateId\": \"TPL-005\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Org Settings (change job prefix)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jobPrefix\": \"TSK\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/organisations/{{orgId}}/settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "organisations", "{{orgId}}", "settings"]
+						},
+						"description": "Owner only (403 otherwise). All four fields (`projectPrefix`, `jobPrefix`, `milestonePrefix`, `templatePrefix`) are optional; omitted fields don't change. Values are trimmed and uppercased and must be 2–3 letters A–Z. Applies to new records only: existing IDs keep their prefix and keep resolving. 400 for a bad format, duplicate prefixes, or a prefix existing records of another type carry. Setting the current value is a no-op (ADR-0060). Don't change the OpsClear org's job prefix: our tooling hardcodes `JOB-`."
+					},
+					"response": [
+						{
+							"name": "200 job prefix changed",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"jobPrefix\": \"TSK\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/settings",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "settings"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"projectPrefix\": \"PRJ\",\n  \"jobPrefix\": \"TSK\",\n  \"milestonePrefix\": \"MIL\",\n  \"templatePrefix\": \"TPL\",\n  \"nextProjectId\": \"PRJ-015\",\n  \"nextJobId\": \"TSK-347\",\n  \"nextMilestoneId\": \"MIL-045\",\n  \"nextTemplateId\": \"TPL-005\"\n}"
+						},
+						{
+							"name": "400 duplicate prefixes",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"jobPrefix\": \"TSK\",\n  \"milestonePrefix\": \"TSK\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/settings",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "settings"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Bad Request\",\n  \"message\": \"Prefixes must be different from each other\",\n  \"timestamp\": \"2026-11-18T10:15:00Z\"\n}"
+						},
+						{
+							"name": "400 used by another type",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"milestonePrefix\": \"JOB\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations/{{orgId}}/settings",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "organisations", "{{orgId}}", "settings"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Bad Request\",\n  \"message\": \"Prefix \\\"JOB\\\" is already used by existing jobs\",\n  \"timestamp\": \"2026-11-18T10:15:00Z\"\n}"
+						}
+					]
+				}
+			],
+			"description": "Org settings: configurable friendly-ID prefixes (ADR-0060)"
 		}
 	],
 	"auth": {

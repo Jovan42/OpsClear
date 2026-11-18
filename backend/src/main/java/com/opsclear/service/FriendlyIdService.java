@@ -40,7 +40,8 @@ public class FriendlyIdService {
         log.debug("Seeded friendly ID settings for org {}", orgId);
     }
 
-    private String format(String prefix, int value) {
+    /** Formats a friendly ID, e.g. ("JOB", 42) → "JOB-042". Shared with the org settings preview. */
+    static String format(String prefix, int value) {
         return prefix + "-" + String.format("%03d", value);
     }
 }
