@@ -140,6 +140,16 @@ public final class ErrorMessages {
         }
     }
 
+    public static final class OrgSettings {
+        public static final String NOT_FOUND = "Organisation settings not found";
+        public static final String INVALID_PREFIX = "Prefix must be 2–3 letters A–Z: \"%s\"";
+        public static final String PREFIXES_NOT_DISTINCT = "Prefixes must be different from each other";
+        public static final String PREFIX_USED_BY_OTHER_TYPE = "Prefix \"%s\" is already used by existing %s";
+
+        private OrgSettings() {
+        }
+    }
+
     public static final class OrgInvite {
         public static final String NOT_FOUND = "Invite not found";
         public static final String ALREADY_PENDING = "A pending invite already exists for this email";

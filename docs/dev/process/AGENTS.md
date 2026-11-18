@@ -136,6 +136,10 @@ references: [WORKFLOW.md](WORKFLOW.md#github-job-sync) and the ADR.
   Example merge preview:
   `scripts/opsclear pr sync --action closed --merged --number N --url <PR url> --branch <branch> --title '<title>' --body-file body.txt --dry-run`.
   See `scripts/opsclear pr sync --help`.
+- **Keep the OpsClear org's job prefix `JOB`.** Orgs can change their ID prefixes (ADR-0060), but
+  `scripts/opsclear` (title, branch, `Closes` and job-reference patterns) and this sync hardcode
+  `JOB-123`. If our own org's job prefix changes, new jobs stop being recognised. There's no code
+  guard, so don't change it in **Organisation settings > ID prefixes**.
 
 ---
 

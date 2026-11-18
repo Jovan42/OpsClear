@@ -204,6 +204,12 @@ final class ApiPaths {
         return "/api/organisations/" + orgId + "/members/" + userId;
     }
 
+    // --- Organisation settings (ID prefixes) ---
+
+    static String orgSettings(UUID orgId) {
+        return "/api/organisations/" + orgId + "/settings";
+    }
+
     // --- Organisation invites ---
 
     static String orgInvites(UUID orgId) {
