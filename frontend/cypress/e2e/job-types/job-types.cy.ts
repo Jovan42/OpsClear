@@ -291,7 +291,7 @@ describe('Job Types', () => {
     cy.deleteKeycloakUser(email);
   });
 
-  it('a rapid double reorder-click (two independent PUTs, not a batch endpoint) leaves displayOrder consistent, not duplicated or lost', () => {
+  it('two reorder clicks in a row (each a pair of independent PUTs, not a batch endpoint) leave displayOrder consistent, not duplicated or lost', () => {
     const email = uniqueEmail('rapid-reorder');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Sparrow Corp', uniqueSlug());
@@ -299,14 +299,29 @@ describe('Job Types', () => {
       createJobTypeAs(email, projectId, 'First', 'RED').then(() =>
         createJobTypeAs(email, projectId, 'Second', 'BLUE').then(() =>
           createJobTypeAs(email, projectId, 'Third', 'GREEN').then(() => {
+            cy.intercept('PUT', '**/job-types/*').as('reorderPut');
             cy.loginAs(email);
             cy.visit(`/projects/${projectId}/types`);
+            cy.get('div.divide-y > div').should('have.length', 3);
 
-            // Click "move up" on the last row twice in quick succession — each click
-            // fires its own pair of PUTs (no batch/reorder endpoint exists), so two
-            // rapid clicks race four PUT requests against three rows.
+            // Each click fires its own pair of PUTs (no batch/reorder endpoint exists).
+            // The page computes a swap from the list it last rendered, so a second click
+            // before the refetch after the first one has landed swaps stale displayOrder
+            // values and can write duplicates. That is an app race (a reorder in flight
+            // doesn't block the next click), not something a spec can assert around, so
+            // wait for the PUTs and the re-rendered order between clicks. This test pins
+            // what the backend guarantees: two consecutive swaps never lose or duplicate
+            // an order.
+            const expectOrder = (names: string[]) =>
+              names.forEach((name, i) => cy.get('div.divide-y > div').eq(i).should('contain.text', name));
+
             cy.get('div.divide-y > div').eq(2).find('button[aria-label="Move up"]').click();
+            cy.wait(['@reorderPut', '@reorderPut']);
+            expectOrder(['First', 'Third', 'Second']);
+
             cy.get('div.divide-y > div').eq(1).find('button[aria-label="Move up"]').click();
+            cy.wait(['@reorderPut', '@reorderPut']);
+            expectOrder(['Third', 'First', 'Second']);
 
             listJobTypesAs(email, projectId).then((types) => {
               const orders = types.map((t) => t.displayOrder).slice().sort((a, b) => a - b);

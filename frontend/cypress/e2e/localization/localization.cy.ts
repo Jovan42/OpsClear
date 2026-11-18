@@ -119,8 +119,15 @@ describe('Localization (i18n) — Smoke Coverage', () => {
         cy.get('[data-sonner-toast]').should('be.visible').and('contain.text', 'Conflict');
         cy.get('[data-sonner-toast]').should('contain.text', 'A project with this name already exists');
 
+        // The language is a server-synced preference: let the page's own preferences
+        // load finish before switching, and the save finish before leaving the page,
+        // so the next page load can't read the old value back from the server.
+        cy.intercept('GET', '**/api/user/preferences').as('loadPreferences');
+        cy.intercept('PATCH', '**/api/user/preferences').as('savePreferences');
         cy.visit('/settings');
+        cy.wait('@loadPreferences');
         cy.contains('button', 'Srpski').click();
+        cy.wait('@savePreferences');
 
         cy.visit('/projects');
         cy.contains('button', '+ Novi projekat').click();
