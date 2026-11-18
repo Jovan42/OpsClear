@@ -17,14 +17,20 @@ describe('User guide', () => {
     cy.contains('h1', 'Getting started with OpsClear').should('be.visible');
     cy.title().should('eq', 'Getting started with OpsClear · Guide · OpsClear');
 
-    cy.get('[data-testid=guide-sidebar]').within(() => {
-      cy.contains('Getting started').should('be.visible');
-      cy.contains('Daily work').should('be.visible');
-      cy.contains('Planning').should('be.visible');
-      cy.contains('Admin & settings').should('be.visible');
-      cy.contains('Account & more').should('be.visible');
-      cy.get('a[aria-current=page]').should('have.text', 'Getting started with OpsClear');
-    });
+    // The sidebar scrolls on its own (sticky, viewport-high), so the lower sections are
+    // below its fold at 800px: scroll each heading into view before checking it.
+    const sections: Array<[string, string]> = [
+      ['getting-started', 'Getting started'],
+      ['daily-work', 'Daily work'],
+      ['planning', 'Planning'],
+      ['admin-settings', 'Admin & settings'],
+      ['account-more', 'Account & more'],
+    ];
+    for (const [id, label] of sections) {
+      cy.get(`[data-testid=guide-section-${id}] button[aria-expanded]`).scrollIntoView();
+      cy.get(`[data-testid=guide-section-${id}] button[aria-expanded]`).should('be.visible').and('have.text', label);
+    }
+    cy.get('[data-testid=guide-sidebar] a[aria-current=page]').should('have.text', 'Getting started with OpsClear');
 
     // Every guide component renders on the index page.
     cy.get('[data-testid=guide-article]').within(() => {
@@ -73,14 +79,16 @@ describe('User guide', () => {
   it('"On this page" lists the headings and jumps to one', () => {
     cy.visit('/guide');
     cy.get('[data-testid=guide-on-this-page]').within(() => {
-      cy.contains('a', 'Your first steps').should('be.visible');
-      cy.contains('a', 'How this guide is organised').click();
+      cy.contains('a', 'How this guide is organised').should('be.visible');
+      // Not the last heading: the page bottoms out before the last section can reach the top.
+      cy.contains('a', 'Your first steps').click();
     });
-    cy.location('hash').should('eq', '#how-this-guide-is-organised');
-    cy.get('#how-this-guide-is-organised').should(($h) => {
+    cy.location('hash').should('eq', '#your-first-steps');
+    cy.get('#your-first-steps').should(($h) => {
       const top = $h[0].getBoundingClientRect().top;
       expect(top).to.be.within(-5, 200);
     });
+    cy.get('[data-testid=guide-on-this-page] a[aria-current=location]').should('have.text', 'Your first steps');
   });
 
   it('search finds text on the index page and goes to its heading', () => {

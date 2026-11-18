@@ -38,7 +38,7 @@
   "search": {
     "label": "Pretraži vodič",
     "placeholder": "Pretraži vodič…",
-    "error": "Pretraga nije mogla da se učita. Kliknite na polje za pretragu da pokušate ponovo.",
+    "error": "Pretraga nije mogla da se učita.",
     "loading": "Učitavanje…",
     "noResults": "Nema rezultata za „{{query}}“"
   },

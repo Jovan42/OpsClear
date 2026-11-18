@@ -38,7 +38,7 @@
   "search": {
     "label": "Search the guide",
     "placeholder": "Search the guide…",
-    "error": "Search couldn't load. Click the search box to try again.",
+    "error": "Search couldn't load.",
     "loading": "Loading…",
     "noResults": "No results for “{{query}}”"
   },

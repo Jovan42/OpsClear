@@ -10,7 +10,7 @@ import { buildIndexState, shouldBuildIndex, type SearchIndexState } from '../../
 /**
  * ADR-0062: search over the guide pages in the current language. The index is built in the
  * browser on the first focus of the box (and again after a language change). If it fails to
- * load, the box says so and the next focus tries again.
+ * load, the results show an error with a "Try again" button; the next focus also retries.
  */
 export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {
   const { t } = useTranslation('guide');
@@ -71,7 +71,17 @@ export default function GuideSearch({ onNavigate }: Readonly<{ onNavigate?: () =
           data-testid="guide-search-results"
         >
           {failed ? (
-            <p className="px-3 py-2 text-sm text-red-600 dark:text-red-400" data-testid="guide-search-error">{t('search.error')}</p>
+            <div className="flex items-center justify-between gap-2 px-3 py-2" data-testid="guide-search-error">
+              <p className="text-sm text-red-600 dark:text-red-400">{t('search.error')}</p>
+              {/* The box usually still has focus here, so focusing it again can't be the retry. */}
+              <button
+                type="button"
+                onClick={() => ensureIndex(true)}
+                className="shrink-0 text-sm font-medium text-brand dark:text-green-400 hover:underline cursor-pointer"
+              >
+                {t('retry')}
+              </button>
+            </div>
           ) : !ready ? (
             <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{t('search.loading')}</p>
           ) : results.length === 0 ? (
