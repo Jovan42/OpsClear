@@ -55,6 +55,8 @@ const LINKS_CARD_TITLE = 'Job links';
 const RELATIONSHIPS_CARD_TITLE = 'Job relationships';
 const FEEDBACK_CARD_TITLE = 'Feedback & Credits';
 const NOTIFICATIONS_CARD_TITLE = 'Notifications';
+/** ErrorBoundary's heading (shared2:errorPage.somethingWentWrong). */
+const ERROR_BOUNDARY_TEXT = 'Something went wrong';
 
 /** Waits for a card's shrunk live preview to render real content (not the static
  *  fallback), then clicks it open. The wait is scoped to the DemoTrigger's own
@@ -92,6 +94,12 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
       cy.contains('h3', title).parents('.rounded-2xl').find('[role="button"]', { timeout: 10000 }).should('be.visible');
       // The static fallback text only renders when `slides` is still null.
       cy.contains('h3', title).parents('.rounded-2xl').contains('No preview yet').should('not.exist');
+      // A slide that throws while rendering (e.g. a component reading a context the demo
+      // doesn't provide, JOB-384) shows the ErrorBoundary instead of the live preview.
+      // Wait for the mounted preview (DemoTrigger's scaled wrapper, committed together with
+      // any ErrorBoundary fallback inside it) first, or `not.exist` passes before it renders.
+      cy.contains('h3', title).parents('.rounded-2xl').find('[style*="scale("]', { timeout: 10000 }).should('exist');
+      cy.contains('h3', title).parents('.rounded-2xl').contains(ERROR_BOUNDARY_TEXT).should('not.exist');
     });
   });
 
@@ -224,6 +232,7 @@ describe('/features interactive demos — trigger, overlay, and MSW isolation', 
     cy.get('@overlay').find('button[aria-label="Next example"]').click();
     cy.get('@overlay').contains('Approval history on a job').should('be.visible');
     cy.get('@overlay').contains('Approvals').should('be.visible');
+    cy.get('@overlay').contains(ERROR_BOUNDARY_TEXT).should('not.exist');
   });
 
   it('adding a note in the notes demo creates exactly one new entry, not a duplicate (all-14-cards-mount request-storm regression guard)', () => {
