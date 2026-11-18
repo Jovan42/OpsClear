@@ -9,10 +9,13 @@
 //   reload" — Cypress has no multi-tab support (same tooling limitation noted for
 //   JOB-208's Auth Flows suite), and ADR-0049 itself frames this as expected
 //   behavior to confirm rather than a bug to reproduce.
+//
+// Server sync (ADR-0061, JOB-351): preferences now follow the user, with localStorage as a
+// per-user cache, so "clearing storage resets to defaults" no longer holds. The sync, the
+// one-time upload and the save-error toast are in preference-sync.cy.ts.
 
-import { uniqueEmail, uniqueSlug, createOrgWithSubscription, createProjectAs } from '../../support/orgApi';
-
-const STORAGE_KEY = 'opsclear:preferences';
+import { uniqueEmail, uniqueSlug, createOrgWithSubscription, createProjectAs, userIdFor } from '../../support/orgApi';
+import { LEGACY_PREFERENCES_KEY, cachedPreferences } from '../../support/preferences';
 
 describe('User Settings & Preferences', () => {
   it('/settings is reachable via the user menu', { tags: '@smoke' }, () => {
@@ -29,7 +32,7 @@ describe('User Settings & Preferences', () => {
     cy.deleteKeycloakUser(email);
   });
 
-  it('theme toggle (Light/Dark/System) persists to localStorage and survives a reload', () => {
+  it('theme toggle (Light/Dark/System) persists to the cache and survives a reload', () => {
     const email = uniqueEmail('theme');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Theme Corp', uniqueSlug());
@@ -39,8 +42,7 @@ describe('User Settings & Preferences', () => {
     cy.contains('button', 'Dark').click();
     cy.get('html').should('have.class', 'dark');
     cy.window().then((win) => {
-      const stored = JSON.parse(win.localStorage.getItem(STORAGE_KEY) ?? '{}');
-      expect(stored.theme).to.eq('dark');
+      expect(cachedPreferences(win).theme).to.eq('dark');
     });
 
     cy.reload();
@@ -50,8 +52,7 @@ describe('User Settings & Preferences', () => {
     cy.contains('button', 'Light').click();
     cy.get('html').should('not.have.class', 'dark');
     cy.window().then((win) => {
-      const stored = JSON.parse(win.localStorage.getItem(STORAGE_KEY) ?? '{}');
-      expect(stored.theme).to.eq('light');
+      expect(cachedPreferences(win).theme).to.eq('light');
     });
 
     cy.deleteKeycloakUser(email);
@@ -128,46 +129,25 @@ describe('User Settings & Preferences', () => {
 
   // ADR-0049: "Corrupted JSON in the preferences localStorage key falls back to
   // defaults via usePreferences' try/catch — seed garbage before load and assert the
-  // fallback."
-  it('corrupted JSON in the preferences key falls back to defaults instead of crashing', () => {
+  // fallback." Both the per-user cache and the legacy key (ADR-0061) get garbage.
+  it('corrupted JSON in the preferences keys falls back to defaults instead of crashing', () => {
     const email = uniqueEmail('corrupt');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Corrupt Corp', uniqueSlug());
-    cy.loginAs(email);
-
-    cy.visit('/settings', {
-      onBeforeLoad(win) {
-        win.localStorage.setItem(STORAGE_KEY, '{not valid json');
-      },
+    userIdFor(email).then((userId) => {
+      cy.loginAs(email);
+      cy.visit('/settings', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem(`${LEGACY_PREFERENCES_KEY}:${userId}`, '{not valid json');
+          win.localStorage.setItem(LEGACY_PREFERENCES_KEY, '{not valid json');
+        },
+      });
     });
 
     // Falls back to defaults (theme: 'system') rather than crashing or hanging.
     cy.contains('Theme').should('be.visible');
     cy.get('html').should('not.have.class', 'dark'); // system default in a light-preferring headless browser
     cy.contains('button', 'System').should('have.class', 'bg-gray-900');
-
-    cy.deleteKeycloakUser(email);
-  });
-
-  // ADR-0049 edge case: "Clearing storage resets to defaults (expected)."
-  it('clearing storage and reloading resets every preference to its default', () => {
-    const email = uniqueEmail('clear');
-    cy.createKeycloakUser(email, 'E2E', 'Tester');
-    createOrgWithSubscription(email, 'Clear Corp', uniqueSlug());
-    cy.loginAs(email);
-    cy.visit('/settings');
-
-    cy.contains('button', 'Dark').click();
-    cy.get('html').should('have.class', 'dark');
-
-    cy.window().then((win) => win.localStorage.removeItem(STORAGE_KEY));
-    cy.reload();
-
-    cy.get('html').should('not.have.class', 'dark'); // theme default is 'system'
-    cy.contains('button', 'System').should('have.class', 'bg-gray-900');
-    cy.window().then((win) => {
-      expect(win.localStorage.getItem(STORAGE_KEY)).to.equal(null);
-    });
 
     cy.deleteKeycloakUser(email);
   });

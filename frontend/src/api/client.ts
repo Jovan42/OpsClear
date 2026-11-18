@@ -11,6 +11,11 @@ declare module 'axios' {
      * still toast as usual.
      */
     skipErrorToastStatuses?: number[];
+    /**
+     * The caller shows its own error for every failure, including network errors, so the
+     * response interceptor shows no toast at all.
+     */
+    skipErrorToast?: boolean;
   }
 }
 
@@ -70,6 +75,7 @@ apiClient.interceptors.response.use(
       // 404 on GET — components handle missing state silently (e.g. deleted schedule)
       // 403 on /super-admin/** — the route redirects as if it doesn't exist, so a
       // toast revealing "Forbidden" would defeat that (see SuperAdminPricingPage)
+      if (error.config?.skipErrorToast) return Promise.reject(error);
       if (status === 401) return Promise.reject(error);
       if (status === 404 && method === 'get') return Promise.reject(error);
       if (status === 403 && url.includes('/super-admin/')) return Promise.reject(error);

@@ -1,11 +1,22 @@
 {
   "settings": {
     "pageTitle": "Podešavanja",
+    "sections": {
+      "indexLabel": "Odeljci podešavanja",
+      "appearance": "Izgled",
+      "jobs": "Poslovi",
+      "dashboard": "Kontrolna tabla",
+      "navigation": "Navigacija",
+      "milestones": "Etape",
+      "stats": "Statistika",
+      "notifications": "Obaveštenja",
+      "apiKeys": "API ključevi"
+    },
+    "saveError": "Nije uspelo čuvanje vaših podešavanja",
     "appearance": {
-      "heading": "Izgled",
       "theme": {
         "label": "Tema",
-        "description": "Izaberite kako OpsClear izgleda na ovom uređaju.",
+        "description": "Izaberite kako OpsClear izgleda.",
         "light": "Svetla",
         "dark": "Tamna",
         "system": "Sistemska"
@@ -22,7 +33,6 @@
       }
     },
     "jobList": {
-      "heading": "Lista poslova",
       "defaultViewMode": {
         "label": "Podrazumevani prikaz",
         "description": "Kako se poslovi grupišu kada otvorite projekat.",
@@ -58,7 +68,6 @@
       }
     },
     "dashboardSection": {
-      "heading": "Kontrolna tabla",
       "blockedSection": {
         "label": "Sekcija blokiranih poslova",
         "description": "Prikaži ili sakrij listu blokiranih poslova na kontrolnoj tabli."
@@ -77,7 +86,6 @@
       "hide": "Sakrij"
     },
     "navigation": {
-      "heading": "Navigacija",
       "defaultProjectPage": {
         "label": "Podrazumevana stranica projekta",
         "description": "Koja stranica se otvara kada odete na projekat.",
@@ -87,7 +95,6 @@
       }
     },
     "milestonesSection": {
-      "heading": "Etape",
       "progressFormat": {
         "label": "Format napretka",
         "description": "Kako se prikazuje napredak etape (npr. 4/6 ili 67%).",
@@ -96,11 +103,9 @@
       }
     },
     "notificationsSection": {
-      "heading": "Obaveštenja",
       "sound": {
         "label": "Zvuk obaveštenja",
-        "description": "Pusti kratak zvuk kada novo obaveštenje stigne u karticu koju koristite. Čuva se samo u ovom pregledaču, kao tema i jezik.",
-        "scope": "Samo ovaj uređaj",
+        "description": "Pusti kratak zvuk kada novo obaveštenje stigne u karticu koju koristite.",
         "on": "Uključen",
         "off": "Isključen"
       }
