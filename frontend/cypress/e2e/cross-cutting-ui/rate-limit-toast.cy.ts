@@ -55,8 +55,12 @@ describe('Rate limit (429) error toast', () => {
       stubRateLimitedProjectCreate();
       cy.loginAs(email);
 
+      cy.intercept('GET', '**/api/user/preferences').as('loadPreferences');
+      cy.intercept('PATCH', '**/api/user/preferences').as('savePreferences');
       cy.visit('/settings');
+      cy.wait('@loadPreferences');
       cy.contains('button', 'Srpski').click();
+      cy.wait('@savePreferences');
 
       cy.visit('/projects');
       cy.contains('button', '+ Novi projekat').click();

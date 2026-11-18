@@ -137,6 +137,12 @@ describe('Paddle Checkout — mixed-change client-side block', () => {
       // state by construction, not just by timing — see SubscriptionSection.tsx's own
       // `if (isMixedAddonChange(...)) return;` guard ahead of both call sites.
       cy.get('input[type="range"]').eq(1).as('projectSlider');
+      // The sliders first render at index 0 and an effect then moves them to the current
+      // subscription's tier. Setting 0 before that lands is a no-op for React (value
+      // unchanged, no onChange), and the effect then moves the slider up, so no mixed
+      // change ever exists. Wait for the sync (tierIndex 2 is above the cheapest project
+      // band) before changing anything.
+      cy.get('@projectSlider').should('not.have.value', '0');
       setRangeValue('@projectSlider', 0); // fewer projects -> cheaper base plan
       cy.get('.grid.grid-cols-1.sm\\:grid-cols-2 button').first().click(); // add an add-on
 
