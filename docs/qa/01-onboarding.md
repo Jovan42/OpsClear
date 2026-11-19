@@ -161,11 +161,11 @@ ONB-08 and ONB-30 repeat the check in the browser.
 4. Send invites to `<mailbox>+ivana@<domain>`, `<mailbox>+luka@<domain>` and `<mailbox>+sara@<domain>`.
 5. Open the mailbox.
 
-- [ ] The empty box shows "Email is required"
-- [ ] Nikola's invite appears in the list with Ana as inviter and "Expires in 7 days"
-- [ ] The second invite to the same address is refused with "A pending invite already exists for this email", and the list still has one row for it
-- [ ] The list shows four pending invites, each with **Copy link**, **Resend email** and **Revoke**
-- [ ] Four invite emails arrive, titled "You're invited to join Brightline Renovations on OpsClear", each saying Ana Petrović invited you, with an **Accept invite** button and the expiry date
+- [x] The empty box shows "Email is required"
+- [x] Nikola's invite appears in the list with Ana as inviter and "Expires in 7 days"
+- [x] The second invite to the same address is refused with "A pending invite already exists for this email", and the list still has one row for it
+- [x] The list shows four pending invites, each with **Copy link**, **Resend email** and **Revoke**
+- [x] Four invite emails arrive, titled "You're invited to join Brightline Renovations on OpsClear", each saying Ana Petrović invited you, with an **Accept invite** button and the expiry date
 
 ## ONB-11 Nikola joins from the invite
 **As:** Nikola (new user) · **Day:** 1 · **Needs:** ONB-10 done
@@ -177,12 +177,12 @@ ONB-08 and ONB-30 repeat the check in the browser.
 5. On **You've been invited**, click **Accept invite**.
 6. Click the same invite link a second time.
 
-- [ ] The invite link needs a login first, and the sign-in page opens
-- [ ] Registering shows **Verify your email**, and the app stays closed until the link is clicked
-- [ ] After verifying, the invite link opens **You've been invited** with an **Accept invite** button
-- [ ] **You've joined the organisation** appears, then **Projects** opens after about two seconds
-- [ ] Nikola sees no projects yet
-- [ ] The second click shows a red message that the invite is no longer valid, and a **Go to projects** button
+- [x] The invite link needs a login first, and the sign-in page opens
+- [x] Registering shows **Verify your email**, and the app stays closed until the link is clicked
+- [x] After verifying, the invite link opens **You've been invited** with an **Accept invite** button
+- [x] **You've joined the organisation** appears, then **Projects** opens after about two seconds
+- [x] Nikola sees no projects yet
+- [x] The second click shows a red message that the invite is no longer valid, and a **Go to projects** button
 
 ## ONB-12 The invite only works for the invited address
 **As:** Nikola (org member for now) · **Day:** 1 · **Needs:** ONB-11 done, Ivana's invite still pending
@@ -190,8 +190,8 @@ ONB-08 and ONB-30 repeat the check in the browser.
 1. Open Ivana's invite email and click its **Accept invite** link while signed in as Nikola.
 2. Click **Accept invite** on the page.
 
-- [ ] The page shows "This invite was sent to a different email address"
-- [ ] Ivana's invite is still pending in Ana's list
+- [x] The page shows "This invite was sent to a different email address"
+- [x] Ivana's invite is still pending in Ana's list
 
 ## ONB-13 Ivana, Luka and Sara join
 **As:** Ivana, then Luka, then Sara (each in their own profile) · **Day:** 1 · **Needs:** ONB-12 done
@@ -199,10 +199,10 @@ ONB-08 and ONB-30 repeat the check in the browser.
 1. For each persona, repeat the steps of ONB-11 with their own invite email: register (**Ivana Marković**, **Luka Ilić**, **Sara Đorđević**), verify, click **Accept invite** again, accept.
 2. Sign each one out with **Sign out** in the user menu.
 
-- [ ] Ivana, Luka and Sara each get **You've joined the organisation**
-- [ ] Ana's pending invites list is now empty
-- [ ] Ana has an **Invite accepted** notification for each of the four people, in the notification centre (bell)
-- [ ] **Sign out** returns each persona to the public home page
+- [x] Ivana, Luka and Sara each get **You've joined the organisation**
+- [x] Ana's pending invites list is now empty
+- [x] Ana has an **Invite accepted** notification for each of the four people, in the notification centre (bell)
+- [x] **Sign out** returns each persona to the public home page
 
 ## ONB-14 Promote Nikola to Admin
 **As:** Ana (owner) · **Day:** 1 · **Needs:** ONB-13 done
@@ -211,10 +211,10 @@ ONB-08 and ONB-30 repeat the check in the browser.
 2. Change Nikola's role box from **Member** to **Admin**.
 3. Look at Ana's own row. Reload the page.
 
-- [ ] The table lists Ana (Owner badge), Nikola, Ivana, Luka and Sara, and the form above it is **Search by email…**
-- [ ] Ana's row has a badge and no role box or **Remove**
-- [ ] Nikola's role changes to **Admin** and stays after the reload
-- [ ] Ivana, Luka and Sara stay **Member**
+- [x] The table lists Ana (Owner badge), Nikola, Ivana, Luka and Sara, and the form above it is **Search by email…**
+- [x] Ana's row has a badge and no role box or **Remove**
+- [x] Nikola's role changes to **Admin** and stays after the reload
+- [x] Ivana, Luka and Sara stay **Member**
 
 ## ONB-15 An admin's powers in the organisation
 **As:** Nikola (org admin) · **Day:** 1 · **Needs:** ONB-14 done
@@ -223,11 +223,11 @@ ONB-08 and ONB-30 repeat the check in the browser.
 2. Try to change the name on **Organisation Settings**.
 3. Look at the members table.
 
-- [ ] **Invites** is available, and Nikola can open the list of pending invites
-- [ ] The name and slug boxes are greyed out, with no **Save changes** button
-- [ ] **Subscription**, **Billing history** and **Danger zone** aren't shown
-- [ ] The members table shows role badges, not role boxes, so Nikola can't change anyone's role
-- [ ] The members table has the add form and **Remove** on non-Owner rows, and no **Remove** on the Owner row
+- [x] **Invites** is available, and Nikola can open the list of pending invites
+- [x] The name and slug boxes are greyed out, with no **Save changes** button
+- [x] **Subscription**, **Billing history** and **Danger zone** aren't shown
+- [x] The members table shows role badges, not role boxes, so Nikola can't change anyone's role
+- [x] The members table has the add form and **Remove** on non-Owner rows, and no **Remove** on the Owner row
 
 ## ONB-16 A member can't invite, add or manage
 **As:** Luka (org member) · **Day:** 1 · **Needs:** ONB-13 done
@@ -236,12 +236,12 @@ ONB-08 and ONB-30 repeat the check in the browser.
 2. Open **Manage members**.
 3. Type `/org/invites` in the address bar. Type `<mailbox>+stranger@<domain>` and click **Send invite**.
 
-- [ ] **Organisation Settings** has **Manage members** but no **Invites** button
-- [ ] The name, slug and **ID prefixes** are greyed out
-- [ ] **Subscription**, **Billing history**, **Credit balance** and **Danger zone** aren't shown
-- [ ] The members table has no add form, no role boxes and no **Remove**
-- [ ] Sending the invite fails with "Insufficient permissions: OWNER or ADMIN role required"
-- [ ] The stranger address doesn't appear in Ana's pending invites
+- [x] **Organisation Settings** has **Manage members** but no **Invites** button
+- [x] The name, slug and **ID prefixes** are greyed out
+- [x] **Subscription**, **Billing history**, **Credit balance** and **Danger zone** aren't shown
+- [x] The members table has no add form, no role boxes and no **Remove**
+- [x] Sending the invite fails with "Insufficient permissions: OWNER or ADMIN role required"
+- [x] The stranger address doesn't appear in Ana's pending invites
 
 ## ONB-17 Create Residential Fit-outs
 **As:** Ana (org owner) · **Day:** 1 · **Needs:** ONB-14 done, Ana on **Projects**
@@ -252,11 +252,11 @@ ONB-08 and ONB-30 repeat the check in the browser.
 4. Under **Block reasons**, add **Waiting on client**, **Materials not delivered** and **Waiting on inspection** (type each and click **Add**).
 5. Click **Create project**.
 
-- [ ] The empty name shows "Name is required"
-- [ ] The three block reasons show as removable entries before creating
-- [ ] **Create project** opens the new project and Ana is its Owner
-- [ ] **Projects** lists **Residential Fit-outs** with an **Owner** badge, under the **Active** tab
-- [ ] **Project Settings** lists the three block reasons
+- [x] The empty name shows "Name is required"
+- [x] The three block reasons show as removable entries before creating
+- [x] **Create project** opens the new project and Ana is its Owner
+- [x] **Projects** lists **Residential Fit-outs** with an **Owner** badge, under the **Active** tab
+- [x] **Project Settings** lists the three block reasons
 
 ## ONB-18 Create Office Refurbishments
 **As:** Nikola (org admin) · **Day:** 1 · **Needs:** ONB-14 done
@@ -265,9 +265,9 @@ ONB-08 and ONB-30 repeat the check in the browser.
 2. Type **Office Refurbishments** in **Name** and "Fit-outs and repairs for offices and shops." in **Description**.
 3. Add the block reasons **Waiting on landlord** and **Waiting on permits**, then click **Create project**.
 
-- [ ] Nikola can create a project while only an org admin, and is its Owner
-- [ ] Nikola's **Projects** list shows only this project
-- [ ] Ana's **Projects** list doesn't show it, because Ana isn't a member of it
+- [x] Nikola can create a project while only an org admin, and is its Owner
+- [x] Nikola's **Projects** list shows only this project
+- [x] Ana's **Projects** list doesn't show it, because Ana isn't a member of it
 
 ## ONB-19 Create Spring Maintenance 2026
 **As:** Ana (org owner) · **Day:** 1 · **Needs:** ONB-17 done
@@ -276,9 +276,9 @@ ONB-08 and ONB-30 repeat the check in the browser.
 2. Type **Spring Maintenance 2026** in **Name** and "Seasonal servicing for existing maintenance contracts." in **Description**. Leave block reasons empty.
 3. Click **Create project**.
 
-- [ ] The project exists and Ana is its Owner
-- [ ] **Project Settings** says "No block reasons configured"
-- [ ] The **Active** tab lists two projects for Ana: **Residential Fit-outs** and **Spring Maintenance 2026**
+- [x] The project exists and Ana is its Owner
+- [x] **Project Settings** says "No block reasons configured"
+- [x] The **Active** tab lists two projects for Ana: **Residential Fit-outs** and **Spring Maintenance 2026**
 
 Leave this project active. `03-projects.md` archives it later.
 
@@ -290,11 +290,11 @@ Leave this project active. `03-projects.md` archives it later.
 3. Add Ivana, Luka and Sara with the role **Member**.
 4. Type `<mailbox>+nikola` in the search again.
 
-- [ ] Nikola is added as **Admin**, and the table shows him with that role
-- [ ] Ivana, Luka and Sara are added as **Member**
-- [ ] The second search shows Nikola with "(already a member)"
-- [ ] The table lists Ana as **Owner** with no role box and no **Remove**
-- [ ] Nikola, Ivana, Luka and Sara each get a notification that they were added to the project
+- [x] Nikola is added as **Admin**, and the table shows him with that role
+- [x] Ivana, Luka and Sara are added as **Member**
+- [x] The second search shows Nikola with "(already a member)"
+- [x] The table lists Ana as **Owner** with no role box and no **Remove**
+- [x] Nikola, Ivana, Luka and Sara each get a notification that they were added to the project
 
 ## ONB-21 Add the people to Office Refurbishments
 **As:** Nikola (project owner) · **Day:** 1 · **Needs:** ONB-18 done
@@ -497,3 +497,4 @@ judged in Luka's scenarios in the other area files.
 - ONB-08: JOB-396 (Bug) **Continue to payment** returns 500 from `POST /api/organisations/{orgId}/subscription/paddle`, so the payment form never opens and the org cannot subscribe. Cause was an expired Paddle sandbox API key; the code fix (clear 502 instead of a bare 500) is in PR #585 and the key was replaced.
 - ONB-08: JOB-397 (Bug) right after a successful Paddle payment the page shows a 500 instead of **Processing your payment**; the subscription is there after a manual refresh.
 - ONB-10/ONB-11: JOB-399 (UX), with JOB-398 (Backend) first: a new invitee lands on the login page with no invite context, re-types the email, verifies it and clicks Accept a second time. Proposed: a public invite page with sign-up and automatic joining.
+- ONB-20: JOB-400 (Bug) the project member search (**Search by email…**) lists registered users from every organisation, not just Brightline members, and only matches the email, not first or last name.
