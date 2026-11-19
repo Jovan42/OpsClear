@@ -3,12 +3,9 @@ package com.opsclear.controller;
 import com.opsclear.dto.UserResponse;
 import com.opsclear.security.SecurityUtils;
 import com.opsclear.service.UserService;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,20 +17,23 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@Validated
 public class UserController {
 
     private final UserService userService;
 
+    /**
+     * Searches the caller's organisation members by name or email. {@code q} is the query; {@code email} is a
+     * deprecated alias kept until the frontend sends {@code q} (removed in JOB-402). When both are sent,
+     * {@code q} wins.
+     */
     @GetMapping
     public ResponseEntity<List<UserResponse>> search(
-            @RequestParam
-            @NotBlank(message = "email prefix must not be blank")
-            @Size(min = 2, message = "email prefix must be at least 2 characters")
-            String email,
+            @RequestParam(required = false) String q,
+            @Deprecated @RequestParam(required = false) String email,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        List<UserResponse> results = userService.searchByEmail(email, callerId)
+        String query = q != null ? q : email;
+        List<UserResponse> results = userService.searchOrgMembers(query, callerId)
                 .stream()
                 .map(UserResponse::from)
                 .toList();

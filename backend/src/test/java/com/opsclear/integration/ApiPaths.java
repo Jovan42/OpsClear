@@ -15,8 +15,13 @@ final class ApiPaths {
 
     // --- Users ---
 
-    static String usersSearch(String emailPrefix) {
-        return "/api/users?email=" + emailPrefix;
+    static String usersSearch(String query) {
+        return "/api/users?q=" + query;
+    }
+
+    /** The deprecated {@code email} alias for {@code q}, kept until JOB-402. */
+    static String usersSearchByEmailAlias(String query) {
+        return "/api/users?email=" + query;
     }
 
     // --- Projects ---

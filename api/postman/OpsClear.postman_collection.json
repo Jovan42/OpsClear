@@ -449,6 +449,52 @@
 			"description": "Project membership endpoints"
 		},
 		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Search Organisation Members (name or email)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users?q=nik",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"],
+							"query": [
+								{
+									"key": "q",
+									"value": "nik"
+								}
+							]
+						},
+						"description": "JOB-400: searches members of the caller's organisation only. `q` (at least 2 characters after trimming) matches the name (case-insensitive, contains) or the email (case-insensitive, prefix). Returns up to 10 users `{ id, name, email }` ordered by email. Users of other organisations are never returned; to bring someone new in, send an org invite. 400 when `q` is missing or shorter than 2 characters, 403 when the caller belongs to no organisation. Works the same with an API key (`X-Api-Key`)."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Organisation Members (deprecated email alias)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users?email=nik",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"],
+							"query": [
+								{
+									"key": "email",
+									"value": "nik"
+								}
+							]
+						},
+						"description": "Deprecated: `email` is accepted as an alias for `q` (same matching and scope) until the frontend switches to `q` (JOB-401); it is removed in JOB-402. When both are sent, `q` wins."
+					},
+					"response": []
+				}
+			],
+			"description": "User search for member pickers, scoped to the caller's organisation"
+		},
+		{
 			"name": "Jobs",
 			"item": [
 				{
