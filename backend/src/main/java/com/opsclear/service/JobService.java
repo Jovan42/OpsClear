@@ -34,7 +34,6 @@ import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
-import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -61,7 +60,6 @@ public class JobService {
     private final JobStatusHistoryRepository jobStatusHistoryRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
-    private final UserRepository userRepository;
     private final MilestoneRepository milestoneRepository;
     private final JobTypeRepository jobTypeRepository;
     private final OrganisationRepository organisationRepository;
@@ -79,7 +77,7 @@ public class JobService {
         ProjectModel project = requireProjectExists(projectId);
         requireProjectNotCompleted(project);
         requireMember(projectId, requesterId);
-        requireAssignedUserExists(request.getAssignedTo());
+        requireAssigneeInProjectOrg(project, request.getAssignedTo());
         requireMilestoneInProject(request.getMilestoneId(), projectId);
         requireTypeInProject(request.getTypeId(), projectId);
 
@@ -200,7 +198,7 @@ public class JobService {
         requireOwnerOrAdmin(projectId, requesterId);
         JobModel job = requireJob(jobId);
         requireJobInProject(job, projectId);
-        requireAssignedUserExists(request.getAssignedTo());
+        requireAssigneeInProjectOrg(project, request.getAssignedTo());
         requireMilestoneInProject(request.getMilestoneId(), projectId);
         requireTypeInProject(request.getTypeId(), projectId);
 
@@ -359,12 +357,15 @@ public class JobService {
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.JobType.NOT_FOUND));
     }
 
-    private void requireAssignedUserExists(UUID userId) {
+    // JOB-393: the assignee must belong to the project's organisation. A user outside it gets the same 404 as an
+    // unknown user, so the response doesn't reveal that the account exists.
+    private void requireAssigneeInProjectOrg(ProjectModel project, UUID userId) {
         if (userId == null) {
             return;
         }
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessages.Job.ASSIGNED_USER_NOT_FOUND));
+        if (!organisationRepository.existsMember(project.getOrganisationId(), userId)) {
+            throw new NotFoundException(ErrorMessages.Job.ASSIGNED_USER_NOT_FOUND);
+        }
     }
 
     private void requireJobInProject(JobModel job, UUID projectId) {

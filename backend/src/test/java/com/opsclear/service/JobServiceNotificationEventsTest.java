@@ -18,7 +18,6 @@ import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
-import com.opsclear.model.UserModel;
 import com.opsclear.repository.ApprovalRepository;
 import com.opsclear.repository.JobLinkRepository;
 import com.opsclear.repository.JobRelationshipRepository;
@@ -29,7 +28,6 @@ import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
-import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,6 +45,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -66,7 +65,6 @@ class JobServiceNotificationEventsTest {
     @Mock private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
-    @Mock private UserRepository userRepository;
     @Mock private MilestoneRepository milestoneRepository;
     @Mock private JobTypeRepository jobTypeRepository;
     @Mock private BlockReasonService blockReasonService;
@@ -92,7 +90,7 @@ class JobServiceNotificationEventsTest {
         JobStatusTransitioner transitioner = new JobStatusTransitioner(jobRepository, jobStatusHistoryRepository,
                 jobRelationshipRepository, blockReasonService, eventPublisher);
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
-                jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
+                jobStatusHistoryRepository, projectRepository, projectMemberRepository,
                 milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
                 transitioner, approvalRepository, approvalService, addonAccessChecker, completionApprovalCanceller);
         projectId = UUID.randomUUID();
@@ -126,7 +124,7 @@ class JobServiceNotificationEventsTest {
     }
 
     private void givenUserExists(UUID userId) {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(UserModel.builder().id(userId).build()));
+        when(organisationRepository.existsMember(any(), eq(userId))).thenReturn(true);
     }
 
     private UpdateJobRequest.UpdateJobRequestBuilder unchangedUpdate() {

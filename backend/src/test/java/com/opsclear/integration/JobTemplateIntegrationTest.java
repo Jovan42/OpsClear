@@ -396,6 +396,57 @@ class JobTemplateIntegrationTest {
     }
 
     @Test
+    @DisplayName("createTemplate — fixed assignee from the project's organisation is saved")
+    void createTemplate_shouldReturn201_whenAssigneeInSameOrg() throws Exception {
+        mockMvc.perform(post(ApiPaths.templates(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "T1", "assigneeMode": "FIXED", "assigneeId": "%s"}
+                                """.formatted(memberId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.assigneeId").value(memberId.toString()));
+    }
+
+    @Test
+    @DisplayName("createTemplate — 404 when the fixed assignee belongs to another organisation (JOB-393)")
+    void createTemplate_shouldReturn404_whenAssigneeInOtherOrg() throws Exception {
+        UUID otherUserId = saveUserInOtherOrg();
+
+        mockMvc.perform(post(ApiPaths.templates(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "T1", "assigneeMode": "FIXED", "assigneeId": "%s"}
+                                """.formatted(otherUserId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Assignee not found"));
+
+        assertThat(jobTemplateRepository.findActiveByProjectIdOrOrgId(projectId, orgId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("updateTemplate — 404 when the fixed assignee belongs to another organisation (JOB-393)")
+    void updateTemplate_shouldReturn404_whenAssigneeInOtherOrg() throws Exception {
+        JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").projectId(projectId).name("T1").assigneeMode("NONE").createdBy(ownerId).build());
+        UUID otherUserId = saveUserInOtherOrg();
+
+        mockMvc.perform(put(ApiPaths.template(projectId, template.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "T1", "assigneeMode": "FIXED", "assigneeId": "%s"}
+                                """.formatted(otherUserId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Assignee not found"));
+
+        JobTemplateModel reloaded = jobTemplateRepository.findByIdAndDeletedAtIsNull(template.getId()).orElseThrow();
+        assertThat(reloaded.getAssigneeId()).isNull();
+        assertThat(reloaded.getAssigneeMode()).isEqualTo("NONE");
+    }
+
+    @Test
     @DisplayName("createTemplate — no org subscription returns 403")
     void createTemplate_shouldReturn403_whenUserHasNoOrg() throws Exception {
         UUID noOrgUserId = UUID.randomUUID();
@@ -663,5 +714,15 @@ class JobTemplateIntegrationTest {
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Daily Run")));
+    }
+
+    private UUID saveUserInOtherOrg() {
+        UUID otherUserId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(otherUserId).email("other@example.com").name("Other Org User").build());
+        OrganisationModel otherOrg = organisationRepository.save(
+                OrganisationModel.builder().name("Other Org").slug("OTH").createdBy(otherUserId).build());
+        organisationRepository.saveMember(otherOrg.getId(), otherUserId, OrganisationRole.OWNER);
+        return otherUserId;
     }
 }

@@ -17,7 +17,9 @@ import com.opsclear.model.JobModel;
 import com.opsclear.model.JobTemplateModel;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
+import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobTemplateRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.RecurringScheduleRepository;
@@ -51,12 +53,14 @@ public class RecurringScheduleService {
     private final JobTemplateRepository jobTemplateRepository;
     private final ScheduleMissedRunRepository missedRunRepository;
     private final ScheduleJobCreator scheduleJobCreator;
+    private final OrganisationRepository organisationRepository;
 
     @Transactional
     public RecurringScheduleResponse create(UUID projectId, CreateScheduleRequest req, UUID requesterId) {
-        requireProject(projectId);
+        ProjectModel project = requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         requireTemplate(req.getTemplateId());
+        requireAssigneesInProjectOrg(project, req.getAssigneeIds());
 
         validateCron(req.getCronExpression(), req.getTimezone());
 
@@ -119,11 +123,12 @@ public class RecurringScheduleService {
     @Transactional
     public RecurringScheduleResponse update(UUID projectId, UUID scheduleId,
                                             UpdateScheduleRequest req, UUID requesterId) {
-        requireProject(projectId);
+        ProjectModel project = requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         RecurringSchedulesRecord row = requireScheduleInProject(projectId, scheduleId);
 
         requireTemplate(req.getTemplateId());
+        requireAssigneesInProjectOrg(project, req.getAssigneeIds());
         validateCron(req.getCronExpression(), req.getTimezone());
 
         Instant nextRunAt = Objects.requireNonNull(
@@ -298,9 +303,22 @@ public class RecurringScheduleService {
 
     // --- Guards ---
 
-    private void requireProject(UUID projectId) {
-        projectRepository.findByIdAndDeletedAtIsNull(projectId)
+    private ProjectModel requireProject(UUID projectId) {
+        return projectRepository.findByIdAndDeletedAtIsNull(projectId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
+    }
+
+    // JOB-393: every assignee must belong to the project's organisation. A user outside it gets the same 404 as an
+    // unknown user, so the response doesn't reveal that the account exists.
+    private void requireAssigneesInProjectOrg(ProjectModel project, List<UUID> assigneeIds) {
+        if (assigneeIds == null) {
+            return;
+        }
+        for (UUID assigneeId : assigneeIds) {
+            if (!organisationRepository.existsMember(project.getOrganisationId(), assigneeId)) {
+                throw new NotFoundException(ErrorMessages.RecurringSchedule.ASSIGNEE_NOT_FOUND);
+            }
+        }
     }
 
     private void requireMember(UUID projectId, UUID userId) {

@@ -4,6 +4,7 @@ import com.opsclear.dto.CreateJobTemplateRequest;
 import com.opsclear.dto.UpdateJobTemplateRequest;
 import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ConflictException;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.generated.jooq.tables.records.RecurringSchedulesRecord;
@@ -429,6 +430,96 @@ class JobTemplateServiceTest {
         assertThatThrownBy(() -> jobTemplateService.update(projectId, templateId, request, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("defaultTypeName can only be set on org-scoped templates");
+        verify(jobTemplateRepository, never()).save(any());
+    }
+
+    // --- fixed assignee must belong to the org (JOB-393) ---
+
+    @Test
+    @DisplayName("create — throws NotFoundException when the fixed assignee is not in the project's org")
+    void create_shouldThrow404_whenAssigneeNotInOrg() {
+        UUID outsiderId = UUID.randomUUID();
+        ProjectModel orgProject = ProjectModel.builder().id(projectId).organisationId(orgId).ownerId(ownerId).build();
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("Weekly Report");
+        request.setAssigneeMode("FIXED");
+        request.setAssigneeId(outsiderId);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(orgProject));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(organisationRepository.existsMember(orgId, outsiderId)).thenReturn(false);
+
+        assertThatThrownBy(() -> jobTemplateService.create(projectId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.JobTemplate.ASSIGNEE_NOT_FOUND);
+        verify(jobTemplateRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("create — saves the template when the fixed assignee is in the project's org")
+    void create_shouldSave_whenAssigneeInOrg() {
+        UUID assigneeId = UUID.randomUUID();
+        ProjectModel orgProject = ProjectModel.builder().id(projectId).organisationId(orgId).ownerId(ownerId).build();
+        CreateJobTemplateRequest request = new CreateJobTemplateRequest();
+        request.setName("Weekly Report");
+        request.setAssigneeMode("FIXED");
+        request.setAssigneeId(assigneeId);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(orgProject));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(organisationRepository.existsMember(orgId, assigneeId)).thenReturn(true);
+        when(jobTemplateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        JobTemplateModel result = jobTemplateService.create(projectId, request, ownerId);
+
+        assertThat(result.getAssigneeId()).isEqualTo(assigneeId);
+    }
+
+    @Test
+    @DisplayName("update — throws NotFoundException when the new fixed assignee is not in the project's org")
+    void update_shouldThrow404_whenAssigneeNotInOrg() {
+        UUID templateId = UUID.randomUUID();
+        UUID outsiderId = UUID.randomUUID();
+        ProjectModel orgProject = ProjectModel.builder().id(projectId).organisationId(orgId).ownerId(ownerId).build();
+        JobTemplateModel existing = JobTemplateModel.builder()
+                .id(templateId).projectId(projectId).name("Old").assigneeMode("NONE").build();
+        UpdateJobTemplateRequest request = new UpdateJobTemplateRequest();
+        request.setName("Old");
+        request.setAssigneeMode("FIXED");
+        request.setAssigneeId(outsiderId);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(orgProject));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId)).thenReturn(Optional.of(ownerMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(existing));
+        when(organisationRepository.existsMember(orgId, outsiderId)).thenReturn(false);
+
+        assertThatThrownBy(() -> jobTemplateService.update(projectId, templateId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.JobTemplate.ASSIGNEE_NOT_FOUND);
+        verify(jobTemplateRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("updateOrgTemplate — throws NotFoundException when the new fixed assignee is not in the org")
+    void updateOrgTemplate_shouldThrow404_whenAssigneeNotInOrg() {
+        UUID templateId = UUID.randomUUID();
+        UUID outsiderId = UUID.randomUUID();
+        OrganisationModel org = OrganisationModel.builder().id(orgId).name("Acme").slug("ACM").createdBy(ownerId).build();
+        JobTemplateModel existing = JobTemplateModel.builder()
+                .id(templateId).orgId(orgId).scope(JobTemplateScope.ORG).name("Old").assigneeMode("NONE").build();
+        UpdateJobTemplateRequest request = new UpdateJobTemplateRequest();
+        request.setName("Old");
+        request.setAssigneeMode("FIXED");
+        request.setAssigneeId(outsiderId);
+
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findMemberRole(orgId, ownerId)).thenReturn(Optional.of(OrganisationRole.OWNER));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(existing));
+        when(organisationRepository.existsMember(orgId, outsiderId)).thenReturn(false);
+
+        assertThatThrownBy(() -> jobTemplateService.updateOrgTemplate(orgId, templateId, request, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.JobTemplate.ASSIGNEE_NOT_FOUND);
         verify(jobTemplateRepository, never()).save(any());
     }
 

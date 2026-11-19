@@ -32,7 +32,6 @@ import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.JobTypeRepository;
-import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,7 +62,6 @@ class JobServiceTest {
     @Mock private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
-    @Mock private UserRepository userRepository;
     @Mock private MilestoneRepository milestoneRepository;
     @Mock private JobTypeRepository jobTypeRepository;
     @Mock private BlockReasonService blockReasonService;
@@ -90,7 +88,7 @@ class JobServiceTest {
         JobStatusTransitioner transitioner = new JobStatusTransitioner(jobRepository, jobStatusHistoryRepository,
                 jobRelationshipRepository, blockReasonService, eventPublisher);
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
-                jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
+                jobStatusHistoryRepository, projectRepository, projectMemberRepository,
                 milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
                 transitioner, approvalRepository, approvalService, addonAccessChecker, completionApprovalCanceller);
 
@@ -193,7 +191,6 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(userRepository.findById(unknownUser)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> jobService.create(projectId, request, ownerId))
                 .isInstanceOf(NotFoundException.class)
@@ -218,8 +215,7 @@ class JobServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(userRepository.findById(assignedUserId))
-                .thenReturn(Optional.of(com.opsclear.model.UserModel.builder().id(assignedUserId).build()));
+        when(organisationRepository.existsMember(project.getOrganisationId(), assignedUserId)).thenReturn(true);
         when(jobRepository.save(any())).thenReturn(saved);
 
         JobModel result = jobService.create(projectId, request, ownerId);
@@ -630,8 +626,7 @@ class JobServiceTest {
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
-        when(userRepository.findById(assignedUserId))
-                .thenReturn(Optional.of(com.opsclear.model.UserModel.builder().id(assignedUserId).build()));
+        when(organisationRepository.existsMember(project.getOrganisationId(), assignedUserId)).thenReturn(true);
         when(jobRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         JobModel result = jobService.update(projectId, jobId, request, ownerId);
@@ -678,7 +673,6 @@ class JobServiceTest {
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
         when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
-        when(userRepository.findById(unknownUser)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> jobService.update(projectId, jobId, request, ownerId))
                 .isInstanceOf(NotFoundException.class)
