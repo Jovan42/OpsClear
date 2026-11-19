@@ -1,0 +1,80 @@
+export const frontmatter = {
+  title: 'Kada posao traži odobrenje',
+  description: 'Zatražite od Vlasnika ili Administratora da nešto odobri, odobravajte ili odbijajte zahteve iz reda čekanja i zahtevajte odobrenje pre završetka poslova.',
+};
+
+# Kada posao traži odobrenje
+
+Neke odluke ne treba donositi sam: nabavku, promenu plana ili potvrdu da je rad gotov. Odobrenja omogućavaju da neko zatraži odluku od Vlasnika ili Administratora o poslu, a odgovor ostaje zabeležen.
+
+<FeatureLink card="approvals" />
+
+<Callout type="note">
+Odobrenja su dodatak. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Zatražite odobrenje
+
+<Steps>
+  <Step title="Otvorite posao">
+    Otvorite posao na koji se odluka odnosi.
+  </Step>
+  <Step title="Kliknite na Zatraži odobrenje">
+    Kliknite na **Zatraži odobrenje**. Otvara se prozor.
+  </Step>
+  <Step title="Objasnite šta vam treba">
+    U polje **Opis** upišite šta treba odobriti i zašto, na primer "The new pipe route needs the owner to sign off before we cut into the wall." Zatim kliknite na **Pošalji**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/job-approval-2.webp" alt="Prozor Zatraži odobrenje sa upisanim opisom i dugmetom Pošalji" caption="Napišite šta treba odobriti i zašto, pa kliknite na Pošalji." />
+
+Zahtev se prikazuje u odeljku **Odobrenja** na poslu sa oznakom **Na čekanju**, dok neko ne odluči.
+
+<Screenshot src="/guide/sr/job-approval-3.webp" alt="Posao sa otvorenim odeljkom Odobrenja koji prikazuje jedan zahtev osobe Marco Rossi sa oznakom Na čekanju" caption="Zahtev čeka u odeljku Odobrenja na poslu." />
+
+## Odobrite ili odbijte
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Otvorite red čekanja">
+    Kliknite na **Odobrenja** u gornjoj traci projekta. Značka pokazuje koliko zahteva čeka. Članovi ne vide ovu stranicu.
+  </Step>
+  <Step title="Pročitajte zahtev">
+    Svaki zahtev pokazuje posao, ko ga je tražio, kada i šta je napisao. Kliknite na **→ Posao** da otvorite posao ako vam treba više detalja.
+  </Step>
+  <Step title="Odlučite">
+    Kliknite na **Odobri** ili **Odbij**. Ako želite, dodajte **Komentar**, što je opciono, pa potvrdite istim dugmetom.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/job-approval-4.webp" alt="Stranica Odobrenja sa jednim zahtevom na čekanju za posao Move the gas pipe, sa podatkom ko ga je tražio i dugmadima Odbij i Odobri" caption="Red čekanja za odobrenja navodi svaki zahtev koji čeka." />
+
+<Screenshot src="/guide/sr/job-approval-5.webp" alt="Prozor Odobri zahtev sa opcionim poljem Komentar i dugmetom Odobri" caption="Dodajte opcioni komentar i potvrdite." />
+
+Osoba koja je tražila vidi odluku i vaš komentar na poslu i u svojim obaveštenjima.
+
+## Zahtevajte odobrenje pre završetka poslova
+
+Odobrenje možete učiniti delom završavanja posla. Uključite **Zahtevaj odobrenje za završetak poslova** i Članovi više ne mogu sami da završe svoje poslove: prvo traže odobrenje. Vlasnici i Administratori i dalje završavaju poslove direktno.
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Uključite to">
+    Otvorite **Podešavanja** projekta i uključite **Zahtevaj odobrenje za završetak poslova**.
+  </Step>
+  <Step title="Član traži završetak">
+    Na poslu koji je U toku, Član umesto **Završi** vidi **Zatraži završetak**. Može da doda **Poruka**, pa da klikne na **Zatraži završetak**. Posao ostaje **U toku**, a dugme glasi **Odobrenje zatraženo** dok čeka. Može da koristi **Povuci** da povuče zahtev.
+  </Step>
+  <Step title="Vlasnik ili Administrator odlučuje">
+    Zahtev se pojavljuje u redu **Odobrenja**. **Odobri** odmah završava posao. **Odbij** ga ostavlja u **U toku**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/job-approval-1.webp" alt="Prekidač Zahtevaj odobrenje za završetak poslova, uključen, sa redom koji objašnjava da poslovi članova traže odobrenje Vlasnika ili Administratora" caption="Podešavanje po kom završetak traži odobrenje." />
+
+<Callout type="warning">
+Ako dodatak Odobrenja nije aktivan, poslovi mogu da se završe bez odobrenja čak i kada je prekidač uključen.
+</Callout>

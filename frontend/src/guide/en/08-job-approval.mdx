@@ -1,0 +1,80 @@
+export const frontmatter = {
+  title: 'When a job needs approval',
+  description: 'Ask an Owner or Admin to approve something, approve or reject requests from the queue, and require approval before jobs can be completed.',
+};
+
+# When a job needs approval
+
+Some decisions shouldn't be made alone: a purchase, a change of plan, or signing off finished work. Approvals let someone ask an Owner or Admin for a decision on a job, and keep the answer on record.
+
+<FeatureLink card="approvals" />
+
+<Callout type="note">
+Approvals are an add-on. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## Ask for approval
+
+<Steps>
+  <Step title="Open the job">
+    Open the job the decision is about.
+  </Step>
+  <Step title="Click Request Approval">
+    Click **Request Approval**. A window opens.
+  </Step>
+  <Step title="Explain what you need">
+    In **Description**, say what needs approval and why, for example "The new pipe route needs the owner to sign off before we cut into the wall." Then click **Submit**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/job-approval-2.webp" alt="The Request Approval window with a description typed in and a Submit button" caption="Say what needs approval and why, then click Submit." />
+
+The request shows in the job's **Approvals** section with the label **Pending**, until someone decides.
+
+<Screenshot src="/guide/en/job-approval-3.webp" alt="A job with its Approvals section open, showing one request from Marco Rossi marked Pending" caption="The request waits in the job's Approvals section." />
+
+## Approve or reject
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Open the queue">
+    Click **Approvals** in the project's top bar. A badge shows how many requests are waiting. Members don't see this page.
+  </Step>
+  <Step title="Read the request">
+    Each request shows the job, who asked, when, and what they wrote. Click **→ Job** to open the job if you need more detail.
+  </Step>
+  <Step title="Decide">
+    Click **Approve** or **Reject**. Add a **Comment** if you like, which is optional, then confirm with the same button.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/job-approval-4.webp" alt="The Approvals page with one pending request on the job Move the gas pipe, showing who asked for it and Reject and Approve buttons" caption="The approval queue lists every request that's waiting." />
+
+<Screenshot src="/guide/en/job-approval-5.webp" alt="The Approve Request window with an optional Comment box and an Approve button" caption="Add an optional comment and confirm." />
+
+The person who asked sees the decision, and your comment, on the job and in their notifications.
+
+## Require approval before jobs are completed
+
+You can make approval part of finishing work. Turn on **Require approval to complete jobs** and Members can't complete their jobs by themselves any more: they ask for approval first. Owners and Admins still complete jobs directly.
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Turn it on">
+    Open the project's **Settings** and switch on **Require approval to complete jobs**.
+  </Step>
+  <Step title="A Member asks to complete">
+    On an In Progress job, the Member sees **Request completion** instead of **Complete**. They can add a **Message**, then click **Request completion**. The job stays **In Progress**, and the button reads **Approval requested** while they wait. They can use **Withdraw** to take the request back.
+  </Step>
+  <Step title="An Owner or Admin decides">
+    The request appears in the **Approvals** queue. **Approve** completes the job straight away. **Reject** leaves it **In Progress**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/job-approval-1.webp" alt="The Require approval to complete jobs switch, turned on, with a line explaining that Members' jobs need Owner or Admin approval" caption="The setting that makes completion need approval." />
+
+<Callout type="warning">
+If the Approvals add-on isn't active, jobs can be completed without approval even when the switch is on.
+</Callout>

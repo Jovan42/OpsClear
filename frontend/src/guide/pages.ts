@@ -1,7 +1,7 @@
 // ADR-0062: the user guide's page list, in sidebar and prev/next order. It's also the
 // coverage map: `coverage` lists the app files each page documents (globs relative to the
 // repo root), so a PR that changes one of them can be checked for a matching guide update.
-// The globs are a first pass; the jobs that write each page finalise them.
+// The globs are a first pass; the jobs that write each page finalise them (Getting started: JOB-359).
 
 export type GuideSection = 'getting-started' | 'daily-work' | 'planning' | 'admin-settings' | 'account-more';
 
@@ -50,24 +50,30 @@ const page = (
 ): GuidePageEntry => ({ slug, section, titleKey: `pages.${slug}`, coverage, featureCards });
 
 export const GUIDE_PAGES: readonly GuidePageEntry[] = [
-  // Getting started (the onboarding journey)
+  // Getting started (the onboarding journey). Coverage is final for these pages (JOB-359).
   page('index', 'getting-started', ['frontend/src/features/landing/LandingPage.tsx']),
   page('sign-up', 'getting-started', [
     'keycloak/themes/opsclear/login/register.ftl',
     'keycloak/themes/opsclear/login/login-verify-email.ftl',
     'keycloak/themes/opsclear/login/messages/**',
+    'keycloak/themes/opsclear/email/**',
   ]),
-  page('create-organisation', 'getting-started', ['frontend/src/features/org/CreateOrgPage.tsx']),
+  page('create-organisation', 'getting-started', [
+    'frontend/src/features/org/CreateOrgPage.tsx',
+    'frontend/src/components/SubscriptionWall.tsx',
+  ]),
   page('invite-team', 'getting-started', [
     'frontend/src/features/org/OrgInvitesPage.tsx',
     'frontend/src/features/org/AcceptInvitePage.tsx',
     'frontend/src/features/org/OrgMembersPage.tsx',
+    'backend/src/main/resources/mail/**',
     'keycloak/themes/opsclear/login/register.ftl',
   ]),
   page('first-project', 'getting-started', [
     'frontend/src/features/projects/ProjectListPage.tsx',
     'frontend/src/features/projects/NewProjectModal.tsx',
     'frontend/src/features/projects/AddMemberForm.tsx',
+    'frontend/src/features/projects/ProjectSettingsPage.tsx',
   ]),
   page('create-job', 'getting-started', [
     'frontend/src/features/jobs/NewJobModal.tsx',
@@ -80,12 +86,15 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
       'frontend/src/features/jobs/JobDetailPage.tsx',
       'frontend/src/features/jobs/components/JobStatusBar.tsx',
       'frontend/src/features/jobs/components/NoteThread.tsx',
+      'frontend/src/features/jobs/components/StatusHistory.tsx',
+      'frontend/src/features/dashboard/DashboardPage.tsx',
     ],
     ['job-tracking'],
   ),
   page('job-blocked', 'getting-started', [
     'frontend/src/features/jobs/components/BlockModal.tsx',
     'frontend/src/features/jobs/components/BlockedBanner.tsx',
+    'frontend/src/features/jobs/components/JobStatusBar.tsx',
     'frontend/src/features/dashboard/DashboardPage.tsx',
   ]),
   page(
@@ -96,6 +105,8 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
       'frontend/src/features/jobs/components/RequestCompletionModal.tsx',
       'frontend/src/features/jobs/components/ApprovalDecisionModal.tsx',
       'frontend/src/features/jobs/components/CompletionRequestBanner.tsx',
+      'frontend/src/features/jobs/completionApproval.ts',
+      'frontend/src/features/projects/CompletionApprovalSetting.tsx',
       'frontend/src/features/approvals/ApprovalQueuePage.tsx',
     ],
     ['approvals'],

@@ -1,0 +1,66 @@
+export const frontmatter = {
+  title: 'Invite your team',
+  description: 'Invite colleagues by email, copy or resend an invite, and see what they get and how they accept it.',
+};
+
+# Invite your team
+
+OpsClear is for teams, so the next step is to bring your colleagues in. You invite each person by email. They click the link in the email, accept, and they're part of your organisation.
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+## Send an invite
+
+<Steps>
+  <Step title="Open the invites page">
+    Click your name at the top right, choose **Organisation**, then click **Invites**. The **Pending invites** page opens.
+  </Step>
+  <Step title="Enter the email address">
+    Type your colleague's email address in the box and click **Send invite**. Use the address they'll sign in with, because the invite only works for that address.
+  </Step>
+  <Step title="Check it was sent">
+    The invite appears in the list with its expiry, for example "Expires in 7 days". OpsClear emails it to your colleague in the language you're using.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/invite-team-1.webp" alt="The Pending invites page with a colleague's email address typed in the box next to the Send invite button" caption="Type the email address and click Send invite." />
+
+## Manage pending invites
+
+Each invite in the list has three actions.
+
+- **Copy link** copies the invite link so you can send it yourself, for example in a chat message. A "Link copied" message confirms it.
+- **Resend email** sends the email again. You can resend once every 5 minutes. If you try sooner, OpsClear tells you how long to wait.
+- **Revoke** cancels the invite. The link stops working.
+
+<Screenshot src="/guide/en/invite-team-2.webp" alt="The Pending invites list with Copy link, Resend email and Revoke next to the invite, and a Link copied message in the corner" caption="Copy link, Resend email and Revoke for each pending invite." />
+
+<Callout type="note">
+An invite works for 7 days. After that it shows **Expired**. Send a new invite to the same address.
+</Callout>
+
+## What your colleague sees
+
+<Steps>
+  <Step title="They get an email">
+    It says who invited them and to which organisation, and has an **Accept invite** button.
+  </Step>
+  <Step title="They sign in or sign up">
+    If they already have an OpsClear account, they log in. If not, they sign up first (see [Sign up and verify your email](/guide/sign-up)) and then click **Accept invite** in the email again. They must use the email address you invited.
+  </Step>
+  <Step title="They accept">
+    The **You've been invited** page opens. They click **Accept invite**, see **You've joined the organisation**, and are taken to their projects.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/invite-team-3.webp" alt="The invite email: a message that Priya Nair has invited you to join Acme Plumbing, and a green Accept invite button" caption="The invite email your colleague receives." />
+
+<Screenshot src="/guide/en/invite-team-4.webp" alt="The You've been invited page with an Accept invite button" caption="The page the invite link opens." />
+
+<Screenshot src="/guide/en/invite-team-5.webp" alt="The confirmation page: You've joined the organisation, and a note that they are being taken to their projects" caption="After accepting, they're taken to their projects." />
+
+New people join as **Members** of the organisation. They won't see any projects until you add them to one: see [Create a project and add members](/guide/first-project).
+
+<Callout type="tip">
+To make someone an Admin, go to **Organisation**, click **Manage members** and change their role. Only the Owner can do this.
+</Callout>

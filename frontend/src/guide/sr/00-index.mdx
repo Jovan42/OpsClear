@@ -1,17 +1,17 @@
 export const frontmatter = {
   title: 'Prvi koraci sa OpsClear-om',
-  description: 'Čemu služi OpsClear, četiri statusa posla i kako je vodič organizovan.',
+  description: 'Čemu služi OpsClear, četiri statusa posla, koraci od registracije do prvog praćenog posla i kako je vodič organizovan.',
 };
 
 # Prvi koraci sa OpsClear-om
 
-OpsClear vašem timu odgovara na jedno pitanje: **kakvo je stvarno stanje našeg posla danas?** Svaki zadatak je *posao*, a svaki posao ima jedan od četiri statusa.
+OpsClear vašem timu odgovara na jedno pitanje: **kakvo je stvarno stanje našeg posla danas?** Svaki zadatak je *posao*, a svaki posao ima jedan status, pa možete da vidite gde šta stoji, a da nikoga ne zovete.
 
-<Callout type="note">
-Ova stranica je privremena. Kompletan vodič za prve korake stiže uskoro.
-</Callout>
+Ova stranica prikazuje ceo put od registracije do vašeg prvog praćenog posla. Svaki korak ima svoju stranicu sa detaljima.
 
 ## Četiri statusa posla
+
+Svaki posao je u tačno jednom od ova četiri statusa. Posao napreduje kako se radi, a usput može da se blokira.
 
 | Status | Šta znači |
 |--------|-----------|
@@ -22,35 +22,47 @@ Ova stranica je privremena. Kompletan vodič za prve korake stiže uskoro.
 
 <FeatureLink card="job-tracking" />
 
+<Screenshot src="/guide/sr/job-blocked-3.webp" alt="Kontrolna tabla projekta Kitchen refit: kružni grafikon statusa poslova, broj poslova za svaki status i jedan blokiran posao sa razlogom zbog kog čeka" caption="Kontrolna tabla pokazuje koliko je poslova u kom statusu i koji su blokirani i zašto." />
+
 ## Vaši prvi koraci
 
 <Steps>
   <Step title="Registrujte se">
-    Napravite nalog i potvrdite svoju email adresu.
+    Napravite nalog i potvrdite svoju email adresu. Pogledajte [Registracija i potvrda email adrese](/guide/sign-up).
   </Step>
   <Step title="Napravite organizaciju">
-    Dajte joj ime. Vi postajete njen **Vlasnik**.
+    Dajte ime radnom prostoru svoje kompanije. Vi postajete njen **Vlasnik**. Pogledajte [Napravite svoju organizaciju](/guide/create-organisation).
   </Step>
   <Step title="Pozovite svoj tim">
-    Pošaljite pozivnice iz **Organizacija > Članovi**.
+    Pošaljite pozivnicu na email adresu svakog kolege. Pogledajte [Pozovite svoj tim](/guide/invite-team).
   </Step>
-  <Step title="Napravite projekat i prvi posao">
-    Dodajte posao sa odgovornom osobom i rokom.
+  <Step title="Napravite projekat">
+    Projekat sadrži poslove za jednu celinu posla, na primer jednog klijenta ili gradilište. Dodajte ljude koji rade na njemu. Pogledajte [Napravite projekat i dodajte članove](/guide/first-project).
+  </Step>
+  <Step title="Napravite i dodelite posao">
+    Dajte poslu naslov, rok i odgovornu osobu. Pogledajte [Napravite i dodelite posao](/guide/create-job).
+  </Step>
+  <Step title="Pratite posao do kraja">
+    Započnite ga, dodajte belešku i označite ga kao završen. Ako zapne, blokirajte ga i navedite razlog. Ako je potrebna odluka, zatražite odobrenje. Pogledajte [Posao od početka do kraja](/guide/job-done), [Kada je posao blokiran](/guide/job-blocked) i [Kada posao traži odobrenje](/guide/job-approval).
   </Step>
 </Steps>
 
 <RoleBadge role={['Owner', 'Admin']} />
 
-<Screenshot src="/screenshots/job-tracking.png" alt="Lista poslova projekta, grupisana po etapama" caption="Lista poslova na prvi pogled pokazuje svaki posao i njegov status." />
+Samo Vlasnici i Administratori mogu da pozivaju ljude u organizaciju, pa pozivanje obično radi onaj ko se prvi registrovao. Svako koga pozovete prihvata pozivnicu i zatim radi na poslovima koji su mu dodeljeni.
+
+<Callout type="note">
+Neke funkcije zahtevaju dodatak, na primer kontrolna tabla, beleške i odobrenja. Svaka stranica kaže kada je nešto potrebno. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
 
 ## Kako je vodič organizovan
 
-Vodič ima pet odeljaka: Prvi koraci, Svakodnevni rad, Planiranje, Administracija i podešavanja, i Nalog i ostalo. Koristite pretragu da odmah pronađete temu.
+Vodič ima pet odeljaka: Prvi koraci, Svakodnevni rad, Planiranje, Administracija i podešavanja, i Nalog i ostalo. Koristite pretragu da odmah pronađete temu, a izbor jezika da vodič čitate na engleskom ili srpskom.
 
 <Callout type="tip">
 Zapeli ste? Pogledajte stranicu [Česta pitanja i rešavanje problema](/guide/faq).
 </Callout>
 
 <Callout type="warning">
-Neke funkcije zahtevaju dodatak. Pogledajte [Pretplata i dodaci](/guide/subscription).
+Beleške se ne mogu menjati ni brisati kada se jednom sačuvaju, pa na njih možete da se oslonite kao na zapis. Pročitajte belešku pre nego što je dodate.
 </Callout>

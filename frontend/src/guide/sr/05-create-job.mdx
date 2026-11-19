@@ -1,0 +1,54 @@
+export const frontmatter = {
+  title: 'Napravite i dodelite posao',
+  description: 'Napravite posao, popunite naslov, klijenta, rok i prioritet, dodelite ga nekome i saznajte šta su ID-jevi poslova.',
+};
+
+# Napravite i dodelite posao
+
+Posao je jedan komad posla sa jednom odgovornom osobom i jednim statusom. Sve ostalo u OpsClear-u je izgrađeno oko poslova. Posao može da napravi svaki član projekta.
+
+## Napravite posao
+
+<Steps>
+  <Step title="Otvorite listu poslova">
+    Otvorite projekat i kliknite na **Poslovi** u gornjoj traci. Ako je lista prazna, kliknite na **Kreiraj prvi posao**. U suprotnom kliknite na **+ Novi posao**.
+  </Step>
+  <Step title="Popunite posao">
+    Upišite **Naslov**. To je jedino što morate da popunite. Dodajte **Klijent**, **Rok** i **Prioritet** ako ih znate, a odgovornu osobu izaberite u polju **Dodeli**: počnite da kucate ime i izaberite osobu sa liste.
+  </Step>
+  <Step title="Napravite ga">
+    Kliknite na **Kreiraj posao**. Posao se pojavljuje na listi sa statusom **Novo**.
+  </Step>
+  <Step title="Otvorite ga">
+    Kliknite na naslov posla na listi da otvorite njegovu stranicu.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/create-job-1.webp" alt="Prozor Novi posao sa još praznim poljima Naslov, Opis, Klijent, Rok, Prioritet i Dodeli" caption="Prozor Novi posao." />
+
+<Screenshot src="/guide/sr/create-job-2.webp" alt="Popunjen prozor Novi posao: naslov Fit the kitchen sink, klijent Hartley Family, rok, prioritet Visok i Marco Rossi izabran u polju Dodeli" caption="Popunjen posao, spreman za pravljenje." />
+
+<Screenshot src="/guide/sr/create-job-3.webp" alt="Lista poslova sa novim poslom, njegovim klijentom, osobom kojoj je dodeljen, rokom, prioritetom Visok i statusom Novo" caption="Novi posao na listi, sa statusom Novo." />
+
+<Screenshot src="/guide/sr/create-job-4.webp" alt="Stranica posla: naslov sa oznakama Visok i Novo, klijent, osoba kojoj je dodeljen, rok i dugme Započni" caption="Stranica samog posla, gde se rad prati." />
+
+## Polja posla
+
+| Polje | Šta upisati |
+|-------|-------------|
+| **Naslov** | Kratak naziv koji kaže šta treba uraditi. Obavezno |
+| **Opis** | Opcioni detalji. Tekst možete oblikovati, a **Pregled** pokazuje kako izgleda |
+| **Klijent** | Za koga je posao |
+| **Rok** | Datum do kog posao treba da bude gotov |
+| **Prioritet** | **Nizak**, **Srednji**, **Visok** ili **Kritičan**. Novi posao počinje kao **Srednji** |
+| **Dodeli** | Odgovorna osoba. Na listi su samo ljudi iz projekta |
+
+Vlasnici i Administratori vide svaki posao u projektu. Član vidi samo poslove koji su mu dodeljeni, pa dodelite posao nekome da ga stavite na njegovu listu.
+
+## ID-jevi poslova
+
+Svaki posao dobija kratak ID, na primer JOB-042, a svaki projekat takođe, na primer PRJ-007. Vidite ga u adresnoj traci kada je posao otvoren, pa lako možete da uputite kolegu na tačno onaj posao. ID se nikada ne menja. Slova za nove poslove možete promeniti u podešavanjima organizacije.
+
+<Callout type="note">
+Ako vaš paket uključuje šablone, etape ili tipove poslova, prozor **Novi posao** ima i **Počni od šablona**, **Etapa** i **Tip**. Pogledajte [Etape](/guide/milestones) i [Šabloni i tipovi poslova](/guide/templates-and-types). Dodaci su objašnjeni u [Pretplata i dodaci](/guide/subscription).
+</Callout>

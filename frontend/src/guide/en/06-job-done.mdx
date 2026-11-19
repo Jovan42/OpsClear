@@ -1,0 +1,61 @@
+export const frontmatter = {
+  title: 'A job from start to finish',
+  description: 'Move a job from New to In Progress to Completed, add a note along the way, and see the result on the dashboard.',
+};
+
+# A job from start to finish
+
+A job's status tells everyone where the work stands. Most jobs take the same short path: **New**, then **In Progress**, then **Completed**. This page follows one job along it.
+
+<FeatureLink card="job-tracking" />
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+The person the job is assigned to can change its status too. Other Members can't.
+
+## Move the job through its statuses
+
+<Steps>
+  <Step title="Open the job">
+    Open the **Jobs** list and click the job's title.
+  </Step>
+  <Step title="Start it">
+    Click **Start** when work begins. The status changes from **New** to **In Progress**.
+  </Step>
+  <Step title="Add a note">
+    Open the **Notes** section, type what happened, for example "Parts delivered, starting on site tomorrow morning.", and click **Add Note**. A window reminds you that notes can't be edited or deleted. Click **Add Note** again to save it.
+  </Step>
+  <Step title="Complete it">
+    When the work is finished, click **Complete**, then **Mark Complete** to confirm. The status becomes **Completed**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/job-done-1.webp" alt="A job with the status New and a Start button" caption="A new job waits for someone to click Start." />
+
+<Screenshot src="/guide/en/job-done-2.webp" alt="The same job now In Progress, with Complete and Block buttons" caption="Once started, the job is In Progress and offers Complete and Block." />
+
+<Screenshot src="/guide/en/job-done-3.webp" alt="The Notes section with one note and the box for a new note, and the Status history section listing the job being created and then started" caption="A note on the job, and below it the status history." />
+
+<Screenshot src="/guide/en/job-done-4.webp" alt="The job's page with the status Completed and no Complete button any more" caption="A completed job." />
+
+<Callout type="note">
+Notes and the status history are add-ons. If your organisation doesn't have one, that section is hidden or marked as not included. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+<Callout type="tip">
+In a project that asks for approval before jobs are completed, a Member sees **Request completion** instead of **Complete**. See [When a job needs approval](/guide/job-approval).
+</Callout>
+
+## Change your mind
+
+Finished by mistake? An Owner or Admin can click **Reopen** on a completed job to put it back to **In Progress**. The person it's assigned to can't undo a completion themselves.
+
+## See it on the dashboard
+
+The project's **Dashboard** shows the whole picture. A ring chart and six counts show how many jobs are **New**, **In Progress**, **Blocked** and **Completed**, how many are **Overdue**, and how many approvals are waiting. The counts update as statuses change, and the **Completed** count goes up when you finish a job.
+
+<Screenshot src="/guide/en/job-done-5.webp" alt="The dashboard: a ring chart of statuses and counts for New, In Progress, Blocked, Completed, Overdue and Pending approvals, with Completed showing 1" caption="The dashboard after one job is completed." />
+
+<Callout type="note">
+The dashboard is an add-on too. Without it, the **Dashboard** page says it isn't included in your plan.
+</Callout>

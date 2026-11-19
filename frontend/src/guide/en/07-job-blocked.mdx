@@ -1,0 +1,64 @@
+export const frontmatter = {
+  title: 'When a job is blocked',
+  description: 'Block a job with a reason when it can\'t move forward, see who is blocked and why on the dashboard, and unblock it when it\'s sorted out.',
+};
+
+# When a job is blocked
+
+Sometimes work can't go on: you're waiting for a delivery, a decision or a client. Mark the job as **Blocked** and say why. Then nobody has to ask, because the reason, the person and the date are visible to everyone who needs them.
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+The person the job is assigned to can block and unblock it too. A job has to be **In Progress** before it can be blocked.
+
+## Block a job
+
+<Steps>
+  <Step title="Open the job">
+    Open the job that's stuck. Its status is **In Progress**.
+  </Step>
+  <Step title="Click Block">
+    Click **Block**. The **Block Job** window opens.
+  </Step>
+  <Step title="Say why">
+    In **Block reason**, pick a ready-made reason from the list or type your own, for example "Waiting for the supplier to deliver the dishwasher". Then click **Block Job**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/job-blocked-1.webp" alt="The Block Job window with a reason typed in the Block reason box" caption="Pick or type a reason, then click Block Job." />
+
+The job's status becomes **Blocked**, and a red banner at the top of the job shows "Blocked since" the date, with the reason.
+
+<Screenshot src="/guide/en/job-blocked-2.webp" alt="A blocked job with a red banner showing the date it was blocked and the reason, and an Unblock button" caption="The banner shows since when the job is blocked, and why." />
+
+<Callout type="tip">
+The list of ready-made reasons comes from the project's settings. See [Project settings](/guide/project-settings).
+</Callout>
+
+## See what's blocked
+
+Open the project's **Dashboard**. The **Blocked** section lists every blocked job with who is responsible, how long ago it was blocked and the reason. It's the quickest way to see where work is stuck and what it's waiting for.
+
+<Screenshot src="/guide/en/job-blocked-3.webp" alt="The dashboard with a Blocked section listing one job, the person responsible, that it was blocked today, and the reason in red" caption="The dashboard lists blocked jobs with who, why and since when." />
+
+<Callout type="note">
+The dashboard is an add-on. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## Unblock a job
+
+When the problem is sorted out:
+
+<Steps>
+  <Step title="Open the job">
+    Open the blocked job.
+  </Step>
+  <Step title="Click Unblock">
+    Click **Unblock**. A window asks you to confirm.
+  </Step>
+  <Step title="Confirm">
+    Click **Unblock** in the window. The job goes back to **In Progress**, and the banner disappears.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/job-blocked-4.webp" alt="The Unblock Job window asking to confirm that the job should be unblocked and work resumed" caption="Confirm to put the job back In Progress." />

@@ -1,0 +1,64 @@
+export const frontmatter = {
+  title: 'Kada je posao blokiran',
+  description: 'Blokirajte posao sa razlogom kada ne može dalje, na kontrolnoj tabli vidite ko je blokiran i zašto, i odblokirajte ga kada se reši.',
+};
+
+# Kada je posao blokiran
+
+Ponekad rad ne može da se nastavi: čekate isporuku, odluku ili klijenta. Označite posao kao **Blokirano** i navedite razlog. Tada niko ne mora da pita, jer su razlog, osoba i datum vidljivi svima kojima trebaju.
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Posao može da blokira i odblokira i osoba kojoj je dodeljen. Posao mora biti **U toku** da bi mogao da se blokira.
+
+## Blokirajte posao
+
+<Steps>
+  <Step title="Otvorite posao">
+    Otvorite posao koji je zapeo. Njegov status je **U toku**.
+  </Step>
+  <Step title="Kliknite na Blokiraj">
+    Kliknite na **Blokiraj**. Otvara se prozor **Blokiraj zadatak**.
+  </Step>
+  <Step title="Navedite razlog">
+    U polju **Razlog blokiranja** izaberite unapred pripremljen razlog sa liste ili upišite svoj, na primer "Waiting for the supplier to deliver the dishwasher". Zatim kliknite na **Blokiraj zadatak**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/job-blocked-1.webp" alt="Prozor Blokiraj zadatak sa upisanim razlogom u polju Razlog blokiranja" caption="Izaberite ili upišite razlog, pa kliknite na Blokiraj zadatak." />
+
+Status posla postaje **Blokirano**, a crveni baner na vrhu posla pokazuje "Blokirano od" datuma, sa razlogom.
+
+<Screenshot src="/guide/sr/job-blocked-2.webp" alt="Blokiran posao sa crvenim banerom koji pokazuje datum blokiranja i razlog, i dugmetom Odblokiraj" caption="Baner pokazuje od kada je posao blokiran i zašto." />
+
+<Callout type="tip">
+Lista unapred pripremljenih razloga dolazi iz podešavanja projekta. Pogledajte [Podešavanja projekta](/guide/project-settings).
+</Callout>
+
+## Pogledajte šta je blokirano
+
+Otvorite **Kontrolna tabla** projekta. Odeljak **Blokirano** navodi svaki blokiran posao, ko je odgovoran, pre koliko je blokiran i razlog. To je najbrži način da vidite gde rad stoji i na šta čeka.
+
+<Screenshot src="/guide/sr/job-blocked-3.webp" alt="Kontrolna tabla sa odeljkom Blokirano koji navodi jedan posao, odgovornu osobu, da je blokiran danas i razlog crvenom bojom" caption="Kontrolna tabla navodi blokirane poslove: ko, zašto i od kada." />
+
+<Callout type="note">
+Kontrolna tabla je dodatak. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Odblokirajte posao
+
+Kada se problem reši:
+
+<Steps>
+  <Step title="Otvorite posao">
+    Otvorite blokiran posao.
+  </Step>
+  <Step title="Kliknite na Odblokiraj">
+    Kliknite na **Odblokiraj**. Prozor traži da potvrdite.
+  </Step>
+  <Step title="Potvrdite">
+    Kliknite na **Odblokiraj** u prozoru. Posao se vraća u **U toku**, a baner nestaje.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/job-blocked-4.webp" alt="Prozor Odblokiraj zadatak koji traži potvrdu da se posao odblokira i da se rad nastavi" caption="Potvrdite da vratite posao u U toku." />
