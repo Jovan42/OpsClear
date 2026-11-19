@@ -9,6 +9,7 @@ import Button from '../../components/Button';
 import { useCreateOrganisation } from './useOrganisation';
 import { useCurrentOrg } from './OrgContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import OnboardingHeader from './OnboardingHeader';
 
 export default function CreateOrgPage() {
   const { t } = useTranslation('org');
@@ -60,79 +61,82 @@ export default function CreateOrgPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            {t('createOrgHeading')}
-          </h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {t('createOrgSubtitle')}
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+      <OnboardingHeader />
+      <main className="flex-1 flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md">
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              {t('createOrgHeading')}
+            </h1>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              {t('createOrgSubtitle')}
+            </p>
+          </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div>
-              <label
-                htmlFor="org-name"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                {t('orgNameLabel')}
-              </label>
-              <input
-                id="org-name"
-                {...register('name')}
-                placeholder={t('orgNamePlaceholder')}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
-              />
-              {errors.name && (
-                <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label
-                htmlFor="org-slug"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                {t('slugLabel')}{' '}
-                <span className="text-xs font-normal text-gray-400 dark:text-gray-500">
-                  {t('slugHint')}
-                </span>
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm font-mono text-gray-500 dark:text-gray-400 select-none">
-                  /
-                </span>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div>
+                <label
+                  htmlFor="org-name"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  {t('orgNameLabel')}
+                </label>
                 <input
-                  id="org-slug"
-                  {...register('slug')}
-                  onChange={(e) => {
-                    const upper = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                    setValue('slug', upper, { shouldValidate: true });
-                  }}
-                  placeholder={t('slugPlaceholder')}
-                  maxLength={3}
-                  className="w-28 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-mono bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent uppercase"
+                  id="org-name"
+                  {...register('name')}
+                  placeholder={t('orgNamePlaceholder')}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
                 />
+                {errors.name && (
+                  <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+                )}
               </div>
-              {errors.slug && (
-                <p className="mt-1 text-xs text-red-600">{errors.slug.message}</p>
-              )}
-              {apiError && (
-                <p className="mt-1 text-xs text-red-600">{apiError}</p>
-              )}
-            </div>
 
-            <div className="pt-1">
-              <Button type="submit" loading={isPending} style={{ width: '100%', justifyContent: 'center' }}>
-                {t('createOrgButton')}
-              </Button>
-            </div>
-          </form>
+              <div>
+                <label
+                  htmlFor="org-slug"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  {t('slugLabel')}{' '}
+                  <span className="text-xs font-normal text-gray-400 dark:text-gray-500">
+                    {t('slugHint')}
+                  </span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm font-mono text-gray-500 dark:text-gray-400 select-none">
+                    /
+                  </span>
+                  <input
+                    id="org-slug"
+                    {...register('slug')}
+                    onChange={(e) => {
+                      const upper = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                      setValue('slug', upper, { shouldValidate: true });
+                    }}
+                    placeholder={t('slugPlaceholder')}
+                    maxLength={3}
+                    className="w-28 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-mono bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent uppercase"
+                  />
+                </div>
+                {errors.slug && (
+                  <p className="mt-1 text-xs text-red-600">{errors.slug.message}</p>
+                )}
+                {apiError && (
+                  <p className="mt-1 text-xs text-red-600">{apiError}</p>
+                )}
+              </div>
+
+              <div className="pt-1">
+                <Button type="submit" loading={isPending} style={{ width: '100%', justifyContent: 'center' }}>
+                  {t('createOrgButton')}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

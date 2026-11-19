@@ -40,6 +40,54 @@ describe('Organisation Management — Create', () => {
     cy.deleteKeycloakUser(email);
   });
 
+  // JOB-395: the page is routed outside AppLayout, so it has its own top bar.
+  it('the top bar has the theme and language switches and Sign out, and no org links', () => {
+    const email = uniqueEmail('topbar');
+    cy.createKeycloakUser(email, 'E2E', 'TopBar');
+    cy.intercept('GET', '**/api/user/preferences').as('loadPreferences');
+    cy.loginAs(email);
+    cy.visit('/org/new');
+    cy.wait('@loadPreferences');
+
+    cy.get('nav').within(() => {
+      cy.contains('button', 'Sign out').should('be.visible');
+      cy.contains('a', 'Projects').should('not.exist');
+      cy.contains('Organisation').should('not.exist');
+    });
+
+    // A fresh user starts on English and the System theme.
+    cy.get('nav').contains('button', 'EN').click();
+    cy.contains('h1', 'Kreirajte svoju organizaciju').should('be.visible');
+    cy.get('nav').contains('button', 'SR').click();
+    cy.contains('h1', 'Create your organisation').should('be.visible');
+
+    cy.get('nav button[aria-label="System"]').click();
+    cy.get('html').should('not.have.class', 'dark');
+    cy.get('nav button[aria-label="Light"]').click();
+    cy.get('html').should('have.class', 'dark');
+    cy.get('nav button[aria-label="Dark"]').should('be.visible');
+    cy.deleteKeycloakUser(email);
+  });
+
+  it('Sign out on the page ends the Keycloak session and returns to the landing page', () => {
+    const email = uniqueEmail('signout');
+    cy.createKeycloakUser(email, 'E2E', 'SignOut');
+    cy.loginAs(email);
+    cy.visit('/onboarding');
+    // Stubbed so the test stays on the app's origin; the real redirect is covered by
+    // auth-flows/login.cy.ts for the user menu, which calls the same keycloak.logout().
+    cy.intercept('GET', '**/realms/opsclear/protocol/openid-connect/logout*', {
+      statusCode: 200,
+      body: '',
+    }).as('logout');
+    cy.contains('nav button', 'Sign out').click();
+    cy.wait('@logout').its('request.url').then((url: string) => {
+      const redirect = new URL(url).searchParams.get('post_logout_redirect_uri');
+      expect(redirect).to.eq(`${Cypress.config('baseUrl')}/`);
+    });
+    cy.deleteKeycloakUser(email);
+  });
+
   it('typing non-letters into the slug field strips them and forces uppercase live', () => {
     const email = uniqueEmail('slugtype');
     cy.createKeycloakUser(email, 'E2E', 'SlugType');
