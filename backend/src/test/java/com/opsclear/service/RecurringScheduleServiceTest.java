@@ -254,6 +254,86 @@ class RecurringScheduleServiceTest {
         verify(assigneeRepository).replaceForSchedule(eq(saved.getId()), eq(List.of(assigneeId)));
     }
 
+    @Test
+    @DisplayName("create — does not replace assignees when assigneeIds is an empty list")
+    void create_shouldNotReplaceAssignees_whenAssigneeIdsEmpty() {
+        CreateScheduleRequest req = new CreateScheduleRequest();
+        req.setName("No Assignees");
+        req.setTemplateId(templateId);
+        req.setCronExpression(VALID_CRON);
+        req.setTimezone(VALID_TZ);
+        req.setAssigneeIds(List.of());
+
+        RecurringSchedulesRecord saved = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(scheduleRepository.insert(any())).thenReturn(saved);
+        when(assigneeRepository.findByScheduleId(any())).thenReturn(List.of());
+
+        service.create(projectId, req, ownerId);
+
+        verify(assigneeRepository, never()).replaceForSchedule(any(), any());
+    }
+
+    @Test
+    @DisplayName("create — throws NotFoundException when an assignee is not in the project's org (JOB-393)")
+    void create_shouldThrow404_whenAssigneeNotInOrg() {
+        UUID memberAssigneeId = UUID.randomUUID();
+        UUID outsiderId = UUID.randomUUID();
+
+        CreateScheduleRequest req = new CreateScheduleRequest();
+        req.setName("With Outsider");
+        req.setTemplateId(templateId);
+        req.setCronExpression(VALID_CRON);
+        req.setTimezone(VALID_TZ);
+        req.setAssigneeIds(List.of(memberAssigneeId, outsiderId));
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(organisationRepository.existsMember(project.getOrganisationId(), memberAssigneeId)).thenReturn(true);
+        when(organisationRepository.existsMember(project.getOrganisationId(), outsiderId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.create(projectId, req, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.RecurringSchedule.ASSIGNEE_NOT_FOUND);
+        verify(scheduleRepository, never()).insert(any());
+        verify(assigneeRepository, never()).replaceForSchedule(any(), any());
+    }
+
+    @Test
+    @DisplayName("update — throws NotFoundException when an assignee is not in the project's org (JOB-393)")
+    void update_shouldThrow404_whenAssigneeNotInOrg() {
+        UUID scheduleId = UUID.randomUUID();
+        UUID outsiderId = UUID.randomUUID();
+        RecurringSchedulesRecord row = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        row.setId(scheduleId);
+
+        UpdateScheduleRequest req = new UpdateScheduleRequest();
+        req.setName("Updated Name");
+        req.setTemplateId(templateId);
+        req.setCronExpression(VALID_CRON);
+        req.setTimezone(VALID_TZ);
+        req.setAssigneeIds(List.of(outsiderId));
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(row));
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+        when(organisationRepository.existsMember(project.getOrganisationId(), outsiderId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.update(projectId, scheduleId, req, ownerId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.RecurringSchedule.ASSIGNEE_NOT_FOUND);
+        verify(scheduleRepository, never()).update(any());
+        verify(assigneeRepository, never()).replaceForSchedule(any(), any());
+    }
+
     // --- pause ---
 
     @Test
