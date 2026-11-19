@@ -170,7 +170,6 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
     'frontend/src/components/RoleBadge.tsx',
     'frontend/src/features/org/OrgMembersPage.tsx',
     'frontend/src/features/projects/AddMemberForm.tsx',
-    'frontend/src/features/org/AddOrgMemberForm.tsx',
   ]),
   page('project-settings', 'admin-settings', [
     'frontend/src/features/projects/ProjectSettingsPage.tsx',
@@ -182,7 +181,6 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
     'frontend/src/features/org/IdPrefixesSection.tsx',
     'frontend/src/features/org/OrgMembersPage.tsx',
     'frontend/src/features/org/OrgInvitesPage.tsx',
-    'frontend/src/features/org/AddOrgMemberForm.tsx',
   ]),
   page('preferences', 'admin-settings', [
     'frontend/src/features/settings/SettingsPage.tsx',

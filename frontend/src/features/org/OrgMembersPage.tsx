@@ -11,7 +11,6 @@ import Skeleton from '../../components/Skeleton';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { guidePath } from '../../guide/pages';
 import { useCurrentOrg } from './OrgContext';
-import AddOrgMemberForm from './AddOrgMemberForm';
 import {
   useOrgMembers,
   useUpdateOrgMemberRole,
@@ -93,7 +92,17 @@ export default function OrgMembersPage() {
       </div>
 
       {isOwnerOrAdmin && (
-        <AddOrgMemberForm orgId={org.id} />
+        <div
+          data-testid="org-members-invite-pointer"
+          className="p-4 flex items-center justify-between gap-4 border border-gray-200 dark:border-gray-700 rounded-xl"
+        >
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            {t('org:addMembersViaInvites')}
+          </p>
+          <Button variant="secondary" size="sm" onClick={() => navigate('/org/invites')}>
+            {t('org:invitePeopleButton')}
+          </Button>
+        </div>
       )}
 
       <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-x-auto">

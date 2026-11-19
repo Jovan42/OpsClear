@@ -15,8 +15,8 @@ interface AddMemberFormProps {
 
 export default function AddMemberForm({ projectId }: AddMemberFormProps) {
   const { t } = useTranslation(['projects', 'common']);
-  const [email, setEmail] = useState('');
-  const [debouncedEmail, setDebouncedEmail] = useState('');
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selected, setSelected] = useState<UserSearchResponse | null>(null);
   const [role, setRole] = useState<Role>('MEMBER');
   const [open, setOpen] = useState(false);
@@ -26,14 +26,14 @@ export default function AddMemberForm({ projectId }: AddMemberFormProps) {
   const memberIds = new Set(members.map((m) => m.userId));
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedEmail(email), 300);
+    const t = setTimeout(() => setDebouncedQuery(query.trim()), 300);
     return () => clearTimeout(t);
-  }, [email]);
+  }, [query]);
 
   const { data: results = [] } = useQuery({
-    queryKey: ['users', 'search', debouncedEmail],
-    queryFn: () => usersApi.search(debouncedEmail),
-    enabled: debouncedEmail.length >= 2 && !selected,
+    queryKey: ['users', 'search', debouncedQuery],
+    queryFn: () => usersApi.search(debouncedQuery),
+    enabled: debouncedQuery.length >= 2 && !selected,
   });
 
   useEffect(() => {
@@ -48,12 +48,12 @@ export default function AddMemberForm({ projectId }: AddMemberFormProps) {
 
   function handleSelect(user: UserSearchResponse) {
     setSelected(user);
-    setEmail(user.email);
+    setQuery(user.email);
     setOpen(false);
   }
 
-  function handleEmailChange(value: string) {
-    setEmail(value);
+  function handleQueryChange(value: string) {
+    setQuery(value);
     setSelected(null);
     setOpen(true);
   }
@@ -64,7 +64,7 @@ export default function AddMemberForm({ projectId }: AddMemberFormProps) {
       { userId: selected.id, role },
       {
         onSuccess: () => {
-          setEmail('');
+          setQuery('');
           setSelected(null);
           setRole('MEMBER');
         },
@@ -78,8 +78,8 @@ export default function AddMemberForm({ projectId }: AddMemberFormProps) {
         <input
           className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
           placeholder={t('projects:addMemberForm.searchPlaceholder')}
-          value={email}
-          onChange={(e) => handleEmailChange(e.target.value)}
+          value={query}
+          onChange={(e) => handleQueryChange(e.target.value)}
           onFocus={() => setOpen(true)}
           autoComplete="off"
         />

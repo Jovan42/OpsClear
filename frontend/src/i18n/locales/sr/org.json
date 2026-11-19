@@ -29,9 +29,6 @@
   "acceptInviteError": "Nešto je pošlo naopako. Pozivnica je možda istekla ili je već iskorišćena.",
   "goToProjects": "Idi na projekte",
 
-  "searchByEmail": "Pretraga po email adresi…",
-  "alreadyMember": "(već je član)",
-
   "createOrgPageTitle": "Kreiranje organizacije",
   "nameRequired": "Ime je obavezno",
   "maxNameLength": "Maksimalno 100 karaktera",
@@ -79,6 +76,8 @@
   "membersPageTitle": "Članovi organizacije",
   "backToOrgSettings": "← Podešavanja organizacije",
   "membersHeading": "Članovi",
+  "addMembersViaInvites": "Da biste nekoga dodali u organizaciju, pošaljite mu pozivnicu. Pridružiće se kada otvori link.",
+  "invitePeopleButton": "Pozovite ljude",
   "aloneMessage": "Za sada ste jedini član.",
   "aloneDescription": "Pozovite svoj tim da zajedno pratite posao.",
   "colMember": "Član",

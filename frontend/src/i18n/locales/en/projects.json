@@ -10,7 +10,7 @@
     "descriptionMaxLength": "Max 10000 characters"
   },
   "addMemberForm": {
-    "searchPlaceholder": "Search by email…",
+    "searchPlaceholder": "Search by name or email…",
     "alreadyMember": "(already a member)"
   },
   "newProjectModal": {

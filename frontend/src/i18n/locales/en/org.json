@@ -29,9 +29,6 @@
   "acceptInviteError": "Something went wrong. The invite may have expired or already been used.",
   "goToProjects": "Go to projects",
 
-  "searchByEmail": "Search by email…",
-  "alreadyMember": "(already a member)",
-
   "createOrgPageTitle": "Create organisation",
   "nameRequired": "Name is required",
   "maxNameLength": "Max 100 characters",
@@ -78,6 +75,8 @@
   "membersPageTitle": "Organisation members",
   "backToOrgSettings": "← Organisation settings",
   "membersHeading": "Members",
+  "addMembersViaInvites": "To add someone to the organisation, send them an invite. They join when they open the link.",
+  "invitePeopleButton": "Invite people",
   "aloneMessage": "You're the only member so far.",
   "aloneDescription": "Invite your team to start tracking work together.",
   "colMember": "Member",

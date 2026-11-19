@@ -4,10 +4,9 @@
 import { API, uniqueEmail, uniqueSlug, tokenFor, userIdFor, createOrgWithSubscription, addMember } from '../../support/orgApi';
 
 describe('Organisation Management — Members', () => {
-  // JOB-400: user search only returns members of the caller's organisation, so the
-  // org direct-add form can no longer find someone new (JOB-401 replaces it with
-  // invites). The target joins the org via the API first; the promote flow stays
-  // covered here as the @smoke test.
+  // Invites are the only way into an organisation (JOB-401), and the invite flow
+  // itself is covered in invites.cy.ts. The target joins via the API here so this
+  // test covers the promote flow on the members page.
   it('OWNER promotes a new org member to ADMIN', { tags: '@smoke' }, () => {
     const ownerEmail = uniqueEmail('add-owner');
     const targetEmail = uniqueEmail('add-target');
@@ -30,47 +29,34 @@ describe('Organisation Management — Members', () => {
     cy.deleteKeycloakUser(targetEmail);
   });
 
-  it('OWNER adds a member via direct API, then promotes them to ADMIN via the UI', () => {
-    const ownerEmail = uniqueEmail('add-owner');
-    const targetEmail = uniqueEmail('add-target');
+  // JOB-401: the direct-add form is gone; OWNER and ADMIN get a pointer to Invites instead.
+  it('OWNER and ADMIN see no direct-add form, only a pointer that opens Invites', () => {
+    const ownerEmail = uniqueEmail('pointer-owner');
+    const adminEmail = uniqueEmail('pointer-admin');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');
-    cy.createKeycloakUser(targetEmail, 'E2E', 'Target');
+    cy.createKeycloakUser(adminEmail, 'E2E', 'Admin');
 
-    createOrgWithSubscription(ownerEmail, 'Add Corp', uniqueSlug()).then((orgId) => {
-      userIdFor(targetEmail).then((userId) => addMember(orgId, ownerEmail, userId, 'MEMBER'));
+    createOrgWithSubscription(ownerEmail, 'Pointer Corp', uniqueSlug()).then((orgId) => {
+      userIdFor(adminEmail).then((userId) => addMember(orgId, ownerEmail, userId, 'ADMIN'));
     });
 
     cy.loginAs(ownerEmail);
     cy.visit('/org/members');
-    cy.contains('td', targetEmail).should('be.visible');
-
-    // Promote MEMBER -> ADMIN via the role <select> on their row — instant onChange,
-    // no confirmation modal.
-    cy.contains('tr', targetEmail).find('select').select('Admin');
-    cy.contains('tr', targetEmail).find('select').should('have.value', 'ADMIN');
-
-    cy.deleteKeycloakUser(ownerEmail);
-    cy.deleteKeycloakUser(targetEmail);
-  });
-
-  it('an already-added member shows disabled with "(already a member)" in search results', () => {
-    const ownerEmail = uniqueEmail('dup-owner');
-    const targetEmail = uniqueEmail('dup-target');
-    cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');
-    cy.createKeycloakUser(targetEmail, 'Dup', 'Target');
-
-    createOrgWithSubscription(ownerEmail, 'Dup Corp', uniqueSlug()).then((orgId) => {
-      userIdFor(targetEmail).then((userId) => addMember(orgId, ownerEmail, userId, 'MEMBER'));
+    cy.contains('td', adminEmail).should('be.visible');
+    cy.get('input[placeholder*="Search"]').should('not.exist');
+    cy.get('[data-testid=org-members-invite-pointer]').within(() => {
+      cy.contains('send them an invite').should('be.visible');
+      cy.contains('button', 'Invite people').click();
     });
+    cy.location('pathname').should('eq', '/org/invites');
 
-    cy.loginAs(ownerEmail);
+    cy.loginAs(adminEmail);
     cy.visit('/org/members');
-    cy.get('input[placeholder="Search by email…"]').type(targetEmail.split('@')[0]);
-    cy.contains('li', targetEmail, { timeout: 10000 }).should('contain.text', '(already a member)');
-    cy.contains('li', targetEmail).find('button').should('be.disabled');
+    cy.contains('td', ownerEmail).should('be.visible');
+    cy.get('[data-testid=org-members-invite-pointer]').should('be.visible');
 
     cy.deleteKeycloakUser(ownerEmail);
-    cy.deleteKeycloakUser(targetEmail);
+    cy.deleteKeycloakUser(adminEmail);
   });
 
   it('OWNER removes a non-owner member via the confirm modal', () => {
@@ -96,7 +82,7 @@ describe('Organisation Management — Members', () => {
     cy.deleteKeycloakUser(targetEmail);
   });
 
-  it('a plain MEMBER sees the list read-only — no add form, no role select, no remove link', () => {
+  it('a plain MEMBER sees the list read-only — no invite pointer, no role select, no remove link', () => {
     const ownerEmail = uniqueEmail('ro-owner');
     const memberEmail = uniqueEmail('ro-member');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');
@@ -108,10 +94,10 @@ describe('Organisation Management — Members', () => {
 
     cy.loginAs(memberEmail);
     cy.visit('/org/members');
-    cy.get('input[placeholder="Search by email…"]').should('not.exist');
+    cy.contains('td', ownerEmail).should('be.visible');
+    cy.get('[data-testid=org-members-invite-pointer]').should('not.exist');
     cy.get('select').should('not.exist');
     cy.contains('Remove').should('not.exist');
-    cy.contains('td', ownerEmail).should('be.visible');
     cy.contains('td', memberEmail).should('be.visible');
 
     cy.deleteKeycloakUser(ownerEmail);
@@ -283,7 +269,8 @@ describe('Organisation Management — Members', () => {
   });
 
   // ADR-0049 multi-tenant isolation (JOB-400): searching from Org A for an Org B
-  // user's exact email returns nothing, through `q` and the deprecated `email` alias.
+  // user's exact email or name returns nothing. The deprecated `email` alias is
+  // checked too while it exists; JOB-403 removes the alias and that assertion.
   it('user search never returns a user from a different organisation', () => {
     const orgAOwnerEmail = uniqueEmail('isolation-a');
     const orgBOwnerEmail = uniqueEmail('isolation-b');
@@ -295,11 +282,11 @@ describe('Organisation Management — Members', () => {
     createOrgWithSubscription(orgBOwnerEmail, 'Org B', uniqueSlug());
 
     tokenFor(orgAOwnerEmail).then((token) => {
-      ['q', 'email'].forEach((param) => {
+      [{ q: orgBOwnerEmail }, { q: 'OrgB' }, { email: orgBOwnerEmail }].forEach((qs) => {
         cy.request({
           method: 'GET',
           url: `${API}/api/users`,
-          qs: { [param]: orgBOwnerEmail },
+          qs,
           headers: { Authorization: `Bearer ${token}` },
         }).then((res) => {
           expect(res.status).to.eq(200);
@@ -323,7 +310,7 @@ describe('Organisation Management — Members', () => {
       cy.request({
         method: 'GET',
         url: `${API}/api/users`,
-        qs: { email: 'a' },
+        qs: { q: 'a' },
         headers: { Authorization: `Bearer ${token}` },
         failOnStatusCode: false,
       }).then((res) => expect(res.status).to.eq(400));
@@ -331,7 +318,7 @@ describe('Organisation Management — Members', () => {
       cy.request({
         method: 'GET',
         url: `${API}/api/users`,
-        qs: { email: '' },
+        qs: { q: '' },
         headers: { Authorization: `Bearer ${token}` },
         failOnStatusCode: false,
       }).then((res) => expect(res.status).to.eq(400));
@@ -341,7 +328,7 @@ describe('Organisation Management — Members', () => {
       cy.request({
         method: 'GET',
         url: `${API}/api/users`,
-        qs: { email: 'someone@example.com' },
+        qs: { q: 'someone@example.com' },
         headers: { Authorization: `Bearer ${token}` },
         failOnStatusCode: false,
       }).then((res) => expect(res.status).to.eq(403));
@@ -352,10 +339,8 @@ describe('Organisation Management — Members', () => {
   });
 
   // ADR-0049 edge case: results capped at 10, confirmed as truncation not an error.
-  // Candidates are added as members of the search org first — given the search-scope
-  // gap documented above, an unaffiliated candidate is never findable at all, so this
-  // still exercises the truncation logic itself (independent of that gap) by
-  // satisfying the current (buggy) within-org constraint instead of fighting it.
+  // Candidates are added as members of the search org first, since the search only
+  // returns members of the caller's organisation.
   it('user search results are capped at 10 even with 11+ matches', () => {
     const ownerEmail = uniqueEmail('cap-owner');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');
@@ -376,7 +361,7 @@ describe('Organisation Management — Members', () => {
       cy.request({
         method: 'GET',
         url: `${API}/api/users`,
-        qs: { email: prefix },
+        qs: { q: prefix },
         headers: { Authorization: `Bearer ${token}` },
       }).then((res) => {
         expect(res.body.length).to.eq(10);

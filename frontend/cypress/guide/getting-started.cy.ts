@@ -219,7 +219,7 @@ describe(`Guide screenshots: Getting started (${lang})`, { testIsolation: false 
       });
 
     cy.then(() => cy.visit(`/projects/${projectId}/settings`));
-    cy.get(`input[placeholder="${tr('Search by email…', 1)}"]`).type(teammate);
+    cy.get(`input[placeholder="${tr('Search by name or email…')}"]`).type(PEOPLE.teammate.first);
     cy.contains('li button', teammate).should('be.visible');
     shot('first-project', 3);
     cy.contains('li button', teammate).click();

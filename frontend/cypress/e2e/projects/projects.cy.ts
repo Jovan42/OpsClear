@@ -190,11 +190,17 @@ describe('Projects (CRUD, Lifecycle, Members)', () => {
     cy.deleteKeycloakUser(email);
   });
 
-  it('an OWNER searches by email to add a member via the UI, changes their role, then removes them', () => {
+  // JOB-401: the picker searches by name or email, and only lists members of the
+  // caller's organisation. The outsider shares the target's first name but belongs to
+  // another organisation, so it must never appear.
+  it('an OWNER finds a member by first or last name to add them via the UI, changes their role, then removes them', () => {
     const ownerEmail = uniqueEmail('members-owner');
     const memberEmail = uniqueEmail('members-target');
+    const outsiderEmail = uniqueEmail('members-outsider');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Tester');
-    cy.createKeycloakUser(memberEmail, 'E2E', 'Target');
+    cy.createKeycloakUser(memberEmail, 'Quintessa', 'Lindqvist');
+    cy.createKeycloakUser(outsiderEmail, 'Quintessa', 'Elsewhere');
+    createOrgWithSubscription(outsiderEmail, 'Elsewhere Corp', uniqueSlug());
     createOrgWithSubscription(ownerEmail, 'Juniper Corp', uniqueSlug()).then((orgId) =>
       createProjectAs(ownerEmail, 'Juniper Revamp').then((projectId) =>
         userIdFor(memberEmail).then((memberId) => {
@@ -203,7 +209,19 @@ describe('Projects (CRUD, Lifecycle, Members)', () => {
           cy.loginAs(ownerEmail);
           cy.visit(`/projects/${projectId}/settings`);
 
-          cy.get('input[placeholder="Search by email…"]').type(memberEmail);
+          cy.get('input[placeholder="Search by name or email…"]').type('lindqvist');
+          cy.contains('li button', memberEmail).should('be.visible');
+
+          // Wait for the first-name request itself, so the outsider check can't pass on
+          // the previous (last-name) results still on screen.
+          cy.intercept({ method: 'GET', pathname: '/api/users', query: { q: 'Quintessa' } }).as('byFirstName');
+          cy.get('input[placeholder="Search by name or email…"]').clear();
+          cy.get('input[placeholder="Search by name or email…"]').type('Quintessa');
+          cy.wait('@byFirstName').its('response.body').should('have.length', 1);
+          cy.get('input[placeholder="Search by name or email…"]').parent().find('li').should('have.length', 1);
+          cy.contains('li button', memberEmail).should('be.visible');
+          cy.contains('li', outsiderEmail).should('not.exist');
+
           cy.contains('li button', memberEmail).click();
           cy.contains('button', 'Add').click();
           cy.contains('td', memberEmail).should('be.visible');
@@ -232,6 +250,7 @@ describe('Projects (CRUD, Lifecycle, Members)', () => {
 
     cy.deleteKeycloakUser(ownerEmail);
     cy.deleteKeycloakUser(memberEmail);
+    cy.deleteKeycloakUser(outsiderEmail);
   });
 
   it('a blank/whitespace name 400s; a name over the 255-char backend limit 400s even though it is longer than the stricter 80-char frontend cap', () => {
