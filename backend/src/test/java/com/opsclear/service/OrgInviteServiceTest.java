@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.dto.PublicInviteResponse;
 import com.opsclear.dto.SendInviteRequest;
 import com.opsclear.event.InviteAcceptedEvent;
 import com.opsclear.event.InviteEmailRequestedEvent;
@@ -10,6 +11,7 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.exception.TooManyRequestsException;
 import com.opsclear.model.OrgInviteModel;
+import com.opsclear.model.OrgInviteStatus;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
@@ -575,6 +577,79 @@ class OrgInviteServiceTest {
 
         assertThatThrownBy(() -> service.acceptInvite(token, memberId))
                 .isInstanceOf(BadRequestException.class);
+    }
+
+    // ─── getPublicInvite ──────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturnPublicFields_whenInvitePending")
+    void getPublicInvite_shouldReturnPublicFields_whenInvitePending() {
+        OrgInviteModel invite = pendingInvite(orgId, "invitee@example.com", ownerId);
+        invite.setInvitedByName("Owner");
+        when(orgInviteRepository.findByToken(invite.getToken())).thenReturn(Optional.of(invite));
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+
+        PublicInviteResponse result = service.getPublicInvite(invite.getToken());
+
+        assertThat(result.getOrganisationName()).isEqualTo("Acme");
+        assertThat(result.getInviterName()).isEqualTo("Owner");
+        assertThat(result.getEmail()).isEqualTo("invitee@example.com");
+        assertThat(result.getExpiresAt()).isEqualTo(invite.getExpiresAt());
+        assertThat(result.getStatus()).isEqualTo(OrgInviteStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturnAccepted_whenInviteAccepted")
+    void getPublicInvite_shouldReturnAccepted_whenInviteAccepted() {
+        OrgInviteModel invite = pendingInvite(orgId, "invitee@example.com", ownerId);
+        invite.setAcceptedAt(Instant.now().minus(1, ChronoUnit.HOURS));
+        when(orgInviteRepository.findByToken(invite.getToken())).thenReturn(Optional.of(invite));
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
+
+        assertThat(service.getPublicInvite(invite.getToken()).getStatus()).isEqualTo(OrgInviteStatus.ACCEPTED);
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldThrowNotFound_whenTokenDoesNotExist")
+    void getPublicInvite_shouldThrowNotFound_whenTokenDoesNotExist() {
+        when(orgInviteRepository.findByToken("bad-token")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getPublicInvite("bad-token"))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.OrgInvite.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldThrowNotFound_whenOrganisationDeleted")
+    void getPublicInvite_shouldThrowNotFound_whenOrganisationDeleted() {
+        OrgInviteModel invite = pendingInvite(orgId, "invitee@example.com", ownerId);
+        when(orgInviteRepository.findByToken(invite.getToken())).thenReturn(Optional.of(invite));
+        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getPublicInvite(invite.getToken()))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage(ErrorMessages.OrgInvite.NOT_FOUND);
+    }
+
+    // ─── OrgInviteModel.status ────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("status_shouldMapTimestampsToStatus_forEveryState")
+    void status_shouldMapTimestampsToStatus_forEveryState() {
+        OrgInviteModel invite = pendingInvite(orgId, "invitee@example.com", ownerId);
+        assertThat(invite.status()).isEqualTo(OrgInviteStatus.PENDING);
+        assertThat(invite.isPending()).isTrue();
+
+        invite.setExpiresAt(Instant.now().minusSeconds(1));
+        assertThat(invite.status()).isEqualTo(OrgInviteStatus.EXPIRED);
+        assertThat(invite.isPending()).isFalse();
+
+        invite.setRevokedAt(Instant.now());
+        assertThat(invite.status()).isEqualTo(OrgInviteStatus.REVOKED);
+
+        invite.setRevokedAt(null);
+        invite.setAcceptedAt(Instant.now());
+        assertThat(invite.status()).isEqualTo(OrgInviteStatus.ACCEPTED);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────

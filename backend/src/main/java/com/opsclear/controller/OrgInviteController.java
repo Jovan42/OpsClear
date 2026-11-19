@@ -1,6 +1,7 @@
 package com.opsclear.controller;
 
 import com.opsclear.dto.OrgInviteResponse;
+import com.opsclear.dto.PublicInviteResponse;
 import com.opsclear.dto.ResendInviteRequest;
 import com.opsclear.dto.SendInviteRequest;
 import com.opsclear.security.SecurityUtils;
@@ -68,6 +69,12 @@ public class OrgInviteController {
         UUID callerId = SecurityUtils.resolveUserId(auth);
         String language = request != null ? request.getLanguage() : null;
         return ResponseEntity.ok(OrgInviteResponse.from(orgInviteService.resend(orgId, inviteId, language, callerId)));
+    }
+
+    // Public: SecurityConfig permits this GET without auth, the token is the secret (JOB-398)
+    @GetMapping("/api/invites/{token}")
+    public ResponseEntity<PublicInviteResponse> getPublicInvite(@PathVariable String token) {
+        return ResponseEntity.ok(orgInviteService.getPublicInvite(token));
     }
 
     @PostMapping("/api/invites/{token}/accept")

@@ -216,7 +216,7 @@ may touch more than one area file.
 | `OrganisationController` | `01-onboarding.md` |
 | `UserController` | `01-onboarding.md` |
 | `OrganisationMemberController` | `02-org-admin.md` |
-| `OrgInviteController` | `02-org-admin.md` |
+| `OrgInviteController` (incl. the public, no-auth `GET /api/invites/{token}`) | `02-org-admin.md` |
 | `OrgSettingsController` | `02-org-admin.md` |
 | `ProjectController` | `03-projects.md` |
 | `ProjectMemberController` | `03-projects.md` |

@@ -1639,6 +1639,68 @@
 					]
 				},
 				{
+					"name": "Get Public Invite (no auth)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/invites/{{inviteToken}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "invites", "{{inviteToken}}"]
+						},
+						"description": "Public, no auth: the token is the secret (JOB-398). For the invite landing page before the visitor has an account. Returns only `organisationName`, `inviterName`, `email` (the invited address), `expiresAt` and `status` (`PENDING`, `ACCEPTED`, `REVOKED` or `EXPIRED`). Any state is 200 so the page can explain it; an unknown token, or an invite to a deleted organisation, gives 404. Only this GET is public: accept still needs a JWT."
+					},
+					"response": [
+						{
+							"name": "200 pending invite",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/invites/{{inviteToken}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "invites", "{{inviteToken}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"organisationName\": \"OpsClear Demo\",\n  \"inviterName\": \"Test User\",\n  \"email\": \"invitee@example.com\",\n  \"expiresAt\": \"2026-11-26T10:15:00Z\",\n  \"status\": \"PENDING\"\n}"
+						},
+						{
+							"name": "404 unknown token",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/invites/{{inviteToken}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "invites", "{{inviteToken}}"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Not Found\",\n  \"message\": \"Invite not found\",\n  \"timestamp\": \"2026-11-19T10:30:00Z\"\n}"
+						}
+					]
+				},
+				{
 					"name": "Accept Invite",
 					"request": {
 						"method": "POST",

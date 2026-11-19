@@ -29,6 +29,20 @@ public class OrgInviteModel {
     private Instant lastSentAt;
 
     public boolean isPending() {
-        return acceptedAt == null && revokedAt == null && Instant.now().isBefore(expiresAt);
+        return status() == OrgInviteStatus.PENDING;
+    }
+
+    // Accept and revoke both need a pending invite, so at most one of the two is ever set
+    public OrgInviteStatus status() {
+        if (acceptedAt != null) {
+            return OrgInviteStatus.ACCEPTED;
+        }
+        if (revokedAt != null) {
+            return OrgInviteStatus.REVOKED;
+        }
+        if (!Instant.now().isBefore(expiresAt)) {
+            return OrgInviteStatus.EXPIRED;
+        }
+        return OrgInviteStatus.PENDING;
     }
 }
