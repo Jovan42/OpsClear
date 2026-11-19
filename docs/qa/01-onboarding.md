@@ -121,7 +121,7 @@ ONB-08 and ONB-30 repeat the check in the browser.
 
 1. Type `/projects`, then `/org/members`, then `/org/invites` in the address bar.
 
-- [ ] Each address shows **Set up your subscription** again, not the real page
+- [x] Each address shows **Set up your subscription** again, not the real page
 
 ## ONB-08 Buy every add-on in the Paddle sandbox
 **As:** Ana (owner) · **Day:** 1 · **Needs:** ONB-01 ticked, ONB-07 done
