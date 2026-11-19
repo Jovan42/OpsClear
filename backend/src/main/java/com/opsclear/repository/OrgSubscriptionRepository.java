@@ -33,12 +33,21 @@ public class OrgSubscriptionRepository {
                 .map(this::toModel);
     }
 
+    // Atomic on org_id (JOB-397): right after checkout the Paddle webhook can create
+    // the row between the caller's findByOrgId and this insert. On conflict only the
+    // columns this write owns (tier, cycle, add-ons) change, same as update(); the
+    // webhook-synced Paddle id and status are left alone.
     public OrgSubscriptionModel create(UUID orgId, UUID tierId, String billingCycle, Set<UUID> addonIds) {
         UUID subscriptionId = dsl.insertInto(ORG_SUBSCRIPTIONS)
                 .set(ORG_SUBSCRIPTIONS.ORG_ID, orgId)
                 .set(ORG_SUBSCRIPTIONS.TIER_ID, tierId)
                 .set(ORG_SUBSCRIPTIONS.BILLING_CYCLE, billingCycle)
                 .set(ORG_SUBSCRIPTIONS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                .onConflict(ORG_SUBSCRIPTIONS.ORG_ID)
+                .doUpdate()
+                .set(ORG_SUBSCRIPTIONS.TIER_ID, tierId)
+                .set(ORG_SUBSCRIPTIONS.BILLING_CYCLE, billingCycle)
                 .set(ORG_SUBSCRIPTIONS.UPDATED_AT, LocalDateTime.now(ZoneOffset.UTC))
                 .returning(ORG_SUBSCRIPTIONS.ID)
                 .fetchSingle()
