@@ -67,9 +67,9 @@ maintenance company. Every add-on, bought through Paddle sandbox.
 
 Milestones read like real phases ("Kitchen phase", "Handover"). Clients are fictional customers.
 
-**Pine & Pixel Studio** (second org): a small design agency with **no add-ons**, owned by Petra.
-The app allows one org per user, so no persona belongs to both orgs. Shows that gated
-features are hidden or blocked. Deleted after the run.
+**Pine & Pixel Studio** (second org): a small design agency with **no add-ons**, owned by Petra. Shows that gated
+features are hidden or blocked. Deleted after the run. The app allows one org per user, so no
+persona belongs to both orgs.
 
 **Personas**
 
