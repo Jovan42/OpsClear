@@ -1,0 +1,62 @@
+export const frontmatter = {
+  title: 'Povezivanje poslova',
+  description: 'Pokažite koji poslovi čekaju druge, koji idu zajedno i koji su duplikati, da niko ne mora da pogađa.',
+};
+
+# Povezivanje poslova
+
+Poslovi često zavise jedni od drugih: radna ploča ne može da se postavi dok cevi nisu gotove. Povezivanje to beleži, pa svako ko gleda posao vidi na šta on čeka i šta čeka na njega.
+
+<FeatureLink card="relationships" />
+
+<Callout type="note">
+Veze su dodatak. Ako ga vaša organizacija nema, odeljak je sakriven ili označen kao neuključen. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Vrste veza
+
+Veza uvek spaja dva posla u istom projektu. Dodajete je sa jednog posla, a drugi posao prikazuje odgovarajuću oznaku.
+
+| Izaberete na ovom poslu | Ovaj posao prikazuje | Drugi posao prikazuje |
+|-------------------------|----------------------|-----------------------|
+| **Blokiran od strane** | **Blokiran od strane** | **Blokira** |
+| **Povezan sa** | **Povezan sa** | **Povezan sa** |
+| **Duplira** | **Duplira** | **Duplirano od strane** |
+
+Koristite **Blokiran od strane** kada ovaj posao ne može dalje dok drugi posao nije gotov. Koristite **Povezan sa** za poslove koji jednostavno idu zajedno. Koristite **Duplira** kada ovaj posao ponavlja neki drugi.
+
+## Dodajte vezu
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Otvorite posao">
+    Sa liste **Poslovi** otvorite posao koji zavisi od drugog.
+  </Step>
+  <Step title="Otvorite Dodaj vezu">
+    U odeljku **Veze** kliknite na **+ Dodaj**.
+  </Step>
+  <Step title="Izaberite vrstu veze">
+    Pod **Tip** izaberite **Blokiran od strane**, **Povezan sa** ili **Duplira**.
+  </Step>
+  <Step title="Izaberite drugi posao">
+    Kucajte u polje **Zadatak** da pretražite, pa kliknite na posao sa liste.
+  </Step>
+  <Step title="Dodajte je">
+    Kliknite na **Dodaj**. Veza se pojavljuje u odeljku **Veze** sa statusom drugog posla.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/job-relationships-1.webp" alt="Stranica posla sa odeljkom Veze koji navodi dva povezana posla, svaki sa vrstom veze i statusom" caption="Odeljak Veze prikazuje svaki povezan posao sa njegovim statusom." />
+
+<Screenshot src="/guide/sr/job-relationships-2.webp" alt="Prozor Dodaj vezu sa tri vrste veze, poljem za pretragu posla i listom poslova za izbor" caption="Izaberite vrstu veze, pa posao." />
+
+Kliknite na naslov povezanog posla da ga otvorite. Da uklonite vezu, kliknite na **×** desno od nje. Time se ona uklanja sa oba posla, a sami poslovi ostaju kakvi jesu.
+
+## Šta veza radi
+
+Veza je zapis, a ne katanac. Posao koji je **Blokiran od strane** drugog ne menja status sam od sebe i ništa vas ne sprečava da ga započnete ili završite. Ono što se dešava jeste da kada se završi posao koji ga blokira, osoba odgovorna za posao koji čeka dobija obaveštenje **Blokada uklonjena**. Pogledajte [Obaveštenja](/guide/notifications).
+
+<Callout type="tip">
+Ako treba da kažete zašto posao zapinje iz razloga koji nije drugi posao, na primer čeka se dobavljač, blokirajte ga. Pogledajte [Kada je posao blokiran](/guide/job-blocked).
+</Callout>

@@ -1,0 +1,96 @@
+export const frontmatter = {
+  title: 'Šabloni i tipovi poslova',
+  description: 'Sačuvajte posao koji često pravite kao šablon, pravite nove poslove od njega i razvrstajte poslove obojenim tipovima.',
+};
+
+# Šabloni i tipovi poslova
+
+Dva alata štede vreme kod posla koji se ponavlja. Šablon posla je gotov posao: naslov, prioritet i ostale podatke popunite jednom, a svaki novi posao počinje od njih. Tip posla je obojena oznaka, na primer Plumbing ili Gas, koja razvrstava poslove po vrsti.
+
+<FeatureLink card="templates" />
+
+<Callout type="note">
+Šabloni poslova i tipovi poslova su zasebni dodaci. Bez jednog od njih, njegova stranica kaže da nije uključen u vaš paket. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Šabloni poslova
+
+Otvorite projekat i kliknite na **Šabloni** u gornjoj traci. Svaki šablon pokazuje naziv, naslov posla koji pravi, prioritet, rok koji dodaje i koliko puta je korišćen.
+
+<Screenshot src="/guide/sr/templates-and-types-1.webp" alt="Stranica Šabloni poslova sa tri šablona, svaki sa nazivom, oznakom prioriteta, brojem dana do roka i dugmadima Raspored, Izmeni i Obriši" caption="Šabloni jednog projekta." />
+
+### Napravite šablon
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Započnite novi šablon">
+    Kliknite na **+ Novi šablon**. Ako još nema nijednog, kliknite na **Kreiraj prvi šablon**.
+  </Step>
+  <Step title="Imenujte ga i popunite posao">
+    Upišite **Naziv** samog šablona. Zatim popunite ono čime novi poslovi treba da počnu: **Šablon naslova**, **Šablon opisa**, **Klijent** i **Prioritet**. Ostavite prazno ono što treba da ostane prazno.
+  </Step>
+  <Step title="Odredite ko i kada">
+    U polju **Način dodele** izaberite **Nijedan — ostavi prazno**, **Fiksno — unapred popuni izvršioca** (pa u polju **Izvršilac** izaberite osobu) ili **Pitaj — fokusiraj polje pri kreiranju**, što stavlja kursor u polje **Dodeli**, pa osoba koja pravi posao bira. U polju **Pomak roka (dana)** upišite koliko dana nakon pravljenja treba da bude rok, na primer 7.
+  </Step>
+  <Step title="Dodajte etapu i tip">
+    Ako ih vaš projekat ima, izaberite **Etapa** i **Podrazumevani tip**.
+  </Step>
+  <Step title="Sačuvajte ga">
+    Kliknite na **Kreiraj**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/templates-and-types-2.webp" alt="Prozor šablona sa nazivom, šablonom naslova, šablonom opisa, klijentom, prioritetom, načinom dodele, pomakom roka, izvršiocem, etapom i podrazumevanim tipom, i vezom ka dostupnim zamenskim oznakama" caption="Šablon koji se menja. Svako polje je opciono osim naziva." />
+
+### Oznake koje se same popune
+
+Naslov i opis mogu da sadrže zamenske oznake koje se menjaju kada se posao napravi. Na primer, naslov `Report for {{project}}` postaje "Report for Kitchen refit", a `{{date}}` postaje današnji datum. Kliknite na **Dostupne zamenske oznake** u prozoru šablona da vidite celu listu: datum (i pomeren za određen broj dana), dan, mesec, godinu, nedelju i kvartal, naziv projekta, osobu koja pravi posao, ime dodeljenog člana i brojač koliko puta je šablon korišćen.
+
+### Počnite posao od šablona
+
+<Steps>
+  <Step title="Otvorite prozor Novi posao">
+    Na listi **Poslovi** kliknite na **+ Novi posao**.
+  </Step>
+  <Step title="Izaberite šablon">
+    U polju **Počni od šablona** izaberite šablon. Naslov, opis, klijent, prioritet, rok i ostalo se popunjavaju.
+  </Step>
+  <Step title="Prilagodite i napravite">
+    Promenite šta želite, pa kliknite na **Kreiraj posao**.
+  </Step>
+</Steps>
+
+Šablon ne može da se obriše dok ga koristi aktivan [ponavljajući posao](/guide/recurring-jobs). Da šablon pokrećete po rasporedu, kliknite na **Raspored** pored njega.
+
+### Šabloni za celu organizaciju
+
+Vlasnici i Administratori mogu da prave i šablone koje može da koristi svaki projekat u organizaciji. Kliknite na svoje ime gore desno, izaberite **Organizacija** i potražite **Šabloni organizacije** na stranici. U prozoru Novi posao ti šabloni su označeni sa **[Org]**. Pošto tipovi pripadaju projektu, šablon organizacije **Podrazumevani tip** navodi rečima, i on se poredi po nazivu sa tipovima projekta u kome se posao pravi. Ako nijedan tip nema taj naziv, posao ne dobija tip.
+
+## Tipovi poslova
+
+Otvorite **Tipovi** u gornjoj traci da vidite tipove poslova projekta. Tip se prikazuje kao obojena oznaka pored poslova koji ga imaju. U meniju **Svi tipovi** na listi **Poslovi** možete birati jedan po jedan tip, a [kontrolna tabla](/guide/dashboard) pokazuje koliko ima poslova svakog tipa.
+
+<Screenshot src="/guide/sr/templates-and-types-3.webp" alt="Stranica Tipovi poslova sa tri obojena tipa, svaki sa strelicama za pomeranje gore ili dole i dugmadima Izmeni i Obriši" caption="Tipovi poslova jednog projekta, svaki u svojoj boji." />
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Dodajte tip">
+    Kliknite na **+ Novi tip**. Ako još nema nijednog, kliknite na **Kreirajte svoj prvi tip**.
+  </Step>
+  <Step title="Imenujte ga i izaberite boju">
+    Upišite **Naziv**, na primer "Gas", i kliknite na jednu od deset boja pod **Boja**.
+  </Step>
+  <Step title="Napravite ga">
+    Kliknite na **Kreiraj**. Sada ga birajte u meniju **Tip** kada pravite ili menjate posao.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/templates-and-types-4.webp" alt="Prozor Novi tip posla sa poljem Naziv i redom od deset boja za izbor" caption="Novi tip traži naziv i boju." />
+
+Strelicama pored tipa menjate redosled kojim su tipovi navedeni, a **Izmeni** služi da ga preimenujete ili promenite boju.
+
+<Callout type="warning">
+Ako obrišete tip, poslovi koji su ga imali nastavljaju da rade, ali ga gube. To se ne može poništiti.
+</Callout>

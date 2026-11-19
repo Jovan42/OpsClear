@@ -1,0 +1,54 @@
+export const frontmatter = {
+  title: 'Milestones',
+  description: 'Group jobs into stages with a deadline, follow the progress of each stage, and create, edit or delete milestones.',
+};
+
+# Milestones
+
+A milestone is a stage of a project, such as "Strip out", "First fix" or "Second fix and finish". You put jobs into milestones, give each milestone a deadline, and see how much of each stage is done. It's the easy way to answer "are we on track for the end of this stage?".
+
+<FeatureLink card="milestones" />
+
+<Callout type="note">
+Milestones are an add-on. Without them, the **Milestones** page says it isn't included in your plan. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## See your milestones
+
+Open your project and click **Milestones** in the top bar. Each milestone shows its name, its description if it has one, its deadline and a progress bar. The bar fills as jobs in the milestone are completed, and the count beside it, such as 2/5, shows how many jobs are done out of all the jobs in it. A deadline that has passed turns red and says **Overdue**.
+
+<Screenshot src="/guide/en/milestones-1.webp" alt="The Milestones page with three milestones, each with a deadline and a progress bar, and the View jobs, Edit and Delete buttons on the right" caption="Each milestone shows its deadline and how many of its jobs are completed." />
+
+Click **View jobs →** to open the job list with only that milestone's jobs.
+
+## Create a milestone
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Open the Milestones page">
+    Click **Milestones** in the top bar, then **+ New Milestone**. If there are none yet, click **Create first milestone**.
+  </Step>
+  <Step title="Fill it in">
+    Type a **Name**. It's the only thing you must fill in. Add a **Description** and a **Deadline** if you want them.
+  </Step>
+  <Step title="Create it">
+    Click **Create**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/milestones-2.webp" alt="The New Milestone window with the Name, Description and Deadline fields empty and the Create button" caption="The New Milestone window." />
+
+## Put jobs into a milestone
+
+A job belongs to at most one milestone. Choose it in the **Milestone** menu when you create or edit a job. A [job template](/guide/templates-and-types) can set a milestone too.
+
+On the **Jobs** list, a project with milestones shows its jobs grouped by milestone, each group with its own progress bar. Jobs without a milestone are under **Ungrouped**. See [Finding your jobs](/guide/finding-jobs) for how to switch between **Grouped** and **Flat**.
+
+## Edit or delete a milestone
+
+Click **Edit** next to a milestone to change its name, description or deadline, then **Save**. Click **Delete** to remove it, and confirm.
+
+<Callout type="warning">
+Deleting a milestone doesn't delete its jobs. They stay in the project and become **Ungrouped**, but the milestone and its deadline are gone and can't be brought back.
+</Callout>

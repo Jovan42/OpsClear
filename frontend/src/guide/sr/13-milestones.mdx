@@ -1,0 +1,54 @@
+export const frontmatter = {
+  title: 'Etape',
+  description: 'Grupišite poslove u etape sa rokom, pratite napredak svake etape i pravite, menjajte ili brišite etape.',
+};
+
+# Etape
+
+Etapa je faza projekta, na primer "Strip out", "First fix" ili "Second fix and finish". Poslove stavljate u etape, svakoj etapi date rok i vidite koliko je od nje gotovo. To je najlakši način da odgovorite na pitanje "da li smo na dobrom putu do kraja ove etape?".
+
+<FeatureLink card="milestones" />
+
+<Callout type="note">
+Etape su dodatak. Bez njih stranica **Etape** kaže da nisu uključene u vaš paket. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Pogledajte svoje etape
+
+Otvorite projekat i kliknite na **Etape** u gornjoj traci. Svaka etapa pokazuje naziv, opis ako ga ima, rok i traku napretka. Traka se puni kako se poslovi u etapi završavaju, a broj pored nje, na primer 2/5, pokazuje koliko je poslova gotovo od svih poslova u njoj. Rok koji je prošao postaje crven i piše **Kasni**.
+
+<Screenshot src="/guide/sr/milestones-1.webp" alt="Stranica Etape sa tri etape, svaka sa rokom i trakom napretka, i dugmadima Prikaži poslove, Izmeni i Obriši sa desne strane" caption="Svaka etapa pokazuje rok i koliko je njenih poslova završeno." />
+
+Kliknite na **Prikaži poslove →** da otvorite listu poslova samo sa poslovima te etape.
+
+## Napravite etapu
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Otvorite stranicu Etape">
+    Kliknite na **Etape** u gornjoj traci, pa na **+ Nova etapa**. Ako još nema nijedne, kliknite na **Kreiraj prvu etapu**.
+  </Step>
+  <Step title="Popunite je">
+    Upišite **Naziv**. To je jedino što morate da popunite. Dodajte **Opis** i **Rok** ako želite.
+  </Step>
+  <Step title="Napravite je">
+    Kliknite na **Kreiraj**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/milestones-2.webp" alt="Prozor Nova etapa sa praznim poljima Naziv, Opis i Rok i dugmetom Kreiraj" caption="Prozor Nova etapa." />
+
+## Stavite poslove u etapu
+
+Posao pripada najviše jednoj etapi. Izaberite je u meniju **Etapa** kada pravite ili menjate posao. [Šablon posla](/guide/templates-and-types) takođe može da postavi etapu.
+
+Na listi **Poslovi**, projekat sa etapama prikazuje poslove grupisane po etapama, svaku grupu sa sopstvenom trakom napretka. Poslovi bez etape su pod **Negrupisano**. Kako se prebacuje između **Grupisano** i **Ravno**, pogledajte [Pronalaženje poslova](/guide/finding-jobs).
+
+## Izmenite ili obrišite etapu
+
+Kliknite na **Izmeni** pored etape da promenite naziv, opis ili rok, pa na **Sačuvaj**. Kliknite na **Obriši** da je uklonite i potvrdite.
+
+<Callout type="warning">
+Brisanjem etape ne brišu se njeni poslovi. Oni ostaju u projektu i postaju **Negrupisano**, ali etapa i njen rok nestaju i ne mogu se vratiti.
+</Callout>

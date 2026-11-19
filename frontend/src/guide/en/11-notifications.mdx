@@ -1,0 +1,91 @@
+export const frontmatter = {
+  title: 'Notifications',
+  description: 'Find out what changed without asking: the bell, the Notifications page, what triggers a notification, and how to mute types or turn off the sound.',
+};
+
+# Notifications
+
+Notifications tell you when something happens that you need to know about: a job is assigned to you, a job is blocked, an approval is waiting. You don't have to keep checking. They arrive as they happen, without reloading the page.
+
+<FeatureLink card="notifications" />
+
+## The bell
+
+The bell at the top right of every page shows how many notifications you haven't read yet. Click it to open the latest ones.
+
+<Steps>
+  <Step title="Open the bell">
+    Click the bell. The newest notifications are listed, and unread ones have a blue dot. Urgent ones, such as a blocked job, have a red bar and red text.
+  </Step>
+  <Step title="Open what it's about">
+    Click a notification to go straight to the job. It is marked as read.
+  </Step>
+  <Step title="Clear the rest">
+    Click **Mark all as read** to clear the dots, or **View all** to open the full page.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/notifications-1.webp" alt="The bell opened below the top bar, listing notifications with who did what, the job, the project and a blue dot on unread ones, with Mark all as read at the top and View all at the bottom" caption="The bell, with unread notifications marked by a blue dot." />
+
+## The Notifications page
+
+The **Notifications** page keeps the full list, newest first.
+
+- **All** and **Unread** switch between everything and what you haven't read yet.
+- **All types** lets you pick one kind of notification, such as **Job blocked**.
+- **Mark as read** or **Mark as unread** at the right of a row changes just that one. Use it to keep something as a reminder.
+- **Mark all as read** at the top clears everything.
+
+<Screenshot src="/guide/en/notifications-2.webp" alt="The Notifications page listing all notifications, with the All and Unread buttons, the type menu and Mark all as read" caption="The Notifications page lists everything, with the unread ones highlighted." />
+
+<Screenshot src="/guide/en/notifications-3.webp" alt="The Notifications page with Unread selected, listing only unread notifications, each with a Mark as read button" caption="With Unread selected, only what you haven't read yet is listed." />
+
+## What you are told about
+
+What reaches you depends on your role and on the job. Owners and Admins of a project hear about more than Members do, because they look after the whole project.
+
+| Notification | When you get it |
+|--------------|-----------------|
+| **Job assigned** | A job is assigned to you |
+| **Status changed** | A job you're responsible for changes status. Owners and Admins hear about every job in the project |
+| **Job blocked** | A job you're responsible for is blocked. Owners and Admins hear about every blocked job |
+| **Blocker cleared** | A job that was holding up your job is completed |
+| **Deadline or priority changed** | Someone changes the deadline or priority of your job |
+| **Job deleted** | Your job is deleted |
+| **Note added** | Someone adds a note to your job, or to a job where you wrote a note |
+| **Deadline tomorrow** | Your job is due tomorrow |
+| **Job overdue** | The deadline of your job has passed and it isn't completed. Owners and Admins hear about every late job |
+| **Approval requested** | Someone asks for approval. Owners and Admins only |
+| **Approval decided** | An approval you asked for is approved or rejected |
+| **Added to project** | You're added to a project |
+| **Schedule run missed** | A [recurring job](/guide/recurring-jobs) didn't run. Owners and Admins only |
+| **Invite accepted** | Someone you invited joins the organisation |
+| **Subscription past due** | The organisation's payment didn't go through. Owners and Admins only |
+
+<Callout type="note">
+You only get a notification for something you're allowed to see, and for a feature your organisation has. For example, you won't hear about notes if the Notes add-on isn't active. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## Mute a type or turn off the sound
+
+If a type is too chatty, mute it.
+
+<Steps>
+  <Step title="Open your settings">
+    Click your name at the top right and choose **Account settings**.
+  </Step>
+  <Step title="Find the notification types">
+    Open the **Notifications** section. Under **Notification types**, each kind of notification has a switch.
+  </Step>
+  <Step title="Switch a type off">
+    Turn off the types you don't want. The change is saved straight away and applies on all your devices.
+  </Step>
+</Steps>
+
+Under **Notification sound** you can choose **On** or **Off** for the short sound that plays when a new notification arrives in the tab you're using.
+
+<Screenshot src="/guide/en/notifications-4.webp" alt="The Notifications part of the settings page: the Notification sound switch set to On, and the list of Notification types, each with a switch" caption="Each notification type has its own switch. The sound has its own setting above." />
+
+<Callout type="warning">
+A type you switch off isn't just hidden. You don't receive those notifications at all, so you can't read them later. **Subscription past due** can't be switched off, because it affects the whole organisation.
+</Callout>
