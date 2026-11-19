@@ -52,6 +52,23 @@ function publicInviteStatus(token: string) {
   return cy.request({ url: `${API}/api/invites/${token}` }).then((res) => res.body.status as string);
 }
 
+/** Client-side navigation, as a link in the app would do: keeps the page's query cache and
+ *  module state, which cy.visit() (a full page load) would reset. */
+function navigateInApp(path: string) {
+  cy.window().then((win) => {
+    win.history.pushState({}, '', path);
+    win.dispatchEvent(new PopStateEvent('popstate'));
+  });
+}
+
+/** Fails only the next accept, with a backend-style error body. */
+function failNextAccept() {
+  cy.intercept(
+    { method: 'POST', url: '**/api/invites/*/accept', times: 1 },
+    { statusCode: 409, body: { error: 'Conflict', message: 'Something on the server said no' } },
+  ).as('failedAccept');
+}
+
 describe('Organisation Management — Invite page', () => {
   it('signed out, shows the invite; I already have an account logs in and joins without another click', { tags: '@smoke' }, () => {
     const inviteeEmail = uniqueEmail('page-login-invitee');
@@ -192,6 +209,78 @@ describe('Organisation Management — Invite page', () => {
 
     cy.visit('/invite/0000000000000000000000000000000000000000');
     cy.contains("This invite link isn't valid").should('be.visible');
+  });
+
+  // A user who saw "no organisation" first (here: /projects sent them to onboarding) has that
+  // cached. Joining must not leave it there, or /projects sends the new member back to
+  // onboarding and the toast is lost.
+  it('a user whose app already knows they have no organisation lands on Projects after joining', () => {
+    const inviteeEmail = uniqueEmail('page-cache-invitee');
+    cy.createKeycloakUser(inviteeEmail, 'Nikola', 'Invitee');
+
+    setUpInvite('page-cache', 'Cache Corp', inviteeEmail).then(({ ownerEmail, token }) => {
+      cy.loginAs(inviteeEmail);
+      cy.visit('/projects');
+      cy.location('pathname', { timeout: 10000 }).should('eq', '/onboarding');
+      navigateInApp(`/invite/${token}`);
+      cy.location('pathname', { timeout: 10000 }).should('eq', '/projects');
+      cy.contains("You've joined Cache Corp").should('be.visible');
+      cy.location('pathname').should('eq', '/projects');
+      cy.deleteKeycloakUser(ownerEmail);
+    });
+
+    cy.deleteKeycloakUser(inviteeEmail);
+  });
+
+  it('an accept error shows the server message, and Try again sends a new accept that joins', () => {
+    const inviteeEmail = uniqueEmail('page-retry-invitee');
+    cy.createKeycloakUser(inviteeEmail, 'Nikola', 'Invitee');
+
+    setUpInvite('page-retry', 'Retry Corp', inviteeEmail).then(({ ownerEmail, orgId, token }) => {
+      failNextAccept();
+      cy.loginAs(inviteeEmail);
+      cy.visit(`/invite/${token}`);
+      cy.wait('@failedAccept');
+      cy.contains("Couldn't join Retry Corp").should('be.visible');
+      cy.contains('Something on the server said no').should('be.visible');
+
+      cy.intercept('POST', '**/api/invites/*/accept').as('accept');
+      cy.contains('button', 'Try again').click();
+      cy.wait('@accept').its('response.statusCode').should('eq', 200);
+      cy.location('pathname', { timeout: 10000 }).should('eq', '/projects');
+      cy.contains("You've joined Retry Corp").should('be.visible');
+      memberEmails(orgId, ownerEmail).should('include', inviteeEmail);
+      cy.deleteKeycloakUser(ownerEmail);
+    });
+
+    cy.deleteKeycloakUser(inviteeEmail);
+  });
+
+  it('after an accept error, Go to projects leaves the page, and opening the invite again in the same session joins', () => {
+    const inviteeEmail = uniqueEmail('page-reopen-invitee');
+    cy.createKeycloakUser(inviteeEmail, 'Nikola', 'Invitee');
+
+    setUpInvite('page-reopen', 'Reopen Corp', inviteeEmail).then(({ ownerEmail, token }) => {
+      failNextAccept();
+      cy.loginAs(inviteeEmail);
+      cy.visit(`/invite/${token}`);
+      cy.wait('@failedAccept');
+      cy.contains('Something on the server said no').should('be.visible');
+
+      cy.get('[data-testid=invite-page]').contains('button', 'Go to projects').click();
+      // Projects, which sends a user with no organisation on to onboarding
+      cy.location('pathname', { timeout: 10000 }).should('eq', '/onboarding');
+
+      // Same page load, so the failed token must not still count as "accept sent"
+      cy.intercept('POST', '**/api/invites/*/accept').as('accept');
+      navigateInApp(`/invite/${token}`);
+      cy.wait('@accept').its('response.statusCode').should('eq', 200);
+      cy.location('pathname', { timeout: 10000 }).should('eq', '/projects');
+      cy.contains("You've joined Reopen Corp").should('be.visible');
+      cy.deleteKeycloakUser(ownerEmail);
+    });
+
+    cy.deleteKeycloakUser(inviteeEmail);
   });
 
   // The fallback for a sign-up whose redirect doesn't come back to the invite page (email

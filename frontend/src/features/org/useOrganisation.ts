@@ -214,17 +214,28 @@ export function usePublicInvite(token: string | undefined) {
   });
 }
 
-export function useAcceptOrgInvite() {
-  const queryClient = useQueryClient();
-  return useMutation({
+/**
+ * Mutation options for accepting an invite. Exported for the unit tests; components use
+ * `useAcceptOrgInvite`.
+ */
+export function acceptInviteMutationOptions(queryClient: QueryClient) {
+  return {
     mutationFn: (token: string) => organisationsApi.acceptInvite(token),
-    // The user now has an organisation: drop a cached "no organisation" so the app doesn't
-    // send them to onboarding.
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['organisations', 'mine'] }),
+    // The user now has an organisation. Remove a cached "no organisation" (not just invalidate
+    // it: nothing on the invite page observes it, so it wouldn't refetch, and OrgRequiredRoute
+    // would read the stale null and send the new member to onboarding). This runs before the
+    // mutation reports success, so it's gone before the page navigates to /projects, which
+    // then loads it fresh.
+    onSuccess: () => queryClient.removeQueries({ queryKey: ['organisations', 'mine'] }),
     // The invite page reloads the invite: after an error its status may have changed (accepted
     // in another tab, revoked), and the page then shows that instead of the error. After a
     // success the page has already moved on, so this only refreshes the cache.
-    onSettled: (_data, _error, token) =>
+    onSettled: (_data: unknown, _error: unknown, token: string) =>
       void queryClient.invalidateQueries({ queryKey: publicInviteKey(token) }),
-  });
+  };
+}
+
+export function useAcceptOrgInvite() {
+  const queryClient = useQueryClient();
+  return useMutation(acceptInviteMutationOptions(queryClient));
 }

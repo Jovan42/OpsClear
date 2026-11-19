@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
@@ -15,9 +15,10 @@ import { clearPendingInvite, inviteView, savePendingInvite } from './inviteLink'
 import { JOINED_ORGANISATION_STATE } from './joinedOrganisationToast';
 import type { PublicInviteResponse } from '../../types';
 
-// Tokens this page has already sent an accept for, in this page load. A module-level set, not
-// a ref: StrictMode's second effect run and a remount after the invite reloads must not send
-// a second accept. A page refresh starts over, but by then the invite reads as accepted.
+// Tokens with an accept running or done, in this page load. A module-level set, not a ref:
+// StrictMode's second effect run and a remount after the invite reloads must not send a second
+// accept. A failed accept removes its token. A page refresh starts over, but by then the invite
+// reads as accepted.
 const acceptsSent = new Set<string>();
 
 const strong = <span className="font-semibold text-gray-900 dark:text-gray-100" />;
@@ -152,13 +153,19 @@ function WrongAccount({ token, invite }: Readonly<{ token: string; invite: Publi
 function JoinOrganisation({ token, invite }: Readonly<{ token: string; invite: PublicInviteResponse }>) {
   const { t } = useTranslation('org');
   const navigate = useNavigate();
-  const { mutate: accept, isSuccess, isError, error } = useAcceptOrgInvite();
+  const { mutateAsync, isSuccess, isError, error } = useAcceptOrgInvite();
+
+  const accept = useCallback(() => {
+    acceptsSent.add(token);
+    // A failed accept frees the token, so opening the invite again (or Try again) sends a new
+    // one. On the promise, not in an onError callback: it settles even if the page is gone.
+    mutateAsync(token).catch(() => acceptsSent.delete(token));
+  }, [mutateAsync, token]);
 
   useEffect(() => {
     if (acceptsSent.has(token)) return;
-    acceptsSent.add(token);
     clearPendingInvite();
-    accept(token);
+    accept();
   }, [accept, token]);
 
   useEffect(() => {
@@ -177,7 +184,7 @@ function JoinOrganisation({ token, invite }: Readonly<{ token: string; invite: P
         <Message title={t('invite.joinFailedTitle', { organisation: invite.organisationName })} />
         <p className="text-sm text-red-700 dark:text-red-400">{message}</p>
         <div className="flex justify-center gap-3">
-          <Button onClick={() => accept(token)}>{t('invite.tryAgain')}</Button>
+          <Button onClick={accept}>{t('invite.tryAgain')}</Button>
           <GoToProjects />
         </div>
       </Card>
