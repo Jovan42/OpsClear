@@ -282,6 +282,19 @@ describe('Organisation Management — Members', () => {
     createOrgWithSubscription(orgBOwnerEmail, 'Org B', uniqueSlug());
 
     tokenFor(orgAOwnerEmail).then((token) => {
+      // Positive control: the same kind of name search finds someone in Org A
+      // (the caller themselves), so the empty results below prove scoping, not a
+      // broken name search.
+      cy.request({
+        method: 'GET',
+        url: `${API}/api/users`,
+        qs: { q: 'OrgA' },
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => {
+        expect(res.status).to.eq(200);
+        expect(res.body.map((u: { email: string }) => u.email)).to.deep.eq([orgAOwnerEmail]);
+      });
+
       [{ q: orgBOwnerEmail }, { q: 'OrgB' }, { email: orgBOwnerEmail }].forEach((qs) => {
         cy.request({
           method: 'GET',
