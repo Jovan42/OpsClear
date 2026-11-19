@@ -15,7 +15,7 @@ world is described in the [README](README.md#test-world).
   seat in both orgs, which the app doesn't allow, so **Petra**, a sixth persona on
   `<mailbox>+petra@<domain>`, owns Pine & Pixel Studio. Sara stays a Brightline member and is used
   to check that she can't create a second org (ONB-30). Org switching can't be tested for the same
-  reason.
+  reason. The README and ADR-0063 carry the same corrected persona table.
 - **Subscription before anything else.** Until the Owner pays, every org page except the
   subscription setup shows a wall, so the invite and project steps come after ONB-08.
 
@@ -24,6 +24,9 @@ world is described in the [README](README.md#test-world).
 `<mailbox>+sara@<domain>` and `<mailbox>+petra@<domain>`, all landing in one real inbox. Use one
 password for every persona and keep it in a password manager. Never write the real address in this
 repo.
+
+**Out of scope here.** Invite expiry after 7 days, **Copy link**, **Resend email** and the
+5-minute resend cooldown are covered by hand in `02-org-admin.md`.
 
 **Dates.** Day 1 is today (UTC). "Day 3" is today + 2 days and "Day 4" is today + 3 days. Near
 midnight UTC, work the dates out from the UTC clock, not your local one.
@@ -272,18 +275,16 @@ ONB-08 and ONB-30 repeat the check in the browser.
 - [ ] **Project Settings** says "No block reasons configured"
 - [ ] The **Active** tab lists two projects for Ana: **Residential Fit-outs** and **Spring Maintenance 2026**
 
-Leave this project active. `03-projects.md` completes it later.
+Leave this project active. `03-projects.md` archives it later.
 
 ## ONB-20 Add the people to Residential Fit-outs
 **As:** Ana (project owner) · **Day:** 1 · **Needs:** ONB-17 and ONB-14 done
 
 1. Open **Residential Fit-outs**, click **Settings**, find **Members**.
-2. Type `<mailbox>+pet` in **Search by email…**.
-3. Type `<mailbox>+nikola` instead, pick Nikola, choose **Admin** and click **Add**.
-4. Add Ivana, Luka and Sara with the role **Member**.
-5. Type `<mailbox>+nikola` in the search again.
+2. Type `<mailbox>+nikola` in **Search by email…**, pick Nikola, choose **Admin** and click **Add**.
+3. Add Ivana, Luka and Sara with the role **Member**.
+4. Type `<mailbox>+nikola` in the search again.
 
-- [ ] Typing `+pet` finds nobody, because Petra isn't in Brightline
 - [ ] Nikola is added as **Admin**, and the table shows him with that role
 - [ ] Ivana, Luka and Sara are added as **Member**
 - [ ] The second search shows Nikola with "(already a member)"
@@ -375,7 +376,7 @@ Don't change their deadlines, assignees or status before the day plan reaches th
 - [ ] All eight jobs are created as **New**, each with a friendly ID
 - [ ] The Day 3 and Day 4 deadlines show the right dates, and "Order bathroom fittings for 14 Elm St" shows no deadline
 - [ ] Each job shows its milestone, and the **Grouped** view lists it under that milestone
-- [ ] Each assignee gets a notification for the jobs assigned to them
+- [ ] Each assignee other than the job's creator gets a notification for their job (Nikola gets none for the carpet job he created and assigned to himself)
 - [ ] Creating a job with an empty title shows "Title is required"
 
 ## ONB-27 A member sees only their own jobs, and can create one
@@ -424,11 +425,15 @@ Don't change their deadlines, assignees or status before the day plan reaches th
 3. Change the slug to `ppx` and click **Create organisation**.
 4. On **Set up your subscription**, leave every add-on unselected, choose the smallest plan, and pay with the sandbox test card (ONB-08, step 5). Check that the payment requests go to Paddle hosts with `sandbox` in the name.
 5. As Sara, type `/org/new` in the address bar, type "Pine Studio Two" with slug `psx` and click **Create organisation**.
+6. As Petra, open the invite for Brightline that Ana sends to `<mailbox>+petra@<domain>` (Ana: **Invites**, send it first) and click **Accept invite**.
 
 - [ ] The slug `brt` is refused with "An organisation with this slug already exists"
 - [ ] `ppx` creates **Pine & Pixel Studio** and opens **Set up your subscription**
 - [ ] The payment goes through Paddle sandbox hosts, and **Organisation Settings** then shows the Billing box **Active**
 - [ ] Sara's attempt fails with "You already belong to an organisation", and she stays in Brightline only
+- [ ] Petra can't accept the Brightline invite while she owns Pine & Pixel, and stays in one org only (known bug: `OrgInviteService.acceptInvite` only checks membership of the same org, so this is expected to fail, job to be linked)
+
+Afterwards, revoke the Brightline invite for Petra in Ana's **Invites** list so it doesn't stay pending.
 
 ## ONB-31 Pine & Pixel shows gated features as locked
 **As:** Petra (owner of Pine & Pixel) · **Day:** 1 · **Needs:** ONB-30 done
@@ -452,11 +457,15 @@ Don't change their deadlines, assignees or status before the day plan reaches th
 2. As Petra, paste it into the browser bar.
 3. As Petra, open **Projects**. As Ana, open **Projects**.
 4. As Petra, open **Manage members**. As Ana, open **Manage members**.
+5. As Ana, open Residential **Settings**, **Members**, search `<mailbox>+petra` and try to add Petra as **Member**.
+6. As Ana, open "Order bathroom fittings for 14 Elm St", click **Edit** and try to assign it to Petra.
 
 - [ ] Petra can't see "Tile bathroom at 14 Elm St" or any other Brightline data
 - [ ] Petra's **Projects** lists only **Brand refresh for Juniper Cafe**
 - [ ] Ana's **Projects** lists only Brightline projects
 - [ ] Petra's members list is Petra alone, and Ana's has the five Brightline people
+- [ ] Petra can't be added to a Brightline project (known bug: `ProjectMemberService.addMember` only checks that the user exists, so this is expected to fail, job to be linked)
+- [ ] A Brightline job can't be assigned to Petra (known bug: `JobService` only checks that the assignee exists, so this is expected to fail, job to be linked)
 
 ## ONB-33 Luka switches to Serbian
 **As:** Luka (member) · **Day:** 1 · **Needs:** ONB-13 done
@@ -477,7 +486,6 @@ judged in Luka's scenarios in the other area files.
 - Invite emails never failing the invite when sending fails: covered by `InviteEmailListenerTest`.
 - The Keycloak `verifyEmail` realm setting on a fresh install: covered by the `@smoke` E2E `auth-flows/registration.cy.ts`, which clicks the real verification link.
 - Two simultaneous org creations with the same slug: covered by `OrganisationServiceTest` and the unique index from migration V039.
-- Invite expiry after 7 days, **Copy link**, **Resend email** and the 5-minute resend cooldown: covered by `02-org-admin.md`.
 
 ## Findings
 None yet.
