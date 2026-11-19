@@ -1,0 +1,66 @@
+export const frontmatter = {
+  title: 'Pozovite svoj tim',
+  description: 'Pozovite kolege emailom, kopirajte ili ponovo pošaljite pozivnicu i saznajte šta kolege dobijaju i kako je prihvataju.',
+};
+
+# Pozovite svoj tim
+
+OpsClear je za timove, pa je sledeći korak da dovedete svoje kolege. Svaku osobu pozivate emailom. Ona klikne na link u emailu, prihvati pozivnicu i postaje deo vaše organizacije.
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+## Pošaljite pozivnicu
+
+<Steps>
+  <Step title="Otvorite stranicu sa pozivnicama">
+    Kliknite na svoje ime gore desno, izaberite **Organizacija**, pa kliknite na **Pozivnice**. Otvara se stranica **Pozivnice na čekanju**.
+  </Step>
+  <Step title="Unesite email adresu">
+    Upišite email adresu kolege u polje i kliknite na **Pošalji pozivnicu**. Koristite adresu sa kojom će se prijavljivati, jer pozivnica važi samo za tu adresu.
+  </Step>
+  <Step title="Proverite da je poslata">
+    Pozivnica se pojavljuje na listi sa rokom, na primer "Ističe za 7 dana". OpsClear je šalje kolegi emailom na jeziku koji koristite.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/invite-team-1.webp" alt="Stranica Pozivnice na čekanju sa email adresom kolege upisanom u polje pored dugmeta Pošalji pozivnicu" caption="Upišite email adresu i kliknite na Pošalji pozivnicu." />
+
+## Upravljajte pozivnicama na čekanju
+
+Svaka pozivnica na listi ima tri radnje.
+
+- **Kopiraj link** kopira link pozivnice da ga pošaljete sami, na primer u poruci. Poruka "Link je kopiran" to potvrđuje.
+- **Pošalji ponovo** ponovo šalje email. Možete ga poslati jednom u 5 minuta. Ako pokušate ranije, OpsClear vam kaže koliko treba da sačekate.
+- **Poništi** otkazuje pozivnicu. Link prestaje da radi.
+
+<Screenshot src="/guide/sr/invite-team-2.webp" alt="Lista pozivnica na čekanju sa radnjama Kopiraj link, Pošalji ponovo i Poništi pored pozivnice i porukom Link je kopiran u uglu" caption="Kopiraj link, Pošalji ponovo i Poništi za svaku pozivnicu na čekanju." />
+
+<Callout type="note">
+Pozivnica važi 7 dana. Posle toga piše **Isteklo**. Pošaljite novu pozivnicu na istu adresu.
+</Callout>
+
+## Šta kolega vidi
+
+<Steps>
+  <Step title="Dobija email">
+    U njemu piše ko ga je pozvao i u koju organizaciju, a tu je i dugme **Prihvati pozivnicu**.
+  </Step>
+  <Step title="Prijavljuje se ili registruje">
+    Ako već ima OpsClear nalog, prijavljuje se. Ako nema, prvo se registruje (pogledajte [Registracija i potvrda email adrese](/guide/sign-up)), a zatim ponovo klikne na **Prihvati pozivnicu** u emailu. Mora da koristi email adresu na koju ste poslali pozivnicu.
+  </Step>
+  <Step title="Prihvata">
+    Otvara se stranica **Pozvani ste**. Klikne na **Prihvati pozivnicu**, vidi poruku **Pridružili ste se organizaciji** i prelazi na svoje projekte.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/invite-team-3.webp" alt="Email pozivnica: poruka da vas je Priya Nair pozvala da se pridružite organizaciji Acme Plumbing i zeleno dugme Prihvati pozivnicu" caption="Email pozivnica koji kolega dobija." />
+
+<Screenshot src="/guide/sr/invite-team-4.webp" alt="Stranica Pozvani ste sa dugmetom Prihvati pozivnicu" caption="Stranica koju otvara link iz pozivnice." />
+
+<Screenshot src="/guide/sr/invite-team-5.webp" alt="Stranica potvrde: Pridružili ste se organizaciji, uz napomenu da se prelazi na projekte" caption="Kada prihvati, kolega prelazi na svoje projekte." />
+
+Novi ljudi se pridružuju kao **Članovi** organizacije. Ne vide nijedan projekat dok ih ne dodate u neki: pogledajte [Napravite projekat i dodajte članove](/guide/first-project).
+
+<Callout type="tip">
+Da nekoga učinite Administratorom, otvorite **Organizacija**, kliknite na **Upravljaj članovima** i promenite mu ulogu. To može samo Vlasnik.
+</Callout>

@@ -1,0 +1,54 @@
+export const frontmatter = {
+  title: 'Create and assign a job',
+  description: 'Create a job, fill in its title, client, deadline and priority, assign it to someone, and understand job IDs.',
+};
+
+# Create and assign a job
+
+A job is one piece of work with one person responsible for it and one status. Everything else in OpsClear is built around jobs. Any member of the project can create one.
+
+## Create a job
+
+<Steps>
+  <Step title="Open the job list">
+    Open your project and click **Jobs** in the top bar. If the list is empty, click **Create first job**. Otherwise click **+ New Job**.
+  </Step>
+  <Step title="Fill in the job">
+    Type a **Title**. It's the only thing you must fill in. Add the **Client**, a **Deadline** and a **Priority** if you know them, and choose who is responsible in **Assign to**: start typing a name and pick the person from the list.
+  </Step>
+  <Step title="Create it">
+    Click **Create job**. The job appears in the list with the status **New**.
+  </Step>
+  <Step title="Open it">
+    Click the job's title in the list to open its page.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/create-job-1.webp" alt="The New Job window with the Title, Description, Client, Deadline, Priority and Assign to fields still empty" caption="The New Job window." />
+
+<Screenshot src="/guide/en/create-job-2.webp" alt="The New Job window filled in: the title Fit the kitchen sink, client Hartley Family, a deadline, priority High and Marco Rossi chosen in Assign to" caption="A filled-in job, ready to create." />
+
+<Screenshot src="/guide/en/create-job-3.webp" alt="The Jobs list showing the new job with its client, the person it is assigned to, its deadline, its priority High and the status New" caption="The new job in the list, with the status New." />
+
+<Screenshot src="/guide/en/create-job-4.webp" alt="The job's page: its title with the High and New labels, the client, the person it is assigned to, the deadline, and a Start button" caption="The job's own page, where the work is tracked." />
+
+## The job fields
+
+| Field | What to put there |
+|-------|-------------------|
+| **Title** | A short name that says what needs doing. Required |
+| **Description** | Optional details. You can format the text, and use **Preview** to check how it looks |
+| **Client** | Who the work is for |
+| **Deadline** | The date it should be finished by |
+| **Priority** | **Low**, **Medium**, **High** or **Critical**. A new job starts as **Medium** |
+| **Assign to** | The person responsible. Only people in the project are listed |
+
+Owners and Admins see every job in the project. A Member only sees the jobs assigned to them, so assign a job to someone to put it on their list.
+
+## Job IDs
+
+Every job gets a short ID such as JOB-042, and every project gets one too, such as PRJ-007. You can see it in the address bar when a job is open, so it's easy to point a colleague to exactly the right job. An ID never changes. The letters can be changed for new jobs in your organisation settings.
+
+<Callout type="note">
+If your plan includes templates, milestones or job types, the **New Job** window also has **Start from template**, **Milestone** and **Type**. See [Milestones](/guide/milestones) and [Job templates and job types](/guide/templates-and-types). Add-ons are explained in [Subscription and add-ons](/guide/subscription).
+</Callout>

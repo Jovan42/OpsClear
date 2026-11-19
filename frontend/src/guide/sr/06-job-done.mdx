@@ -1,0 +1,61 @@
+export const frontmatter = {
+  title: 'Posao od početka do kraja',
+  description: 'Prebacite posao iz statusa Novo u U toku i Završeno, dodajte belešku usput i pogledajte rezultat na kontrolnoj tabli.',
+};
+
+# Posao od početka do kraja
+
+Status posla svima pokazuje gde rad stoji. Većina poslova prolazi isti kratak put: **Novo**, zatim **U toku**, zatim **Završeno**. Ova stranica prati jedan posao na tom putu.
+
+<FeatureLink card="job-tracking" />
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Status može da menja i osoba kojoj je posao dodeljen. Ostali Članovi ne mogu.
+
+## Provedite posao kroz statuse
+
+<Steps>
+  <Step title="Otvorite posao">
+    Otvorite listu **Poslovi** i kliknite na naslov posla.
+  </Step>
+  <Step title="Započnite ga">
+    Kliknite na **Započni** kada rad počne. Status se menja iz **Novo** u **U toku**.
+  </Step>
+  <Step title="Dodajte belešku">
+    Otvorite odeljak **Beleške**, upišite šta se desilo, na primer "Parts delivered, starting on site tomorrow morning.", i kliknite na **Dodaj belešku**. Prozor vas podseća da se beleške ne mogu menjati ni brisati. Kliknite ponovo na **Dodaj belešku** da je sačuvate.
+  </Step>
+  <Step title="Završite ga">
+    Kada je rad gotov, kliknite na **Završi**, pa na **Označi kao završeno** da potvrdite. Status postaje **Završeno**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/job-done-1.webp" alt="Posao sa statusom Novo i dugmetom Započni" caption="Novi posao čeka da neko klikne na Započni." />
+
+<Screenshot src="/guide/sr/job-done-2.webp" alt="Isti posao sada U toku, sa dugmadima Završi i Blokiraj" caption="Kada se započne, posao je U toku i nudi Završi i Blokiraj." />
+
+<Screenshot src="/guide/sr/job-done-3.webp" alt="Odeljak Beleške sa jednom beleškom i poljem za novu belešku, i odeljak Istorija statusa koji navodi da je posao napravljen, a zatim započet" caption="Beleška na poslu, a ispod nje istorija statusa." />
+
+<Screenshot src="/guide/sr/job-done-4.webp" alt="Stranica posla sa statusom Završeno i bez dugmeta Završi" caption="Završen posao." />
+
+<Callout type="note">
+Beleške i istorija statusa su dodaci. Ako ih vaša organizacija nema, taj odeljak je sakriven ili označen kao nije uključen. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+<Callout type="tip">
+U projektu koji traži odobrenje pre završetka poslova, Član umesto **Završi** vidi **Zatraži završetak**. Pogledajte [Kada posao traži odobrenje](/guide/job-approval).
+</Callout>
+
+## Predomislili ste se
+
+Završeno greškom? Vlasnik ili Administrator može da klikne na **Ponovo otvori** na završenom poslu da ga vrati u **U toku**. Osoba kojoj je posao dodeljen ne može sama da poništi završetak.
+
+## Pogledajte to na kontrolnoj tabli
+
+**Kontrolna tabla** projekta pokazuje celu sliku. Kružni grafikon i šest brojeva pokazuju koliko je poslova **Novo**, **U toku**, **Blokirano** i **Završeno**, koliko ih je **Zakasnelo** i koliko odobrenja čeka. Brojevi se ažuriraju kako se statusi menjaju, a broj **Završeno** raste kada završite posao.
+
+<Screenshot src="/guide/sr/job-done-5.webp" alt="Kontrolna tabla: kružni grafikon statusa i brojevi za Novo, U toku, Blokirano, Završeno, Zakasnelo i Odobrenja na čekanju, sa vrednošću 1 kod Završeno" caption="Kontrolna tabla nakon što je jedan posao završen." />
+
+<Callout type="note">
+I kontrolna tabla je dodatak. Bez njega stranica **Kontrolna tabla** kaže da nije uključena u vaš paket.
+</Callout>

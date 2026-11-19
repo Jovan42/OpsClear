@@ -1,6 +1,7 @@
 // ADR-0062 (JOB-356): the public user guide at /guide. Logged out for most of this file
 // (the guide needs no login); one test logs in to prove the app header replaces the public
-// nav. Only the index page has content so far, so the other slugs show "Coming soon".
+// nav. The Getting started pages are written (JOB-359); the rest show "Coming soon" until
+// their jobs land (Milestones, used below, is one of them).
 
 import { uniqueEmail } from '../../support/orgApi';
 
