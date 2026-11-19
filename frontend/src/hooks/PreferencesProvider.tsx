@@ -10,6 +10,8 @@ import {
   MIGRATED_BY_KEY,
   PreferenceSaveQueue,
   decideInitialPreferences,
+  mergeLoadedPreferences,
+  mergeUploadPatch,
   readFirstPaint,
   readUnsaved,
   toUiPatch,
@@ -55,6 +57,9 @@ function PreferencesStore({ userId, children }: PreferencesStoreProps) {
   const cacheKey = userId ? userCacheKey(userId) : ANONYMOUS_CACHE_KEY;
   const [prefs, setPrefs] = useState<Preferences>(() => readFirstPaint(userId));
   const prefsRef = useRef(prefs);
+  // Keys the user changed on this page before the first GET settled (see below); not collected after.
+  const changedRef = useRef(new Set<keyof Preferences>());
+  const loadSettledRef = useRef(userId === null);
   // Anonymous visitors have nothing to load; a user is synced once the GET below settles.
   const [synced, setSynced] = useState(userId === null);
   const [queue] = useState(
@@ -97,12 +102,17 @@ function PreferencesStore({ userId, children }: PreferencesStoreProps) {
           migratedBy: localStorage.getItem(MIGRATED_BY_KEY),
           userId,
         });
-        // Changes not saved yet (made while the request was in flight, or left over from
-        // an earlier page load) win over what it returned, and are saved now.
+        // Changes made on this page since the request started win over what it returned, even
+        // ones already saved (the response can be older than the save). So do changes not
+        // saved yet, including ones left from an earlier page load; those are saved now.
         const unsaved = queue.unsaved;
-        apply({ ...initial.prefs, ...unsaved });
+        const changed = changedRef.current;
+        apply(mergeLoadedPreferences(initial.prefs, prefsRef.current, changed, unsaved));
+        const current = prefsRef.current;
+        loadSettledRef.current = true;
+        changedRef.current = new Set();
         if (initial.kind === 'upload') {
-          queue.queue({ ...initial.patch, ...unsaved });
+          queue.queue(mergeUploadPatch(initial.patch, current, changed, unsaved));
           void queue.flush().then((saved) => {
             if (saved) localStorage.setItem(MIGRATED_BY_KEY, userId);
           });
@@ -112,7 +122,10 @@ function PreferencesStore({ userId, children }: PreferencesStoreProps) {
         setSynced(true);
       })
       .catch(() => {
-        if (!cancelled) setSynced(true);
+        if (!cancelled) {
+          loadSettledRef.current = true;
+          setSynced(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -125,6 +138,9 @@ function PreferencesStore({ userId, children }: PreferencesStoreProps) {
   const update = useCallback(
     (patch: Partial<Preferences>) => {
       apply({ ...prefsRef.current, ...patch });
+      if (!loadSettledRef.current) {
+        for (const key of Object.keys(patch) as (keyof Preferences)[]) changedRef.current.add(key);
+      }
       if (userId) queue.queue(patch);
     },
     [apply, userId, queue],

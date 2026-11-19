@@ -37,6 +37,7 @@ describe('User Settings & Preferences', () => {
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithSubscription(email, 'Theme Corp', uniqueSlug());
     cy.loginAs(email);
+    cy.intercept('PATCH', '**/api/user/preferences').as('savePreferences');
     cy.visit('/settings');
 
     cy.contains('button', 'Dark').click();
@@ -44,6 +45,8 @@ describe('User Settings & Preferences', () => {
     cy.window().then((win) => {
       expect(cachedPreferences(win).theme).to.eq('dark');
     });
+    // The reload below reads the saved value from the server, so wait for the save (it is debounced).
+    cy.wait('@savePreferences');
 
     cy.reload();
     cy.get('html').should('have.class', 'dark');
@@ -117,8 +120,11 @@ describe('User Settings & Preferences', () => {
     createOrgWithSubscription(email, 'ReadElsewhere Corp', uniqueSlug());
     createProjectAs(email, 'Redirect Target').then((friendlyId) => {
       cy.loginAs(email);
+      cy.intercept('PATCH', '**/api/user/preferences').as('savePreferences');
       cy.visit('/settings');
       cy.contains('Default project page').parent().parent().within(() => cy.contains('button', 'Jobs').click());
+      // The visit below is a full page load: wait for the (debounced) save so it can't race it.
+      cy.wait('@savePreferences');
 
       cy.visit(`/projects/${friendlyId}`);
       cy.url().should('include', `/projects/${friendlyId}/jobs`);
