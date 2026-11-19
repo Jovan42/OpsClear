@@ -788,6 +788,32 @@ class OrgInviteIntegrationTest {
                 .andExpect(status().isConflict());
     }
 
+    // JOB-392: the app assumes one organisation per user (JOB-241), so accepting an invite
+    // while already in another organisation must fail like creating a second one does
+    @Test
+    @DisplayName("acceptInvite_shouldReturn409AndNotJoin_whenUserBelongsToAnotherOrganisation")
+    void acceptInvite_shouldReturn409AndNotJoin_whenUserBelongsToAnotherOrganisation() throws Exception {
+        mockMvc.perform(post(ApiPaths.ORGANISATIONS)
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString())
+                                .claim("email", "outsider@example.com").claim("name", "Outsider")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Pine Studio", "slug", "PIN"))))
+                .andExpect(status().isCreated());
+
+        OrgInviteModel invite = orgInviteRepository.findByToken(
+                createInvite("outsider@example.com", null).get("token").asText()).orElseThrow();
+
+        mockMvc.perform(post(ApiPaths.acceptInvite(invite.getToken()))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString())
+                                .claim("email", "outsider@example.com").claim("name", "Outsider"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.Organisation.ALREADY_IN_ORGANISATION));
+
+        assertThat(organisationRepository.existsMember(orgId, outsiderId)).as("joined invite org").isFalse();
+        assertThat(orgInviteRepository.findById(invite.getId()).orElseThrow().isPending())
+                .as("invite still pending").isTrue();
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
 
     private JsonNode createInvite(String email, String language) throws Exception {

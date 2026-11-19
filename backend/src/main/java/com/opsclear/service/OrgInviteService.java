@@ -131,6 +131,7 @@ public class OrgInviteService {
 
         requireEmailMatchesInvite(invite.getEmail(), callerEmail);
         requireEmailNotAlreadyMember(invite.getOrganisationId(), callerEmail);
+        requireNoOtherOrganisation(callerId);
 
         organisationRepository.saveMember(invite.getOrganisationId(), callerId, OrganisationRole.MEMBER);
         orgInviteRepository.markAccepted(invite.getId());
@@ -154,6 +155,14 @@ public class OrgInviteService {
                 .orElse(false);
         if (alreadyMember) {
             throw new ConflictException(ErrorMessages.OrgInvite.EMAIL_ALREADY_MEMBER);
+        }
+    }
+
+    // JOB-392: the app assumes one organisation per user (JOB-241), the same rule
+    // OrganisationService enforces on create
+    private void requireNoOtherOrganisation(UUID userId) {
+        if (organisationRepository.findByMember(userId).isPresent()) {
+            throw new ConflictException(ErrorMessages.Organisation.ALREADY_IN_ORGANISATION);
         }
     }
 
