@@ -6,6 +6,7 @@ import {
   PreferenceSaveQueue,
   decideInitialPreferences,
   mergeLoadedPreferences,
+  mergeUploadPatch,
   readFirstPaint,
   readUnsaved,
   unsavedKey,
@@ -312,5 +313,29 @@ describe('mergeLoadedPreferences', () => {
 
   it('uses the server values when the user changed nothing', () => {
     expect(mergeLoadedPreferences(server, defaults, new Set(), {})).toEqual(server);
+  });
+});
+
+describe('merge precedence', () => {
+  const server: Preferences = { ...defaults, theme: 'light' };
+
+  it('an unsaved value beats a changed one for the same key (it is the newer change)', () => {
+    // Saved Dark, then chose System, which is not saved yet.
+    const current: Preferences = { ...server, theme: 'dark' };
+    const merged = mergeLoadedPreferences(server, current, new Set(['theme']), { theme: 'system' });
+    expect(merged.theme).toBe('system');
+  });
+
+  it('the first-login upload does not overwrite a change saved while the load was in flight', () => {
+    // Legacy key says Light + compact rows. The user chose Dark meanwhile and it was saved.
+    const current: Preferences = { ...defaults, theme: 'dark', rowDensity: 'COMPACT' };
+    const patch = mergeUploadPatch({ theme: 'light', rowDensity: 'COMPACT' }, current, new Set(['theme']), {});
+    expect(patch).toEqual({ theme: 'dark', rowDensity: 'COMPACT' });
+  });
+
+  it('the upload also keeps unsaved values over changed and legacy ones', () => {
+    const current: Preferences = { ...defaults, theme: 'dark' };
+    const patch = mergeUploadPatch({ theme: 'light' }, current, new Set(['theme']), { theme: 'system' });
+    expect(patch).toEqual({ theme: 'system' });
   });
 });

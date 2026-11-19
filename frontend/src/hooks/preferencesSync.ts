@@ -138,9 +138,30 @@ export function mergeLoadedPreferences(
   changedKeys: ReadonlySet<keyof Preferences>,
   unsaved: Partial<Preferences>,
 ): Preferences {
+  return { ...initial, ...pickChanged(current, changedKeys), ...unsaved };
+}
+
+/** The current values of the keys the user changed on this page. */
+export function pickChanged(
+  current: Preferences,
+  changedKeys: ReadonlySet<keyof Preferences>,
+): Partial<Preferences> {
   const changed: Partial<Preferences> = {};
   for (const key of changedKeys) Object.assign(changed, { [key]: current[key] });
-  return { ...initial, ...changed, ...unsaved };
+  return changed;
+}
+
+/**
+ * What the first-login upload sends: the legacy values, except that anything the user changed
+ * on this page (or has not saved yet) wins, so the upload can't overwrite a newer save.
+ */
+export function mergeUploadPatch(
+  legacyPatch: Partial<Preferences>,
+  current: Preferences,
+  changedKeys: ReadonlySet<keyof Preferences>,
+  unsaved: Partial<Preferences>,
+): Partial<Preferences> {
+  return { ...legacyPatch, ...pickChanged(current, changedKeys), ...unsaved };
 }
 
 export function toUiPatch(patch: Partial<Preferences>): Record<string, UiPreferenceValue> {
