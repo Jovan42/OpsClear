@@ -95,6 +95,14 @@ Behaviour changes update the matching file in `docs/qa/` in the same PR, found t
 [docs/qa/README.md](../../qa/README.md#area-to-routes-map). `pr-reviewer` flags a PR that touches a
 mapped route or page without a `docs/qa/` change. Rule and format: [docs/qa/README.md](../../qa/README.md).
 
+## User guide
+
+A change to a screen the user guide documents updates the matching pages in `src/guide/en/` and `src/guide/sr/` in
+the same PR (and re-runs the screenshots, see [E2E.md](E2E.md#user-guide-screenshots)). The pages are found
+through the `coverage` globs in `src/guide/pages.ts`; a new screen gets a guide page or is added to a page's
+coverage. `pr-reviewer` flags a PR that touches a covered file without a guide change. Style:
+`src/guide/STYLE.md`.
+
 ---
 
 ## Definition of done
