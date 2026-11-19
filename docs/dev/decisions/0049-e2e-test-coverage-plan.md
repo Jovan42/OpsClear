@@ -4,6 +4,8 @@
 **Date:** 2026-08-20
 **Author:** Jovan Manojlovic
 
+> **Amended 2026-11-20 (JOB-400, JOB-401):** the org direct-add path is removed; invites are the only way into an organisation (decision 2026-11-19; JOB-402 removes the backend endpoint). The user search (`GET /api/users?q=`) only returns members of the caller's organisation, matched by name (contains) or email (prefix). The Appendix §2 happy path said OWNER/ADMIN "adds an existing user (found via search)", which contradicted the org-scoped search and its cross-tenant negative test in the same section; §2 now says direct add is removed, and the cross-tenant negative test stands.
+
 ## Context
 
 Cypress is named in `CLAUDE.md`'s tech stack table but nothing is actually configured anywhere
@@ -510,7 +512,9 @@ behavior worth E2E coverage.
 - Slug entered lower/mixed-case normalizes to uppercase on save and display
 - OWNER updates org name/slug → 200, reflected immediately
 - OWNER soft-deletes the org → 204, org and its projects behave as if gone
-- OWNER/ADMIN adds an existing user (found via search) as `MEMBER`/`ADMIN` → 201
+- ~~OWNER/ADMIN adds an existing user (found via search) as `MEMBER`/`ADMIN` → 201~~ Removed
+  (amended 2026-11-20, JOB-401): there is no direct add. OWNER/ADMIN add people with an invite,
+  and the org members page points them to **Invites**
 - OWNER changes a non-owner member's role `MEMBER` ⇄ `ADMIN` → 200
 - OWNER/ADMIN removes a non-owner member → 204, member's existing project memberships/assigned
   jobs are left untouched (owner reassigns manually)
@@ -520,8 +524,9 @@ behavior worth E2E coverage.
 - Invited user (must already have an OpsClear account) opens `/invites/{token}` while logged in
   as the matching email, accepts → 200, added as `MEMBER`
 - OWNER/ADMIN revokes a pending invite → 204
-- **User search** (`GET /api/users?email=`, backs the add-member/assign-job pickers): typing 2+
-  chars of an email prefix returns matches scoped to the caller's own org only
+- **User search** (`GET /api/users?q=`, backs the project add-member picker): typing 2+ chars
+  of a name (contains) or an email prefix returns matches scoped to the caller's own org only
+  (`email` is a deprecated alias of `q` until JOB-403)
 
 **Validation & error cases**
 - Blank org name → 400; name > 100 chars → 400

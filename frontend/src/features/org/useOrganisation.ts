@@ -90,16 +90,6 @@ export function useProjectDirectory(orgId: string | null) {
   });
 }
 
-export function useAddOrgMember(orgId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (body: { userId: string; role: OrgRole }) =>
-      organisationsApi.addMember(orgId, body),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ['organisations', orgId, 'members'] }),
-  });
-}
-
 export function useUpdateOrgMemberRole(orgId: string) {
   const queryClient = useQueryClient();
   return useMutation({

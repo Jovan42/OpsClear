@@ -10,7 +10,7 @@
     "descriptionMaxLength": "Maksimalno 10000 karaktera"
   },
   "addMemberForm": {
-    "searchPlaceholder": "Pretraga po emailu…",
+    "searchPlaceholder": "Pretraga po imenu ili emailu…",
     "alreadyMember": "(već je član)"
   },
   "newProjectModal": {

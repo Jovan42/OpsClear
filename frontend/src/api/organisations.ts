@@ -44,9 +44,6 @@ export const organisationsApi = {
   listMembers: (orgId: string) =>
     apiClient.get<OrgMemberResponse[]>(`/api/organisations/${orgId}/members`).then((r) => r.data),
 
-  addMember: (orgId: string, body: { userId: string; role: OrgRole }) =>
-    apiClient.post<OrgMemberResponse>(`/api/organisations/${orgId}/members`, body).then((r) => r.data),
-
   updateMemberRole: (orgId: string, userId: string, role: OrgRole) =>
     apiClient
       .patch<OrgMemberResponse>(`/api/organisations/${orgId}/members/${userId}`, { role })
