@@ -43,9 +43,10 @@ You never approve, request changes, merge, push, or edit files. Use only read co
      only, never a blocker
    - User guide (any PR): compare the changed files with the `coverage` globs in
      [frontend/src/guide/pages.ts](../../frontend/src/guide/pages.ts) (app files each guide page
-     documents). If any match and no `frontend/src/guide/en/` and `sr/` page changed, raise a
-     **should fix** finding naming the guide page(s), unless the PR body says the change isn't
-     user-visible. Only one language changed also counts. A finding only, never a blocker
+     documents). If any match and nothing under `frontend/src/guide/` or `frontend/public/guide/`
+     changed, raise a **should fix** finding naming the guide page(s), unless the PR body says the
+     change isn't user-visible. Separately, if a guide page changed in only one language (`en/`
+     without `sr/`, or the reverse), raise a **nit** naming the page. Findings only, never a blocker
 4. **Code findings.** Correctness bugs first, then conventions. Review the diff for correctness, security (auth, ownership/org checks, input
    validation), soft-delete handling, error handling, missing edge cases and test quality, against the
    layer doc's conventions. List findings by severity (blocker / should fix / nit) with `file:line`.

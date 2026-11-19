@@ -98,9 +98,11 @@ mapped route or page without a `docs/qa/` change. Rule and format: [docs/qa/READ
 ## User guide
 
 A change to a screen the user guide documents updates the matching pages in `src/guide/en/` and `src/guide/sr/` in
-the same PR (and re-runs the screenshots, see [E2E.md](E2E.md#user-guide-screenshots)). The pages are found
-through the `coverage` globs in `src/guide/pages.ts`; a new screen gets a guide page or is added to a page's
-coverage. `pr-reviewer` flags a PR that touches a covered file without a guide change. Style:
+the same PR. If the screen's look changed, re-run its section with
+`npm run guide:screenshots -- --section <name>` and commit the images (see
+[E2E.md](E2E.md#user-guide-screenshots)). The pages are found through the `coverage` globs in
+`src/guide/pages.ts`. A new user-facing feature needs no guide page until a guide for its area is planned.
+`pr-reviewer` flags a PR that touches a covered file without a guide change. Style:
 `src/guide/STYLE.md`.
 
 ---
