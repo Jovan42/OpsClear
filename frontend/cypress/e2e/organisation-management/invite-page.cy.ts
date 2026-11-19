@@ -52,6 +52,17 @@ function publicInviteStatus(token: string) {
   return cy.request({ url: `${API}/api/invites/${token}` }).then((res) => res.body.status as string);
 }
 
+/**
+ * Ends any Keycloak session and waits for the home page it redirects to to finish loading.
+ * The home page's own check-sso round trip (a full-page redirect to Keycloak and back to `/`)
+ * otherwise lands after the next cy.visit() and takes the browser back to `/`.
+ */
+function signOutOfKeycloak() {
+  cy.visit(LOGOUT);
+  cy.location('pathname', { timeout: 10000 }).should('eq', '/');
+  cy.contains('button', 'Log in', { timeout: 10000 }).should('be.visible');
+}
+
 /** Client-side navigation, as a link in the app would do: keeps the page's query cache and
  *  module state, which cy.visit() (a full page load) would reset. */
 function navigateInApp(path: string) {
@@ -75,7 +86,7 @@ describe('Organisation Management — Invite page', () => {
     cy.createKeycloakUser(inviteeEmail, 'Nikola', 'Invitee');
 
     setUpInvite('page-login', 'Login Corp', inviteeEmail).then(({ ownerEmail, orgId, token }) => {
-      cy.visit(LOGOUT);
+      signOutOfKeycloak();
       cy.visit(`/invite/${token}`);
       // No login screen first: the page itself, with the inviter, the organisation and the address
       cy.location('pathname').should('eq', `/invite/${token}`);
@@ -106,7 +117,7 @@ describe('Organisation Management — Invite page', () => {
     const inviteeEmail = uniqueEmail('page-register-invitee');
 
     setUpInvite('page-register', 'Register Corp', inviteeEmail).then(({ ownerEmail, orgId, token }) => {
-      cy.visit(LOGOUT);
+      signOutOfKeycloak();
       cy.visit(`/invite/${token}`);
       cy.contains('button', 'Create account').click();
 

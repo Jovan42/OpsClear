@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
@@ -153,28 +153,50 @@ function WrongAccount({ token, invite }: Readonly<{ token: string; invite: Publi
 function JoinOrganisation({ token, invite }: Readonly<{ token: string; invite: PublicInviteResponse }>) {
   const { t } = useTranslation('org');
   const navigate = useNavigate();
-  const { mutateAsync, isSuccess, isError, error } = useAcceptOrgInvite();
+  const { mutateAsync } = useAcceptOrgInvite();
+  // The outcome comes from the accept's promise, not the mutation's isSuccess/isError. The
+  // accept starts in an effect, and StrictMode's simulated unmount detaches useMutation's
+  // observer from a running mutation for good (TanStack doesn't reattach it on resubscribe),
+  // so isSuccess never turned true and the page never navigated. The promise settles anyway.
+  const [error, setError] = useState<unknown>(null);
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
+  const organisationName = invite.organisationName;
   const accept = useCallback(() => {
     acceptsSent.add(token);
-    // A failed accept frees the token, so opening the invite again (or Try again) sends a new
-    // one. On the promise, not in an onError callback: it settles even if the page is gone.
-    mutateAsync(token).catch(() => acceptsSent.delete(token));
-  }, [mutateAsync, token]);
+    mutateAsync(token).then(
+      () => {
+        // Not after the user has left the page
+        if (mounted.current) {
+          navigate('/projects', { replace: true, state: { [JOINED_ORGANISATION_STATE]: organisationName } });
+        }
+      },
+      (err: unknown) => {
+        // A failed accept frees the token, so opening the invite again (or Try again) sends a
+        // new one, even if the page is gone by now.
+        acceptsSent.delete(token);
+        setError(err);
+      },
+    );
+  }, [mutateAsync, token, navigate, organisationName]);
 
+  // Automatically once per page instance (a ref survives StrictMode's simulated remount); after
+  // a failure only Try again or reopening the invite sends another accept.
+  const autoStarted = useRef(false);
   useEffect(() => {
-    if (acceptsSent.has(token)) return;
+    if (autoStarted.current || acceptsSent.has(token)) return;
+    autoStarted.current = true;
     clearPendingInvite();
     accept();
   }, [accept, token]);
 
-  useEffect(() => {
-    if (isSuccess) {
-      navigate('/projects', { replace: true, state: { [JOINED_ORGANISATION_STATE]: invite.organisationName } });
-    }
-  }, [isSuccess, navigate, invite.organisationName]);
-
-  if (isError) {
+  if (error) {
     const message =
       isAxiosError(error) && typeof error.response?.data?.message === 'string'
         ? (error.response.data.message as string)
@@ -184,7 +206,14 @@ function JoinOrganisation({ token, invite }: Readonly<{ token: string; invite: P
         <Message title={t('invite.joinFailedTitle', { organisation: invite.organisationName })} />
         <p className="text-sm text-red-700 dark:text-red-400">{message}</p>
         <div className="flex justify-center gap-3">
-          <Button onClick={accept}>{t('invite.tryAgain')}</Button>
+          <Button
+            onClick={() => {
+              setError(null);
+              accept();
+            }}
+          >
+            {t('invite.tryAgain')}
+          </Button>
           <GoToProjects />
         </div>
       </Card>

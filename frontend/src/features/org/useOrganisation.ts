@@ -226,11 +226,16 @@ export function acceptInviteMutationOptions(queryClient: QueryClient) {
     // would read the stale null and send the new member to onboarding). This runs before the
     // mutation reports success, so it's gone before the page navigates to /projects, which
     // then loads it fresh.
-    onSuccess: () => queryClient.removeQueries({ queryKey: ['organisations', 'mine'] }),
-    // The invite page reloads the invite: after an error its status may have changed (accepted
-    // in another tab, revoked), and the page then shows that instead of the error. After a
-    // success the page has already moved on, so this only refreshes the cache.
-    onSettled: (_data: unknown, _error: unknown, token: string) =>
+    // The invite is only marked stale, not reloaded: reloaded now, it would read as accepted
+    // and the page would show "already used" instead of moving on to the projects list. It
+    // loads fresh the next time the invite page opens.
+    onSuccess: (_data: unknown, token: string) => {
+      queryClient.removeQueries({ queryKey: ['organisations', 'mine'] });
+      void queryClient.invalidateQueries({ queryKey: publicInviteKey(token), refetchType: 'none' });
+    },
+    // After an error the invite's status may have changed (accepted in another tab, revoked):
+    // the page reloads it and shows that instead of the error.
+    onError: (_error: unknown, token: string) =>
       void queryClient.invalidateQueries({ queryKey: publicInviteKey(token) }),
   };
 }
