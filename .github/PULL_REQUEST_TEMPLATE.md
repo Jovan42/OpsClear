@@ -25,3 +25,7 @@ Closes JOB-___
 <!-- What you actually ran or checked -->
 
 - [ ]
+
+<!-- QA: tick when this PR doesn't change behaviour covered in docs/qa/, or the scenarios are updated. -->
+
+- [ ] QA: this PR doesn't change behaviour covered in `docs/qa/`, or the scenarios are updated

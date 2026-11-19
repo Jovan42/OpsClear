@@ -28,7 +28,7 @@ Job titles follow the pattern `<Layer>: <short description>`.
 | Frontend | `Frontend:` | `Frontend: org templates section in OrgSettingsPage` |
 | E2E | `E2E:` | `E2E: cy.loginAs() custom command via Keycloak token grant` |
 | Bug fix | `Bug:` | `Bug: 404 not returned for wrong-org template` |
-| UX improvement | `UX:` | `UX: show the Complete button label on narrow screens` |
+| UX improvement | `UX:` | `UX: show the Complete button label on narrow screens` (commit `fix(frontend): …`) |
 | Chore | `Chore:` | `Chore: upgrade Spring Boot to 3.4.1` |
 | Tech debt | `Tech debt:` | `Tech debt: replace raw jOOQ inserts with model builder` |
 | Future Consideration | (free title) | `Org-level job templates` |

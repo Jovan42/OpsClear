@@ -3,7 +3,7 @@
 ## Naming conventions
 
 Job titles follow `<Layer>: <short description>` (`ADR:`, `DB:`, `Backend:`, `Frontend:`, `E2E:`,
-`Bug:`, `Chore:`, `Tech debt:`). Prefixes and examples: [NAMING.md](NAMING.md#job-titles).
+`Bug:`, `UX:`, `Chore:`, `Tech debt:`). Prefixes and examples: [NAMING.md](NAMING.md#job-titles).
 
 ## Splitting rules
 

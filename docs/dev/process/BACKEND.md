@@ -116,6 +116,12 @@ All error message strings live in `ErrorMessages` nested classes (e.g. `ErrorMes
 ./gradlew test --tests "com.opsclear.service.SomeServiceTest"
 ```
 
+## QA scenarios
+
+Behaviour changes update the matching file in `docs/qa/` in the same PR, found through the backend controllers table in
+[docs/qa/README.md](../../qa/README.md#area-to-routes-map). `pr-reviewer` flags a PR that touches a
+mapped controller without a `docs/qa/` change. Rule and format: [docs/qa/README.md](../../qa/README.md).
+
 ---
 
 ## Checkstyle
