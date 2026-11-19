@@ -134,7 +134,7 @@ ONB-08 and ONB-30 repeat the check in the browser.
 6. Wait on the page.
 
 - [ ] Each chosen card has a green border, and the **Monthly total** changes by that add-on's price when you click it
-- [ ] **Continue to payment** opens the payment form on the page, and its requests go to Paddle hosts with `sandbox` in the name
+- [ ] **Continue to payment** opens the payment form on the page, and its requests go to Paddle hosts with `sandbox` in the name — ❌ JOB-396
 - [ ] The payment form shows the same **Total** as **Monthly total**
 - [ ] **Processing your payment** appears and the page updates by itself, without a refresh
 - [ ] **Organisation Settings** now opens, and the Billing box shows **Active**
@@ -494,3 +494,4 @@ judged in Luka's scenarios in the other area files.
 
 ## Findings
 - ONB-05: JOB-395 (UX) **Create your organisation** has no **Log out**, language or theme controls, so a signed-in user with no org is stuck on the page. Fix in PR #582; ONB-06 now checks the new top bar.
+- ONB-08: JOB-396 (Bug) **Continue to payment** returns 500 from `POST /api/organisations/{orgId}/subscription/paddle`, so the payment form never opens and the org cannot subscribe. Blocks ONB-08 and everything after it that needs the subscription.
