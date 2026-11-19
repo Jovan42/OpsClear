@@ -1,6 +1,6 @@
 # Onboarding
 
-Last run: 2026-11-19, Jovan
+Last run: 2026-11-19 to 2026-11-20, Jovan
 Guide: /guide/sign-up, /guide/create-organisation, /guide/invite-team, /guide/first-project
 
 This file builds the test world that every other area file relies on: both orgs, all personas
@@ -136,7 +136,7 @@ ONB-08 and ONB-30 repeat the check in the browser.
 - [x] Each chosen card has a green border, and the **Monthly total** changes by that add-on's price when you click it
 - [x] **Continue to payment** opens the payment form on the page, and its requests go to Paddle hosts with `sandbox` in the name
 - [x] The payment form shows the same **Total** as **Monthly total**
-- [ ] **Processing your payment** appears and the page updates by itself, without a refresh — ❌ JOB-397
+- [x] **Processing your payment** appears and the page updates by itself, without a refresh (JOB-397 fixed, rechecked in ONB-30)
 - [x] **Organisation Settings** now opens, and the Billing box shows **Active**
 - [x] **Billing history** (click it open) lists one payment with a date, a status and the amount
 
@@ -432,11 +432,11 @@ Don't change their deadlines, assignees or status before the day plan reaches th
 5. As Sara, type `/org/new` in the address bar, type "Pine Studio Two" with slug `psx` and click **Create organisation**.
 6. As Petra, open the invite for Brightline that Ana sends to `<mailbox>+petra@<domain>` (Ana: **Invites**, send it first) and click **Accept invite**.
 
-- [ ] The slug `brt` is refused with "An organisation with this slug already exists"
-- [ ] `ppx` creates **Pine & Pixel Studio** and opens **Set up your subscription**
-- [ ] The payment goes through Paddle sandbox hosts, and **Organisation Settings** then shows the Billing box **Active**
-- [ ] Sara's attempt fails with "You already belong to an organisation", and she stays in Brightline only
-- [ ] Petra can't accept the Brightline invite while she owns Pine & Pixel, and stays in one org only (known bug: `OrgInviteService.acceptInvite` only checks membership of the same org, so this is expected to fail, job to be linked)
+- [x] The slug `brt` is refused with "An organisation with this slug already exists"
+- [x] `ppx` creates **Pine & Pixel Studio** and opens **Set up your subscription**
+- [x] The payment goes through Paddle sandbox hosts, and **Organisation Settings** then shows the Billing box **Active**
+- [x] Sara's attempt fails with "You already belong to an organisation", and she stays in Brightline only
+- [x] Petra can't accept the Brightline invite while she owns Pine & Pixel, and stays in one org only (known bug: `OrgInviteService.acceptInvite` only checks membership of the same org, so this is expected to fail, job to be linked)
 
 Afterwards, revoke the Brightline invite for Petra in Ana's **Invites** list so it doesn't stay pending.
 
@@ -449,11 +449,11 @@ Afterwards, revoke the Brightline invite for Petra in Ana's **Invites** list so 
 4. Open **Settings**, scroll to **Job screen**.
 5. Open **Organisation Settings**.
 
-- [ ] The project and the job are created
-- [ ] The top bar shows a lock next to add-on features such as Dashboard, Stats, Milestones and Schedules, and clicking one says it is not included in your plan, with **Upgrade in org settings**
-- [ ] All five sections under **Sections shown on jobs** are off and marked **Not in your plan**
-- [ ] **Require approval to complete jobs** is locked with "Requires an active Approvals add-on."
-- [ ] **Org Templates** isn't shown on **Organisation Settings**
+- [x] The project and the job are created
+- [x] The top bar shows a lock next to add-on features such as Dashboard, Stats, Milestones and Schedules, and clicking one says it is not included in your plan, with **Upgrade in org settings**
+- [x] All five sections under **Sections shown on jobs** are off and marked **Not in your plan**
+- [x] **Require approval to complete jobs** is locked with "Requires an active Approvals add-on."
+- [x] **Org Templates** isn't shown on **Organisation Settings**
 
 ## ONB-32 No data leaks between the orgs
 **As:** Petra, then Ana · **Day:** 1 · **Needs:** ONB-31 and ONB-26 done
@@ -465,12 +465,12 @@ Afterwards, revoke the Brightline invite for Petra in Ana's **Invites** list so 
 5. As Ana, open Residential **Settings**, **Members**, search `<mailbox>+petra` and try to add Petra as **Member**.
 6. As Ana, open "Order bathroom fittings for 14 Elm St", click **Edit** and try to assign it to Petra.
 
-- [ ] Petra can't see "Tile bathroom at 14 Elm St" or any other Brightline data
-- [ ] Petra's **Projects** lists only **Brand refresh for Juniper Cafe**
-- [ ] Ana's **Projects** lists only Brightline projects
-- [ ] Petra's members list is Petra alone, and Ana's has the five Brightline people
-- [ ] Petra can't be added to a Brightline project (known bug: `ProjectMemberService.addMember` only checks that the user exists, so this is expected to fail, job to be linked)
-- [ ] A Brightline job can't be assigned to Petra (known bug: `JobService` only checks that the assignee exists, so this is expected to fail, job to be linked)
+- [x] Petra can't see "Tile bathroom at 14 Elm St" or any other Brightline data
+- [x] Petra's **Projects** lists only **Brand refresh for Juniper Cafe**
+- [x] Ana's **Projects** lists only Brightline projects
+- [x] Petra's members list is Petra alone, and Ana's has the five Brightline people
+- [x] Petra can't be added to a Brightline project (known bug: `ProjectMemberService.addMember` only checks that the user exists, so this is expected to fail, job to be linked)
+- [x] A Brightline job can't be assigned to Petra (known bug: `JobService` only checks that the assignee exists, so this is expected to fail, job to be linked)
 
 ## ONB-33 Luka switches to Serbian
 **As:** Luka (member) · **Day:** 1 · **Needs:** ONB-13 done
@@ -480,9 +480,9 @@ Afterwards, revoke the Brightline invite for Petra in Ana's **Invites** list so 
 3. Open **Projects** and a project.
 4. Sign out and sign back in.
 
-- [ ] The language changes at once, without a reload
-- [ ] The menus, buttons and headings are in Serbian
-- [ ] The language is still Serbian after signing back in
+- [x] The language changes at once, without a reload
+- [x] The menus, buttons and headings are in Serbian
+- [x] The language is still Serbian after signing back in
 
 From now on Luka plays every scenario with the Serbian UI. The Serbian screens themselves are
 judged in Luka's scenarios in the other area files.
