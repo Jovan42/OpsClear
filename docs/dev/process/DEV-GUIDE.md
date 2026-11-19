@@ -80,3 +80,5 @@ be split (migration plus its backend test) gets the `cross-layer` label. Rules:
 - One job = one branch = one PR, one layer each ([JOBS.md](JOBS.md)).
 - Nothing goes to `main` without a PR you merged.
 - No AI attribution in commits or PRs.
+- Changing a screen the user guide documents? Update the guide pages (en and sr) in the same PR
+  ([FRONTEND.md § User guide](FRONTEND.md#user-guide)).

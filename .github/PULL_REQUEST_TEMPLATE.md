@@ -29,3 +29,7 @@ Closes JOB-___
 <!-- QA: tick when this PR doesn't change behaviour covered in docs/qa/, or the scenarios are updated. -->
 
 - [ ] QA: this PR doesn't change behaviour covered in `docs/qa/`, or the scenarios are updated
+
+<!-- Guide: tick when this PR doesn't change a screen listed in frontend/src/guide/pages.ts, or the guide pages (en and sr) are updated. -->
+
+- [ ] Guide: this PR doesn't change a screen documented in `frontend/src/guide/`, or the guide pages are updated
