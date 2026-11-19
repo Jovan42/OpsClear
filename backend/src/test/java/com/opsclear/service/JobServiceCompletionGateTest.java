@@ -24,7 +24,6 @@ import com.opsclear.repository.MilestoneRepository;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
-import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,7 +55,6 @@ class JobServiceCompletionGateTest {
     @Mock private JobStatusHistoryRepository jobStatusHistoryRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private ProjectMemberRepository projectMemberRepository;
-    @Mock private UserRepository userRepository;
     @Mock private MilestoneRepository milestoneRepository;
     @Mock private JobTypeRepository jobTypeRepository;
     @Mock private BlockReasonService blockReasonService;
@@ -84,7 +82,7 @@ class JobServiceCompletionGateTest {
         JobStatusTransitioner transitioner = new JobStatusTransitioner(jobRepository, jobStatusHistoryRepository,
                 jobRelationshipRepository, blockReasonService, eventPublisher);
         jobService = new JobService(jobRepository, jobRelationshipRepository, jobLinkRepository,
-                jobStatusHistoryRepository, projectRepository, projectMemberRepository, userRepository,
+                jobStatusHistoryRepository, projectRepository, projectMemberRepository,
                 milestoneRepository, jobTypeRepository, organisationRepository, friendlyIdService, eventPublisher,
                 transitioner, approvalRepository, approvalService, addonAccessChecker, completionApprovalCanceller);
 

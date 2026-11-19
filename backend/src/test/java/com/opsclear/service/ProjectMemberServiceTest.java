@@ -8,10 +8,9 @@ import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
-import com.opsclear.model.UserModel;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
-import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,7 @@ class ProjectMemberServiceTest {
     private ProjectRepository projectRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private OrganisationRepository organisationRepository;
 
     @Mock
     private RecurringScheduleService recurringScheduleService;
@@ -60,7 +59,8 @@ class ProjectMemberServiceTest {
     @BeforeEach
     void setUp() {
         projectMemberService = new ProjectMemberService(
-                projectMemberRepository, projectRepository, userRepository, recurringScheduleService, eventPublisher);
+                projectMemberRepository, projectRepository, organisationRepository, recurringScheduleService,
+                eventPublisher);
 
         projectId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -137,8 +137,7 @@ class ProjectMemberServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(userRepository.findById(newUserId))
-                .thenReturn(Optional.of(UserModel.builder().id(newUserId).build()));
+        when(organisationRepository.existsMember(project.getOrganisationId(), newUserId)).thenReturn(true);
         when(projectMemberRepository.existsByProjectIdAndUserId(projectId, newUserId)).thenReturn(false);
         when(projectMemberRepository.save(any())).thenReturn(saved);
 
@@ -206,7 +205,7 @@ class ProjectMemberServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw NotFoundException when target user does not exist")
+    @DisplayName("Should throw NotFoundException when target user is not in the project's organisation")
     void addMember_shouldThrow_whenUserNotFound() {
         UUID missingUserId = UUID.randomUUID();
         AddMemberRequest request = AddMemberRequest.builder()
@@ -215,7 +214,7 @@ class ProjectMemberServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(userRepository.findById(missingUserId)).thenReturn(Optional.empty());
+        when(organisationRepository.existsMember(project.getOrganisationId(), missingUserId)).thenReturn(false);
 
         assertThatThrownBy(() -> projectMemberService.addMember(projectId, ownerId, request))
                 .isInstanceOf(NotFoundException.class)
@@ -231,8 +230,7 @@ class ProjectMemberServiceTest {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
                 .thenReturn(Optional.of(ownerMembership));
-        when(userRepository.findById(ownerId))
-                .thenReturn(Optional.of(UserModel.builder().id(ownerId).build()));
+        when(organisationRepository.existsMember(project.getOrganisationId(), ownerId)).thenReturn(true);
         when(projectMemberRepository.existsByProjectIdAndUserId(projectId, ownerId)).thenReturn(true);
 
         assertThatThrownBy(() -> projectMemberService.addMember(projectId, ownerId, request))

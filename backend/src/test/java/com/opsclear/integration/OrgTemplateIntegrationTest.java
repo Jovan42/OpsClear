@@ -294,6 +294,48 @@ class OrgTemplateIntegrationTest {
     }
 
     @Test
+    @DisplayName("updateOrgTemplate — fixed assignee from the same organisation is saved")
+    void updateOrgTemplate_shouldReturn200_whenAssigneeInSameOrg() throws Exception {
+        JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").orgId(orgId).name("T1").assigneeMode("NONE").createdBy(ownerId).build());
+
+        mockMvc.perform(put(ApiPaths.orgTemplate(orgId, template.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "T1", "assigneeMode": "FIXED", "assigneeId": "%s"}
+                                """.formatted(memberId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assigneeId").value(memberId.toString()));
+    }
+
+    @Test
+    @DisplayName("updateOrgTemplate — 404 when the fixed assignee belongs to another organisation (JOB-393)")
+    void updateOrgTemplate_shouldReturn404_whenAssigneeInOtherOrg() throws Exception {
+        JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()
+                .friendlyId("TPL-001").orgId(orgId).name("T1").assigneeMode("NONE").createdBy(ownerId).build());
+        UUID otherUserId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(otherUserId).email("other@example.com").name("Other Org User").build());
+        OrganisationModel otherOrg = organisationRepository.save(
+                OrganisationModel.builder().name("Other Org").slug("OTH").createdBy(otherUserId).build());
+        organisationRepository.saveMember(otherOrg.getId(), otherUserId, OrganisationRole.OWNER);
+
+        mockMvc.perform(put(ApiPaths.orgTemplate(orgId, template.getId()))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "T1", "assigneeMode": "FIXED", "assigneeId": "%s"}
+                                """.formatted(otherUserId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Assignee not found"));
+
+        JobTemplateModel reloaded = jobTemplateRepository.findByIdAndDeletedAtIsNull(template.getId()).orElseThrow();
+        assertThat(reloaded.getAssigneeId()).isNull();
+        assertThat(reloaded.getAssigneeMode()).isEqualTo("NONE");
+    }
+
+    @Test
     @DisplayName("updateOrgTemplate — member receives 403")
     void updateOrgTemplate_shouldReturn403_forOrgMember() throws Exception {
         JobTemplateModel template = jobTemplateRepository.save(JobTemplateModel.builder()

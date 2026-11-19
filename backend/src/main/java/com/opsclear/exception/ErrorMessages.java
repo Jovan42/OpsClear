@@ -107,6 +107,7 @@ public final class ErrorMessages {
     public static final class JobTemplate {
         public static final String NOT_FOUND = "Job template not found";
         public static final String ACTIVE_SCHEDULES = "Template is used by active schedules: ";
+        public static final String ASSIGNEE_NOT_FOUND = "Assignee not found";
         public static final String DEFAULT_TYPE_ID_PROJECT_SCOPE_ONLY =
                 "defaultTypeId can only be set on project-scoped templates";
         public static final String DEFAULT_TYPE_NAME_ORG_SCOPE_ONLY =
@@ -118,6 +119,7 @@ public final class ErrorMessages {
 
     public static final class RecurringSchedule {
         public static final String NOT_FOUND = "Recurring schedule not found";
+        public static final String ASSIGNEE_NOT_FOUND = "Assignee not found";
         public static final String INVALID_CRON = "Invalid cron expression: ";
         public static final String CRON_INTERVAL_TOO_SHORT =
                 "Cron expression must have a minimum interval of 1 hour";

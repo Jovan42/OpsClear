@@ -20,6 +20,7 @@ import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.ProjectMemberRepository;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.RecurringScheduleRepository;
 import com.opsclear.repository.ScheduleAssigneeRepository;
@@ -58,6 +59,7 @@ class RecurringScheduleServiceTest {
     @Mock private JobTemplateRepository jobTemplateRepository;
     @Mock private ScheduleMissedRunRepository missedRunRepository;
     @Mock private ScheduleJobCreator scheduleJobCreator;
+    @Mock private OrganisationRepository organisationRepository;
 
     private RecurringScheduleService service;
 
@@ -79,7 +81,7 @@ class RecurringScheduleServiceTest {
         service = new RecurringScheduleService(
                 scheduleRepository, assigneeRepository,
                 projectRepository, projectMemberRepository, jobTemplateRepository,
-                missedRunRepository, scheduleJobCreator);
+                missedRunRepository, scheduleJobCreator, organisationRepository);
 
         projectId  = UUID.randomUUID();
         ownerId    = UUID.randomUUID();
@@ -236,6 +238,7 @@ class RecurringScheduleServiceTest {
         req.setCronExpression(VALID_CRON);
         req.setTimezone(VALID_TZ);
         req.setAssigneeIds(List.of(assigneeId));
+        when(organisationRepository.existsMember(project.getOrganisationId(), assigneeId)).thenReturn(true);
 
         RecurringSchedulesRecord saved = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
 
@@ -454,6 +457,7 @@ class RecurringScheduleServiceTest {
         req.setCronExpression(VALID_CRON);
         req.setTimezone(VALID_TZ);
         req.setAssigneeIds(List.of(assigneeId));
+        when(organisationRepository.existsMember(project.getOrganisationId(), assigneeId)).thenReturn(true);
         // pausedUntil and expiresAt intentionally null — exercises the null branches
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
@@ -492,6 +496,7 @@ class RecurringScheduleServiceTest {
         req.setPausedUntil(pausedUntil);
         req.setExpiresAt(expiresAt);
         req.setAssigneeIds(List.of(assigneeId));
+        when(organisationRepository.existsMember(project.getOrganisationId(), assigneeId)).thenReturn(true);
 
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
         when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))

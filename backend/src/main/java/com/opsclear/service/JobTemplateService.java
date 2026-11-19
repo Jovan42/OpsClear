@@ -15,6 +15,7 @@ import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
+import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobTemplateRepository;
 import com.opsclear.repository.JobTypeRepository;
 import com.opsclear.repository.OrganisationRepository;
@@ -57,9 +58,10 @@ public class JobTemplateService {
 
     @Transactional
     public JobTemplateModel create(UUID projectId, CreateJobTemplateRequest request, UUID requesterId) {
-        requireProject(projectId);
+        ProjectModel project = requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         requireNoDefaultTypeName(request.getDefaultTypeName());
+        requireAssigneeInOrg(project.getOrganisationId(), request.getAssigneeId());
 
         String friendlyId = organisationRepository.findByMember(requesterId)
                 .map(o -> friendlyIdService.nextFriendlyId(o.getId(), FriendlyIdEntityType.TEMPLATE))
@@ -89,10 +91,11 @@ public class JobTemplateService {
     @Transactional
     public JobTemplateModel update(UUID projectId, UUID templateId,
                                    UpdateJobTemplateRequest request, UUID requesterId) {
-        requireProject(projectId);
+        ProjectModel project = requireProject(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         requireNoDefaultTypeName(request.getDefaultTypeName());
         JobTemplateModel template = requireTemplateForProject(projectId, templateId);
+        requireAssigneeInOrg(project.getOrganisationId(), request.getAssigneeId());
         applyUpdate(template, request);
         JobTemplateModel updated = jobTemplateRepository.save(template);
         log.info("Updated job template {} in project {} by user {}", templateId, projectId, requesterId);
@@ -174,6 +177,7 @@ public class JobTemplateService {
         requireOrgOwnerOrAdmin(orgId, requesterId);
         requireNoDefaultTypeId(request.getDefaultTypeId());
         JobTemplateModel template = requireTemplateForOrg(orgId, templateId);
+        requireAssigneeInOrg(orgId, request.getAssigneeId());
         applyUpdate(template, request);
         JobTemplateModel updated = jobTemplateRepository.save(template);
         log.info("Updated org-level job template {} in org {} by user {}", templateId, orgId, requesterId);
@@ -221,9 +225,17 @@ public class JobTemplateService {
         }
     }
 
-    private void requireProject(UUID projectId) {
-        projectRepository.findByIdAndDeletedAtIsNull(projectId)
+    private ProjectModel requireProject(UUID projectId) {
+        return projectRepository.findByIdAndDeletedAtIsNull(projectId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
+    }
+
+    // JOB-393: a fixed assignee must belong to the template's organisation. A user outside it gets the same 404 as
+    // an unknown user, so the response doesn't reveal that the account exists.
+    private void requireAssigneeInOrg(UUID orgId, UUID assigneeId) {
+        if (assigneeId != null && !organisationRepository.existsMember(orgId, assigneeId)) {
+            throw new NotFoundException(ErrorMessages.JobTemplate.ASSIGNEE_NOT_FOUND);
+        }
     }
 
     private void requireMember(UUID projectId, UUID userId) {

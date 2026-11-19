@@ -8,9 +8,10 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.ProjectMemberModel;
 import com.opsclear.model.ProjectMemberRole;
+import com.opsclear.model.ProjectModel;
+import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
-import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -27,7 +28,7 @@ public class ProjectMemberService {
 
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
-    private final UserRepository userRepository;
+    private final OrganisationRepository organisationRepository;
     private final RecurringScheduleService recurringScheduleService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -40,10 +41,10 @@ public class ProjectMemberService {
 
     @Transactional
     public ProjectMemberModel addMember(UUID projectId, UUID requesterId, AddMemberRequest request) {
-        requireProjectExists(projectId);
+        ProjectModel project = requireProjectExists(projectId);
         requireOwnerOrAdmin(projectId, requesterId);
         requireNotOwnerRole(request.getRole());
-        requireUserExists(request.getUserId());
+        requireUserInProjectOrg(project, request.getUserId());
         requireNotAlreadyMember(projectId, request.getUserId());
 
         ProjectMemberModel member = ProjectMemberModel.builder()
@@ -126,14 +127,17 @@ public class ProjectMemberService {
         }
     }
 
-    private void requireProjectExists(UUID projectId) {
-        projectRepository.findByIdAndDeletedAtIsNull(projectId)
+    private ProjectModel requireProjectExists(UUID projectId) {
+        return projectRepository.findByIdAndDeletedAtIsNull(projectId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Project.NOT_FOUND));
     }
 
-    private void requireUserExists(UUID userId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
+    // JOB-393: only members of the project's organisation can join it. A user outside the org gets the same
+    // 404 as an unknown user, so the response doesn't reveal that the account exists.
+    private void requireUserInProjectOrg(ProjectModel project, UUID userId) {
+        if (!organisationRepository.existsMember(project.getOrganisationId(), userId)) {
+            throw new NotFoundException(ErrorMessages.User.NOT_FOUND);
+        }
     }
 
     // --- Permission helpers ---

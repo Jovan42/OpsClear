@@ -792,6 +792,81 @@ class RecurringScheduleIntegrationTest {
                 .andExpect(jsonPath("$.assignees[0].userId").value(ownerId.toString()));
     }
 
+    @Test
+    @DisplayName("createSchedule — 404 when an assignee belongs to another organisation (JOB-393)")
+    void createSchedule_shouldReturn404_whenAssigneeInOtherOrg() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        UUID otherUserId = saveUserInOtherOrg();
+
+        mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Cross-org",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  "assigneeIds": ["%s", "%s"]
+                                }
+                                """.formatted(templateId, ownerId, otherUserId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Assignee not found"));
+
+        assertThat(scheduleRepository.findByProjectId(projectId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("updateSchedule — 404 when an assignee belongs to another organisation (JOB-393)")
+    void updateSchedule_shouldReturn404_whenAssigneeInOtherOrg() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        String responseBody = mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "S1",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  "assigneeIds": ["%s"]
+                                }
+                                """.formatted(templateId, ownerId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID scheduleId = UUID.fromString(extractId(responseBody));
+        UUID otherUserId = saveUserInOtherOrg();
+
+        mockMvc.perform(put(ApiPaths.schedule(projectId, scheduleId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "S1",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  "assigneeIds": ["%s"]
+                                }
+                                """.formatted(templateId, otherUserId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Assignee not found"));
+
+        assertThat(assigneeRepository.findByScheduleId(scheduleId))
+                .extracting(a -> a.getUserId())
+                .containsExactly(ownerId);
+    }
+
+    private UUID saveUserInOtherOrg() {
+        UUID otherUserId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(otherUserId).email("other@example.com").name("Other Org User").build());
+        OrganisationModel otherOrg = organisationRepository.save(
+                OrganisationModel.builder().name("Other Org").slug("OTH").createdBy(otherUserId).build());
+        organisationRepository.saveMember(otherOrg.getId(), otherUserId, OrganisationRole.OWNER);
+        return otherUserId;
+    }
+
     // --- previewCron — impossible cron produces empty list ---
 
     @Test
@@ -822,6 +897,7 @@ class RecurringScheduleIntegrationTest {
         UUID assigneeUserId = UUID.randomUUID();
         userRepository.save(UserModel.builder().id(assigneeUserId).email("assignee@example.com")
                 .name("Assignee").build());
+        organisationRepository.saveMember(orgId, assigneeUserId, OrganisationRole.MEMBER);
         ProjectMemberModel assigneeMembership = projectMemberRepository.save(
                 ProjectMemberModel.builder().projectId(projectId).userId(assigneeUserId)
                         .role(ProjectMemberRole.MEMBER).build());
@@ -864,6 +940,7 @@ class RecurringScheduleIntegrationTest {
         UUID assigneeUserId = UUID.randomUUID();
         userRepository.save(UserModel.builder().id(assigneeUserId).email("second@example.com")
                 .name("Second").build());
+        organisationRepository.saveMember(orgId, assigneeUserId, OrganisationRole.MEMBER);
         ProjectMemberModel assigneeMembership = projectMemberRepository.save(
                 ProjectMemberModel.builder().projectId(projectId).userId(assigneeUserId)
                         .role(ProjectMemberRole.MEMBER).build());

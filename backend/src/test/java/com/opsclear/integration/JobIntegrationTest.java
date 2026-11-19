@@ -208,6 +208,27 @@ class JobIntegrationTest {
     }
 
     @Test
+    @DisplayName("Should return 404 when assignedTo user belongs to another organisation (JOB-393)")
+    void createJob_shouldReturn404_whenAssignedUserInOtherOrg() throws Exception {
+        UUID otherUserId = saveUserInOtherOrg();
+        String body = String.format("""
+                {
+                  "title": "Job",
+                  "assignedTo": "%s"
+                }
+                """, otherUserId);
+
+        mockMvc.perform(post(ApiPaths.jobs(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Assigned user not found"));
+
+        assertThat(jobRepository.findByProjectIdAndDeletedAtIsNull(projectId)).isEmpty();
+    }
+
+    @Test
     @DisplayName("Should create a job with a valid milestoneId and return 201")
     void createJob_shouldReturn201_whenValidMilestoneId() throws Exception {
         MilestoneModel milestone = milestoneRepository.save(
@@ -571,6 +592,31 @@ class JobIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when assignedTo user belongs to another organisation on update (JOB-393)")
+    void updateJob_shouldReturn404_whenAssignedUserInOtherOrg() throws Exception {
+        JobModel job = createTestJob("Job", null, JobStatus.NEW);
+        UUID otherUserId = saveUserInOtherOrg();
+
+        String body = String.format("""
+                {
+                  "title": "Updated",
+                  "assignedTo": "%s"
+                }
+                """, otherUserId);
+
+        mockMvc.perform(put(ApiPaths.job(projectId, job.getId()))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Assigned user not found"));
+
+        JobModel reloaded = jobRepository.findByIdAndDeletedAtIsNull(job.getId()).orElseThrow();
+        assertThat(reloaded.getAssignedTo()).isNull();
+        assertThat(reloaded.getTitle()).isEqualTo("Job");
     }
 
     @Test
@@ -1225,6 +1271,16 @@ class JobIntegrationTest {
         ProjectModel project = projectRepository.findByIdAndDeletedAtIsNull(projectId).orElseThrow();
         project.setStatus(ProjectStatus.COMPLETED);
         projectRepository.save(project);
+    }
+
+    private UUID saveUserInOtherOrg() {
+        UUID otherUserId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(otherUserId).email("other@example.com").name("Other Org User").build());
+        OrganisationModel otherOrg = organisationRepository.save(
+                OrganisationModel.builder().name("Other Org").slug("OTH").createdBy(otherUserId).build());
+        organisationRepository.saveMember(otherOrg.getId(), otherUserId, OrganisationRole.OWNER);
+        return otherUserId;
     }
 
     private JobModel createTestJob(String title, UUID assignedTo, JobStatus status) {

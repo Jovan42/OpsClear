@@ -147,6 +147,7 @@ class ProjectMemberIntegrationTest {
         UUID newUserId = UUID.randomUUID();
         userRepository.save(UserModel.builder()
                 .id(newUserId).email("new@example.com").name("New User").build());
+        organisationRepository.saveMember(orgId, newUserId, OrganisationRole.MEMBER);
 
         String body = """
                 { "userId": "%s", "role": "MEMBER" }
@@ -173,6 +174,7 @@ class ProjectMemberIntegrationTest {
                 .id(adminId).email("admin@example.com").name("Admin User").build());
         userRepository.save(UserModel.builder()
                 .id(newUserId).email("new@example.com").name("New User").build());
+        organisationRepository.saveMember(orgId, newUserId, OrganisationRole.MEMBER);
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(project1Id).userId(adminId).role(ProjectMemberRole.ADMIN).build());
 
@@ -279,6 +281,30 @@ class ProjectMemberIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Returns 404 when adding a user from another organisation (JOB-393)")
+    void addMember_shouldReturn404_whenUserInOtherOrg() throws Exception {
+        UUID otherUserId = UUID.randomUUID();
+        userRepository.save(UserModel.builder()
+                .id(otherUserId).email("other@example.com").name("Other Org User").build());
+        OrganisationModel otherOrg = organisationRepository.save(
+                OrganisationModel.builder().name("Other Org").slug("OTH").createdBy(otherUserId).build());
+        organisationRepository.saveMember(otherOrg.getId(), otherUserId, OrganisationRole.OWNER);
+
+        String body = """
+                { "userId": "%s", "role": "MEMBER" }
+                """.formatted(otherUserId);
+
+        mockMvc.perform(post(ApiPaths.members(project1Id))
+                        .with(jwtFor(ownerId, "owner@example.com", "Owner User"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("User not found"));
+
+        assertThat(projectMemberRepository.existsByProjectIdAndUserId(project1Id, otherUserId)).isFalse();
     }
 
     @Test
