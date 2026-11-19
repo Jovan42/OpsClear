@@ -55,6 +55,7 @@ matches the screen.
   The script runs Cypress with `TZ=UTC`, so times don't depend on the machine. The org slug is
   `ACM` every run: the spec renames an older run's org first (those old orgs stay in a local
   database, like the ones the E2E specs leave).
+- **No devtools.** `prepareCapture()` hides the React Query devtools button (dev server only), so it never shows in an image.
 - **Language.** Never hard-code a label: use `tr()` / `exact()` so the same step runs in Serbian.
 - **Names.** `shot('create-job', 2)` writes `create-job-2`, the name the page uses (`<slug>` is the
   slug in `src/guide/pages.ts`). Screenshots inside `cy.origin()` (the Keycloak pages) call
