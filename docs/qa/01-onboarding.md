@@ -99,13 +99,18 @@ ONB-08 and ONB-30 repeat the check in the browser.
 - [x] **Back to Login** returns to the sign-in page
 
 ## ONB-06 Create Brightline Renovations
-**As:** Ana (org owner to be) · **Day:** 1 · **Needs:** ONB-04 done, on **Create your organisation**
+**As:** Ana (org owner to be) · **Day:** 1 · **Needs:** ONB-04 done, on **Create your organisation**; JOB-395 deployed for the top bar checks
 
-1. Click **Create organisation** with both fields empty.
-2. Type **Brightline Renovations** in **Organisation name**. In **Slug**, type `b1` and click **Create organisation**.
-3. Clear **Slug**, type `brtx`, and look at the box.
-4. Clear **Slug**, type `brt`, and click **Create organisation**.
+1. Look at the bar at the top of the page. Click the theme button until it cycles back, then the **EN** language button, then switch back to English.
+2. Click **Sign out**. Then click **Log in** and sign in as Ana again.
+3. Click **Create organisation** with both fields empty.
+4. Type **Brightline Renovations** in **Organisation name**. In **Slug**, type `b1` and click **Create organisation**.
+5. Clear **Slug**, type `brtx`, and look at the box.
+6. Clear **Slug**, type `brt`, and click **Create organisation**.
 
+- [ ] The page has a top bar with the OpsClear logo, the theme button, the language button and **Sign out**, and no links that need an organisation (projects, organisation settings)
+- [ ] The theme button cycles light, dark and system, and the language button switches the page to Serbian and back
+- [ ] **Sign out** ends the session and lands on the home page with **Log in**; signing in again as Ana returns to **Create your organisation**
 - [ ] The empty form shows "Name is required"
 - [ ] A one-letter slug shows "Slug must be 2–3 letters"
 - [ ] The slug box only takes letters, shows them in capitals and stops at three characters (`brtx` becomes `BRT`)
