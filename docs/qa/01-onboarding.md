@@ -133,12 +133,12 @@ ONB-08 and ONB-30 repeat the check in the browser.
 5. Pay with the Paddle sandbox test card `4242 4242 4242 4242`, any future expiry date, CVC `100`, and any name and billing country.
 6. Wait on the page.
 
-- [ ] Each chosen card has a green border, and the **Monthly total** changes by that add-on's price when you click it
-- [ ] **Continue to payment** opens the payment form on the page, and its requests go to Paddle hosts with `sandbox` in the name
-- [ ] The payment form shows the same **Total** as **Monthly total**
+- [x] Each chosen card has a green border, and the **Monthly total** changes by that add-on's price when you click it
+- [x] **Continue to payment** opens the payment form on the page, and its requests go to Paddle hosts with `sandbox` in the name
+- [x] The payment form shows the same **Total** as **Monthly total**
 - [ ] **Processing your payment** appears and the page updates by itself, without a refresh — ❌ JOB-397
-- [ ] **Organisation Settings** now opens, and the Billing box shows **Active**
-- [ ] **Billing history** (click it open) lists one payment with a date, a status and the amount
+- [x] **Organisation Settings** now opens, and the Billing box shows **Active**
+- [x] **Billing history** (click it open) lists one payment with a date, a status and the amount
 
 ## ONB-09 Organisation settings as the owner
 **As:** Ana (owner) · **Day:** 1 · **Needs:** ONB-08 done
@@ -146,11 +146,11 @@ ONB-08 and ONB-30 repeat the check in the browser.
 1. Open **Organisation Settings** (user menu, **Organisation**).
 2. Look at every section from the top.
 
-- [ ] **Members** has **Manage members** and **Invites** buttons
-- [ ] **Details** shows **Brightline Renovations**, slug **BRT** and "Created by Ana Petrović", with the name and slug boxes editable
-- [ ] **ID prefixes** shows the next project, job, milestone and template IDs
-- [ ] **Org Templates** is there, because Job templates is bought
-- [ ] **Subscription**, **Billing history** and **Danger zone** are there
+- [x] **Members** has **Manage members** and **Invites** buttons
+- [x] **Details** shows **Brightline Renovations**, slug **BRT** and "Created by Ana Petrović", with the name and slug boxes editable
+- [x] **ID prefixes** shows the next project, job, milestone and template IDs
+- [x] **Org Templates** is there, because Job templates is bought
+- [x] **Subscription**, **Billing history** and **Danger zone** are there
 
 ## ONB-10 Send the team's invites
 **As:** Ana (owner) · **Day:** 1 · **Needs:** ONB-08 done
