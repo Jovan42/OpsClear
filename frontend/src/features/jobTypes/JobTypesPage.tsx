@@ -36,12 +36,13 @@ interface TypeRowProps {
   isFirst: boolean;
   isLast: boolean;
   canManage: boolean;
+  reordering: boolean;
   onEdit: (t: JobTypeResponse) => void;
   onDelete: (t: JobTypeResponse) => void;
   onMove: (t: JobTypeResponse, direction: 'up' | 'down') => void;
 }
 
-function TypeRow({ type, isFirst, isLast, canManage, onEdit, onDelete, onMove }: Readonly<TypeRowProps>) {
+function TypeRow({ type, isFirst, isLast, canManage, reordering, onEdit, onDelete, onMove }: Readonly<TypeRowProps>) {
   const { t } = useTranslation(['jobTypes', 'common']);
   return (
     <div className="flex items-center justify-between gap-4 p-4">
@@ -50,7 +51,7 @@ function TypeRow({ type, isFirst, isLast, canManage, onEdit, onDelete, onMove }:
           <div className="flex flex-col shrink-0">
             <button
               onClick={() => onMove(type, 'up')}
-              disabled={isFirst}
+              disabled={isFirst || reordering}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               aria-label={t('jobTypes:typesPage.moveUp')}
             >
@@ -58,7 +59,7 @@ function TypeRow({ type, isFirst, isLast, canManage, onEdit, onDelete, onMove }:
             </button>
             <button
               onClick={() => onMove(type, 'down')}
-              disabled={isLast}
+              disabled={isLast || reordering}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               aria-label={t('jobTypes:typesPage.moveDown')}
             >
@@ -100,6 +101,7 @@ export default function JobTypesPage() {
   const [editing, setEditing] = useState<JobTypeResponse | null>(null);
   const [deleting, setDeleting] = useState<JobTypeResponse | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   usePageTitle(t('jobTypes:typesPage.browserTitle'), project?.name);
 
@@ -119,13 +121,25 @@ export default function JobTypesPage() {
 
   const sorted = types.slice().sort((a, b) => a.displayOrder - b.displayOrder);
 
-  function handleMove(type: JobTypeResponse, direction: 'up' | 'down') {
+  // The swap is computed from the rendered list, so a second move before the first one's
+  // PUTs and refetch have landed would swap stale displayOrder values (JOB-386). Block
+  // further moves until the list reflects the server again.
+  async function handleMove(type: JobTypeResponse, direction: 'up' | 'down') {
+    if (reordering) return;
     const idx = sorted.findIndex((t) => t.id === type.id);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
     const other = sorted[swapIdx];
-    updateType.mutate({ typeId: type.id, body: { name: type.name, color: type.color, displayOrder: other.displayOrder } });
-    updateType.mutate({ typeId: other.id, body: { name: other.name, color: other.color, displayOrder: type.displayOrder } });
+    setReordering(true);
+    try {
+      await Promise.allSettled([
+        updateType.mutateAsync({ typeId: type.id, body: { name: type.name, color: type.color, displayOrder: other.displayOrder } }),
+        updateType.mutateAsync({ typeId: other.id, body: { name: other.name, color: other.color, displayOrder: type.displayOrder } }),
+      ]);
+      await refetch({ cancelRefetch: false });
+    } finally {
+      setReordering(false);
+    }
   }
 
   return (
@@ -161,9 +175,10 @@ export default function JobTypesPage() {
                 isFirst={i === 0}
                 isLast={i === sorted.length - 1}
                 canManage={isOwnerOrAdmin}
+                reordering={reordering}
                 onEdit={setEditing}
                 onDelete={(tp) => { setDeleting(tp); setDeleteError(null); }}
-                onMove={handleMove}
+                onMove={(tp, direction) => void handleMove(tp, direction)}
               />
             ))}
           </div>
