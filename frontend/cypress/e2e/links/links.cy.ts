@@ -121,14 +121,14 @@ describe('Job & Project Links', () => {
     cy.createKeycloakUser(memberEmail, 'E2E', 'Tester');
     createOrgWithFullAccess(ownerEmail, 'Atlas Corp', uniqueSlug()).then((orgId) =>
       createProjectAs(ownerEmail, 'Atlas Link Project').then((projectId) =>
-        userIdFor(memberEmail).then((memberId) =>
-          // Assigned to the member — an unassigned MEMBER 403s viewing a job detail
-          // page at all (requireCanViewJob), which would block reaching the Links
-          // section entirely and defeat the point of this test.
+        userIdFor(memberEmail).then((memberId) => {
+          // The member must belong to the org and project before being assigned (the
+          // backend rejects other users as assignees). Assigned to the member — an
+          // unassigned MEMBER 403s viewing a job detail page at all (requireCanViewJob),
+          // which would block reaching the Links section entirely.
+          addMember(orgId, ownerEmail, memberId, 'MEMBER');
+          addProjectMember(projectId, ownerEmail, memberId, 'MEMBER');
           createJobAs(ownerEmail, projectId, { title: 'Atlas job', assignedTo: memberId }).then((jobId) => {
-            addMember(orgId, ownerEmail, memberId, 'MEMBER');
-            addProjectMember(projectId, ownerEmail, memberId, 'MEMBER');
-
             createJobLinkAs(ownerEmail, projectId, jobId, 'https://old-url.example.com', 'Old label');
             createProjectLinkAs(ownerEmail, projectId, 'https://old-project-url.example.com', 'Old project label');
 
@@ -152,8 +152,8 @@ describe('Job & Project Links', () => {
             cy.get('main').contains('button', 'Links').click();
             cy.get('button[title="Edit link"]').should('not.exist');
             cy.get('button[title="Delete link"]').should('not.exist');
-          }),
-        ),
+          });
+        }),
       ),
     );
 
