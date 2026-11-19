@@ -10,7 +10,7 @@ import {
 } from '../../support/orgApi';
 
 describe('Organisation Management — Invite email, Copy link and Resend', () => {
-  it('OWNER invites a new email; the email arrives in Mailpit and its link opens the accept page', { tags: '@smoke' }, () => {
+  it('OWNER invites a new email; the email arrives in Mailpit and its link joins the invitee', { tags: '@smoke' }, () => {
     const ownerEmail = uniqueEmail('mail-owner');
     const inviteeEmail = uniqueEmail('mail-invitee');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');
@@ -30,7 +30,9 @@ describe('Organisation Management — Invite email, Copy link and Resend', () =>
       expect(link).to.match(/\/invite\/[0-9a-f]+$/);
       cy.loginAs(inviteeEmail);
       cy.visit(new URL(link).pathname);
-      cy.contains('button', 'Accept invite').should('be.visible');
+      // Signed in with the invited address, the page joins straight away (JOB-399)
+      cy.location('pathname', { timeout: 10000 }).should('eq', '/projects');
+      cy.get('[data-sonner-toast]').should('contain.text', "You've joined Mail Corp");
     });
 
     cy.deleteKeycloakUser(ownerEmail);

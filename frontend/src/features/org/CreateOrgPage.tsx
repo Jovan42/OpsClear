@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,6 +10,7 @@ import { useCreateOrganisation } from './useOrganisation';
 import { useCurrentOrg } from './OrgContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import OnboardingHeader from './OnboardingHeader';
+import { clearPendingInvite, readPendingInvite } from './inviteLink';
 
 export default function CreateOrgPage() {
   const { t } = useTranslation('org');
@@ -18,6 +19,11 @@ export default function CreateOrgPage() {
   const { setOrg } = useCurrentOrg();
   const { mutate: createOrg, isPending } = useCreateOrganisation();
   const [apiError, setApiError] = useState<string | null>(null);
+  // JOB-399: a user who signed up from an invite page belongs on it (it joins them), not here
+  const [pendingInvite] = useState(() => readPendingInvite());
+  useEffect(() => {
+    if (pendingInvite) clearPendingInvite();
+  }, [pendingInvite]);
 
   const schema = useMemo(
     () =>
@@ -59,6 +65,8 @@ export default function CreateOrgPage() {
       },
     );
   }
+
+  if (pendingInvite) return <Navigate to={`/invite/${pendingInvite}`} replace />;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">

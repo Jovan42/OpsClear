@@ -6,6 +6,7 @@ import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
 import ProductAndPricing from './ProductAndPricing';
 import { POST_LOGIN_REDIRECT_KEY } from '../../auth/postLoginRedirect';
+import { clearPendingInvite, readPendingInvite } from '../org/inviteLink';
 import { usePreferences } from '../../hooks/usePreferences';
 import { getMostRecentProject } from '../../hooks/useRecentProjects';
 import { useProjectList } from '../projects/useProjects';
@@ -101,10 +102,15 @@ function AuthenticatedLanding() {
   // effect: clearing it during render broke under StrictMode's double render (the
   // first pass consumed the key, so the second pass always saw null).
   const [savedPath] = useState(() => sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY));
+  // JOB-399: signed up or logged in from an invite page, but Keycloak brought the user here
+  // instead (email verified in another browser): finish on the invite page, which joins.
+  const [pendingInvite] = useState(() => readPendingInvite());
   useEffect(() => {
     sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+    clearPendingInvite();
   }, []);
 
+  if (pendingInvite) return <Navigate to={`/invite/${pendingInvite}`} replace />;
   if (savedPath) return <Navigate to={savedPath} replace />;
   return <LandingProjectRedirect />;
 }

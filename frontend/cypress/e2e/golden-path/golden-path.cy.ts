@@ -160,9 +160,9 @@ describe('Golden-Path Simulation: Full Project Lifecycle (pre-merge)', () => {
       });
 
       cy.loginAs(bob);
+      // JOB-399: signed in with the invited address, opening the link joins straight away
       cy.then(() => cy.visit(`/invite/${inviteToken}`));
-      cy.contains('button', 'Accept invite').click();
-      cy.contains("You've joined the organisation", { timeout: 10000 }).should('be.visible');
+      cy.contains(`You've joined ${orgName}`, { timeout: 10000 }).should('be.visible');
 
       // Bob accepted as a MEMBER (invites carry no role) — Alice promotes him to Admin.
       cy.loginAs(alice);

@@ -201,8 +201,46 @@ export function useRevokeOrgInvite(orgId: string) {
   });
 }
 
-export function useAcceptOrgInvite() {
-  return useMutation({
-    mutationFn: (token: string) => organisationsApi.acceptInvite(token),
+export const publicInviteKey = (token: string) => ['invites', token];
+
+/** The invite behind an invite link, readable without login (JOB-398). A 404 isn't retried. */
+export function usePublicInvite(token: string | undefined) {
+  return useQuery({
+    queryKey: publicInviteKey(token ?? ''),
+    queryFn: () => organisationsApi.inviteByToken(token!),
+    enabled: !!token,
+    retry: (failureCount, error) =>
+      !(isAxiosError(error) && error.response?.status === 404) && failureCount < 1,
   });
+}
+
+/**
+ * Mutation options for accepting an invite. Exported for the unit tests; components use
+ * `useAcceptOrgInvite`.
+ */
+export function acceptInviteMutationOptions(queryClient: QueryClient) {
+  return {
+    mutationFn: (token: string) => organisationsApi.acceptInvite(token),
+    // The user now has an organisation. Remove a cached "no organisation" (not just invalidate
+    // it: nothing on the invite page observes it, so it wouldn't refetch, and OrgRequiredRoute
+    // would read the stale null and send the new member to onboarding). This runs before the
+    // mutation reports success, so it's gone before the page navigates to /projects, which
+    // then loads it fresh.
+    // The invite is only marked stale, not reloaded: reloaded now, it would read as accepted
+    // and the page would show "already used" instead of moving on to the projects list. It
+    // loads fresh the next time the invite page opens.
+    onSuccess: (_data: unknown, token: string) => {
+      queryClient.removeQueries({ queryKey: ['organisations', 'mine'] });
+      void queryClient.invalidateQueries({ queryKey: publicInviteKey(token), refetchType: 'none' });
+    },
+    // After an error the invite's status may have changed (accepted in another tab, revoked):
+    // the page reloads it and shows that instead of the error.
+    onError: (_error: unknown, token: string) =>
+      void queryClient.invalidateQueries({ queryKey: publicInviteKey(token) }),
+  };
+}
+
+export function useAcceptOrgInvite() {
+  const queryClient = useQueryClient();
+  return useMutation(acceptInviteMutationOptions(queryClient));
 }

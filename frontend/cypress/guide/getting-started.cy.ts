@@ -45,6 +45,7 @@ const member = guideEmail('member');
 describe(`Guide screenshots: Getting started (${lang})`, { testIsolation: false }, () => {
   let orgId = '';
   let projectId = '';
+  let invitePath = '';
   const jobIds: Record<string, string> = {};
 
   beforeEach(prepareCapture);
@@ -170,15 +171,34 @@ describe(`Guide screenshots: Getting started (${lang})`, { testIsolation: false 
     cy.get('[data-sonner-toast]').should('be.visible');
     shot('invite-team', 2);
 
-    // What the teammate gets: the email, and the accept page its link opens
+    // What the teammate gets: the email
     showEmail(teammate, '/invite/').then((link) => {
       shot('invite-team', 3, 'body');
-      visitAs(teammate, new URL(link as unknown as string).pathname);
+      invitePath = new URL(link as unknown as string).pathname;
     });
-    cy.contains('button', exact('Accept invite')).should('be.visible');
+  });
+
+  // A new `it`, so the owner's token from cy.loginAs() isn't seeded into this visit
+  it('invite-team: the invite page its link opens, and joining', () => {
+    // JOB-399: the page as the teammate sees it before signing in. The sign-up step signed the
+    // owner in to Keycloak itself, so sign out there first.
+    cy.visit(
+      `${KEYCLOAK_ORIGIN}/realms/opsclear/protocol/openid-connect/logout?client_id=opsclear-frontend&post_logout_redirect_uri=http://localhost:5173`,
+    );
+    cy.then(() =>
+      cy.visit(invitePath, {
+        onBeforeLoad(win) {
+          win.sessionStorage.clear();
+          win.localStorage.setItem('opsclear:preferences', JSON.stringify({ locale: lang, theme: 'light' }));
+        },
+      }),
+    );
+    cy.contains('button', exact('Create account')).should('be.visible');
     shot('invite-team', 4);
-    clickButton('Accept invite');
-    cy.contains(tr("You've joined the organisation"), { timeout: 10000 }).should('be.visible');
+    // Signed in with the invited address, the page joins and opens the projects list
+    cy.then(() => visitAs(teammate, invitePath));
+    cy.location('pathname', { timeout: 10000 }).should('eq', '/projects');
+    cy.get('[data-sonner-toast]').should('be.visible');
     shot('invite-team', 5);
   });
 

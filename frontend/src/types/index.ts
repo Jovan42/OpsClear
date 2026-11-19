@@ -275,6 +275,18 @@ export interface OrgInviteResponse {
   createdAt: string;
 }
 
+// GET /api/invites/{token} (JOB-398): the public, no-auth view of an invite for the invite page
+export type PublicInviteStatus = 'PENDING' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED';
+
+export interface PublicInviteResponse {
+  organisationName: string;
+  inviterName: string | null;
+  // The invited address
+  email: string;
+  expiresAt: string;
+  status: PublicInviteStatus;
+}
+
 // Language of the invite email: the inviter's UI language (ADR-0059)
 export type InviteLanguage = 'en' | 'sr';
 
