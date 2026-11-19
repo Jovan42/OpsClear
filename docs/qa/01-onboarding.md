@@ -108,13 +108,13 @@ ONB-08 and ONB-30 repeat the check in the browser.
 5. Clear **Slug**, type `brtx`, and look at the box.
 6. Clear **Slug**, type `brt`, and click **Create organisation**.
 
-- [ ] The page has a top bar with the OpsClear logo, the theme button, the language button and **Sign out**, and no links that need an organisation (projects, organisation settings)
-- [ ] The theme button cycles light, dark and system, and the language button switches the page to Serbian and back
-- [ ] **Sign out** ends the session and lands on the home page with **Log in**; signing in again as Ana returns to **Create your organisation**
-- [ ] The empty form shows "Name is required"
-- [ ] A one-letter slug shows "Slug must be 2–3 letters"
-- [ ] The slug box only takes letters, shows them in capitals and stops at three characters (`brtx` becomes `BRT`)
-- [ ] **Create organisation** succeeds and opens **Set up your subscription**, not the projects list
+- [x] The page has a top bar with the OpsClear logo, the theme button, the language button and **Sign out**, and no links that need an organisation (projects, organisation settings)
+- [x] The theme button cycles light, dark and system, and the language button switches the page to Serbian and back
+- [x] **Sign out** ends the session and lands on the home page with **Log in**; signing in again as Ana returns to **Create your organisation**
+- [x] The empty form shows "Name is required"
+- [x] A one-letter slug shows "Slug must be 2–3 letters"
+- [x] The slug box only takes letters, shows them in capitals and stops at three characters (`brtx` becomes `BRT`)
+- [x] **Create organisation** succeeds and opens **Set up your subscription**, not the projects list
 
 ## ONB-07 Nothing works before a subscription
 **As:** Ana (owner) · **Day:** 1 · **Needs:** ONB-06 done, subscription not bought yet
