@@ -4,12 +4,28 @@
 
 import { VIEWPORT } from './sample';
 
+let devtoolsHidden = false;
+
+/** The React Query devtools button only renders under the Vite dev server, which the guide
+ *  specs run against, so it would show in the bottom corner of every image. Hide it on each
+ *  page load (the style is added before the app scripts run). */
+function hideDevtools() {
+  if (devtoolsHidden) return;
+  devtoolsHidden = true;
+  Cypress.on('window:before:load', (win) => {
+    const style = win.document.createElement('style');
+    style.textContent = '.tsqd-parent-container, .tsqd-open-btn-container { display: none !important; }';
+    win.document.documentElement.appendChild(style);
+  });
+}
+
 /** Call from `beforeEach`: fixed viewport, and the app's `Date` frozen five minutes from now
  *  (rows made later in the same test then never read as "in the future").
  *  The backend stamps rows with the real time, so a made-up date would make every "3 days
  *  ago" and expiry read wrong; frozen at "now", they stay consistent and "just now" stays
  *  "just now". Only `Date` is faked: timers keep running, so debounces and toasts still work. */
 export function prepareCapture() {
+  hideDevtools();
   cy.viewport(VIEWPORT.width, VIEWPORT.height);
   cy.clock(Date.now() + 5 * 60_000, ['Date']);
 }
