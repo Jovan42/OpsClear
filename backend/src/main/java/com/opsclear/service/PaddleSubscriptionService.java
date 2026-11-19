@@ -74,6 +74,7 @@ public class PaddleSubscriptionService {
     private final SubscriptionAddonRepository addonRepository;
     private final PaddleClient paddleClient;
     private final PaddlePriceResolver priceResolver;
+    private final PaddleCustomerService paddleCustomerService;
 
     // JOB-200: paddle_customer_id lives on organisations, not org_subscriptions —
     // every tier/add-on has a real price, so the org_subscriptions row (tier_id is
@@ -96,10 +97,10 @@ public class PaddleSubscriptionService {
         UserModel requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
 
-        PaddleCustomer customer = paddleClient.createCustomer(requester.getEmail(), org.getName());
+        PaddleCustomer customer = paddleCustomerService.createOrReuse(orgId, requester.getEmail(), org.getName());
         organisationRepository.updatePaddleCustomerId(orgId, customer.id());
 
-        log.info("Created Paddle customer {} for org {}", customer.id(), orgId);
+        log.info("Using Paddle customer {} for org {}", customer.id(), orgId);
         return customer.id();
     }
 

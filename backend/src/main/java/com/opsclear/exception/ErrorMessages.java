@@ -291,6 +291,11 @@ public final class ErrorMessages {
                         + "please save these as two separate changes";
         public static final String CREDIT_SYNC_FAILED =
                 "Failed to sync this credit to Paddle — the grant was not saved. Please retry.";
+        public static final String CUSTOMER_SETUP_FAILED =
+                "Couldn't set up billing with Paddle. Please try again in a few minutes.";
+        public static final String CUSTOMER_EMAIL_BELONGS_TO_ANOTHER_ORG =
+                "Your email is already the billing contact for another organisation's subscription, "
+                        + "and Paddle allows one billing customer per email";
 
         private Paddle() {
         }

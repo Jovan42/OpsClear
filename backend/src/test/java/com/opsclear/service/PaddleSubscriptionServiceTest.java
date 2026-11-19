@@ -68,6 +68,7 @@ class PaddleSubscriptionServiceTest {
     @Mock private SubscriptionAddonRepository addonRepository;
     @Mock private PaddleClient paddleClient;
     @Mock private PaddlePriceResolver priceResolver;
+    @Mock private PaddleCustomerService paddleCustomerService;
 
     private PaddleSubscriptionService service;
 
@@ -75,7 +76,7 @@ class PaddleSubscriptionServiceTest {
     void setUp() {
         service = new PaddleSubscriptionService(
                 orgSubscriptionRepository, organisationRepository, userRepository, tierRepository, addonRepository,
-                paddleClient, priceResolver);
+                paddleClient, priceResolver, paddleCustomerService);
     }
 
     // --- initiate ---
@@ -94,7 +95,7 @@ class PaddleSubscriptionServiceTest {
         when(organisationRepository.findPaddleCustomerId(orgId)).thenReturn(Optional.empty());
         when(userRepository.findById(ownerId))
                 .thenReturn(Optional.of(UserModel.builder().id(ownerId).email("owner@example.com").build()));
-        when(paddleClient.createCustomer("owner@example.com", "Acme Corp"))
+        when(paddleCustomerService.createOrReuse(orgId, "owner@example.com", "Acme Corp"))
                 .thenReturn(new PaddleCustomer("ctm_123", "owner@example.com"));
 
         String result = service.initiate(orgId, ownerId);
@@ -118,7 +119,7 @@ class PaddleSubscriptionServiceTest {
         String result = service.initiate(orgId, ownerId);
 
         assertThat(result).isEqualTo("ctm_existing");
-        verify(paddleClient, never()).createCustomer(anyString(), anyString());
+        verify(paddleCustomerService, never()).createOrReuse(any(), anyString(), anyString());
         verify(organisationRepository, never()).updatePaddleCustomerId(any(), anyString());
     }
 
@@ -138,7 +139,7 @@ class PaddleSubscriptionServiceTest {
         assertThatThrownBy(() -> service.initiate(orgId, ownerId))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Internal organisations are not billed and have no Paddle subscription");
-        verify(paddleClient, never()).createCustomer(anyString(), anyString());
+        verify(paddleCustomerService, never()).createOrReuse(any(), anyString(), anyString());
     }
 
     @Test
@@ -153,7 +154,7 @@ class PaddleSubscriptionServiceTest {
         assertThatThrownBy(() -> service.initiate(orgId, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Organisation not found");
-        verify(paddleClient, never()).createCustomer(anyString(), anyString());
+        verify(paddleCustomerService, never()).createOrReuse(any(), anyString(), anyString());
     }
 
     @Test
@@ -172,7 +173,7 @@ class PaddleSubscriptionServiceTest {
         assertThatThrownBy(() -> service.initiate(orgId, ownerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("User not found");
-        verify(paddleClient, never()).createCustomer(anyString(), anyString());
+        verify(paddleCustomerService, never()).createOrReuse(any(), anyString(), anyString());
     }
 
     @Test
