@@ -96,6 +96,16 @@ class PaddleClientTest {
     }
 
     @Test
+    @DisplayName("findCustomerByEmail returns empty, not an NPE, when the response has no data")
+    void findCustomerByEmail_shouldReturnEmpty_whenResponseHasNoData() {
+        server.expect(requestTo(BASE_URL + "/customers?email=owner%40example.com"))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+
+        assertThat(client.findCustomerByEmail("owner@example.com")).isEmpty();
+        server.verify();
+    }
+
+    @Test
     @DisplayName("updateSubscriptionItems patches items/proration mode and maps the response")
     void updateSubscriptionItems_shouldPatchBody_andMapResponse() {
         server.expect(requestTo(BASE_URL + "/subscriptions/sub_123"))

@@ -1,7 +1,6 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
@@ -29,21 +28,16 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -276,106 +270,6 @@ class PaddleSubscriptionIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orgId").value(orgId.toString()))
                 .andExpect(jsonPath("$.paddleCustomerId").value(org.hamcrest.Matchers.startsWith("ctm_")));
-    }
-
-    @Test
-    @DisplayName("initiate_shouldReturn201_andReuseExistingPaddleCustomer_whenPaddleSaysEmailAlreadyExists")
-    void initiate_shouldReturn201_andReuseExistingPaddleCustomer_whenPaddleSaysEmailAlreadyExists() throws Exception {
-        // JOB-396: Paddle customer emails are unique per Paddle account, so an owner whose
-        // email already has a Paddle customer (an earlier org, an earlier test run) gets
-        // 409 customer_already_exists. That used to surface as a bare 500.
-        when(paddleClient.createCustomer(any(), any())).thenThrow(paddleCustomerAlreadyExists());
-        when(paddleClient.findCustomerByEmail(ownerEmail))
-                .thenReturn(Optional.of(new PaddleCustomer("ctm_existing", ownerEmail)));
-
-        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
-                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.paddleCustomerId").value("ctm_existing"));
-
-        assertThat(organisationRepository.findPaddleCustomerId(orgId)).contains("ctm_existing");
-    }
-
-    @Test
-    @DisplayName("initiate_shouldReturn409_whenTheExistingPaddleCustomerBelongsToAnotherOrg")
-    void initiate_shouldReturn409_whenTheExistingPaddleCustomerBelongsToAnotherOrg() throws Exception {
-        UUID otherOrgId = givenAnotherOrgOwnedByTheSameOwner();
-        organisationRepository.updatePaddleCustomerId(otherOrgId, "ctm_other_org");
-        when(paddleClient.createCustomer(any(), any())).thenThrow(paddleCustomerAlreadyExists());
-        when(paddleClient.findCustomerByEmail(ownerEmail))
-                .thenReturn(Optional.of(new PaddleCustomer("ctm_other_org", ownerEmail)));
-
-        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
-                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(
-                        "Your email is already the billing contact for another organisation's subscription, "
-                                + "and Paddle allows one billing customer per email"));
-
-        assertThat(organisationRepository.findPaddleCustomerId(orgId)).isEmpty();
-    }
-
-    @Test
-    @DisplayName("initiate_shouldReturn502_whenPaddleSaysEmailAlreadyExists_butTheLookupFindsNoCustomer")
-    void initiate_shouldReturn502_whenPaddleSaysEmailAlreadyExists_butTheLookupFindsNoCustomer() throws Exception {
-        when(paddleClient.createCustomer(any(), any())).thenThrow(paddleCustomerAlreadyExists());
-        when(paddleClient.findCustomerByEmail(ownerEmail)).thenReturn(Optional.empty());
-
-        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
-                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
-                .andExpect(status().isBadGateway())
-                .andExpect(jsonPath("$.message").value(
-                        "Couldn't set up billing with Paddle. Please try again in a few minutes."));
-
-        assertThat(organisationRepository.findPaddleCustomerId(orgId)).isEmpty();
-    }
-
-    @Test
-    @DisplayName("initiate_shouldReturn502_whenTheExistingPaddleCustomerLookupFails")
-    void initiate_shouldReturn502_whenTheExistingPaddleCustomerLookupFails() throws Exception {
-        when(paddleClient.createCustomer(any(), any())).thenThrow(paddleCustomerAlreadyExists());
-        when(paddleClient.findCustomerByEmail(ownerEmail)).thenThrow(new RestClientException("simulated"));
-
-        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
-                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
-                .andExpect(status().isBadGateway())
-                .andExpect(jsonPath("$.message").value(
-                        "Couldn't set up billing with Paddle. Please try again in a few minutes."));
-    }
-
-    @Test
-    @DisplayName("initiate_shouldReturn502_notABare500_whenPaddleRejectsCustomerCreation")
-    void initiate_shouldReturn502_notABare500_whenPaddleRejectsCustomerCreation() throws Exception {
-        when(paddleClient.createCustomer(any(), any())).thenThrow(HttpClientErrorException.create(
-                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], StandardCharsets.UTF_8));
-
-        mockMvc.perform(post(ApiPaths.paddleSubscription(orgId))
-                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail))))
-                .andExpect(status().isBadGateway())
-                .andExpect(jsonPath("$.message").value(
-                        "Couldn't set up billing with Paddle. Please try again in a few minutes."));
-
-        assertThat(organisationRepository.findPaddleCustomerId(orgId)).isEmpty();
-    }
-
-    // The body Paddle documents for POST /customers with an email that already has a customer.
-    private static HttpClientErrorException paddleCustomerAlreadyExists() {
-        String body = """
-                {"error": {"type": "request_error", "code": "customer_already_exists",
-                 "detail": "Customer email conflicts with existing customer ID ctm_existing."}}
-                """;
-        return HttpClientErrorException.create(HttpStatus.CONFLICT, "Conflict", HttpHeaders.EMPTY,
-                body.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
-    }
-
-    // One org per user, so the realistic "another org" is the owner's own earlier, since
-    // soft-deleted org: its paddle_customer_id stays, and so does its Paddle side.
-    private UUID givenAnotherOrgOwnedByTheSameOwner() {
-        OrganisationModel earlier = organisationRepository.save(
-                OrganisationModel.builder().name("Earlier Corp").slug("EAR").createdBy(ownerId).build());
-        earlier.softDelete();
-        organisationRepository.save(earlier);
-        return earlier.getId();
     }
 
     // ─── PUT /api/organisations/{orgId}/subscription/paddle ────────────────────

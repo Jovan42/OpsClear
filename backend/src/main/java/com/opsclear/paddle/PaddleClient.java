@@ -51,7 +51,8 @@ public class PaddleClient {
     // Paddle customer emails are unique per Paddle account (createCustomer answers 409
     // customer_already_exists for a taken email), so this finds at most one customer.
     // Paddle leaves archived customers out by default, so an archived match is not found.
-    // The email goes in as a URI variable so it is fully encoded ("+" included).
+    // The email goes in as a URI variable so it is fully encoded ("+" included). An empty
+    // body or one without "data" counts as "not found", never an NPE.
     public Optional<PaddleCustomer> findCustomerByEmail(String email) {
         PaddleEnvelope<List<PaddleCustomer>> response = restClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -60,7 +61,7 @@ public class PaddleClient {
                         .build(email))
                 .retrieve()
                 .body(new ParameterizedTypeReference<PaddleEnvelope<List<PaddleCustomer>>>() { });
-        return response.data().stream().findFirst();
+        return Optional.ofNullable(response).map(PaddleEnvelope::data).flatMap(data -> data.stream().findFirst());
     }
 
     public PaddleSubscription updateSubscriptionItems(
