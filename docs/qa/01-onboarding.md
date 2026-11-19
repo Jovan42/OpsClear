@@ -488,4 +488,4 @@ judged in Luka's scenarios in the other area files.
 - Two simultaneous org creations with the same slug: covered by `OrganisationServiceTest` and the unique index from migration V039.
 
 ## Findings
-None yet.
+- ONB-05: JOB-395 (UX) **Create your organisation** has no **Log out**, language or theme controls, so a signed-in user with no org is stuck on the page.
