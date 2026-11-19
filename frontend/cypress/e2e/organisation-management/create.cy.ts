@@ -12,17 +12,20 @@
 // verify) — there's no endpoint or UI anywhere that exposes a friendly-ID prefix for
 // editing in the first place, so there's no surface to test "immutability" against.
 
-import { API, uniqueEmail, uniqueSlug, tokenFor, createOrgAs } from '../../support/orgApi';
+import { API, uniqueEmail, uniqueSlug, freeSlug, tokenFor, createOrgAs } from '../../support/orgApi';
 
 describe('Organisation Management — Create', () => {
   it('a user with no org creates one (slug normalized to uppercase) and lands on org settings', { tags: '@smoke' }, () => {
     const email = uniqueEmail('create');
-    const slug = uniqueSlug();
+    let slug = '';
+    freeSlug().then((s) => {
+      slug = s;
+    });
     cy.createKeycloakUser(email, 'E2E', 'Creator');
     cy.loginAs(email);
     cy.visit('/onboarding');
     cy.get('#org-name').type('Acme Corp');
-    cy.get('#org-slug').type(slug.toLowerCase());
+    cy.then(() => cy.get('#org-slug').type(slug.toLowerCase()));
     cy.contains('button', 'Create organisation').click();
     cy.url().should('include', '/org/settings');
 
@@ -36,7 +39,58 @@ describe('Organisation Management — Create', () => {
     });
     cy.reload();
     cy.get('#org-name').should('have.value', 'Acme Corp');
-    cy.get('#org-slug').should('have.value', slug);
+    cy.then(() => cy.get('#org-slug').should('have.value', slug));
+    cy.deleteKeycloakUser(email);
+  });
+
+  // JOB-395: the page is routed outside AppLayout, so it has its own top bar.
+  it('the top bar has the theme and language switches and Sign out, and no org links', () => {
+    const email = uniqueEmail('topbar');
+    cy.createKeycloakUser(email, 'E2E', 'TopBar');
+    cy.intercept('GET', '**/api/user/preferences').as('loadPreferences');
+    cy.loginAs(email);
+    cy.visit('/org/new');
+    cy.wait('@loadPreferences');
+
+    cy.get('nav').within(() => {
+      cy.contains('button', 'Sign out').should('be.visible');
+      cy.contains('a', 'Projects').should('not.exist');
+      cy.contains('Organisation').should('not.exist');
+    });
+
+    // A fresh user starts on English and the System theme.
+    cy.get('nav').contains('button', 'EN').click();
+    cy.contains('h1', 'Kreirajte svoju organizaciju').should('be.visible');
+    cy.get('nav').contains('button', 'SR').click();
+    cy.contains('h1', 'Create your organisation').should('be.visible');
+
+    cy.get('nav button[aria-label="System"]').click();
+    cy.get('html').should('not.have.class', 'dark');
+    cy.get('nav button[aria-label="Light"]').click();
+    cy.get('html').should('have.class', 'dark');
+    cy.get('nav button[aria-label="Dark"]').should('be.visible');
+    cy.deleteKeycloakUser(email);
+  });
+
+  it("Sign out on the page calls Keycloak's logout with the landing page as the redirect", () => {
+    const email = uniqueEmail('signout');
+    cy.createKeycloakUser(email, 'E2E', 'SignOut');
+    cy.loginAs(email);
+    cy.visit('/onboarding');
+    // keycloak.logout() navigates the page to Keycloak's logout endpoint (:8180). The stub
+    // only replaces that response, so the page still ends on Keycloak's origin: nothing
+    // after the click may touch the page. Stubbed because cy.loginAs() keeps its tokens in
+    // sessionStorage, so a real redirect back would sign the app straight in again. The
+    // real session end is covered by auth-flows/login.cy.ts (user menu, same logout call).
+    cy.intercept('GET', '**/realms/opsclear/protocol/openid-connect/logout*', {
+      statusCode: 200,
+      body: '',
+    }).as('logout');
+    cy.contains('nav button', 'Sign out').click();
+    cy.wait('@logout').its('request.url').then((url: string) => {
+      const redirect = new URL(url).searchParams.get('post_logout_redirect_uri');
+      expect(redirect).to.eq(`${Cypress.config('baseUrl')}/`);
+    });
     cy.deleteKeycloakUser(email);
   });
 
@@ -77,32 +131,33 @@ describe('Organisation Management — Create', () => {
   it('a slug already taken (case-insensitive) shows an inline conflict error', () => {
     const takenEmail = uniqueEmail('taken-owner');
     const conflictEmail = uniqueEmail('taken-conflict');
-    const slug = uniqueSlug();
-    cy.createKeycloakUser(takenEmail, 'E2E', 'TakenOwner');
-    cy.createKeycloakUser(conflictEmail, 'E2E', 'TakenConflict');
+    freeSlug().then((slug) => {
+      cy.createKeycloakUser(takenEmail, 'E2E', 'TakenOwner');
+      cy.createKeycloakUser(conflictEmail, 'E2E', 'TakenConflict');
 
-    // Not createOrgAs() here — this test needs `slug` to be the exact value that
-    // ends up taken, since the UI attempt below deliberately reuses it to trigger the
-    // conflict; a retry-on-collision helper could silently swap in a different slug.
-    tokenFor(takenEmail).then((token) => {
-      cy.request({
-        method: 'POST',
-        url: `${API}/api/organisations`,
-        headers: { Authorization: `Bearer ${token}` },
-        body: { name: 'Taken Corp', slug },
+      // Not createOrgAs() here — this test needs `slug` to be the exact value that
+      // ends up taken, since the UI attempt below deliberately reuses it to trigger the
+      // conflict; a retry-on-collision helper could silently swap in a different slug.
+      tokenFor(takenEmail).then((token) => {
+        cy.request({
+          method: 'POST',
+          url: `${API}/api/organisations`,
+          headers: { Authorization: `Bearer ${token}` },
+          body: { name: 'Taken Corp', slug },
+        });
       });
+
+      cy.loginAs(conflictEmail);
+      cy.visit('/onboarding');
+      cy.get('#org-name').type('Conflict Corp');
+      cy.get('#org-slug').type(slug.toLowerCase()); // lowercase — must still conflict case-insensitively
+      cy.contains('button', 'Create organisation').click();
+      cy.contains('An organisation with this slug already exists').should('be.visible');
+      cy.url().should('include', '/onboarding');
+
+      cy.deleteKeycloakUser(takenEmail);
+      cy.deleteKeycloakUser(conflictEmail);
     });
-
-    cy.loginAs(conflictEmail);
-    cy.visit('/onboarding');
-    cy.get('#org-name').type('Conflict Corp');
-    cy.get('#org-slug').type(slug.toLowerCase()); // lowercase — must still conflict case-insensitively
-    cy.contains('button', 'Create organisation').click();
-    cy.contains('An organisation with this slug already exists').should('be.visible');
-    cy.url().should('include', '/onboarding');
-
-    cy.deleteKeycloakUser(takenEmail);
-    cy.deleteKeycloakUser(conflictEmail);
   });
 
   // ADR-0049 edge case: "confirm actual enforced behavior via direct API, not just UI
@@ -135,37 +190,38 @@ describe('Organisation Management — Create', () => {
   it("a deleted organisation's slug becomes reusable by a new org (verified via direct API)", () => {
     const firstEmail = uniqueEmail('reuse-first');
     const secondEmail = uniqueEmail('reuse-second');
-    const slug = uniqueSlug();
-    cy.createKeycloakUser(firstEmail, 'E2E', 'ReuseFirst');
-    cy.createKeycloakUser(secondEmail, 'E2E', 'ReuseSecond');
+    freeSlug().then((slug) => {
+      cy.createKeycloakUser(firstEmail, 'E2E', 'ReuseFirst');
+      cy.createKeycloakUser(secondEmail, 'E2E', 'ReuseSecond');
 
-    tokenFor(firstEmail).then((token) => {
-      cy.request({
-        method: 'POST',
-        url: `${API}/api/organisations`,
-        headers: { Authorization: `Bearer ${token}` },
-        body: { name: 'Reused Corp', slug },
-      }).then((createRes) => {
+      tokenFor(firstEmail).then((token) => {
         cy.request({
-          method: 'DELETE',
-          url: `${API}/api/organisations/${createRes.body.id}`,
+          method: 'POST',
+          url: `${API}/api/organisations`,
           headers: { Authorization: `Bearer ${token}` },
+          body: { name: 'Reused Corp', slug },
+        }).then((createRes) => {
+          cy.request({
+            method: 'DELETE',
+            url: `${API}/api/organisations/${createRes.body.id}`,
+            headers: { Authorization: `Bearer ${token}` },
+          });
         });
       });
-    });
 
-    tokenFor(secondEmail).then((token) => {
-      cy.request({
-        method: 'POST',
-        url: `${API}/api/organisations`,
-        headers: { Authorization: `Bearer ${token}` },
-        body: { name: 'New Owner Corp', slug },
-      }).then((res) => {
-        expect(res.status).to.eq(201);
+      tokenFor(secondEmail).then((token) => {
+        cy.request({
+          method: 'POST',
+          url: `${API}/api/organisations`,
+          headers: { Authorization: `Bearer ${token}` },
+          body: { name: 'New Owner Corp', slug },
+        }).then((res) => {
+          expect(res.status).to.eq(201);
+        });
       });
-    });
 
-    cy.deleteKeycloakUser(firstEmail);
-    cy.deleteKeycloakUser(secondEmail);
+      cy.deleteKeycloakUser(firstEmail);
+      cy.deleteKeycloakUser(secondEmail);
+    });
   });
 });

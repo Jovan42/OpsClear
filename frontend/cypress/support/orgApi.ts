@@ -22,6 +22,22 @@ export function uniqueSlug(): string {
   return `${c1}${c2}${c3}`;
 }
 
+/**
+ * A uniqueSlug() no organisation holds yet, checked in the DB. For a UI test that types the
+ * slug itself and can't retry on a 409 the way createOrgRequest() does: in a long-lived local
+ * DB a fair share of the ~18k slugs are taken, so a blind uniqueSlug() collides now and then.
+ */
+export function freeSlug(attemptsLeft = 10): Cypress.Chainable<string> {
+  const slug = uniqueSlug();
+  return cy
+    .task('queryDb', { sql: 'SELECT 1 FROM organisations WHERE upper(slug) = $1', params: [slug] })
+    .then((rows): Cypress.Chainable<string> => {
+      if ((rows as unknown[]).length === 0) return cy.wrap(slug);
+      if (attemptsLeft > 1) return freeSlug(attemptsLeft - 1);
+      throw new Error('freeSlug: no free slug found');
+    });
+}
+
 export function tokenFor(email: string, password = 'password123') {
   return cy
     .request({
