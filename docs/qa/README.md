@@ -6,8 +6,8 @@ different org and project roles, over several days. Design and reasons:
 regressions; this pass judges whether screens make sense and covers behaviour that only shows up
 over real calendar days (deadline alerts, schedules).
 
-The files are reused as a regression checklist and kept current with every feature (upkeep rule:
-Chore 2 of the ADR).
+The files are reused as a regression checklist and kept current with every feature: the PR template, the feature job templates and `pr-reviewer`
+enforce the upkeep rule (see [Keeping it current](#keeping-it-current)).
 
 ## Files
 
@@ -155,6 +155,14 @@ listed under `## Findings`. `UX:` jobs follow [NAMING.md](../dev/process/NAMING.
 The ticks in a file are the result of the last run. A new run happens in its own PR: reset every
 box to `- [ ]`, update `Last run`, tick as you go, and clear the old findings. Git history keeps
 each earlier run. The PR merges when every box is ticked or linked to a finding.
+
+## Keeping it current
+
+A PR that changes behaviour covered here updates the matching scenario file in the same PR. The PR
+template has a QA line, the Backend feature and Frontend feature job templates have an `Update
+docs/qa scenarios for changed behaviour` checkbox, and `pr-reviewer` raises a finding when a PR
+touches a mapped route, page or controller and nothing under `docs/qa/` changed. It is a review
+finding, not a CI failure.
 
 ## Area to routes map
 

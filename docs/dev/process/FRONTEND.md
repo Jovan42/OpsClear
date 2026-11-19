@@ -89,6 +89,12 @@ const { hasAddon } = useCurrentOrg();
 
 All shared types live in `src/types/index.ts`. Add new API response interfaces and string union types there.
 
+## QA scenarios
+
+Behaviour changes update the matching file in `docs/qa/` in the same PR, found through the frontend routes table in
+[docs/qa/README.md](../../qa/README.md#area-to-routes-map). `pr-reviewer` flags a PR that touches a
+mapped route or page without a `docs/qa/` change. Rule and format: [docs/qa/README.md](../../qa/README.md).
+
 ---
 
 ## Definition of done
