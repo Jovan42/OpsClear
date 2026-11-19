@@ -126,6 +126,23 @@ export function decideInitialPreferences({
   return { kind: 'defaults', prefs: defaults };
 }
 
+/**
+ * The preferences to show once the first GET answers. The server's values (`initial`) lose to
+ * anything the user changed on this page since the request started (`changedKeys`, even
+ * if that change was already saved: the GET may have been answered before the save, so it
+ * is older) and to changes not saved yet (`unsaved`, including ones left by an earlier load).
+ */
+export function mergeLoadedPreferences(
+  initial: Preferences,
+  current: Preferences,
+  changedKeys: ReadonlySet<keyof Preferences>,
+  unsaved: Partial<Preferences>,
+): Preferences {
+  const changed: Partial<Preferences> = {};
+  for (const key of changedKeys) Object.assign(changed, { [key]: current[key] });
+  return { ...initial, ...changed, ...unsaved };
+}
+
 export function toUiPatch(patch: Partial<Preferences>): Record<string, UiPreferenceValue> {
   return patch as Record<string, UiPreferenceValue>;
 }

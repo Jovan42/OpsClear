@@ -451,8 +451,11 @@ describe('Job List & Filtering', () => {
       });
 
       cy.loginAs(email);
+      cy.intercept('PATCH', '**/api/user/preferences').as('savePreferences');
       cy.visit('/settings');
       cy.contains('Completed jobs in All tab').parent().parent().within(() => cy.contains('button', 'Hide').click());
+      // The visit below is a full page load: wait for the (debounced) save so it can't race it.
+      cy.wait('@savePreferences');
 
       cy.visit(`/projects/${projectId}/jobs`);
       cy.contains('button', 'All').click();

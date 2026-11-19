@@ -18,6 +18,7 @@ describe('Notification sound setting', () => {
     cy.createKeycloakUser(email, 'Sam', 'Sound');
     createOrgWithSubscription(email, 'Sound Corp', uniqueSlug());
     cy.loginAs(email);
+    cy.intercept('PATCH', '**/api/user/preferences').as('savePreferences');
     cy.visit('/settings');
 
     cy.contains('Notification sound')
@@ -29,6 +30,8 @@ describe('Notification sound setting', () => {
         cy.contains('button', 'Off').should('have.class', 'bg-gray-900');
       });
     cy.window().then((win) => expect(storedSound(win)).to.eq(false));
+    // The reload below reads the saved value from the server, so wait for the (debounced) save.
+    cy.wait('@savePreferences');
 
     cy.reload();
     cy.contains('Notification sound')

@@ -5,6 +5,7 @@ import {
   MIGRATED_BY_KEY,
   PreferenceSaveQueue,
   decideInitialPreferences,
+  mergeLoadedPreferences,
   readFirstPaint,
   readUnsaved,
   unsavedKey,
@@ -290,5 +291,26 @@ describe('PreferenceSaveQueue', () => {
     await flushing;
     expect(queue.unsaved).toEqual({ theme: 'light' });
     queue.cancel();
+  });
+});
+
+describe('mergeLoadedPreferences', () => {
+  const server: Preferences = { ...defaults, theme: 'light', hideCompletedFromAll: false };
+
+  it('keeps a change that was already saved while the GET was in flight (the response is older)', () => {
+    // The user chose Dark, the save finished (nothing unsaved), then the older GET answered.
+    const current: Preferences = { ...server, theme: 'dark' };
+    const merged = mergeLoadedPreferences(server, current, new Set(['theme']), {});
+    expect(merged.theme).toBe('dark');
+  });
+
+  it('keeps unsaved changes, and takes the server value for everything the user did not touch', () => {
+    const current: Preferences = { ...server, hideCompletedFromAll: true };
+    const merged = mergeLoadedPreferences(server, current, new Set(), { hideCompletedFromAll: true });
+    expect(merged).toEqual({ ...server, hideCompletedFromAll: true });
+  });
+
+  it('uses the server values when the user changed nothing', () => {
+    expect(mergeLoadedPreferences(server, defaults, new Set(), {})).toEqual(server);
   });
 });
