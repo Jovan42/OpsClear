@@ -12,6 +12,7 @@ import org.springframework.web.client.RestClient;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -62,6 +63,35 @@ class PaddleClientTest {
 
         assertThat(result.id()).isEqualTo("ctm_123");
         assertThat(result.email()).isEqualTo("owner@example.com");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("findCustomerByEmail gets customers filtered by the encoded email and maps the first one")
+    void findCustomerByEmail_shouldGetByEncodedEmail_andMapFirstCustomer() {
+        server.expect(requestTo(BASE_URL + "/customers?email=ana%2Bqa%40example.com"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("Authorization", "Bearer " + API_KEY))
+                .andRespond(withSuccess(
+                        """
+                        {"data": [{"id": "ctm_123", "email": "ana+qa@example.com"}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        Optional<PaddleCustomer> result = client.findCustomerByEmail("ana+qa@example.com");
+
+        assertThat(result).contains(new PaddleCustomer("ctm_123", "ana+qa@example.com"));
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("findCustomerByEmail returns empty when Paddle has no customer with that email")
+    void findCustomerByEmail_shouldReturnEmpty_whenNoCustomer() {
+        server.expect(requestTo(BASE_URL + "/customers?email=owner%40example.com"))
+                .andRespond(withSuccess("""
+                        {"data": []}
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThat(client.findCustomerByEmail("owner@example.com")).isEmpty();
         server.verify();
     }
 

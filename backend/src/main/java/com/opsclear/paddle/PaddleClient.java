@@ -10,6 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Thin wrapper over Paddle's REST API (ADR-0044). Deliberately minimal — only the
@@ -45,6 +46,21 @@ public class PaddleClient {
                 .retrieve()
                 .body(new ParameterizedTypeReference<PaddleEnvelope<PaddleCustomer>>() { });
         return response.data();
+    }
+
+    // Paddle customer emails are unique per Paddle account (createCustomer answers 409
+    // customer_already_exists for a taken email), so this finds at most one customer.
+    // Paddle leaves archived customers out by default, so an archived match is not found.
+    // The email goes in as a URI variable so it is fully encoded ("+" included).
+    public Optional<PaddleCustomer> findCustomerByEmail(String email) {
+        PaddleEnvelope<List<PaddleCustomer>> response = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/customers")
+                        .queryParam("email", "{email}")
+                        .build(email))
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaddleEnvelope<List<PaddleCustomer>>>() { });
+        return response.data().stream().findFirst();
     }
 
     public PaddleSubscription updateSubscriptionItems(
