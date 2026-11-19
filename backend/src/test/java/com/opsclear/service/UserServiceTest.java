@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.exception.BadRequestException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.model.OrganisationModel;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,55 +47,48 @@ class UserServiceTest {
                 .id(UUID.randomUUID()).name("Test Org").slug("TST").createdBy(callerId).build();
     }
 
-    // JOB-244: search is no longer scoped to the caller's own org (that made it
-    // impossible to ever find a genuinely new candidate to invite) — the caller must
-    // still belong to an org to use the endpoint at all, but the results themselves
-    // are unscoped.
+    // JOB-400: the search is scoped to the caller's organisation, matched by name or email.
     @Test
-    @DisplayName("searchByEmail_shouldReturnResults_fromRepository")
-    void searchByEmail_shouldReturnResults_fromRepository() {
-        String prefix = "ali";
+    @DisplayName("searchOrgMembers_shouldSearchCallerOrg_withTrimmedQuery")
+    void searchOrgMembers_shouldSearchCallerOrg_withTrimmedQuery() {
         List<UserModel> expected = List.of(
-                UserModel.builder().id(UUID.randomUUID()).email("alice@example.com").name("Alice").build(),
-                UserModel.builder().id(UUID.randomUUID()).email("alicia@example.com").name("Alicia").build()
+                UserModel.builder().id(UUID.randomUUID()).email("alice@example.com").name("Alice").build()
         );
         when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(org));
-        when(userRepository.searchByEmail(prefix, 10)).thenReturn(expected);
+        when(userRepository.searchOrgMembers(org.getId(), "ali", 10)).thenReturn(expected);
 
-        List<UserModel> result = userService.searchByEmail(prefix, callerId);
+        List<UserModel> result = userService.searchOrgMembers("  ali ", callerId);
 
         assertThat(result).isEqualTo(expected);
-        verify(userRepository).searchByEmail(prefix, 10);
+        verify(userRepository).searchOrgMembers(org.getId(), "ali", 10);
     }
 
     @Test
-    @DisplayName("searchByEmail_shouldReturnEmptyList_whenNoMatches")
-    void searchByEmail_shouldReturnEmptyList_whenNoMatches() {
+    @DisplayName("searchOrgMembers_shouldReturnEmptyList_whenNoMatches")
+    void searchOrgMembers_shouldReturnEmptyList_whenNoMatches() {
         when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(org));
-        when(userRepository.searchByEmail("zzz", 10)).thenReturn(List.of());
+        when(userRepository.searchOrgMembers(org.getId(), "zzz", 10)).thenReturn(List.of());
 
-        List<UserModel> result = userService.searchByEmail("zzz", callerId);
-
-        assertThat(result).isEmpty();
+        assertThat(userService.searchOrgMembers("zzz", callerId)).isEmpty();
     }
 
     @Test
-    @DisplayName("searchByEmail_shouldEnforceLimit_ofTen")
-    void searchByEmail_shouldEnforceLimit_ofTen() {
-        when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(org));
-        when(userRepository.searchByEmail("test", 10)).thenReturn(List.of());
-
-        userService.searchByEmail("test", callerId);
-
-        verify(userRepository).searchByEmail("test", 10);
+    @DisplayName("searchOrgMembers_shouldThrowBadRequest_whenQueryNullOrShorterThanTwo")
+    void searchOrgMembers_shouldThrowBadRequest_whenQueryNullOrShorterThanTwo() {
+        for (String query : new String[] {null, "", "a", "  a  "}) {
+            assertThatThrownBy(() -> userService.searchOrgMembers(query, callerId))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessage(ErrorMessages.User.SEARCH_QUERY_TOO_SHORT);
+        }
+        verifyNoInteractions(organisationRepository, userRepository);
     }
 
     @Test
-    @DisplayName("searchByEmail_shouldThrowForbiddenException_whenCallerHasNoOrg")
-    void searchByEmail_shouldThrow_whenCallerHasNoOrg() {
+    @DisplayName("searchOrgMembers_shouldThrowForbiddenException_whenCallerHasNoOrg")
+    void searchOrgMembers_shouldThrow_whenCallerHasNoOrg() {
         when(organisationRepository.findByMember(callerId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.searchByEmail("ali", callerId))
+        assertThatThrownBy(() -> userService.searchOrgMembers("ali", callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage(ErrorMessages.Organisation.NOT_IN_ORG);
     }

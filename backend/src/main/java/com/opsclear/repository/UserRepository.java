@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.opsclear.generated.jooq.Tables.ORGANISATION_MEMBERS;
 import static com.opsclear.generated.jooq.Tables.USERS;
 
 @Repository
@@ -57,17 +58,14 @@ public class UserRepository {
                 .map(this::toModel);
     }
 
-    // JOB-244: was scoped to the caller's own org (JOIN ORGANISATION_MEMBERS filtered
-    // to orgId), which meant it could only ever find someone ALREADY in that org — the
-    // opposite of useful for its actual purpose (finding a new candidate to invite).
-    // Unscoped by design now: any registered user matching the prefix is a valid
-    // result, since the point of this search is picking someone to add. The
-    // add-member picker already greys out rows that are already members via a
-    // separate client-side check (AddOrgMemberForm's memberIds set).
-    public List<UserModel> searchByEmail(String emailPrefix, int limit) {
+    // JOB-400: only members of the given organisation, matched by name (contains) or email (prefix), both
+    // case-insensitive. jOOQ's containsIgnoreCase/startsWithIgnoreCase escape LIKE wildcards in the query.
+    public List<UserModel> searchOrgMembers(UUID orgId, String query, int limit) {
         return dsl.select(USERS.ID, USERS.EMAIL, USERS.NAME, USERS.CREATED_AT, USERS.LAST_LOGIN_AT, USERS.SUPER_USER)
                 .from(USERS)
-                .where(USERS.EMAIL.likeIgnoreCase(emailPrefix + "%"))
+                .join(ORGANISATION_MEMBERS).on(ORGANISATION_MEMBERS.USER_ID.eq(USERS.ID))
+                .where(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(orgId))
+                .and(USERS.NAME.containsIgnoreCase(query).or(USERS.EMAIL.startsWithIgnoreCase(query)))
                 .orderBy(USERS.EMAIL.asc())
                 .limit(limit)
                 .fetch()

@@ -23,6 +23,7 @@ public final class ErrorMessages {
 
     public static final class User {
         public static final String NOT_FOUND = "User not found";
+        public static final String SEARCH_QUERY_TOO_SHORT = "Search query must be at least 2 characters";
 
         private User() {
         }
