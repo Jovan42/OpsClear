@@ -1,6 +1,6 @@
 # Onboarding
 
-Last run: —
+Last run: 2026-11-19, Jovan
 Guide: /guide/sign-up, /guide/create-organisation, /guide/invite-team, /guide/first-project
 
 This file builds the test world that every other area file relies on: both orgs, all personas
@@ -37,9 +37,9 @@ midnight UTC, work the dates out from the UTC clock, not your local one.
 1. On the VPS, open `.env.prod` and look at `PADDLE_CLIENT_TOKEN` and `PADDLE_API_KEY`. Don't paste them anywhere.
 2. Open the Paddle dashboard and check which account you are on.
 
-- [ ] `PADDLE_CLIENT_TOKEN` starts with `test_`
-- [ ] `PADDLE_API_KEY` starts with `pdl_sdbx_`
-- [ ] The Paddle dashboard in use is the Sandbox one
+- [x] `PADDLE_CLIENT_TOKEN` starts with `test_`
+- [x] `PADDLE_API_KEY` starts with `pdl_sdbx_`
+- [x] The Paddle dashboard in use is the Sandbox one
 
 **If any box can't be ticked, stop the whole run.** Nothing in this pass may charge a real card.
 ONB-08 and ONB-30 repeat the check in the browser.
@@ -54,13 +54,13 @@ ONB-08 and ONB-30 repeat the check in the browser.
 5. Click **User guide** in the top bar.
 6. Type `/projects` in the address bar.
 
-- [ ] The home page shows the headline, **Get started** and **Log in**
-- [ ] The theme button cycles light, dark and system, and the page follows it
-- [ ] The language button switches the page between English and Serbian and back
-- [ ] `/features` lists every feature, with an **Included** badge on base features and the add-on name on gated ones
-- [ ] A card's demo opens and can be stepped through
-- [ ] The user guide opens without a login
-- [ ] `/projects` while logged out sends you to the sign-in page, not an error
+- [x] The home page shows the headline, **Get started** and **Log in**
+- [x] The theme button cycles light, dark and system, and the page follows it
+- [x] The language button switches the page between English and Serbian and back
+- [x] `/features` lists every feature, with an **Included** badge on base features and the add-on name on gated ones
+- [x] A card's demo opens and can be stepped through
+- [x] The user guide opens without a login
+- [x] `/projects` while logged out sends you to the sign-in page, not an error
 
 ## ONB-03 Registration form checks its input
 **As:** Ana (not registered yet) · **Day:** 1 · **Needs:** nothing
@@ -69,9 +69,9 @@ ONB-08 and ONB-30 repeat the check in the browser.
 2. Click **Register** with every field empty.
 3. Fill in First name **Ana**, Last name **Petrović**, Email `<mailbox>+ana@<domain>`, a password, and a different text in **Confirm password**. Click **Register**.
 
-- [ ] The empty form is rejected with a message on the missing fields, and no account is created
-- [ ] A mismatching **Confirm password** is rejected with a message, and the other fields keep what you typed
-- [ ] The page has a **Back to Login** link and uses the OpsClear look
+- [x] The empty form is rejected with a message on the missing fields, and no account is created
+- [x] A mismatching **Confirm password** is rejected with a message, and the other fields keep what you typed
+- [x] The page has a **Back to Login** link and uses the OpsClear look
 
 ## ONB-04 Sign up and verify the email (Ana)
 **As:** Ana (new user) · **Day:** 1 · **Needs:** ONB-03 done, still on the form. Every other persona repeats this flow.
@@ -82,12 +82,12 @@ ONB-08 and ONB-30 repeat the check in the browser.
 4. Click **Resend email** on the page, and check the mailbox again.
 5. Click **Verify email address** in the newest email.
 
-- [ ] After **Register** you land on **Verify your email**, which names `<mailbox>+ana@<domain>`
-- [ ] The second tab also shows **Verify your email** and never lets you into the app
-- [ ] The first email arrives within a minute, from OpsClear, with a green **Verify email address** button and a note that the link expires in 5 minutes
-- [ ] **Resend email** sends a second email
-- [ ] Clicking the link confirms the address and signs you in
-- [ ] You land on **Create your organisation**, because Ana has no organisation yet
+- [x] After **Register** you land on **Verify your email**, which names `<mailbox>+ana@<domain>`
+- [x] The second tab also shows **Verify your email** and never lets you into the app
+- [x] The first email arrives within a minute, from OpsClear, with a green **Verify email address** button and a note that the link expires in 5 minutes
+- [x] **Resend email** sends a second email
+- [x] Clicking the link confirms the address and signs you in
+- [x] You land on **Create your organisation**, because Ana has no organisation yet
 
 ## ONB-05 The same email can't register twice
 **As:** Anonymous visitor (private window) · **Day:** 1 · **Needs:** ONB-04 done
