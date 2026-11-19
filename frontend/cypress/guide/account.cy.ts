@@ -1,11 +1,12 @@
 // ADR-0062 (JOB-358): screenshots for the Account & more guide pages (subscription,
-// stats-overview, api-keys, faq), in the language given by GUIDE_LANG. Not a test of the
+// stats-overview, api-keys, feedback (JOB-388), faq), in the language given by GUIDE_LANG. Not a test of the
 // app: it seeds the sample workspace (support/world.ts) and captures what each page shows.
 // Outside cypress/e2e/, so CI never runs it; run it with `npm run guide:screenshots` (see
 // cypress/guide/README.md). Images are named `<slug>-<n>`.
 //
 // No live Paddle call anywhere: the sample org's subscription is a database row, and the
-// billing history is a stubbed reply.
+// billing history is a stubbed reply. The earlier credited feedback is database rows too: a
+// real grant would sync to Paddle, as the sample org looks like it has real billing.
 
 import { API, createOrgWithSubscription, tokenFor, uniqueSlug } from '../support/orgApi';
 import { setPreferencesAs } from '../support/preferences';
@@ -17,6 +18,10 @@ import { cleanUpWorld, emptyWorld, seedWorld } from './support/world';
 
 const lang = guideLang();
 const w = emptyWorld();
+// Feedback: an earlier idea that earned a credit, and the bug report the member sends on screen
+const IDEA_TITLE = "Show the client's phone number on the job";
+const IDEA_CREDIT = 20;
+const BUG_TITLE = 'The deadline shows a day early on my phone';
 // An owner whose organisation has no add-ons: what a locked feature looks like
 const locked = { email: guideEmail('locked'), orgId: '' };
 
@@ -29,6 +34,31 @@ describe(`Guide screenshots: Account & more (${lang})`, { testIsolation: false }
       locked.orgId = id;
     });
     cy.then(() => setPreferencesAs(locked.email, { locale: lang, theme: 'light' }));
+    // Feedback: the member's earlier idea, through the API, then marked credited in the
+    // database with a matching ledger row (what a granted credit leaves behind)
+    cy.then(() => tokenFor(w.member.email)).then((token) =>
+      cy
+        .request({
+          method: 'POST',
+          url: `${API}/api/feedback`,
+          headers: { Authorization: `Bearer ${token}` },
+          body: {
+            type: 'FEATURE',
+            title: IDEA_TITLE,
+            description: `## ${tr('Problem')}\nOn site we often need to call the client, and the number is only in our notes.\n\n## ${tr('Proposed solution')}\nThe phone number next to the client's name on the job.`,
+          },
+        })
+        .then(({ body }) => {
+          cy.task('queryDb', {
+            sql: "UPDATE feedback_submissions SET status = 'CREDITED' WHERE id = $1",
+            params: [body.id],
+          });
+          cy.task('queryDb', {
+            sql: 'INSERT INTO org_credits (org_id, amount, reason, submission_id, granted_by) VALUES ($1, $2, $3, $4, $5)',
+            params: [w.orgId, IDEA_CREDIT, 'Feature idea', body.id, w.owner.id],
+          });
+        }),
+    );
     // API keys: made through the API so no key is ever on screen, only the list
     for (const name of ['Dashboard screen', 'Accounting export']) {
       cy.then(() => tokenFor(w.owner.email)).then((token) =>
@@ -109,6 +139,43 @@ describe(`Guide screenshots: Account & more (${lang})`, { testIsolation: false }
     clickButton('+ New API Key');
     dialog().should('be.visible');
     shot('api-keys', 2, undefined, { scroll: false });
+  });
+
+  it('feedback: a bug report, my submissions and the credit balance', () => {
+    visitAs(w.member.email, '/feedback');
+    cy.contains(IDEA_TITLE).should('be.visible');
+    clickButton('New submission');
+    clickButton('Bug');
+    cy.get('form textarea').should('contain.value', tr('Steps to reproduce'));
+    cy.get('#feedback-title').type(BUG_TITLE);
+    cy.get('form textarea').clear();
+    cy.get('form textarea').type(
+      [
+        `## ${tr('Steps to reproduce')}`,
+        `1. Open ${PROJECT_NAME} on my phone`,
+        '2. Open the job Fit the kitchen sink',
+        '3. Look at the deadline',
+        '',
+        `## ${tr('Expected behavior')}`,
+        'The same deadline I see on my computer.',
+        '',
+        `## ${tr('Actual behavior')}`,
+        'The deadline on my phone is one day earlier.',
+      ].join('\n'),
+      { delay: 0 },
+    );
+    // The whole page column: the Submit feedback button sits below the 800 px viewport
+    shot('feedback', 1, cy.get('form').parent());
+
+    clickButton('Submit feedback');
+    cy.contains(BUG_TITLE).should('be.visible');
+    cy.contains(exact('Pending review')).should('be.visible');
+    shot('feedback', 2);
+
+    visitAs(w.owner.email, '/org/settings');
+    cy.contains('h2', exact('Credit balance')).should('be.visible');
+    cy.contains('h2', exact('Credit balance')).parent('section').should('contain', String(IDEA_CREDIT));
+    shot('feedback', 3, cy.contains('h2', exact('Credit balance')).parent('section'));
   });
 
   it('faq: the "too many requests" toast', () => {
