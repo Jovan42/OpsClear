@@ -1,7 +1,6 @@
 // ADR-0049 Appendix §2 (Organisation Management — Invites). Uses cy.loginAs() per
-// docs/dev/process/E2E.md, except the one case whose actual subject is the real
-// login redirect (JOB-239), which drives real Keycloak UI like the dedicated Auth
-// Flows suite does.
+// docs/dev/process/E2E.md. The invite page itself (signed out, sign-up and login from it,
+// wrong account, closed invites) is in invite-page.cy.ts (JOB-399).
 
 import {
   API,
@@ -34,7 +33,7 @@ describe('Organisation Management — Invites', () => {
     cy.deleteKeycloakUser(ownerEmail);
   });
 
-  it('invited user (already has an account) accepts and is added as MEMBER', () => {
+  it('invited user (already has an account and signed in) opens the link and is added as MEMBER', () => {
     const ownerEmail = uniqueEmail('accept-owner');
     const inviteeEmail = uniqueEmail('accept-invitee');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');
@@ -46,8 +45,8 @@ describe('Organisation Management — Invites', () => {
         inviteTokenFor(inviteId).then((token) => {
           cy.loginAs(inviteeEmail);
           cy.visit(`/invite/${token}`);
-          cy.contains('button', 'Accept invite').click();
-          cy.contains("You've joined the organisation", { timeout: 10000 }).should('be.visible');
+          // JOB-399: signed in with the invited address, opening the link joins straight away
+          cy.contains("You've joined Accept Corp", { timeout: 10000 }).should('be.visible');
         });
       });
 
@@ -248,8 +247,8 @@ describe('Organisation Management — Invites', () => {
         inviteTokenFor(inviteId).then((token) => {
           cy.loginAs(inviteeEmailLower);
           cy.visit(`/invite/${token}`);
-          cy.contains('button', 'Accept invite').click();
-          cy.contains("You've joined the organisation", { timeout: 10000 }).should('be.visible');
+          // JOB-399: joins on opening the link, no Accept click
+          cy.contains("You've joined Case Corp", { timeout: 10000 }).should('be.visible');
         });
       });
     });
@@ -308,39 +307,6 @@ describe('Organisation Management — Invites', () => {
               failOnStatusCode: false,
             }).then((res) => expect(res.status).to.eq(400));
           });
-        });
-      });
-    });
-
-    cy.deleteKeycloakUser(ownerEmail);
-    cy.deleteKeycloakUser(inviteeEmail);
-  });
-
-  // JOB-237/JOB-239 regression: an unauthenticated visitor to an accept-invite link is
-  // routed through real login and lands back on the exact invite URL, token intact.
-  it('an unauthenticated visitor is routed through login and lands back on the invite page', () => {
-    const ownerEmail = uniqueEmail('unauth-owner');
-    const inviteeEmail = uniqueEmail('unauth-invitee');
-    cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');
-    cy.createKeycloakUser(inviteeEmail, 'E2E', 'Invitee');
-    userIdFor(inviteeEmail);
-
-    createOrgWithSubscription(ownerEmail, 'Unauth Corp', uniqueSlug()).then((orgId) => {
-      sendInvite(orgId, ownerEmail, inviteeEmail).then((inviteId) => {
-        inviteTokenFor(inviteId).then((token) => {
-          cy.visit('http://localhost:8180/realms/opsclear/protocol/openid-connect/logout?client_id=opsclear-frontend&post_logout_redirect_uri=http://localhost:5173');
-          cy.location('pathname', { timeout: 10000 }).should('eq', '/');
-
-          cy.visit(`/invite/${token}`);
-          cy.location('pathname', { timeout: 10000 }).should('eq', '/');
-          cy.contains('Log in').click();
-          cy.origin('http://localhost:8180', { args: { inviteeEmail } }, ({ inviteeEmail }) => {
-            cy.get('#username', { timeout: 10000 }).type(inviteeEmail);
-            cy.get('#password').type('password123');
-            cy.get('#kc-login').click();
-          });
-          cy.url({ timeout: 10000 }).should('include', `localhost:5173/invite/${token}`);
-          cy.contains('Accept invite').should('be.visible');
         });
       });
     });

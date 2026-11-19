@@ -5,7 +5,7 @@ export const frontmatter = {
 
 # Invite your team
 
-OpsClear is for teams, so the next step is to bring your colleagues in. You invite each person by email. They click the link in the email, accept, and they're part of your organisation.
+OpsClear is for teams, so the next step is to bring your colleagues in. You invite each person by email. They click the link in the email, create an account or log in, and they're part of your organisation.
 
 <RoleBadge role={['Owner', 'Admin']} />
 
@@ -45,19 +45,24 @@ An invite works for 7 days. After that it shows **Expired**. Send a new invite t
   <Step title="They get an email">
     It says who invited them and to which organisation, and has an **Accept invite** button.
   </Step>
-  <Step title="They sign in or sign up">
-    If they already have an OpsClear account, they log in. If not, they sign up first (see [Sign up and verify your email](/guide/sign-up)) and then click **Accept invite** in the email again. They must use the email address you invited.
+  <Step title="The invite page opens">
+    The button opens a page that says who invited them, to which organisation, and which email address the invite is for. It has two buttons: **Create account** and **I already have an account**.
   </Step>
-  <Step title="They accept">
-    The **You've been invited** page opens. They click **Accept invite**, see **You've joined the organisation**, and are taken to their projects.
+  <Step title="They create an account or log in">
+    New to OpsClear, they click **Create account**. The sign-up form opens with the invited address already filled in. They add their name and a password, then confirm the address from the email OpsClear sends them (see [Sign up and verify your email](/guide/sign-up)). If they already have an account, they click **I already have an account** and log in. They must use the email address you invited.
+  </Step>
+  <Step title="They join">
+    Once they're signed in, OpsClear adds them to your organisation, with no other button to click. Their projects open with the message **You've joined Acme Plumbing**.
   </Step>
 </Steps>
 
 <Screenshot src="/guide/en/invite-team-3.webp" alt="The invite email: a message that Priya Nair has invited you to join Acme Plumbing, and a green Accept invite button" caption="The invite email your colleague receives." />
 
-<Screenshot src="/guide/en/invite-team-4.webp" alt="The You've been invited page with an Accept invite button" caption="The page the invite link opens." />
+<Screenshot src="/guide/en/invite-team-4.webp" alt="The invite page: Priya Nair invited you to join Acme Plumbing on OpsClear, with the Create account and I already have an account buttons" caption="The page the invite link opens." />
 
-<Screenshot src="/guide/en/invite-team-5.webp" alt="The confirmation page: You've joined the organisation, and a note that they are being taken to their projects" caption="After accepting, they're taken to their projects." />
+<Screenshot src="/guide/en/invite-team-5.webp" alt="The projects list with a message in the corner: You've joined Acme Plumbing" caption="Once signed in, they join and their projects open." />
+
+If your colleague is already signed in with the invited address, the link adds them straight away. If they're signed in with a different address, the page says the invite is for a different account and offers **Sign out**, so they can sign in with the right one.
 
 New people join as **Members** of the organisation. They won't see any projects until you add them to one: see [Create a project and add members](/guide/first-project).
 

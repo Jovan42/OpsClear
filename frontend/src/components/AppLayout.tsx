@@ -11,6 +11,7 @@ import ProjectNavItemView from './ProjectNavItemView';
 import { useProjectNavItems, type ProjectNavData } from '../hooks/useProjectNavItems';
 import { useTheme } from '../hooks/useTheme';
 import { recordProjectVisit } from '../hooks/useRecentProjects';
+import { useJoinedOrganisationToast } from '../features/org/joinedOrganisationToast';
 
 function ProjectNav({ projectId, navData }: Readonly<{ projectId: string; navData: ProjectNavData }>) {
   const { items, links, canManageLinks } = navData;
@@ -117,6 +118,8 @@ export default function AppLayout() {
   const location = useLocation();
   // Live notification updates for the bell and the Notifications page (ADR-0051).
   useNotificationStream();
+  // JOB-399: "You've joined <organisation>" after accepting an invite
+  useJoinedOrganisationToast();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { t } = useTranslation('shared1');
 

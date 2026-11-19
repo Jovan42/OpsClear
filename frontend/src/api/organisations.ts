@@ -6,6 +6,7 @@ import type {
   OrgRole,
   OrganisationResponse,
   OrgSettings,
+  PublicInviteResponse,
   ProjectDirectoryEntryResponse,
   UpdateOrgSettingsRequest,
 } from '../types';
@@ -75,8 +76,16 @@ export const organisationsApi = {
   revokeInvite: (orgId: string, inviteId: string) =>
     apiClient.delete(`/api/organisations/${orgId}/invites/${inviteId}`),
 
+  // Public (no login needed): the invite page shows it before the visitor has an account.
+  // Its 404 (unknown token, deleted organisation) has its own message on the page.
+  inviteByToken: (token: string) =>
+    apiClient.get<PublicInviteResponse>(`/api/invites/${token}`).then((r) => r.data),
+
+  // The invite page shows every accept error itself, so the global error toast skips them
   acceptInvite: (token: string) =>
-    apiClient.post<OrgInviteResponse>(`/api/invites/${token}/accept`).then((r) => r.data),
+    apiClient
+      .post<OrgInviteResponse>(`/api/invites/${token}/accept`, undefined, { skipErrorToast: true })
+      .then((r) => r.data),
 
   projectDirectory: (orgId: string) =>
     apiClient

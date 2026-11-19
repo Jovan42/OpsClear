@@ -201,8 +201,30 @@ export function useRevokeOrgInvite(orgId: string) {
   });
 }
 
+export const publicInviteKey = (token: string) => ['invites', token];
+
+/** The invite behind an invite link, readable without login (JOB-398). A 404 isn't retried. */
+export function usePublicInvite(token: string | undefined) {
+  return useQuery({
+    queryKey: publicInviteKey(token ?? ''),
+    queryFn: () => organisationsApi.inviteByToken(token!),
+    enabled: !!token,
+    retry: (failureCount, error) =>
+      !(isAxiosError(error) && error.response?.status === 404) && failureCount < 1,
+  });
+}
+
 export function useAcceptOrgInvite() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (token: string) => organisationsApi.acceptInvite(token),
+    // The user now has an organisation: drop a cached "no organisation" so the app doesn't
+    // send them to onboarding.
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['organisations', 'mine'] }),
+    // The invite page reloads the invite: after an error its status may have changed (accepted
+    // in another tab, revoked), and the page then shows that instead of the error. After a
+    // success the page has already moved on, so this only refreshes the cache.
+    onSettled: (_data, _error, token) =>
+      void queryClient.invalidateQueries({ queryKey: publicInviteKey(token) }),
   });
 }

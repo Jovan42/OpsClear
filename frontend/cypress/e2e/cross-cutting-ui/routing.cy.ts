@@ -3,7 +3,7 @@
 // NOT covered (documented, not silently skipped): "a route-level render error is
 // caught by RouteErrorPage rather than a blank white screen" — confirmed by reading
 // router.tsx that every top-level route group (/, /features, /onboarding, /org/new,
-// the bare invite route, and the main authenticated RequireAuth subtree) has its own
+// the public invite route, and the main authenticated RequireAuth subtree) has its own
 // `errorElement: <RouteErrorPage />`, so the boundary IS wired everywhere the ADR
 // asks for. Forcing a genuine render-time throw to prove it catches, though, would
 // need either a test-only error-injection hook (none exists in app source — adding

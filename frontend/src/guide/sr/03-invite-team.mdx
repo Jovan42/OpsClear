@@ -5,7 +5,7 @@ export const frontmatter = {
 
 # Pozovite svoj tim
 
-OpsClear je za timove, pa je sledeći korak da dovedete svoje kolege. Svaku osobu pozivate emailom. Ona klikne na link u emailu, prihvati pozivnicu i postaje deo vaše organizacije.
+OpsClear je za timove, pa je sledeći korak da dovedete svoje kolege. Svaku osobu pozivate emailom. Ona klikne na link u emailu, napravi nalog ili se prijavi i postaje deo vaše organizacije.
 
 <RoleBadge role={['Owner', 'Admin']} />
 
@@ -45,19 +45,24 @@ Pozivnica važi 7 dana. Posle toga piše **Isteklo**. Pošaljite novu pozivnicu 
   <Step title="Dobija email">
     U njemu piše ko ga je pozvao i u koju organizaciju, a tu je i dugme **Prihvati pozivnicu**.
   </Step>
-  <Step title="Prijavljuje se ili registruje">
-    Ako već ima OpsClear nalog, prijavljuje se. Ako nema, prvo se registruje (pogledajte [Registracija i potvrda email adrese](/guide/sign-up)), a zatim ponovo klikne na **Prihvati pozivnicu** u emailu. Mora da koristi email adresu na koju ste poslali pozivnicu.
+  <Step title="Otvara se stranica pozivnice">
+    Dugme otvara stranicu na kojoj piše ko ga je pozvao, u koju organizaciju i za koju email adresu je pozivnica. Na njoj su dva dugmeta: **Napravi nalog** i **Već imam nalog**.
   </Step>
-  <Step title="Prihvata">
-    Otvara se stranica **Pozvani ste**. Klikne na **Prihvati pozivnicu**, vidi poruku **Pridružili ste se organizaciji** i prelazi na svoje projekte.
+  <Step title="Pravi nalog ili se prijavljuje">
+    Ako je nov u OpsClear-u, klikne na **Napravi nalog**. Otvara se forma za registraciju u kojoj je pozvana adresa već upisana. Unese ime i lozinku, pa potvrdi adresu preko emaila koji mu OpsClear pošalje (pogledajte [Registracija i potvrda email adrese](/guide/sign-up)). Ako već ima nalog, klikne na **Već imam nalog** i prijavi se. Mora da koristi email adresu na koju ste poslali pozivnicu.
+  </Step>
+  <Step title="Pridružuje se">
+    Čim se prijavi, OpsClear ga dodaje u vašu organizaciju, bez još jednog klika. Otvaraju se njegovi projekti uz poruku **Pridružili ste se organizaciji Acme Plumbing**.
   </Step>
 </Steps>
 
 <Screenshot src="/guide/sr/invite-team-3.webp" alt="Email pozivnica: poruka da vas je Priya Nair pozvala da se pridružite organizaciji Acme Plumbing i zeleno dugme Prihvati pozivnicu" caption="Email pozivnica koji kolega dobija." />
 
-<Screenshot src="/guide/sr/invite-team-4.webp" alt="Stranica Pozvani ste sa dugmetom Prihvati pozivnicu" caption="Stranica koju otvara link iz pozivnice." />
+<Screenshot src="/guide/sr/invite-team-4.webp" alt="Stranica pozivnice: Priya Nair vas poziva da se pridružite organizaciji Acme Plumbing u OpsClear-u, sa dugmadima Napravi nalog i Već imam nalog" caption="Stranica koju otvara link iz pozivnice." />
 
-<Screenshot src="/guide/sr/invite-team-5.webp" alt="Stranica potvrde: Pridružili ste se organizaciji, uz napomenu da se prelazi na projekte" caption="Kada prihvati, kolega prelazi na svoje projekte." />
+<Screenshot src="/guide/sr/invite-team-5.webp" alt="Lista projekata sa porukom u uglu: Pridružili ste se organizaciji Acme Plumbing" caption="Kada se prijavi, kolega se pridružuje i otvaraju se njegovi projekti." />
+
+Ako je kolega već prijavljen sa pozvanom adresom, link ga odmah dodaje. Ako je prijavljen sa drugom adresom, stranica kaže da je pozivnica za drugi nalog i nudi **Odjavi se**, da bi se prijavio sa pravom adresom.
 
 Novi ljudi se pridružuju kao **Članovi** organizacije. Ne vide nijedan projekat dok ih ne dodate u neki: pogledajte [Napravite projekat i dodajte članove](/guide/first-project).
 
