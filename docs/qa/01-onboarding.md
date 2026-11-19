@@ -303,8 +303,8 @@ Leave this project active. `03-projects.md` archives it later.
 2. Add Ivana as **Admin**.
 3. Add Luka as **Member**.
 
-- [ ] Ivana is **Admin** and Luka is **Member** in the table
-- [ ] Ivana and Luka each get a notification that they were added
+- [x] Ivana is **Admin** and Luka is **Member** in the table
+- [x] Ivana and Luka each get a notification that they were added
 
 ## ONB-22 Residential Fit-outs: approval gate on, all sections visible
 **As:** Ana (project owner) · **Day:** 1 · **Needs:** ONB-20 done
@@ -314,9 +314,9 @@ Leave this project active. `03-projects.md` archives it later.
 3. Switch on **Require approval to complete jobs**.
 4. Reload the page.
 
-- [ ] **Notes**, **Approvals**, **Relationships**, **Links** and **Job status history** are all switched on, and none says **Not in your plan**
-- [ ] Switching the gate on shows "Jobs now need approval to complete"
-- [ ] After the reload the gate is still on
+- [x] **Notes**, **Approvals**, **Relationships**, **Links** and **Job status history** are all switched on, and none says **Not in your plan**
+- [x] Switching the gate on shows "Jobs now need approval to complete"
+- [x] After the reload the gate is still on
 
 ## ONB-23 Office Refurbishments: gate off, some sections hidden
 **As:** Nikola (project owner) · **Day:** 1 · **Needs:** ONB-21 done
@@ -325,9 +325,9 @@ Leave this project active. `03-projects.md` archives it later.
 2. Switch off **Relationships**, **Links** and **Job status history**. Leave **Notes** and **Approvals** on.
 3. Look at **Require approval to complete jobs**. Reload the page.
 
-- [ ] Each switch-off shows a message such as "Relationships now hidden on jobs"
-- [ ] **Require approval to complete jobs** is off
-- [ ] After the reload the three sections are still off and **Notes** and **Approvals** are still on
+- [x] Each switch-off shows a message such as "Relationships now hidden on jobs"
+- [x] **Require approval to complete jobs** is off
+- [x] After the reload the three sections are still off and **Notes** and **Approvals** are still on
 
 ## ONB-24 What a project member can't change
 **As:** Luka (member of Residential Fit-outs and Office Refurbishments) · **Day:** 1 · **Needs:** ONB-22 and ONB-23 done
@@ -336,11 +336,11 @@ Leave this project active. `03-projects.md` archives it later.
 2. Look at **Details**, **Members** and **Job screen**.
 3. Open **Office Refurbishments**, **Settings**, and look at the same sections.
 
-- [ ] The name and description are greyed out and there's no **Save changes**
-- [ ] **Members** shows the people without the add form, role boxes or **Remove**
-- [ ] The section switches and **Require approval to complete jobs** are locked, with the note "Only project Owners and Admins can change this."
-- [ ] Residential shows the gate on and Office shows it off
-- [ ] There's no **Danger zone**
+- [x] The name and description are greyed out and there's no **Save changes**
+- [x] **Members** shows the people without the add form, role boxes or **Remove**
+- [x] The section switches and **Require approval to complete jobs** are locked, with the note "Only project Owners and Admins can change this."
+- [x] Residential shows the gate on and Office shows it off
+- [x] There's no **Danger zone**
 
 ## ONB-25 Milestones
 **As:** Ana (Residential owner), then Nikola (Office owner), then Luka · **Day:** 1 · **Needs:** ONB-22 and ONB-23 done
@@ -349,10 +349,10 @@ Leave this project active. `03-projects.md` archives it later.
 2. As Nikola, open **Office Refurbishments**, **Milestones**. Create **Demolition** (Day 3), **Fit-out** (Day 4 + 10 days) and **Handover** (Day 4 + 17 days).
 3. As Luka, open **Milestones** in Residential.
 
-- [ ] The three Residential milestones are listed, each with its due date
-- [ ] The three Office milestones are listed
-- [ ] The same name **Handover** in both projects doesn't clash
-- [ ] Luka sees the milestones but no **+ New Milestone** button
+- [x] The three Residential milestones are listed, each with its due date
+- [x] The three Office milestones are listed
+- [x] The same name **Handover** in both projects doesn't clash
+- [x] Luka sees the milestones but no **+ New Milestone** button
 
 ## ONB-26 Create the day-1 jobs
 **As:** Ana (Residential owner), then Nikola (Office owner) · **Day:** 1 · **Needs:** ONB-25 done
@@ -378,11 +378,11 @@ Later areas rely on this data (notifications in `09`, schedules in `08`, jobs in
 
 Don't change their deadlines, assignees or status before the day plan reaches them.
 
-- [ ] All eight jobs are created as **New**, each with a friendly ID
-- [ ] The Day 3 and Day 4 deadlines show the right dates, and "Order bathroom fittings for 14 Elm St" shows no deadline
-- [ ] Each job shows its milestone, and the **Grouped** view lists it under that milestone
-- [ ] Each assignee other than the job's creator gets a notification for their job (Nikola gets none for the carpet job he created and assigned to himself)
-- [ ] Creating a job with an empty title shows "Title is required"
+- [x] All eight jobs are created as **New**, each with a friendly ID
+- [x] The Day 3 and Day 4 deadlines show the right dates, and "Order bathroom fittings for 14 Elm St" shows no deadline
+- [x] Each job shows its milestone, and the **Grouped** view lists it under that milestone
+- [x] Each assignee other than the job's creator gets a notification for their job (Nikola gets none for the carpet job he created and assigned to himself)
+- [x] Creating a job with an empty title shows "Title is required"
 
 ## ONB-27 A member sees only their own jobs, and can create one
 **As:** Luka (member) · **Day:** 1 · **Needs:** ONB-26 done
@@ -391,10 +391,10 @@ Don't change their deadlines, assignees or status before the day plan reaches th
 2. Open **Office Refurbishments**, **Jobs**.
 3. In Residential click **+ New Job**. Title "Fix leaking tap at 7 Cedar Close", Client "Whitfield family", **Assign to** Luka, Priority Medium, no deadline. Click **Create job**.
 
-- [ ] Residential lists only "Tile bathroom at 14 Elm St" and "Install kitchen worktops at 31 Oak Ave"
-- [ ] Office lists only "Replace ceiling lights in the open-plan office"
-- [ ] **Create job** works for a member, and the new job appears in Luka's list
-- [ ] Ana sees "Fix leaking tap at 7 Cedar Close" in Residential, along with every other job
+- [x] Residential lists only "Tile bathroom at 14 Elm St" and "Install kitchen worktops at 31 Oak Ave"
+- [x] Office lists only "Replace ceiling lights in the open-plan office"
+- [x] **Create job** works for a member, and the new job appears in Luka's list
+- [x] Ana sees "Fix leaking tap at 7 Cedar Close" in Residential, along with every other job
 
 ## ONB-28 The spring maintenance job and the first notes
 **As:** Ana (owner), then Luka, then Ivana · **Day:** 1 · **Needs:** ONB-26 done
@@ -404,10 +404,10 @@ Don't change their deadlines, assignees or status before the day plan reaches th
 3. As Luka, open the same job and add the note "Bathroom floor is level, ready to tile once tiles arrive."
 4. As Ivana, open "Fit partition walls on the 3rd floor" in Office Refurbishments and add "Frames delivered to site, waiting for plasterboard."
 
-- [ ] The Spring Maintenance job is created
-- [ ] Each note first asks "Notes cannot be edited or deleted. Add anyway?"
-- [ ] The notes show on the job with author and time, in order, with no edit or delete button
-- [ ] The Office job still shows **Notes**, but not **Relationships**, **Links** or **Job History**, as set in ONB-23
+- [x] The Spring Maintenance job is created
+- [x] Each note first asks "Notes cannot be edited or deleted. Add anyway?"
+- [x] The notes show on the job with author and time, in order, with no edit or delete button
+- [x] The Office job still shows **Notes**, but not **Relationships**, **Links** or **Job History**, as set in ONB-23
 
 ## ONB-29 Forgot password
 **As:** Ivana (signed out) · **Day:** 1 · **Needs:** ONB-13 done
@@ -417,10 +417,10 @@ Don't change their deadlines, assignees or status before the day plan reaches th
 3. Choose a new password and update your password manager.
 4. Sign in with the new password.
 
-- [ ] A message says an email will arrive shortly
-- [ ] The email arrives in the OpsClear layout, with a **Reset password** button and a link expiry
-- [ ] The reset page accepts a new password
-- [ ] Signing in with the new password opens the app, and the old password is rejected
+- [x] A message says an email will arrive shortly
+- [x] The email arrives in the OpsClear layout, with a **Reset password** button and a link expiry
+- [x] The reset page accepts a new password
+- [x] Signing in with the new password opens the app, and the old password is rejected
 
 ## ONB-30 Pine & Pixel: sign-up, the slug rule and the one-org rule
 **As:** Petra (new user), then Sara · **Day:** 1 · **Needs:** ONB-01 ticked
@@ -498,3 +498,4 @@ judged in Luka's scenarios in the other area files.
 - ONB-08: JOB-397 (Bug) right after a successful Paddle payment the page shows a 500 instead of **Processing your payment**; the subscription is there after a manual refresh.
 - ONB-10/ONB-11: JOB-399 (UX), with JOB-398 (Backend) first: a new invitee lands on the login page with no invite context, re-types the email, verifies it and clicks Accept a second time. Proposed: a public invite page with sign-up and automatic joining.
 - ONB-20: JOB-400 (Bug) the project member search (**Search by email…**) lists registered users from every organisation, not just Brightline members, and only matches the email, not first or last name.
+- ONB-29: JOB-404 (UX) there is no way to change your password from inside the app; a signed-in user has to sign out and use **Forgot password?**.
