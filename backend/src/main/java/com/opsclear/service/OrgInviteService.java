@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.dto.PublicInviteResponse;
 import com.opsclear.dto.SendInviteRequest;
 import com.opsclear.event.InviteAcceptedEvent;
 import com.opsclear.event.InviteEmailRequestedEvent;
@@ -10,6 +11,7 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.exception.TooManyRequestsException;
 import com.opsclear.model.OrgInviteModel;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrgInviteRepository;
@@ -119,10 +121,20 @@ public class OrgInviteService {
         log.info("Invite {} revoked by {} in organisation {}", inviteId, callerId, orgId);
     }
 
+    // Public lookup for the invite landing page (JOB-398): any state, so the page can explain an
+    // accepted, revoked or expired invite. An invite to a deleted organisation counts as unknown.
+    @Transactional(readOnly = true)
+    public PublicInviteResponse getPublicInvite(String token) {
+        OrgInviteModel invite = requireInviteByToken(token);
+        OrganisationModel organisation = organisationRepository
+                .findByIdAndDeletedAtIsNull(invite.getOrganisationId())
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.OrgInvite.NOT_FOUND));
+        return PublicInviteResponse.from(invite, organisation.getName());
+    }
+
     @Transactional
     public OrgInviteModel acceptInvite(String token, UUID callerId) {
-        OrgInviteModel invite = orgInviteRepository.findByToken(token)
-                .orElseThrow(() -> new NotFoundException(ErrorMessages.OrgInvite.NOT_FOUND));
+        OrgInviteModel invite = requireInviteByToken(token);
         requireInvitePending(invite);
 
         String callerEmail = userRepository.findById(callerId)
@@ -212,6 +224,11 @@ public class OrgInviteService {
     private OrgInviteModel requireInviteRecord(UUID orgId, UUID inviteId) {
         return orgInviteRepository.findById(inviteId)
                 .filter(i -> i.getOrganisationId().equals(orgId))
+                .orElseThrow(() -> new NotFoundException(ErrorMessages.OrgInvite.NOT_FOUND));
+    }
+
+    private OrgInviteModel requireInviteByToken(String token) {
+        return orgInviteRepository.findByToken(token)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.OrgInvite.NOT_FOUND));
     }
 

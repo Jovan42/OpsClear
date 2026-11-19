@@ -67,6 +67,7 @@ class OrgInviteIntegrationTest {
 
     private static final long MAIL_WAIT_MS = 5_000;
     private static final Duration OUTSIDE_COOLDOWN = Duration.ofMinutes(6);
+    private static final Instant PUBLIC_INVITE_EXPIRY = Instant.parse("2030-01-02T03:04:05Z");
 
     // In-memory SMTP on the test profile's spring.mail.port (3025), fresh for every test (JOB-342)
     @RegisterExtension
@@ -814,7 +815,149 @@ class OrgInviteIntegrationTest {
                 .as("invite still pending").isTrue();
     }
 
+    // ─── getPublicInvite (JOB-398) ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturnOnlyPublicFieldsWithPending_whenCalledWithoutJwt")
+    void getPublicInvite_shouldReturnOnlyPublicFieldsWithPending_whenCalledWithoutJwt() throws Exception {
+        OrgInviteModel invite = saveInvite("pending-token", PUBLIC_INVITE_EXPIRY);
+
+        String body = mockMvc.perform(get(ApiPaths.publicInvite("pending-token")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.organisationName").value("Acme Corp"))
+                .andExpect(jsonPath("$.inviterName").value("Owner"))
+                .andExpect(jsonPath("$.email").value("invitee@example.com"))
+                .andExpect(jsonPath("$.expiresAt").value("2030-01-02T03:04:05Z"))
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andReturn().getResponse().getContentAsString();
+
+        // The token is the only secret: no ids, no token, nothing beyond what the page shows
+        List<String> fields = new ArrayList<>();
+        objectMapper.readTree(body).fieldNames().forEachRemaining(fields::add);
+        assertThat(fields).containsExactlyInAnyOrder(
+                "organisationName", "inviterName", "email", "expiresAt", "status");
+        assertThat(orgInviteRepository.findById(invite.getId()).orElseThrow().isPending())
+                .as("a lookup doesn't change the invite").isTrue();
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturnAccepted_whenInviteAccepted")
+    void getPublicInvite_shouldReturnAccepted_whenInviteAccepted() throws Exception {
+        orgInviteRepository.markAccepted(saveInvite("accepted-token", PUBLIC_INVITE_EXPIRY).getId());
+
+        assertPublicStatus("accepted-token", "ACCEPTED");
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturnRevoked_whenInviteRevoked")
+    void getPublicInvite_shouldReturnRevoked_whenInviteRevoked() throws Exception {
+        orgInviteRepository.markRevoked(saveInvite("revoked-token", PUBLIC_INVITE_EXPIRY).getId());
+
+        assertPublicStatus("revoked-token", "REVOKED");
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturnExpired_whenInvitePastExpiry")
+    void getPublicInvite_shouldReturnExpired_whenInvitePastExpiry() throws Exception {
+        saveInvite("expired-token", Instant.now().minus(1, ChronoUnit.DAYS));
+
+        assertPublicStatus("expired-token", "EXPIRED");
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturn200_whenCalledWithJwt")
+    void getPublicInvite_shouldReturn200_whenCalledWithJwt() throws Exception {
+        saveInvite("signed-in-token", PUBLIC_INVITE_EXPIRY);
+
+        mockMvc.perform(get(ApiPaths.publicInvite("signed-in-token"))
+                        .with(jwt().jwt(j -> j.subject(outsiderId.toString())
+                                .claim("email", "outsider@example.com").claim("name", "Outsider"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturn404_whenTokenDoesNotExist")
+    void getPublicInvite_shouldReturn404_whenTokenDoesNotExist() throws Exception {
+        mockMvc.perform(get(ApiPaths.publicInvite("nonexistent-token")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.OrgInvite.NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturn404_whenOrganisationDeleted")
+    void getPublicInvite_shouldReturn404_whenOrganisationDeleted() throws Exception {
+        saveInvite("deleted-org-token", PUBLIC_INVITE_EXPIRY);
+        OrganisationModel org = organisationRepository.findById(orgId).orElseThrow();
+        org.softDelete();
+        organisationRepository.save(org);
+
+        mockMvc.perform(get(ApiPaths.publicInvite("deleted-org-token")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(ErrorMessages.OrgInvite.NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("getPublicInvite_shouldReturn404WithoutInvite_whenTokenMissing")
+    void getPublicInvite_shouldReturn404WithoutInvite_whenTokenMissing() throws Exception {
+        saveInvite("some-token", PUBLIC_INVITE_EXPIRY);
+
+        mockMvc.perform(get(ApiPaths.publicInvite("")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.email").doesNotExist())
+                .andExpect(jsonPath("$.organisationName").doesNotExist());
+    }
+
+    // Guards the permitAll in SecurityConfig: GET only, and only the single-segment path
+    @Test
+    @DisplayName("publicInvitePath_shouldReturn401_whenPostedWithoutJwt")
+    void publicInvitePath_shouldReturn401_whenPostedWithoutJwt() throws Exception {
+        saveInvite("post-token", PUBLIC_INVITE_EXPIRY);
+
+        mockMvc.perform(post(ApiPaths.publicInvite("post-token")))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("acceptPath_shouldReturn401_whenFetchedWithoutJwt")
+    void acceptPath_shouldReturn401_whenFetchedWithoutJwt() throws Exception {
+        saveInvite("get-accept-token", PUBLIC_INVITE_EXPIRY);
+
+        mockMvc.perform(get(ApiPaths.acceptInvite("get-accept-token")))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("acceptInvite_shouldReturn401AndNotJoin_whenCalledWithoutJwt")
+    void acceptInvite_shouldReturn401AndNotJoin_whenCalledWithoutJwt() throws Exception {
+        OrgInviteModel invite = saveInvite("anon-accept-token", PUBLIC_INVITE_EXPIRY);
+
+        mockMvc.perform(post(ApiPaths.acceptInvite("anon-accept-token")))
+                .andExpect(status().isUnauthorized());
+
+        assertThat(orgInviteRepository.findById(invite.getId()).orElseThrow().isPending())
+                .as("invite still pending").isTrue();
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
+
+    private OrgInviteModel saveInvite(String token, Instant expiresAt) {
+        return orgInviteRepository.save(OrgInviteModel.builder()
+                .organisationId(orgId)
+                .email("invitee@example.com")
+                .invitedBy(ownerId)
+                .token(token)
+                .expiresAt(expiresAt)
+                .build());
+    }
+
+    private void assertPublicStatus(String token, String expectedStatus) throws Exception {
+        mockMvc.perform(get(ApiPaths.publicInvite(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.organisationName").value("Acme Corp"))
+                .andExpect(jsonPath("$.email").value("invitee@example.com"))
+                .andExpect(jsonPath("$.status").value(expectedStatus));
+    }
 
     private JsonNode createInvite(String email, String language) throws Exception {
         Map<String, String> request = language == null

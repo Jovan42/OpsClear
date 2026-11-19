@@ -228,8 +228,12 @@ final class ApiPaths {
         return orgInvite(orgId, inviteId) + "/resend";
     }
 
+    static String publicInvite(String token) {
+        return "/api/invites/" + token;
+    }
+
     static String acceptInvite(String token) {
-        return "/api/invites/" + token + "/accept";
+        return publicInvite(token) + "/accept";
     }
 
     // --- Subscription catalog ---
