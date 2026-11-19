@@ -1,0 +1,84 @@
+export const frontmatter = {
+  title: 'Podešavanja organizacije',
+  description: 'Promenite naziv organizacije, izaberite slova u ID-jevima poslova i projekata, upravljajte članovima i pozivnicama i obrišite organizaciju.',
+};
+
+# Podešavanja organizacije
+
+Organizacija je radni prostor vaše firme, a njena stranica sa podešavanjima je mesto gde se starate o celini: ko je unutra, kako se zove, kako izgledaju ID-jevi i za šta plaćate.
+
+## Otvorite podešavanja
+
+Kliknite na svoje ime gore desno i izaberite **Organizacija**. Stranica **Podešavanja organizacije** ima ove odeljke: **Članovi**, **Detalji**, **Prefiksi ID-jeva**, a zatim, zavisno od vaše uloge i dodataka, **Šabloni organizacije**, **Pretplata**, **Istorija naplate** i **Opasna zona**.
+
+<Screenshot src="/guide/sr/organisation-settings-1.webp" alt="Podešavanja organizacije: odeljak Članovi sa dugmadima Upravljaj članovima i Pozivnice, odeljak Detalji sa nazivom Acme Plumbing i oznakom od tri slova i početak odeljka Prefiksi ID-jeva" caption="Vrh podešavanja organizacije." />
+
+Svako u organizaciji može da otvori stranicu, ali Članovi vide samo listu članova i detalje. Detalji i prefiksi ID-jeva su samo za čitanje osim ako niste Vlasnik.
+
+## Naziv i oznaka
+
+<RoleBadge role="Owner" />
+
+U odeljku **Detalji** promenite **Naziv** ili **Skraćenica**, pa kliknite na **Sačuvaj izmene**. Skraćenica je kratka oznaka organizacije: 2 do 3 slova, različita od oznake svake druge organizacije. Ako je oznaka zauzeta, vidite poruku "An organisation with this slug already exists".
+
+## Prefiksi ID-jeva
+
+<RoleBadge role="Owner" />
+
+Svaki posao, projekat, etapa i šablon ima ID kao što je JOB-042. **Prefiksi ID-jeva** vam omogućavaju da izaberete slova ispred broja, na primer TSK umesto JOB.
+
+<Steps>
+  <Step title="Upišite nova slova">
+    U polja **Projekti**, **Poslovi**, **Etape** ili **Šabloni** upišite 2 ili 3 slova. Ispod svakog polja red kao "Sledeći posao: JOB-013" pokazuje kako će izgledati sledeći ID.
+  </Step>
+  <Step title="Neka budu različita">
+    Svaka vrsta traži svoja slova. Ako dva polja imaju ista slova, vidite "Svaki prefiks mora biti različit".
+  </Step>
+  <Step title="Sačuvajte">
+    Kliknite na **Sačuvaj izmene**, pa na **Promeni prefikse** da potvrdite.
+  </Step>
+</Steps>
+
+Nova slova dobijaju samo novi zapisi. ID-jevi koji već postoje zadržavaju svoja, a linkovi ka njima i dalje rade.
+
+<Screenshot src="/guide/sr/organisation-settings-2.webp" alt="Odeljak Prefiksi ID-jeva sa četiri polja za Projekte, Poslove, Etape i Šablone, svako sa redom koji pokazuje sledeći ID, a ispod njega Šabloni organizacije i odeljak Pretplata" caption="Četiri polja, po jedno za svaku vrstu ID-ja, svako pokazuje sledeći ID." />
+
+## Članovi
+
+Kliknite na **Upravljaj članovima** da otvorite stranicu **Članovi**.
+
+<Screenshot src="/guide/sr/organisation-settings-3.webp" alt="Stranica Članovi sa poljem za pretragu, poljem za ulogu i dugmetom Dodaj iznad tabele sa četiri osobe: Vlasnik sa oznakom i tri osobe sa poljem za ulogu i vezom Ukloni" caption="Stranica Članovi navodi sve u organizaciji." />
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+- Da dodate nekoga ko već ima OpsClear nalog, upišite njegovu email adresu u **Pretraga po email adresi…**, kliknite na njega na listi, izaberite **Član** ili **Administrator** i kliknite na **Dodaj**.
+- Da nekoga uklonite, kliknite na **Ukloni** i potvrdite. Osoba gubi pristup organizaciji i njenim projektima.
+- Vlasnik ne može da se ukloni.
+
+<RoleBadge role="Owner" />
+
+Ulogu osobe može da promeni samo Vlasnik, poljem za ulogu u njenom redu.
+
+Za ljude koji još nemaju nalog koristite pozivnicu. Kliknite na **Pozivnice** na stranici sa podešavanjima. Pogledajte [Pozovite svoj tim](/guide/invite-team).
+
+<Screenshot src="/guide/sr/organisation-settings-4.webp" alt="Stranica Pozivnice na čekanju sa poljem za email adresu i dugmetom Pošalji pozivnicu iznad dve pozivnice na čekanju, svaka sa vezama Kopiraj link, Pošalji ponovo i Poništi" caption="Pozivnice koje još nisu prihvaćene." />
+
+## Šabloni za celu organizaciju
+
+Uz dodatak Job templates, **Šabloni organizacije** navode šablone koje može da koristi svaki projekat. Vlasnici i Administratori ih ovde dodaju, menjaju i brišu. Pogledajte [Šabloni i tipovi poslova](/guide/templates-and-types).
+
+## Pretplata i naplata
+
+<RoleBadge role="Owner" />
+
+Vlasnik na ovoj stranici vidi i **Pretplata** i **Istorija naplate**. Pogledajte [Pretplata i dodaci](/guide/subscription).
+
+## Obrišite organizaciju
+
+<RoleBadge role="Owner" />
+
+Na dnu, **Opasna zona** ima **Obriši organizaciju**. Kliknite na nju i potvrdite u prozoru koji se otvori.
+
+<Callout type="warning">
+Brisanje organizacije se ne može poništiti.
+</Callout>

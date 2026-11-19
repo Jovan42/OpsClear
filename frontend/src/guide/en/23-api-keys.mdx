@@ -1,0 +1,53 @@
+export const frontmatter = {
+  title: 'API keys',
+  description: 'Create a key so another program can use OpsClear for you, see where it is used, and revoke it when you no longer need it.',
+};
+
+# API keys
+
+An API key lets another program, such as a script or a tool your company already uses, work with OpsClear on your behalf, without your password. You make a key, give it to the program, and cancel it when you no longer need it.
+
+<FeatureLink card="api-keys" />
+
+<Callout type="note">
+API keys are an add-on. If your organisation doesn't have it, the section says it isn't included in your plan. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+Every key is personal. A program that uses your key can see and do what you can, and no more. If your access changes, so does the key's.
+
+## Create a key
+
+<Steps>
+  <Step title="Open your settings">
+    Click your name at the top right and choose **Account settings**, then click **API keys** in the list of sections.
+  </Step>
+  <Step title="Start a new key">
+    Click **+ New API Key**. A window opens.
+  </Step>
+  <Step title="Name it">
+    In **Name**, say what the key is for, for example "Accounting export". The name helps you remember which program has which key. Click **Create**.
+  </Step>
+  <Step title="Copy the key">
+    The key appears once. Click **Copy**, paste it where the program asks for it, then click **I've copied it, close**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/api-keys-2.webp" alt="The New API Key window with a Name box and Cancel and Create buttons" caption="Give the key a name that says what it is for." />
+
+<Callout type="warning">
+OpsClear shows the key only once, and can't show it again. Keep it secret, like a password. If you lose it, revoke it and create a new one.
+</Callout>
+
+## Your keys
+
+The **API Keys** section lists your keys. Each shows its name, the first characters of the key, when it was created and when it was last used, or **Never used**. A key that nobody has used for 90 days or more is marked **Unused 90+ days**, a hint that you can probably remove it.
+
+<Screenshot src="/guide/en/api-keys-1.webp" alt="The API Keys list with two keys, each with its name, the start of the key, a Never used note and a Revoke button" caption="Each key shows its name and when it was last used." />
+
+## Revoke a key
+
+Click **Revoke** next to the key, then **Revoke** again to confirm. Any program using that key stops working straight away, and the key can't be brought back. Create a new one if you need it again.
+
+## If a program is told "Too many requests"
+
+A key has a limit on how fast it can be used. A program that sends requests too quickly is told to wait and try again. A well-written program does this by itself. If yours keeps failing, ask whoever set it up to slow it down.

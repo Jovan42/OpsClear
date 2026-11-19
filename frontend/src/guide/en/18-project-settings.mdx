@@ -1,0 +1,74 @@
+export const frontmatter = {
+  title: 'Project settings',
+  description: 'Rename a project, manage its people and block reasons, choose what job pages show, and complete or delete the project.',
+};
+
+# Project settings
+
+Each project has its own settings page. It's where you rename the project, manage who is in it, tidy the list of block reasons, decide what the job pages show, and finally close the project when the work is done.
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Owners and Admins can change the settings. Members can open the page, but they only look. Closing or deleting the project is for the Owner only.
+
+## Open the settings
+
+In the project's top bar, click **Settings**. The page is called **Project Settings** and has these sections, from the top: **Details**, **Members**, **Block Reasons**, **Job screen** and **Danger zone**.
+
+<Screenshot src="/guide/en/project-settings-1.webp" alt="Project Settings: the Details section with the name Kitchen refit and an empty description, and the start of the Members section" caption="The top of Project Settings: Details, then Members." />
+
+## Details
+
+Change the **Name** or the **Description**, then click **Save changes**. The description can be formatted, and **Preview** shows how it will look. The button stays grey until you change something.
+
+## Members
+
+Add people, change their role or remove them here. [Create a project and add members](/guide/first-project) shows how to add someone, and [Roles and permissions](/guide/roles-permissions) explains the roles.
+
+- Choose **Member** or **Admin** in the role box to change someone's role. Click **Remove** to take them out of the project.
+- The Owner's role can't be changed, and you can't change your own.
+
+## Block reasons
+
+The **Block Reasons** section lists the ready-made reasons people can pick when they block a job. Click **Remove** next to one to take it off the list. The list also grows by itself: when someone types a new reason while blocking a job, it is added for next time. See [When a job is blocked](/guide/job-blocked).
+
+## What job pages show
+
+The **Job screen** section decides which parts appear on the jobs of this project.
+
+<Steps>
+  <Step title="Find Sections shown on jobs">
+    Scroll to **Job screen**. **Sections shown on jobs** lists **Notes**, **Approvals**, **Relationships**, **Links** and **Job status history**, each with a switch.
+  </Step>
+  <Step title="Switch a section off">
+    Turn off a section this project doesn't use. It disappears from every job in the project. A message confirms the change, and it is saved straight away.
+  </Step>
+  <Step title="Bring it back any time">
+    Switch it on again and the section returns with everything in it. Nothing is deleted.
+  </Step>
+</Steps>
+
+A section whose add-on your organisation doesn't have is switched off and marked **Not in your plan**. See [Subscription and add-ons](/guide/subscription).
+
+### Require approval to complete jobs
+
+Under the sections you also find **Require approval to complete jobs**. When it is on, Members ask for approval before a job can be completed, and Owners and Admins complete jobs directly. How it works is on [When a job needs approval](/guide/job-approval).
+
+<Callout type="note">
+This switch needs the Approvals add-on. Without it the switch is locked, and if it was already on, the rule isn't applied. You can still turn it off.
+</Callout>
+
+<Screenshot src="/guide/en/project-settings-2.webp" alt="The Job screen section with switches for Notes, Approvals, Relationships, Links and Job status history, the Require approval to complete jobs switch, and below them the Danger zone with Complete project and Delete project" caption="Job screen switches, then the Danger zone at the bottom." />
+
+## Complete or delete the project
+
+<RoleBadge role="Owner" />
+
+The **Danger zone** is at the bottom of the page.
+
+- **Complete project** closes the project once every job in it is completed. If a job is still open, OpsClear tells you how many. A completed project stays in the list under **Completed** but no longer accepts changes. Click **Reactivate** to open it again.
+- **Delete project** removes the project together with its jobs, notes and approvals.
+
+<Callout type="warning">
+Deleting a project can't be undone. OpsClear asks you to type the project's name before it deletes anything.
+</Callout>

@@ -1,0 +1,76 @@
+export const frontmatter = {
+  title: 'Uloge i dozvole',
+  description: 'Ko šta sme da radi u OpsClear-u: tri uloge u vašoj organizaciji i tri uloge u svakom projektu.',
+};
+
+# Uloge i dozvole
+
+Svako u OpsClear-u ima ulogu, a uloga određuje šta sme da vidi i menja. Postoje dve vrste: uloga u organizaciji i uloga u svakom projektu. One su nezavisne, pa ista osoba može biti Administrator u organizaciji, a Član jednog projekta.
+
+## Uloge u organizaciji
+
+Svaka osoba pripada jednoj organizaciji i u njoj ima jednu od tri uloge.
+
+| Uloga | Ko je to |
+|-------|----------|
+| Vlasnik | Ko je napravio organizaciju. Postoji jedan Vlasnik |
+| Administrator | Neko koga je Vlasnik unapredio. Pomaže u vođenju organizacije |
+| Član | Svi ostali. Novi ljudi se pridružuju kao Članovi |
+
+Vlasnik može da promeni ulogu osobe između **Član** i **Administrator** na stranici **Članovi**. Niko ne može da dodeli ili oduzme ulogu Vlasnika.
+
+| Šta | Vlasnik | Administrator | Član |
+|-----|:-------:|:-------------:|:----:|
+| Vidi ko je u organizaciji | Da | Da | Da |
+| Poziva, dodaje i uklanja ljude | Da | Da | Ne |
+| Menja nečiju ulogu | Da | Ne | Ne |
+| Menja naziv, skraćenicu i slova u ID-jevima organizacije | Da | Ne | Ne |
+| Upravlja pretplatom i naplatom | Da | Ne | Ne |
+| Briše organizaciju | Da | Ne | Ne |
+| Otvara stranicu **Pregled** | Da | Da | Ne |
+| Pravi projekat | Da | Da | Da |
+
+Svako u organizaciji može da napravi projekat i postaje Vlasnik tog projekta. Pogledajte [Podešavanja organizacije](/guide/organisation-settings).
+
+<Screenshot src="/guide/sr/roles-permissions-1.webp" alt="Stranica Članovi sa četiri osobe i njihovim ulogama: Vlasnik ima oznaku, ostali imaju polje za ulogu i vezu Ukloni" caption="Stranica Članovi organizacije. Vlasnik ima oznaku, ostali imaju polje za ulogu." />
+
+## Uloge u projektu
+
+Unutar projekta osoba ima jednu od tri uloge.
+
+| Uloga | Ko je to |
+|-------|----------|
+| Vlasnik | Ko je napravio projekat. Postoji jedan Vlasnik i ta uloga se ne može dati nikome drugom |
+| Administrator | Stara se o poslovima i ljudima u projektu |
+| Član | Radi na poslovima koji su mu dodeljeni |
+
+| Šta | Vlasnik | Administrator | Član |
+|-----|:-------:|:-------------:|:----:|
+| Vidi poslove projekta | Sve | Sve | Samo poslove koji su mu dodeljeni |
+| Pravi posao | Da | Da | Da |
+| Menja detalje posla, dodeljuje ga, briše ga | Da | Da | Ne |
+| Menja status posla | Da | Da | Samo svojih poslova |
+| Ponovo otvara završen posao | Da | Da | Ne |
+| Dodaje belešku, traži odobrenje | Da | Da | Samo na svojim poslovima |
+| Odobrava ili odbija zahteve | Da | Da | Ne |
+| Menja ili uklanja linkove posla, dodaje ili uklanja veze | Da | Da | Ne |
+| Upravlja etapama, šablonima, tipovima poslova i ponavljajućim poslovima | Da | Da | Ne |
+| Menja podešavanja projekta, dodaje i uklanja ljude | Da | Da | Ne |
+| Vidi statistiku svake osobe | Da | Da | Ne |
+| Završava, ponovo aktivira ili briše projekat | Da | Ne | Ne |
+
+Član vidi kontrolnu tablu i statistiku samo za svoje poslove. U projektu koji traži odobrenje pre završetka poslova, Član traži odobrenje umesto da sam završi posao: pogledajte [Kada posao traži odobrenje](/guide/job-approval).
+
+<Callout type="note">
+Nekoliko funkcija su dodaci. Ako ih vaša organizacija nema, niko ih ne vidi, bez obzira na ulogu. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Dodajte ili promenite ljude u projektu
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Ljudi koje dodajete u projekat već moraju biti u organizaciji, a mogu se dodati kao **Član** ili **Administrator**. Ulogu možete promeniti, ili osobu ukloniti, u odeljku **Članovi** u podešavanjima projekta. Uloga Vlasnika ne može se menjati ni ukloniti, a ni svoju ulogu ne možete promeniti.
+
+<Screenshot src="/guide/sr/roles-permissions-2.webp" alt="Podešavanja projekta sa odeljkom Članovi: polje za pretragu, polje za ulogu i dugme Dodaj iznad liste ljudi i njihovih uloga" caption="Članovi projekta se dodaju i menjaju u podešavanjima projekta." />
+
+Uklanjanjem osobe iz organizacije ona gubi pristup njenim projektima. Uklanjanjem iz jednog projekta osoba izlazi samo iz tog projekta. Pogledajte [Podešavanja projekta](/guide/project-settings).

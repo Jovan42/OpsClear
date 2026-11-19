@@ -1,0 +1,92 @@
+export const frontmatter = {
+  title: 'Subscription and add-ons',
+  description: 'Choose your plan and add-ons, pay, change or cancel the plan, see your payments, and what a locked feature means.',
+};
+
+# Subscription and add-ons
+
+Your organisation pays for OpsClear with one subscription. It has a base plan for the size of your team, and add-ons for the extra features you want. You can change your choice later.
+
+<RoleBadge role="Owner" />
+
+Only the Owner can set up or change the subscription and see the billing. Everyone else just uses what the plan includes.
+
+## Set up your subscription
+
+A new organisation has no subscription, and projects stay locked until the Owner sets one up. Until then, everyone except the Owner sees **Subscription required**, and the Owner sees **Set up your subscription**. Later you find the same section in **Organisation Settings**, under **Subscription**.
+
+<Steps>
+  <Step title="Choose the base plan">
+    Under **Base plan**, drag **Team members** and **Active projects** to the size you need. **Base price** shows what that costs each month.
+  </Step>
+  <Step title="Choose add-ons">
+    Under **Add-ons**, click each feature you want. A chosen card has a green border, and its price is added to the total.
+  </Step>
+  <Step title="Pick monthly or yearly">
+    Switch on **Annual billing** to pay for the year and save. The total shows the monthly amount either way.
+  </Step>
+  <Step title="Continue to payment">
+    Check the **Monthly total**, then click **Continue to payment**. A payment form opens on the page. Fill it in and pay.
+  </Step>
+  <Step title="Wait a moment">
+    **Processing your payment** appears until the payment is confirmed, which can take a moment. The page updates by itself.
+  </Step>
+</Steps>
+
+<Callout type="note">
+If you see "This plan isn't available for checkout yet", try again a little later.
+</Callout>
+
+## The add-ons
+
+Every add-on adds one feature. Without it, that feature is locked.
+
+| Add-on | What it gives you |
+|--------|-------------------|
+| **Dashboard** | The [dashboard](/guide/dashboard) and the project [stats](/guide/stats-overview) |
+| **Approvals** | [Approval requests](/guide/job-approval) and the rule that jobs need approval to complete |
+| **Notes** | [Notes](/guide/notes-links-history) on jobs |
+| **Job status history** | The log of every [status change](/guide/notes-links-history) |
+| **Milestones** | [Milestones](/guide/milestones) that group jobs into phases |
+| **Job relationships** | [Links between jobs](/guide/job-relationships) |
+| **API keys** | [Keys](/guide/api-keys) to connect other programs |
+| **Job templates** | [Templates](/guide/templates-and-types) for jobs you create often |
+| **Recurring scheduling** | [Recurring jobs](/guide/recurring-jobs) created on a schedule |
+| **Job links** | [Web links](/guide/notes-links-history) on jobs and projects |
+| **Job types** | [Job types](/guide/templates-and-types) to sort jobs |
+
+The add-on names stay in English in both languages. **See all features →** next to **Subscription** opens a page that shows each feature at work.
+
+<Screenshot src="/guide/en/subscription-1.webp" alt="The lower part of the plan: add-on cards with a green border for each chosen add-on, the Annual billing switch, the Monthly total, a Save subscription button, a Billing box showing Active with Update payment method and Cancel subscription, the Billing history bar and the Danger zone" caption="Add-ons, the total and the Billing box on Organisation Settings." />
+
+## Change your plan
+
+Once you're paying, change the sliders, the add-ons or the billing period and click **Save subscription**. A window shows what happens before anything changes.
+
+- **Adding or upgrading** is charged right away, for the rest of the current billing period. The window shows **Charged now**, and **Credit applied** if you have a credit. Click **Confirm change**.
+- **Removing or downsizing** costs nothing now. You keep your current plan until the period ends, then the new plan starts. A **Plan change scheduled** box shows what's coming. Click **Cancel pending downgrade** to keep the current plan.
+
+You can't add something and remove something in the same change. OpsClear says so, and you save the two changes one after the other.
+
+## Billing
+
+The **Billing** box shows whether the subscription is **Active** or **Past due**.
+
+- **Update payment method** opens the payment form to change your card.
+- **Cancel subscription** stops it from renewing. It stays active until the end of the period you've paid for, and then the add-on features are locked. Until then, **Resume subscription** takes the cancellation back at no cost.
+
+<Callout type="warning">
+If a payment doesn't go through, the box says **Past due** and the Owner and Admins get a **Subscription past due** notification. Everyone can still see their data, but features that need an add-on can't be changed until the payment is sorted out. Click **Update payment method** to fix it.
+</Callout>
+
+## Your payments
+
+Click **Billing history** to open the list. Each payment shows its date, its status and the amount.
+
+<Screenshot src="/guide/en/subscription-2.webp" alt="The Billing history list opened, with three payments, each marked completed with its amount, above the Danger zone" caption="Billing history lists each payment with its status and amount." />
+
+## When a feature is locked
+
+A feature your organisation hasn't paid for shows a small lock in the project's top bar, or a button to upgrade where it would appear on a job. Click the lock and you see "is not included in your plan" and the button **Upgrade in org settings**. The Owner can use it to add the feature. Anyone else should ask the Owner.
+
+<Screenshot src="/guide/en/subscription-3.webp" alt="A project page with a lock beside Dashboard, Stats, Milestones and other names in the top bar, and a message that Milestones is not included in your plan with an Upgrade in org settings button" caption="A locked feature names itself and tells you where to add it." />
