@@ -4,24 +4,21 @@
 import { API, uniqueEmail, uniqueSlug, tokenFor, userIdFor, createOrgWithSubscription, addMember } from '../../support/orgApi';
 
 describe('Organisation Management — Members', () => {
-  // ADR-0049 happy path: "OWNER/ADMIN adds an existing user (found via search) as
-  // MEMBER/ADMIN". Was a real gap (JOB-244, fixed) — the search query was scoped to
-  // the caller's own org, so it could only ever surface a user who ALREADY belonged
-  // to your org, never someone genuinely new.
-  it('OWNER adds a genuinely new user via search, then promotes them to ADMIN', { tags: '@smoke' }, () => {
+  // JOB-400: user search only returns members of the caller's organisation, so the
+  // org direct-add form can no longer find someone new (JOB-401 replaces it with
+  // invites). The target joins the org via the API first; the promote flow stays
+  // covered here as the @smoke test.
+  it('OWNER promotes a new org member to ADMIN', { tags: '@smoke' }, () => {
     const ownerEmail = uniqueEmail('add-owner');
     const targetEmail = uniqueEmail('add-target');
     cy.createKeycloakUser(ownerEmail, 'E2E', 'Owner');
     cy.createKeycloakUser(targetEmail, 'Findme', 'Target');
-    userIdFor(targetEmail); // sync the target into the backend users table before searching for them
 
-    createOrgWithSubscription(ownerEmail, 'Add Corp', uniqueSlug());
+    createOrgWithSubscription(ownerEmail, 'Add Corp', uniqueSlug()).then((orgId) => {
+      userIdFor(targetEmail).then((userId) => addMember(orgId, ownerEmail, userId, 'MEMBER'));
+    });
     cy.loginAs(ownerEmail);
     cy.visit('/org/members');
-
-    cy.get('input[placeholder="Search by email…"]').type(targetEmail.split('@')[0]);
-    cy.contains('li', targetEmail, { timeout: 10000 }).click();
-    cy.contains('button', 'Add').click();
     cy.contains('td', targetEmail).should('be.visible');
 
     // Promote MEMBER -> ADMIN via the role <select> on their row — instant onChange,
@@ -285,15 +282,9 @@ describe('Organisation Management — Members', () => {
     cy.deleteKeycloakUser(memberEmail);
   });
 
-  // ADR-0049 originally expected search results scoped away from other orgs
-  // entirely. JOB-244 (fixed): that scoping was actually a bug — it was implemented
-  // as "only members of the CALLER's own org," which made it impossible to ever find
-  // a genuinely new candidate to invite (anyone findable was, by definition, already
-  // a member). Search is unscoped by design now — a user genuinely in a different
-  // org is a legitimate, findable result, same as any other registered user; the
-  // add-member picker's own client-side check is what prevents adding someone
-  // who's already a member of a DIFFERENT org (they'd need to leave it first).
-  it("user search finds a user from a different organisation too (unscoped by design, JOB-244)", () => {
+  // ADR-0049 multi-tenant isolation (JOB-400): searching from Org A for an Org B
+  // user's exact email returns nothing, through `q` and the deprecated `email` alias.
+  it('user search never returns a user from a different organisation', () => {
     const orgAOwnerEmail = uniqueEmail('isolation-a');
     const orgBOwnerEmail = uniqueEmail('isolation-b');
     cy.createKeycloakUser(orgAOwnerEmail, 'E2E', 'OrgA');
@@ -304,14 +295,16 @@ describe('Organisation Management — Members', () => {
     createOrgWithSubscription(orgBOwnerEmail, 'Org B', uniqueSlug());
 
     tokenFor(orgAOwnerEmail).then((token) => {
-      cy.request({
-        method: 'GET',
-        url: `${API}/api/users`,
-        qs: { email: orgBOwnerEmail },
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((res) => {
-        const emails = (res.body as Array<{ email: string }>).map((u) => u.email);
-        expect(emails).to.include(orgBOwnerEmail);
+      ['q', 'email'].forEach((param) => {
+        cy.request({
+          method: 'GET',
+          url: `${API}/api/users`,
+          qs: { [param]: orgBOwnerEmail },
+          headers: { Authorization: `Bearer ${token}` },
+        }).then((res) => {
+          expect(res.status).to.eq(200);
+          expect(res.body).to.have.length(0);
+        });
       });
     });
 
