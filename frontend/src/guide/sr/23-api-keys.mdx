@@ -1,0 +1,53 @@
+export const frontmatter = {
+  title: 'API ključevi',
+  description: 'Napravite ključ da drugi program može da koristi OpsClear umesto vas, vidite gde se koristi i opozovite ga kada vam više ne treba.',
+};
+
+# API ključevi
+
+API ključ omogućava drugom programu, na primer skripti ili alatu koji vaša firma već koristi, da radi sa OpsClear-om u vaše ime, bez vaše lozinke. Napravite ključ, date ga programu i otkažete ga kada vam više ne treba.
+
+<FeatureLink card="api-keys" />
+
+<Callout type="note">
+API ključevi su dodatak. Ako ga vaša organizacija nema, odeljak kaže da nije uključen u vaš plan. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+Svaki ključ je lični. Program koji koristi vaš ključ vidi i radi ono što i vi, i ništa više. Ako se vaš pristup promeni, menja se i pristup ključa.
+
+## Napravite ključ
+
+<Steps>
+  <Step title="Otvorite svoja podešavanja">
+    Kliknite na svoje ime gore desno i izaberite **Podešavanja naloga**, pa kliknite na **API ključevi** u listi odeljaka.
+  </Step>
+  <Step title="Započnite novi ključ">
+    Kliknite na **+ Novi API ključ**. Otvara se prozor.
+  </Step>
+  <Step title="Dajte mu ime">
+    U polje **Naziv** upišite čemu ključ služi, na primer "Accounting export". Ime vam pomaže da zapamtite koji program ima koji ključ. Kliknite na **Kreiraj**.
+  </Step>
+  <Step title="Kopirajte ključ">
+    Ključ se pojavljuje samo jednom. Kliknite na **Kopiraj**, nalepite ga tamo gde ga program traži, pa kliknite na **Kopirao/la sam, zatvori**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/api-keys-2.webp" alt="Prozor Novi API ključ sa poljem Naziv i dugmadima Otkaži i Kreiraj" caption="Dajte ključu ime koje kaže čemu služi." />
+
+<Callout type="warning">
+OpsClear prikazuje ključ samo jednom i ne može ga ponovo prikazati. Čuvajte ga u tajnosti, kao lozinku. Ako ga izgubite, opozovite ga i napravite novi.
+</Callout>
+
+## Vaši ključevi
+
+Odeljak **API ključevi** navodi vaše ključeve. Svaki pokazuje svoje ime, prve znakove ključa, kada je kreiran i kada je poslednji put korišćen, ili **Nikad korišćen**. Ključ koji niko nije koristio 90 dana ili duže označen je sa **Nekorišćen 90+ dana**, što je nagoveštaj da ga verovatno možete ukloniti.
+
+<Screenshot src="/guide/sr/api-keys-1.webp" alt="Lista API ključeva sa dva ključa, svaki sa imenom, početkom ključa, napomenom Nikad korišćen i dugmetom Opozovi" caption="Svaki ključ pokazuje svoje ime i kada je poslednji put korišćen." />
+
+## Opozovite ključ
+
+Kliknite na **Opozovi** pored ključa, pa ponovo na **Opozovi** da potvrdite. Svaki program koji koristi taj ključ odmah prestaje da radi, a ključ ne može da se vrati. Napravite novi ako vam ponovo zatreba.
+
+## Ako program dobije "Previše zahteva"
+
+Ključ ima ograničenje koliko brzo može da se koristi. Program koji šalje zahteve prebrzo dobija poruku da sačeka i pokuša ponovo. Dobro napisan program to radi sam. Ako vaš stalno ne uspeva, zamolite onoga ko ga je podesio da ga uspori.

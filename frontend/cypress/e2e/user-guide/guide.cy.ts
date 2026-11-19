@@ -1,7 +1,7 @@
 // ADR-0062 (JOB-356): the public user guide at /guide. Logged out for most of this file
 // (the guide needs no login); one test logs in to prove the app header replaces the public
-// nav. The Getting started pages are written (JOB-359); the rest show "Coming soon" until
-// their jobs land (Milestones, used below, is one of them).
+// nav. Every page in the guide is written; src/guide/content.test.ts checks that none falls back
+// to the "Coming soon" placeholder.
 
 import { uniqueEmail } from '../../support/orgApi';
 
@@ -65,7 +65,8 @@ describe('User guide', () => {
     cy.get('[data-testid=guide-section-planning]').contains('a', 'Milestones').click();
     cy.location('pathname').should('eq', '/guide/milestones');
     cy.contains('h1', 'Milestones').should('be.visible');
-    cy.get('[data-testid=guide-coming-soon]').should('contain', 'Coming soon');
+    cy.get('[data-testid=guide-coming-soon]').should('not.exist');
+    cy.contains('h2', 'Create a milestone').should('be.visible');
     cy.title().should('eq', 'Milestones · Guide · OpsClear');
     cy.get('[data-testid=guide-section-planning] a[aria-current=page]').should('have.text', 'Milestones');
 

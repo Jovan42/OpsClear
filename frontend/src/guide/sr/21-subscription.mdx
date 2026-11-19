@@ -1,0 +1,92 @@
+export const frontmatter = {
+  title: 'Pretplata i dodaci',
+  description: 'Izaberite plan i dodatke, platite, promenite ili otkažite plan, pogledajte svoja plaćanja i saznajte šta znači zaključana funkcija.',
+};
+
+# Pretplata i dodaci
+
+Vaša organizacija plaća OpsClear jednom pretplatom. Ona ima osnovni plan prema veličini vašeg tima i dodatke za funkcije koje želite povrh toga. Izbor možete kasnije da promenite.
+
+<RoleBadge role="Owner" />
+
+Samo Vlasnik može da podesi ili menja pretplatu i da vidi naplatu. Svi ostali samo koriste ono što plan uključuje.
+
+## Podesite pretplatu
+
+Nova organizacija nema pretplatu, a projekti ostaju zaključani dok je Vlasnik ne podesi. Do tada svi osim Vlasnika vide **Potrebna je pretplata**, a Vlasnik vidi **Podesite vašu pretplatu**. Kasnije isti odeljak nalazite u **Podešavanjima organizacije**, pod **Pretplata**.
+
+<Steps>
+  <Step title="Izaberite osnovni plan">
+    Pod **Osnovni plan** povucite **Članovi tima** i **Aktivni projekti** na veličinu koja vam treba. **Osnovna cena** pokazuje koliko to košta mesečno.
+  </Step>
+  <Step title="Izaberite dodatke">
+    Pod **Dodaci** kliknite na svaku funkciju koju želite. Izabrana kartica ima zelenu ivicu, a njena cena se dodaje na ukupan iznos.
+  </Step>
+  <Step title="Izaberite mesečno ili godišnje">
+    Uključite **Godišnja naplata** da platite za celu godinu i uštedite. Ukupan iznos u svakom slučaju pokazuje mesečni iznos.
+  </Step>
+  <Step title="Nastavite na plaćanje">
+    Proverite **Mesečni ukupno**, pa kliknite na **Nastavi na plaćanje**. Na stranici se otvara obrazac za plaćanje. Popunite ga i platite.
+  </Step>
+  <Step title="Sačekajte trenutak">
+    **Obrada vašeg plaćanja** se prikazuje dok se plaćanje ne potvrdi, što može potrajati nekoliko trenutaka. Stranica se ažurira sama.
+  </Step>
+</Steps>
+
+<Callout type="note">
+Ako vidite "Ovaj plan još nije dostupan za plaćanje", pokušajte ponovo nešto kasnije.
+</Callout>
+
+## Dodaci
+
+Svaki dodatak donosi jednu funkciju. Bez njega je ta funkcija zaključana.
+
+| Dodatak | Šta vam daje |
+|---------|--------------|
+| **Dashboard** | [Kontrolnu tablu](/guide/dashboard) i [statistiku](/guide/stats-overview) projekta |
+| **Approvals** | [Zahteve za odobrenje](/guide/job-approval) i pravilo da poslovi traže odobrenje za završetak |
+| **Notes** | [Beleške](/guide/notes-links-history) na poslovima |
+| **Job status history** | Zapis svake [promene statusa](/guide/notes-links-history) |
+| **Milestones** | [Etape](/guide/milestones) koje grupišu poslove u faze |
+| **Job relationships** | [Veze između poslova](/guide/job-relationships) |
+| **API keys** | [Ključeve](/guide/api-keys) za povezivanje drugih programa |
+| **Job templates** | [Šablone](/guide/templates-and-types) za poslove koje često pravite |
+| **Recurring scheduling** | [Ponavljajuće poslove](/guide/recurring-jobs) koji se prave po rasporedu |
+| **Job links** | [Web linkove](/guide/notes-links-history) na poslovima i projektima |
+| **Job types** | [Tipove poslova](/guide/templates-and-types) za razvrstavanje poslova |
+
+Nazivi dodataka ostaju na engleskom u oba jezika. **Pogledajte sve funkcije →** pored **Pretplata** otvara stranicu koja pokazuje svaku funkciju na delu.
+
+<Screenshot src="/guide/sr/subscription-1.webp" alt="Donji deo plana: kartice dodataka sa zelenom ivicom za svaki izabrani dodatak, prekidač Godišnja naplata, Mesečni ukupno, dugme Sačuvaj pretplatu, okvir Naplata sa oznakom Aktivno i dugmadima Ažuriraj način plaćanja i Otkaži pretplatu, traka Istorija naplate i Opasna zona" caption="Dodaci, ukupan iznos i okvir Naplata u Podešavanjima organizacije." />
+
+## Promenite plan
+
+Kada već plaćate, promenite klizače, dodatke ili period naplate i kliknite na **Sačuvaj pretplatu**. Prozor pokazuje šta će se desiti pre nego što se bilo šta promeni.
+
+- **Dodavanje ili povećanje** se naplaćuje odmah, za preostali deo tekućeg perioda naplate. Prozor pokazuje **Naplaćeno odmah**, a **Primenjen kredit** ako imate kredit. Kliknite na **Potvrdi promenu**.
+- **Uklanjanje ili smanjenje** ne košta ništa sada. Zadržavate trenutni plan do kraja perioda, a zatim počinje novi. Okvir **Zakazana promena plana** pokazuje šta dolazi. Kliknite na **Otkaži zakazano smanjenje** da zadržite trenutni plan.
+
+Ne možete u istoj promeni nešto da dodate i nešto da uklonite. OpsClear to kaže, a dve promene sačuvate jednu za drugom.
+
+## Naplata
+
+Okvir **Naplata** pokazuje da li je pretplata **Aktivno** ili **Kasni plaćanje**.
+
+- **Ažuriraj način plaćanja** otvara obrazac za plaćanje da promenite karticu.
+- **Otkaži pretplatu** zaustavlja obnavljanje. Ostaje aktivna do kraja perioda koji ste platili, a zatim se funkcije dodataka zaključavaju. Do tada, **Nastavi pretplatu** poništava otkazivanje bez troška.
+
+<Callout type="warning">
+Ako plaćanje ne prođe, okvir kaže **Kasni plaćanje**, a Vlasnik i Administratori dobijaju obaveštenje **Pretplata nije plaćena**. Svi i dalje mogu da vide svoje podatke, ali funkcije koje traže dodatak ne mogu da se menjaju dok se plaćanje ne reši. Kliknite na **Ažuriraj način plaćanja** da to popravite.
+</Callout>
+
+## Vaša plaćanja
+
+Kliknite na **Istorija naplate** da otvorite listu. Svako plaćanje pokazuje datum, status i iznos.
+
+<Screenshot src="/guide/sr/subscription-2.webp" alt="Otvorena lista Istorija naplate sa tri plaćanja, svako označeno kao završeno sa iznosom, iznad Opasne zone" caption="Istorija naplate navodi svako plaćanje sa statusom i iznosom." />
+
+## Kada je funkcija zaključana
+
+Funkcija koju vaša organizacija nije platila prikazuje malu bravu u gornjoj traci projekta, ili dugme za nadogradnju tamo gde bi se pojavila na poslu. Kliknite na bravu i vidite "nije uključeno u vaš plan" i dugme **Nadogradi u podešavanjima organizacije**. Vlasnik njime može da doda funkciju. Svi ostali treba da pitaju Vlasnika.
+
+<Screenshot src="/guide/sr/subscription-3.webp" alt="Stranica projekta sa bravom pored Kontrolne table, Statistike, Etapa i drugih naziva u gornjoj traci i porukom da Milestones nije uključeno u plan sa dugmetom Nadogradi u podešavanjima organizacije" caption="Zaključana funkcija kaže koja je i gde se dodaje." />

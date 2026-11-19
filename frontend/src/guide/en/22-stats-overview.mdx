@@ -1,0 +1,66 @@
+export const frontmatter = {
+  title: 'Stats and the Overview',
+  description: 'See how fast a project completes jobs, how much is late, and, as an Owner or Admin, every project and every waiting approval in one place.',
+};
+
+# Stats and the Overview
+
+Two pages answer the bigger questions. **Stats** shows how a project is doing over the past weeks: how many jobs are completed, how long they take and how many are late. The **Overview** shows an Owner or Admin all the projects in the organisation and the approvals waiting for them.
+
+## Stats
+
+<Callout type="note">
+Stats is part of the Dashboard add-on. If your organisation doesn't have it, the page says it isn't included in your plan. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+In the project's top bar, click **Stats**, next to **Dashboard**. The numbers cover the jobs completed in the range you choose.
+
+<Steps>
+  <Step title="Open Stats">
+    Click **Stats** in the project's top bar. The page is called **Team stats**. A Member sees **Your stats**, which counts only their own jobs.
+  </Step>
+  <Step title="Choose the range">
+    Click **4 weeks**, **12 weeks** or **26 weeks**. The page starts on the range you chose in your [preferences](/guide/preferences). Changing it here lasts only until you leave the page.
+  </Step>
+  <Step title="Read the tiles">
+    Five tiles sum it up, as described below. A dash means no job in the range has that number.
+  </Step>
+  <Step title="Look at the chart">
+    **Completed per week** has one bar per week, labelled with the day the week starts. The last bar is the week you are in now.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/stats-overview-1.webp" alt="The Team stats page with the 4, 12 and 26 weeks buttons, the Team and By member switch, five tiles and a bar chart called Completed per week" caption="Team stats: the range, the five tiles and the weekly chart." />
+
+| Tile | What it means |
+|------|---------------|
+| **Completed** | How many jobs were completed in the range |
+| **Avg. total time** | On average, how long from the job being created until it was completed |
+| **Avg. working time** | On average, how long from the job first being started until it was completed |
+| **Avg. blocked time** | On average, how long a completed job spent blocked |
+| **Completed late** | The share of completed jobs that had a deadline and finished after it. The line below says how many, for example "2 late out of 2 with a deadline" |
+
+A job counts in the week it was completed, so a job started long ago and finished this week shows up this week.
+
+### Stats for each person
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Click **By member** above the tiles to see a table with one row per person, with the same numbers. Click a name to see the tiles and chart for that person alone. **Showing: name** reminds you whose numbers you're looking at, and **Back to team** returns to the whole project. The rows aren't ranked, so the page doesn't read as a league table.
+
+<Screenshot src="/guide/en/stats-overview-2.webp" alt="The Team stats page with By member selected and a table listing each person with their completed jobs, average times and late share" caption="By member shows one row per person. Click a name to look at that person alone." />
+
+## The Overview
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+The Overview is for Owners and Admins of the organisation. Click your name at the top right and choose **Overview**. It has two parts.
+
+- **Pending Approvals** lists the requests waiting for a decision in the projects where you are an Owner or Admin. Each shows the job, the project, what was written and when it was requested. Click one to open the job and decide. Ten show at first, and a button such as **Show 5 more** adds more. This part needs the Approvals add-on.
+- **Project Directory** lists every project in the organisation, including ones you aren't part of, with its **Owner**, its **Status** (**Active** or **Completed**) and how many **Members** it has. Projects with the fewest members come first, because those are the ones where nobody may be looking.
+
+<Screenshot src="/guide/en/stats-overview-3.webp" alt="The Overview page with one pending approval on Move the gas pipe and a Project Directory table listing the project Kitchen refit with its owner, status and number of members" caption="Overview: approvals waiting for you, and every project in the organisation." />
+
+<Callout type="tip">
+Don't want approvals on the Overview? Turn off **Show approvals on Overview** in [your preferences](/guide/preferences). The approvals badge in the menu stays.
+</Callout>

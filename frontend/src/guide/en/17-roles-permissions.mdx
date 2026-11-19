@@ -1,0 +1,76 @@
+export const frontmatter = {
+  title: 'Roles and permissions',
+  description: 'Who can do what in OpsClear: the three roles in your organisation and the three roles in each project.',
+};
+
+# Roles and permissions
+
+Everyone in OpsClear has a role, and the role decides what they can see and change. There are two kinds: a role in the organisation, and a role in each project. They are separate, so the same person can be an Admin in the organisation and a Member of one project.
+
+## Roles in the organisation
+
+Each person belongs to one organisation and has one of three roles in it.
+
+| Role | Who they are |
+|------|--------------|
+| Owner | Whoever created the organisation. There is one Owner |
+| Admin | Someone the Owner has promoted. Helps run the organisation |
+| Member | Everyone else. New people join as Members |
+
+The Owner can change a person's role between **Member** and **Admin** on the **Members** page. Nobody can give or take away the Owner role.
+
+| What | Owner | Admin | Member |
+|------|:-----:|:-----:|:------:|
+| See who is in the organisation | Yes | Yes | Yes |
+| Invite people, add people, remove people | Yes | Yes | No |
+| Change someone's role | Yes | No | No |
+| Change the organisation's name, code and ID letters | Yes | No | No |
+| Manage the subscription and billing | Yes | No | No |
+| Delete the organisation | Yes | No | No |
+| Open the **Overview** page | Yes | Yes | No |
+| Create a project | Yes | Yes | Yes |
+
+Anyone in the organisation can create a project, and becomes the Owner of that project. See [Organisation settings](/guide/organisation-settings).
+
+<Screenshot src="/guide/en/roles-permissions-1.webp" alt="The Members page listing four people with their roles: the Owner has a badge, the others have a role box and a Remove link" caption="The organisation's Members page. The Owner has a badge, the others have a role box." />
+
+## Roles in a project
+
+Inside a project, a person has one of three roles.
+
+| Role | Who they are |
+|------|--------------|
+| Owner | Whoever created the project. There is one Owner, and the role can't be given to anyone else |
+| Admin | Looks after the project's jobs and people |
+| Member | Does the work on the jobs assigned to them |
+
+| What | Owner | Admin | Member |
+|------|:-----:|:-----:|:------:|
+| See the project's jobs | All | All | Only jobs assigned to them |
+| Create a job | Yes | Yes | Yes |
+| Change a job's details, assign it, delete it | Yes | Yes | No |
+| Change a job's status | Yes | Yes | Only their own jobs |
+| Reopen a completed job | Yes | Yes | No |
+| Add a note, ask for approval | Yes | Yes | Only on their own jobs |
+| Approve or reject requests | Yes | Yes | No |
+| Edit or remove a job's links, add or remove relationships | Yes | Yes | No |
+| Manage milestones, templates, job types and recurring jobs | Yes | Yes | No |
+| Change project settings, add and remove people | Yes | Yes | No |
+| See the stats of each person | Yes | Yes | No |
+| Complete, reactivate or delete the project | Yes | No | No |
+
+A Member sees the dashboard and stats for their own jobs only. In a project that asks for approval before jobs are completed, a Member asks for approval instead of completing a job: see [When a job needs approval](/guide/job-approval).
+
+<Callout type="note">
+Several features are add-ons. If your organisation doesn't have one, nobody sees that feature, whatever their role. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## Add or change people in a project
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+People you add to a project must already be in the organisation, and can be added as **Member** or **Admin**. You can change their role, or remove them, in the **Members** section of the project's settings. The Owner's role can't be changed or removed, and you can't change your own role.
+
+<Screenshot src="/guide/en/roles-permissions-2.webp" alt="Project Settings with the Members section: a search box, a role box and an Add button above the list of people and their roles" caption="Project members are added and changed in the project's settings." />
+
+Removing someone from the organisation takes away their access to its projects. Removing someone from one project only takes them out of that project. See [Project settings](/guide/project-settings).

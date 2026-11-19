@@ -1,0 +1,74 @@
+export const frontmatter = {
+  title: 'Podešavanja projekta',
+  description: 'Promenite naziv projekta, upravljajte ljudima i razlozima blokiranja, izaberite šta stranice poslova prikazuju i završite ili obrišite projekat.',
+};
+
+# Podešavanja projekta
+
+Svaki projekat ima svoju stranicu sa podešavanjima. Tu menjate naziv projekta, upravljate ko je u njemu, uređujete listu razloga blokiranja, birate šta stranice poslova prikazuju i na kraju zatvarate projekat kada je posao gotov.
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Vlasnici i Administratori mogu da menjaju podešavanja. Članovi mogu da otvore stranicu, ali samo gledaju. Zatvaranje ili brisanje projekta je samo za Vlasnika.
+
+## Otvorite podešavanja
+
+U gornjoj traci projekta kliknite na **Podešavanja**. Stranica se zove **Podešavanja projekta** i ima ove odeljke, od vrha: **Detalji**, **Članovi**, **Razlozi blokiranja**, **Ekran posla** i **Opasna zona**.
+
+<Screenshot src="/guide/sr/project-settings-1.webp" alt="Podešavanja projekta: odeljak Detalji sa nazivom Kitchen refit i praznim opisom i početak odeljka Članovi" caption="Vrh podešavanja projekta: Detalji, pa Članovi." />
+
+## Detalji
+
+Promenite **Naziv** ili **Opis**, pa kliknite na **Sačuvaj izmene**. Opis može da se formatira, a **Pregled** pokazuje kako će izgledati. Dugme ostaje sivo dok ne promenite nešto.
+
+## Članovi
+
+Ovde dodajete ljude, menjate im ulogu ili ih uklanjate. [Napravite projekat i dodajte članove](/guide/first-project) pokazuje kako se dodaje osoba, a [Uloge i dozvole](/guide/roles-permissions) objašnjava uloge.
+
+- Izaberite **Član** ili **Administrator** u polju za ulogu da promenite nečiju ulogu. Kliknite na **Ukloni** da je izbacite iz projekta.
+- Uloga Vlasnika ne može da se menja, a ni svoju ne možete promeniti.
+
+## Razlozi blokiranja
+
+Odeljak **Razlozi blokiranja** navodi gotove razloge koje ljudi mogu da izaberu kada blokiraju posao. Kliknite na **Ukloni** pored jednog da ga skinete sa liste. Lista raste i sama: kada neko upiše nov razlog dok blokira posao, on se dodaje za sledeći put. Pogledajte [Kada je posao blokiran](/guide/job-blocked).
+
+## Šta stranice poslova prikazuju
+
+Odeljak **Ekran posla** određuje koji se delovi pojavljuju na poslovima ovog projekta.
+
+<Steps>
+  <Step title="Pronađite Odeljci prikazani na poslovima">
+    Pomerite se do **Ekran posla**. **Odeljci prikazani na poslovima** navodi **Beleške**, **Odobrenja**, **Veze**, **Linkovi** i **Istorija statusa posla**, svaki sa prekidačem.
+  </Step>
+  <Step title="Isključite odeljak">
+    Isključite odeljak koji ovaj projekat ne koristi. Nestaje sa svakog posla u projektu. Poruka potvrđuje promenu, a ona se čuva odmah.
+  </Step>
+  <Step title="Vratite ga kad god želite">
+    Uključite ga ponovo i odeljak se vraća sa svim što je u njemu. Ništa se ne briše.
+  </Step>
+</Steps>
+
+Odeljak čiji dodatak vaša organizacija nema isključen je i označen sa **Nije u vašem paketu**. Pogledajte [Pretplata i dodaci](/guide/subscription).
+
+### Zahtevaj odobrenje za završetak poslova
+
+Ispod odeljaka nalazi se i **Zahtevaj odobrenje za završetak poslova**. Kada je uključeno, Članovi traže odobrenje pre nego što posao može da se završi, a Vlasnici i Administratori poslove završavaju direktno. Kako to radi pročitajte na [Kada posao traži odobrenje](/guide/job-approval).
+
+<Callout type="note">
+Ovaj prekidač traži dodatak Odobrenja. Bez njega je prekidač zaključan, a ako je već bio uključen, pravilo se ne primenjuje. I dalje možete da ga isključite.
+</Callout>
+
+<Screenshot src="/guide/sr/project-settings-2.webp" alt="Odeljak Ekran posla sa prekidačima za Beleške, Odobrenja, Veze, Linkove i Istoriju statusa posla, prekidač Zahtevaj odobrenje za završetak poslova, a ispod njih Opasna zona sa dugmadima Završi projekat i Obriši projekat" caption="Prekidači Ekrana posla, pa Opasna zona na dnu." />
+
+## Završite ili obrišite projekat
+
+<RoleBadge role="Owner" />
+
+**Opasna zona** je na dnu stranice.
+
+- **Završi projekat** zatvara projekat kada je svaki posao u njemu završen. Ako je neki posao još otvoren, OpsClear kaže koliko ih je. Završen projekat ostaje na listi pod **Završeni**, ali više ne prihvata izmene. Kliknite na **Ponovo aktiviraj** da ga ponovo otvorite.
+- **Obriši projekat** uklanja projekat zajedno sa njegovim poslovima, beleškama i odobrenjima.
+
+<Callout type="warning">
+Brisanje projekta se ne može poništiti. OpsClear traži da upišete naziv projekta pre nego što bilo šta obriše.
+</Callout>

@@ -1,8 +1,8 @@
 // ADR-0062: the user guide's page list, in sidebar and prev/next order. It's also the
 // coverage map: `coverage` lists the app files each page documents (globs relative to the
 // repo root), so a PR that changes one of them can be checked for a matching guide update.
-// Coverage is final for Getting started (JOB-359) and for Daily work and Planning (JOB-360); the
-// job that writes each remaining page finalises its globs.
+// Coverage is final for every page: Getting started (JOB-359), Daily work and Planning (JOB-360),
+// Admin & settings and Account & more (JOB-361).
 
 export type GuideSection = 'getting-started' | 'daily-work' | 'planning' | 'admin-settings' | 'account-more';
 
@@ -170,6 +170,7 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
     'frontend/src/components/RoleBadge.tsx',
     'frontend/src/features/org/OrgMembersPage.tsx',
     'frontend/src/features/projects/AddMemberForm.tsx',
+    'frontend/src/features/org/AddOrgMemberForm.tsx',
   ]),
   page('project-settings', 'admin-settings', [
     'frontend/src/features/projects/ProjectSettingsPage.tsx',
@@ -181,15 +182,18 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
     'frontend/src/features/org/IdPrefixesSection.tsx',
     'frontend/src/features/org/OrgMembersPage.tsx',
     'frontend/src/features/org/OrgInvitesPage.tsx',
+    'frontend/src/features/org/AddOrgMemberForm.tsx',
   ]),
   page('preferences', 'admin-settings', [
     'frontend/src/features/settings/SettingsPage.tsx',
     'frontend/src/features/settings/NotificationTypeSettings.tsx',
+    'frontend/src/hooks/usePreferences.ts',
   ]),
 
   // Account & more
   page('subscription', 'account-more', [
     'frontend/src/components/SubscriptionWall.tsx',
+    'frontend/src/components/OrgRequiredRoute.tsx',
     'frontend/src/components/UpgradeCard.tsx',
     'frontend/src/features/org/SubscriptionSection.tsx',
     'frontend/src/features/org/PaddleBillingSection.tsx',
@@ -202,7 +206,7 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
     ['frontend/src/features/settings/ApiKeySection.tsx', 'frontend/src/features/settings/NewApiKeyModal.tsx'],
     ['api-keys'],
   ),
-  page('faq', 'account-more', ['keycloak/themes/opsclear/login/**']),
+  page('faq', 'account-more', ['keycloak/themes/opsclear/login/**', 'frontend/src/api/client.ts']),
 ];
 
 export const GUIDE_INDEX_SLUG = 'index';

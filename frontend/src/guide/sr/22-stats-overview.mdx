@@ -1,0 +1,66 @@
+export const frontmatter = {
+  title: 'Statistika i Pregled',
+  description: 'Vidite koliko brzo projekat završava poslove, koliko ih kasni i, kao Vlasnik ili Administrator, sve projekte i sva odobrenja na čekanju na jednom mestu.',
+};
+
+# Statistika i Pregled
+
+Dve stranice odgovaraju na veća pitanja. **Statistika** pokazuje kako projekat stoji tokom prethodnih nedelja: koliko je poslova završeno, koliko traju i koliko ih kasni. **Pregled** pokazuje Vlasniku ili Administratoru sve projekte u organizaciji i odobrenja koja čekaju na njih.
+
+## Statistika
+
+<Callout type="note">
+Statistika je deo dodatka Dashboard. Ako ga vaša organizacija nema, stranica kaže da nije uključena u vaš plan. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+U gornjoj traci projekta kliknite na **Statistika**, pored **Kontrolna tabla**. Brojevi obuhvataju poslove završene u periodu koji izaberete.
+
+<Steps>
+  <Step title="Otvorite Statistiku">
+    Kliknite na **Statistika** u gornjoj traci projekta. Stranica se zove **Statistika tima**. Član vidi **Vaša statistika**, koja broji samo njegove poslove.
+  </Step>
+  <Step title="Izaberite period">
+    Kliknite na **4 nedelje**, **12 nedelja** ili **26 nedelja**. Stranica počinje na periodu koji ste izabrali u [svojim podešavanjima](/guide/preferences). Promena ovde traje samo dok ne napustite stranicu.
+  </Step>
+  <Step title="Pročitajte pločice">
+    Pet pločica sažima stanje, kako je opisano ispod. Crtica znači da nijedan posao u periodu nema taj broj.
+  </Step>
+  <Step title="Pogledajte grafikon">
+    **Završeno po nedeljama** ima po jednu traku za svaku nedelju, označenu danom kada nedelja počinje. Poslednja traka je nedelja u kojoj ste sada.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/stats-overview-1.webp" alt="Stranica Statistika tima sa dugmadima 4, 12 i 26 nedelja, prekidačem Tim i Po članu, pet pločica i trakastim grafikonom Završeno po nedeljama" caption="Statistika tima: period, pet pločica i nedeljni grafikon." />
+
+| Pločica | Šta znači |
+|---------|-----------|
+| **Završeno** | Koliko je poslova završeno u periodu |
+| **Prosečno ukupno vreme** | U proseku, koliko od pravljenja posla do njegovog završetka |
+| **Prosečno radno vreme** | U proseku, koliko od prvog početka rada na poslu do njegovog završetka |
+| **Prosečno vreme blokade** | U proseku, koliko je završen posao proveo blokiran |
+| **Završeno sa zakašnjenjem** | Udeo završenih poslova koji su imali rok i završeni su posle njega. Red ispod kaže koliko, na primer "Kasno: 2 od 2 sa rokom" |
+
+Posao se računa u nedelji u kojoj je završen, pa se posao započet davno, a završen ove nedelje, pojavljuje ove nedelje.
+
+### Statistika za svaku osobu
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Kliknite na **Po članu** iznad pločica da vidite tabelu sa po jednim redom za svaku osobu, sa istim brojevima. Kliknite na ime da vidite pločice i grafikon samo za tu osobu. **Prikazano: ime** vas podseća čije brojeve gledate, a **Nazad na tim** vraća na ceo projekat. Redovi nisu rangirani, da stranica ne liči na tabelu poretka.
+
+<Screenshot src="/guide/sr/stats-overview-2.webp" alt="Stranica Statistika tima sa izabranim Po članu i tabelom koja navodi svaku osobu sa završenim poslovima, prosečnim vremenima i udelom zakašnjenja" caption="Po članu pokazuje po jedan red za svaku osobu. Kliknite na ime da gledate samo tu osobu." />
+
+## Pregled
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Pregled je za Vlasnike i Administratore organizacije. Kliknite na svoje ime gore desno i izaberite **Pregled**. Ima dva dela.
+
+- **Odobrenja na čekanju** navodi zahteve koji čekaju odluku u projektima u kojima ste Vlasnik ili Administrator. Svaki pokazuje posao, projekat, šta je napisano i kada je zatraženo. Kliknite na jedan da otvorite posao i odlučite. Prvo se prikazuje deset, a dugme kao što je **Prikaži još 5** dodaje još. Ovaj deo traži dodatak Approvals.
+- **Direktorijum projekata** navodi svaki projekat u organizaciji, i one u kojima niste, sa njegovim **Vlasnik**om, **Status**om (**Aktivan** ili **Završen**) i brojem **Članovi**. Projekti sa najmanje članova idu prvi, jer su to oni u kojima možda niko ne gleda.
+
+<Screenshot src="/guide/sr/stats-overview-3.webp" alt="Stranica Pregled sa jednim odobrenjem na čekanju za posao Move the gas pipe i tabelom Direktorijum projekata koja navodi projekat Kitchen refit sa vlasnikom, statusom i brojem članova" caption="Pregled: odobrenja koja čekaju vas i svi projekti u organizaciji." />
+
+<Callout type="tip">
+Ne želite odobrenja na Pregledu? Isključite **Prikaži odobrenja na Pregledu** u [svojim podešavanjima](/guide/preferences). Oznaka odobrenja u meniju ostaje.
+</Callout>
