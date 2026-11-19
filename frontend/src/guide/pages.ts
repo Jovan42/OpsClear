@@ -2,7 +2,7 @@
 // coverage map: `coverage` lists the app files each page documents (globs relative to the
 // repo root), so a PR that changes one of them can be checked for a matching guide update.
 // Coverage is final for every page: Getting started (JOB-359), Daily work and Planning (JOB-360),
-// Admin & settings and Account & more (JOB-361).
+// Admin & settings and Account & more (JOB-361), and the Feedback page (JOB-388).
 
 export type GuideSection = 'getting-started' | 'daily-work' | 'planning' | 'admin-settings' | 'account-more';
 
@@ -205,6 +205,18 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
     'account-more',
     ['frontend/src/features/settings/ApiKeySection.tsx', 'frontend/src/features/settings/NewApiKeyModal.tsx'],
     ['api-keys'],
+  ),
+  page(
+    'feedback',
+    'account-more',
+    [
+      'frontend/src/features/feedback/**',
+      'frontend/src/components/FeedbackTypeBadge.tsx',
+      'frontend/src/components/UserMenu.tsx',
+      'frontend/src/features/org/OrgSettingsPage.tsx',
+      'frontend/src/features/org/useCredits.ts',
+    ],
+    ['feedback-credits'],
   ),
   page('faq', 'account-more', ['keycloak/themes/opsclear/login/**', 'frontend/src/api/client.ts']),
 ];

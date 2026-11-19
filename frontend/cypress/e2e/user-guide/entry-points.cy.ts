@@ -53,4 +53,16 @@ describe('User guide entry points', () => {
     cy.location('hash').should('eq', '#job-tracking');
     cy.get('[data-testid=feature-card-job-tracking]').should('be.visible');
   });
+
+  it('the Feedback & Credits card links to the Feedback page and the page links back', () => {
+    cy.visit('/features');
+    cy.get('[data-testid=feature-card-feedback-credits]').contains('a', 'How to use it').click();
+    cy.location('pathname').should('eq', '/guide/feedback');
+    cy.contains('h1', 'Feedback and credits').should('be.visible');
+
+    cy.get('[data-testid=guide-feature-link]').click();
+    cy.location('pathname').should('eq', '/features');
+    cy.location('hash').should('eq', '#feedback-credits');
+    cy.get('[data-testid=feature-card-feedback-credits]').should('be.visible');
+  });
 });

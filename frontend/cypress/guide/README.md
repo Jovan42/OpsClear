@@ -11,7 +11,7 @@ It has its own config, `cypress.guide.config.ts`.
 | `daily-work.cy.ts` | `finding-jobs`, `dashboard`, `notifications`, `notes-links-history` |
 | `planning.cy.ts` | `milestones`, `templates-and-types`, `recurring-jobs`, `job-relationships` |
 | `admin-settings.cy.ts` | `roles-permissions`, `project-settings`, `organisation-settings`, `preferences` |
-| `account.cy.ts` | `subscription` (billing history stubbed), `stats-overview`, `api-keys`, `faq` (stubbed 429 toast) |
+| `account.cy.ts` | `subscription` (billing history stubbed), `stats-overview`, `api-keys`, `feedback` (an earlier credit seeded in the database), `faq` (stubbed 429 toast) |
 | `support/world.ts` | The sample workspace the four section specs share: org, team, project, a dozen jobs, milestones, types, notes, links, relationships, templates, schedules, a pending approval. Seeded through the API in `before` |
 | `support/steps.ts` | `visitAs`, `clickButton`, `dialog`, `showEmail`, `freeSampleSlug` |
 | `support/sample.ts` | The fixed sample data (org "Acme Plumbing", project "Kitchen refit", people, jobs), deadlines relative to today, the viewport |

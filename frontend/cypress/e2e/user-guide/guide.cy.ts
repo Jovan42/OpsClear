@@ -152,6 +152,8 @@ describe('User guide', () => {
 
     cy.visit('/guide/faq');
     cy.get('[data-testid=guide-next]').should('not.exist');
+    cy.get('[data-testid=guide-prev]').should('contain', 'Feedback and credits').click();
+    cy.location('pathname').should('eq', '/guide/feedback');
     cy.get('[data-testid=guide-prev]').should('contain', 'API keys');
   });
 
