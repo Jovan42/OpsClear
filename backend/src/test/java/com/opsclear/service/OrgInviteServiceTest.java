@@ -480,6 +480,7 @@ class OrgInviteServiceTest {
         when(userRepository.findById(newUserId)).thenReturn(Optional.of(newUser));
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(newUser));
         when(organisationRepository.existsMember(orgId, newUserId)).thenReturn(false);
+        when(organisationRepository.findByMember(newUserId)).thenReturn(Optional.empty());
         when(orgInviteRepository.findById(inviteId)).thenReturn(Optional.of(accepted));
 
         OrgInviteModel result = service.acceptInvite(token, newUserId);
@@ -488,6 +489,33 @@ class OrgInviteServiceTest {
         verify(orgInviteRepository).markAccepted(inviteId);
         assertThat(result.getAcceptedAt()).isNotNull();
         verify(eventPublisher).publishEvent(new InviteAcceptedEvent(inviteId, orgId, newUserId, ownerId));
+    }
+
+    // JOB-392: one organisation per user, as on create (JOB-241)
+    @Test
+    @DisplayName("acceptInvite_shouldThrowConflict_whenUserBelongsToAnotherOrganisation")
+    void acceptInvite_shouldThrowConflict_whenUserBelongsToAnotherOrganisation() {
+        String token = "abc123";
+        UUID inviteId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+        String email = "invited@example.com";
+        OrgInviteModel invite = pendingInvite(inviteId, orgId, email, ownerId);
+        UserModel caller = UserModel.builder().id(callerId).email(email).name("Invited").build();
+        OrganisationModel otherOrg = OrganisationModel.builder()
+                .id(UUID.randomUUID()).name("Pine Studio").slug("PIN").createdBy(callerId).build();
+
+        when(orgInviteRepository.findByToken(token)).thenReturn(Optional.of(invite));
+        when(userRepository.findById(callerId)).thenReturn(Optional.of(caller));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(caller));
+        when(organisationRepository.existsMember(orgId, callerId)).thenReturn(false);
+        when(organisationRepository.findByMember(callerId)).thenReturn(Optional.of(otherOrg));
+
+        assertThatThrownBy(() -> service.acceptInvite(token, callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage(ErrorMessages.Organisation.ALREADY_IN_ORGANISATION);
+        verify(organisationRepository, never()).saveMember(any(), any(), any());
+        verify(orgInviteRepository, never()).markAccepted(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
