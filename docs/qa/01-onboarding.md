@@ -95,8 +95,8 @@ ONB-08 and ONB-30 repeat the check in the browser.
 1. Click **Get started** and register again with `<mailbox>+ana@<domain>`.
 2. Click **Back to Login**.
 
-- [ ] The form rejects the address with a message that it's already in use, and no second account exists
-- [ ] **Back to Login** returns to the sign-in page
+- [x] The form rejects the address with a message that it's already in use, and no second account exists
+- [x] **Back to Login** returns to the sign-in page
 
 ## ONB-06 Create Brightline Renovations
 **As:** Ana (org owner to be) · **Day:** 1 · **Needs:** ONB-04 done, on **Create your organisation**
