@@ -1,7 +1,8 @@
 // ADR-0062: the user guide's page list, in sidebar and prev/next order. It's also the
 // coverage map: `coverage` lists the app files each page documents (globs relative to the
 // repo root), so a PR that changes one of them can be checked for a matching guide update.
-// The globs are a first pass; the jobs that write each page finalise them (Getting started: JOB-359).
+// Coverage is final for Getting started (JOB-359) and for Daily work and Planning (JOB-360); the
+// job that writes each remaining page finalises its globs.
 
 export type GuideSection = 'getting-started' | 'daily-work' | 'planning' | 'admin-settings' | 'account-more';
 
@@ -113,9 +114,22 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
   ),
 
   // Daily work
-  page('finding-jobs', 'daily-work', ['frontend/src/features/jobs/JobListPage.tsx']),
+  page('finding-jobs', 'daily-work', [
+    'frontend/src/features/jobs/JobListPage.tsx',
+    'frontend/src/components/DueSoonHint.tsx',
+    'frontend/src/utils/deadline.ts',
+  ]),
   page('dashboard', 'daily-work', ['frontend/src/features/dashboard/**'], ['dashboard']),
-  page('notifications', 'daily-work', ['frontend/src/features/notifications/*.tsx'], ['notifications']),
+  page(
+    'notifications',
+    'daily-work',
+    [
+      'frontend/src/features/notifications/*.tsx',
+      'frontend/src/features/notifications/notificationContent.ts',
+      'frontend/src/features/settings/NotificationTypeSettings.tsx',
+    ],
+    ['notifications'],
+  ),
   page(
     'notes-links-history',
     'daily-work',
@@ -132,7 +146,12 @@ export const GUIDE_PAGES: readonly GuidePageEntry[] = [
   page(
     'templates-and-types',
     'planning',
-    ['frontend/src/features/templates/**', 'frontend/src/features/jobTypes/**'],
+    [
+      'frontend/src/features/templates/**',
+      'frontend/src/features/jobTypes/**',
+      'frontend/src/features/jobs/NewJobModal.tsx',
+      'frontend/src/utils/resolveWildcards.ts',
+    ],
     ['templates', 'job-types'],
   ),
   page('recurring-jobs', 'planning', ['frontend/src/features/schedules/**'], ['recurring']),

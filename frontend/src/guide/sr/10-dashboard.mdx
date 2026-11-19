@@ -1,0 +1,46 @@
+export const frontmatter = {
+  title: 'Kontrolna tabla',
+  description: 'Na prvi pogled vidite gde je projekat: brojeve po statusima, šta je blokirano, šta kasni i koja odobrenja čekaju.',
+};
+
+# Kontrolna tabla
+
+**Kontrolna tabla** odgovara na jedno pitanje: gde je ovaj projekat danas? Otvorite je kada želite da znate šta zapinje, šta kasni i šta čeka vas, a da nikoga ne pitate.
+
+<FeatureLink card="dashboard" />
+
+<Callout type="note">
+Kontrolna tabla je dodatak. Bez nje stranica kaže da nije uključena u vaš paket. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Šta vidite
+
+Vlasnici i Administratori vide ceo projekat. Za Člana, kontrolna tabla broji samo poslove koji su mu dodeljeni.
+
+Otvorite projekat i kliknite na **Kontrolna tabla** u gornjoj traci.
+
+<Screenshot src="/guide/sr/dashboard-1.webp" alt="Kontrolna tabla sa kružnim grafikonom Raspodela statusa, odeljkom Pregled sa šest brojeva, trakama Po tipu i početkom liste Blokirano" caption="Vrh kontrolne table: kružni grafikon, brojevi i pregled po tipu." />
+
+- **Raspodela statusa** je kružni grafikon koji pokazuje kako su poslovi podeljeni između **Novo**, **U toku**, **Blokirano** i **Završeno**.
+- **Pregled** daje iste brojeve, uz broj poslova koji su **Zakasnelo** i, za Vlasnike i Administratore, broj odobrenja u polju **Odobrenja na čekanju**. Kliknite na **Novo**, **U toku**, **Blokirano** ili **Završeno** da otvorite listu poslova na toj kartici. Kliknite na **Odobrenja na čekanju** da otvorite stranicu odobrenja.
+- **Po tipu** pokazuje koliko ima poslova svakog tipa. Pojavljuje se samo kada projekat ima tipove poslova.
+
+## Liste kojima treba pažnja
+
+Ispod brojeva su do tri liste koje pokazuju šta traži odluku. Lista koja je prazna se izostavlja.
+
+- **Blokirano** navodi svaki blokiran posao, ko je odgovoran, koliko je dugo blokiran i razlog.
+- **Zakasnelo** navodi poslove kojima je rok prošao, sa odgovornom osobom i rokom.
+- **Odobrenja na čekanju** navodi zahteve za odobrenje koji čekaju Vlasnika ili Administratora. Članovi ovu listu ne vide. Prikazuje pet zahteva, a ako ih ima više, kliknite na **→ Prikaži sve**.
+
+Kliknite na strelicu desno od reda da otvorite taj posao. Kada su sve tri liste prazne, kontrolna tabla kaže **Sve je čisto**.
+
+<Screenshot src="/guide/sr/dashboard-2.webp" alt="Donji deo kontrolne table sa listom Blokirano koja prikazuje dva posla i njihove razloge, listom Zakasnelo sa jednim poslom i listom Odobrenja na čekanju sa jednim zahtevom" caption="Blokirano, Zakasnelo i Odobrenja na čekanju navode poslove iza brojeva." />
+
+<Callout type="tip">
+Bilo koju od te tri liste možete sakriti u svojim podešavanjima. Pogledajte [Vaša podešavanja](/guide/preferences).
+</Callout>
+
+## Kako ostaje ažurna
+
+Kontrolna tabla se ne menja sama dok je gledate. Učitava nove brojeve kada je otvorite, ako su podaci stariji od 30 sekundi, i odmah nakon što sami promenite posao ili odobrenje. Promene koje naprave drugi ljudi vide se kada je sledeći put otvorite, ili kada kliknete na dugme za osvežavanje gore desno. Napomena pored dugmeta kaže pre koliko je vremena ažurirana.

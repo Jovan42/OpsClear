@@ -1,0 +1,62 @@
+export const frontmatter = {
+  title: 'Linking jobs together',
+  description: 'Show which jobs wait on others, which belong together and which are duplicates, so nobody has to guess.',
+};
+
+# Linking jobs together
+
+Jobs often depend on each other: the worktop can't be fitted until the pipes are done. Linking them puts that on record, so anyone looking at a job can see what it is waiting for and what is waiting for it.
+
+<FeatureLink card="relationships" />
+
+<Callout type="note">
+Relationships are an add-on. If your organisation doesn't have it, the section is hidden or marked as not included. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## The kinds of link
+
+A relationship always connects two jobs in the same project. You add it from one job, and the other job shows the matching label.
+
+| You choose on this job | This job shows | The other job shows |
+|------------------------|----------------|---------------------|
+| **Blocked by** | **Blocked by** | **Blocks** |
+| **Related to** | **Related to** | **Related to** |
+| **Duplicates** | **Duplicates** | **Duplicated by** |
+
+Use **Blocked by** when this job can't move on until the other job is done. Use **Related to** for jobs that simply go together. Use **Duplicates** when this job repeats another one.
+
+## Add a relationship
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Open the job">
+    Open the job that depends on another, from the **Jobs** list.
+  </Step>
+  <Step title="Open Add Relationship">
+    In the **Relationships** section, click **+ Add**.
+  </Step>
+  <Step title="Choose the kind of link">
+    Under **Type**, choose **Blocked by**, **Related to** or **Duplicates**.
+  </Step>
+  <Step title="Choose the other job">
+    Type in the **Job** box to search, then click the job in the list.
+  </Step>
+  <Step title="Add it">
+    Click **Add**. The link appears in the **Relationships** section with the other job's status.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/job-relationships-1.webp" alt="A job's page with the Relationships section listing two linked jobs, each with its kind of link and its status" caption="The Relationships section shows each linked job with its status." />
+
+<Screenshot src="/guide/en/job-relationships-2.webp" alt="The Add Relationship window with the three kinds of link, a search box for the job and a list of jobs to choose from" caption="Choose the kind of link, then the job." />
+
+Click the linked job's title to open it. To remove a link, click the **×** at its right. That removes it on both jobs, and the jobs themselves stay as they are.
+
+## What a link does
+
+A link is a record, not a lock. A job that is **Blocked by** another one doesn't change status by itself, and nothing stops you from starting or completing it. What does happen is that when the job blocking it is completed, the person responsible for the waiting job gets a **Blocker cleared** notification. See [Notifications](/guide/notifications).
+
+<Callout type="tip">
+To say why a job is stuck for a reason other than another job, such as waiting for a supplier, block it instead. See [When a job is blocked](/guide/job-blocked).
+</Callout>

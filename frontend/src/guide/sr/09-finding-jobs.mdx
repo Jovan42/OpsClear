@@ -1,0 +1,68 @@
+export const frontmatter = {
+  title: 'Pronalaženje poslova',
+  description: 'Brzo nađite posao na listi: kartice statusa, pretraga, filteri, Svi i Moji, sortiranje i boje koje pokazuju zakasnele poslove i poslove sa rokom uskoro.',
+};
+
+# Pronalaženje poslova
+
+Lista **Poslovi** je mesto na kome provodite najveći deo dana. Kako projekat raste, lista se puni, pa vam OpsClear daje nekoliko brzih načina da je suzite na poslove do kojih vam je sada stalo.
+
+Vlasnici i Administratori vide svaki posao u projektu. Član vidi samo poslove koji su mu dodeljeni.
+
+## Kartice statusa
+
+Ispod filtera je po jedna kartica za svaki status, sa brojem poslova u njemu: **Svi**, **Novo**, **U toku**, **Blokirano** i **Završeno**. Kliknite na karticu da vidite samo te poslove. Kartica bez poslova je zasivljena.
+
+<Screenshot src="/guide/sr/finding-jobs-1.webp" alt="Lista poslova za ceo projekat, grupisana po etapama, sa karticama statusa, poljem za pretragu, filterima i prekidačem Svi i Moji iznad nje" caption="Lista poslova, sa karticama statusa iznad tabele." />
+
+<Screenshot src="/guide/sr/finding-jobs-2.webp" alt="Lista poslova sa izabranom karticom U toku, koja prikazuje samo poslove u statusu U toku" caption="Kliknite na karticu da vidite samo poslove sa tim statusom." />
+
+Svaki red prikazuje naslov posla, klijenta, ko je zadužen, rok, prioritet i status. Kliknite na red da otvorite posao. Crvena crta levo od reda označava blokiran posao.
+
+## Pretraga i filteri
+
+<Steps>
+  <Step title="Pretražite">
+    Upišite reč u polje za pretragu na vrhu. Pretraga gleda naslov posla, klijenta i ime osobe koja je zadužena, a lista se menja dok kucate.
+  </Step>
+  <Step title="Filtrirajte po prioritetu">
+    U meniju **Svi prioriteti** izaberite da vidite samo poslove sa prioritetom **Nizak**, **Srednji**, **Visok** ili **Kritičan**.
+  </Step>
+  <Step title="Filtrirajte po tipu ili etapi">
+    Ako vaš projekat koristi tipove poslova, meni **Svi tipovi** prikazuje jedan po jedan tip. Ako ima etape, meni **Sve etape** prikazuje poslove jedne etape.
+  </Step>
+  <Step title="Prikažite samo svoje poslove">
+    Kliknite na **Moji** desno od kartica da vidite samo poslove koji su dodeljeni vama. Brojevi na karticama se menjaju u skladu s tim. Kliknite na **Svi** da ponovo vidite sve poslove.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/finding-jobs-3.webp" alt="Lista poslova sa izabranim Moji, koja prikazuje samo poslove dodeljene prijavljenoj osobi i manje brojeve na karticama" caption="Kada je izabrano Moji, na listi su samo vaši poslovi." />
+
+<Screenshot src="/guide/sr/finding-jobs-4.webp" alt="Lista poslova nakon upisane reči u polje za pretragu, koja prikazuje samo poslove koji se poklapaju" caption="Pretraga sužava listu dok kucate." />
+
+Pretraga, filteri i kartice rade zajedno. Ako ništa ne odgovara, lista kaže **Nijedan posao ne odgovara ovom filteru.**
+
+<Callout type="note">
+Tipovi poslova i etape su dodaci, pa se ta dva menija pojavljuju samo kada ih vaša organizacija ima. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Grupisano ili ravno
+
+Kada projekat ima [etape](/guide/milestones), lista može da grupiše poslove pod njima, sa trakom napretka za svaku etapu. Da li počinje grupisano, određuje podešavanje u vašim podešavanjima. Kliknite na dugme **Grupisano** da pređete na jednu običnu listu (dugme tada piše **Ravno**), a kliknite ponovo da se vratite. Kada u meniju **Sve etape** izaberete etapu, uvek se prikazuje obična lista. Kliknite na naslov etape da je skupite ili otvorite.
+
+## Sortirajte listu
+
+Kliknite na naslov kolone, na primer **Rok** ili **Prioritet**, da sortirate po njoj. Strelica pokazuje smer. Kliknite ponovo na isti naslov da ga obrnete. Poslovi bez roka uvek su na kraju kada sortirate po roku.
+
+<Screenshot src="/guide/sr/finding-jobs-5.webp" alt="Lista poslova sortirana po roku, sa strelicom pored naslova Rok okrenutom nadole" caption="Sortirano po roku, najkasniji prvi." />
+
+## Zakasnele poslove i poslove sa rokom uskoro
+
+Rok vam pokazuje koliko je posao hitan, a da ga ne morate otvarati:
+
+- Crveni rok znači da je posao zakasnio.
+- Narandžasti rok sa oznakom **Rok uskoro** znači da je rok blizu.
+
+<Callout type="tip">
+Koliko je "blizu", ili da isključite oznaku, birate u svojim podešavanjima. Kliknite na svoje ime gore desno, izaberite **Podešavanja naloga** i pogledajte odeljak **Poslovi**. Pogledajte [Vaša podešavanja](/guide/preferences). Isti odeljak određuje na kojoj se kartici lista otvara i da li počinje od **Svi** ili **Moji**.
+</Callout>

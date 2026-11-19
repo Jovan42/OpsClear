@@ -1,0 +1,86 @@
+export const frontmatter = {
+  title: 'Ponavljajući poslovi',
+  description: 'Neka OpsClear pravi isti posao po rasporedu, deli ga ljudima redom, pauzirajte ga i rešite propuštena izvršavanja.',
+};
+
+# Ponavljajući poslovi
+
+Neki poslovi se vraćaju iznova i iznova: mesečni servis kotla, nedeljna provera bezbednosti. Raspored ih pravi umesto vas, pa niko ne mora da pamti. Svaki novi posao nastaje od [šablona posla](/guide/templates-and-types).
+
+<FeatureLink card="recurring" />
+
+<Callout type="note">
+Ponavljajući poslovi su dodatak, a trebaju vam i šabloni poslova. Bez njih stranica **Rasporedi** kaže da nije uključena u vaš paket. Pogledajte [Pretplata i dodaci](/guide/subscription).
+</Callout>
+
+## Pogledajte svoje rasporede
+
+Otvorite projekat i kliknite na **Rasporedi** u gornjoj traci. Svaki raspored pokazuje naziv i oznaku statusa, šablon koji koristi, kratak opis kada se pokreće, sledeće pokretanje i ljude kojima deli poslove.
+
+<Screenshot src="/guide/sr/recurring-jobs-1.webp" alt="Stranica Rasporedi sa dva rasporeda, jednim Pauzirano i jednim Aktivno, svaki sa šablonom, vremenom pokretanja, sledećim pokretanjem i krugom za svaku osobu u rotaciji, sa trakom ispod drugog koja kaže 1 propušteno izvršavanje" caption="Svaki raspored pokazuje status, šablon i kada se sledeći put pokreće." />
+
+Oznaka statusa kaže šta raspored radi:
+
+- **Aktivno**: pravi poslove na vreme.
+- **Pauzirano**: privremeno je isključen i ne pravi poslove.
+- **Nema izvršilaca**: sam se pauzirao jer su svi iz njegove rotacije napustili projekat.
+- **Isteklo**: prošao je njegov datum završetka.
+
+## Napravite raspored
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+Prvo vam treba bar jedan šablon. Otvorite **Šabloni** i napravite ga, ili kliknite na **Raspored** pored postojećeg šablona da počnete sa već izabranim.
+
+<Steps>
+  <Step title="Započnite novi raspored">
+    Na stranici **Rasporedi** kliknite na **+ Novi raspored**. Ako još nema nijednog, kliknite na **Kreiraj prvi raspored**.
+  </Step>
+  <Step title="Imenujte ga i izaberite šablon">
+    Upišite **Naziv** i izaberite **Šablon** od koga se prave poslovi.
+  </Step>
+  <Step title="Izaberite kada se pokreće">
+    Pod **Raspored** izaberite **Dnevno**, **Nedeljno** ili **Mesečno** i podesite dan i vreme. **Napredno** je za ljude koji znaju da napišu cron raspored.
+  </Step>
+  <Step title="Proverite pregled">
+    Red ispod vremena rečima kaže kada se raspored pokreće, a **Naredna izvršavanja** navodi predstojeće datume. Proverite da li su onakvi kakve očekujete i izaberite **Vremenska zona** na koju se vremena odnose.
+  </Step>
+  <Step title="Dodajte ljude (opciono)">
+    Pod **Rotacija izvršilaca** dodajte ljude koji treba da dobijaju poslove. Oni se smenjuju redosledom kojim ih navedete: prvi posao ide prvoj osobi, sledeći drugoj, i tako dalje, pa ponovo od vrha.
+  </Step>
+  <Step title="Pauzirajte ili završite ga (opciono)">
+    Koristite **Pauziraj do** da raspored počne kasnijeg datuma, a **Ističe** da stane na određen datum.
+  </Step>
+  <Step title="Napravite ga">
+    Kliknite na **Kreiraj raspored**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/sr/recurring-jobs-2.webp" alt="Prozor Novi raspored sa nazivom, menijem šablona, izborom Dnevno, Nedeljno, Mesečno i Napredno, nedeljnim rasporedom za ponedeljak, redom koji rečima kaže kada se pokreće i listom narednih izvršavanja" caption="Pregled rečima kaže kada se raspored pokreće i navodi sledeće datume." />
+
+Poslovi koje raspored napravi izgledaju kao svaki drugi posao, uz oznaku **Kreirano rasporedom** na stranici posla. Osoba kojoj je posao dodeljen dobija obaveštenje.
+
+## Pauzirajte, nastavite, izmenite ili obrišite
+
+U redu rasporeda kliknite na **Pauziraj** i izaberite na koliko: **1 dan**, **1 nedelja**, **1 mesec**, **Prilagođeni datum** ili **Neograničeno**. Kliknite na **Nastavi** da ga ponovo pokrenete. **Izmeni** menja bilo koje njegovo podešavanje, a **Obriši** ga uklanja nakon potvrde.
+
+<Callout type="warning">
+Brisanjem rasporeda prestaje pravljenje novih poslova. Poslovi koje je već napravio ostaju.
+</Callout>
+
+## Propuštena izvršavanja
+
+Ako OpsClear nije mogao da napravi posao u planirano vreme, na primer jer nije radio zbog održavanja, ne zatrpava vaš projekat zakasnelim poslovima. Umesto toga pamti beležku, a raspored prikazuje traku kao što je **1 propušteno izvršavanje**. Kliknite na traku da otvorite listu.
+
+<Screenshot src="/guide/sr/recurring-jobs-3.webp" alt="Otvorena traka propuštenih izvršavanja ispod rasporeda, sa jednim propuštenim izvršavanjem i dugmadima Kreiraj posao i Odbaci" caption="Otvorite traku da odlučite šta ćete sa svakim propuštenim izvršavanjem." />
+
+<Steps>
+  <Step title="Pogledajte propuštena izvršavanja">
+    Kliknite na traku. Svako propušteno izvršavanje je navedeno sa datumom kada je trebalo da se desi.
+  </Step>
+  <Step title="Odlučite za svako">
+    Kliknite na **Kreiraj posao** da posao napravite sada, ili na **Odbaci** ako vam ne treba. Kada ih ima više, **Odbaci sve** ih briše odjednom.
+  </Step>
+</Steps>
+
+Vlasnici i Administratori se o propuštenom izvršavanju obaveštavaju u [obaveštenjima](/guide/notifications).

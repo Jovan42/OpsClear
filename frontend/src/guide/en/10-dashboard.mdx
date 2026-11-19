@@ -1,0 +1,46 @@
+export const frontmatter = {
+  title: 'The dashboard',
+  description: 'See where a project stands at a glance: counts per status, what is blocked, what is late and which approvals are waiting.',
+};
+
+# The dashboard
+
+The **Dashboard** answers one question: where does this project stand today? Open it when you want to know what is stuck, what is late and what is waiting for you, without asking anyone.
+
+<FeatureLink card="dashboard" />
+
+<Callout type="note">
+The dashboard is an add-on. Without it, the page says it isn't included in your plan. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## What you see
+
+Owners and Admins see the whole project. For a Member, the dashboard only counts the jobs assigned to them.
+
+Open your project and click **Dashboard** in the top bar.
+
+<Screenshot src="/guide/en/dashboard-1.webp" alt="The dashboard with a ring chart of Status distribution, a Summary of six counts, a By type bar chart and the start of the Blocked list" caption="The top of the dashboard: the ring chart, the summary counts and the breakdown by type." />
+
+- **Status distribution** is a ring chart that shows how the jobs are split between **New**, **In Progress**, **Blocked** and **Completed**.
+- **Summary** gives the same numbers, plus how many jobs are **Overdue** and, for Owners and Admins, how many are in **Pending approvals**. Click **New**, **In Progress**, **Blocked** or **Completed** to open the job list on that tab. Click **Pending approvals** to open the approvals page.
+- **By type** shows how many jobs there are of each job type. It only appears when the project has job types.
+
+## The lists that need attention
+
+Below the counts, up to three lists show what needs a decision. A list is left out when it's empty.
+
+- **Blocked** lists each blocked job, who is responsible, how long it has been blocked and the reason.
+- **Overdue** lists the jobs whose deadline has passed, with who is responsible and the deadline.
+- **Pending Approvals** lists the approval requests waiting for an Owner or Admin. Members don't see this list. It shows five requests. If there are more, click **→ View all**.
+
+Click the arrow at the right of a row to open that job. If all three lists are empty, the dashboard says **All clear**.
+
+<Screenshot src="/guide/en/dashboard-2.webp" alt="The lower part of the dashboard with the Blocked list showing two jobs and their reasons, the Overdue list with one job and the Pending Approvals list with one request" caption="Blocked, Overdue and Pending Approvals each list the jobs behind the numbers." />
+
+<Callout type="tip">
+You can hide any of the three lists in your own settings. See [Your preferences](/guide/preferences).
+</Callout>
+
+## Keeping it up to date
+
+The dashboard doesn't change by itself while you look at it. It loads fresh numbers when you open it and its data is more than 30 seconds old, and right after you change a job or an approval yourself. Changes made by other people show up the next time you open it, or when you click the refresh button at the top right. A note next to the button says how long ago it was updated.

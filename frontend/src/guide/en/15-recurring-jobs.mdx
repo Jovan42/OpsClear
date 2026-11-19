@@ -1,0 +1,86 @@
+export const frontmatter = {
+  title: 'Recurring jobs',
+  description: 'Have OpsClear create the same job on a timetable, hand it to people in turn, pause it, and deal with runs that were missed.',
+};
+
+# Recurring jobs
+
+Some jobs come back again and again: a monthly boiler service, a weekly safety check. A schedule creates them for you on a timetable, so nobody has to remember. Each new job is built from a [job template](/guide/templates-and-types).
+
+<FeatureLink card="recurring" />
+
+<Callout type="note">
+Recurring jobs are an add-on, and they need the job templates add-on too. Without them, the **Schedules** page says it isn't included in your plan. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## See your schedules
+
+Open your project and click **Schedules** in the top bar. Each schedule shows its name and a status label, the template it uses, a short description of when it runs, the next run and the people it hands jobs to.
+
+<Screenshot src="/guide/en/recurring-jobs-1.webp" alt="The Schedules page with two schedules, one Paused and one Active, each showing its template, when it runs, the next run and a circle for each person in its rotation, with a banner under the second one saying 1 missed run" caption="Each schedule shows its status, its template and when it runs next." />
+
+The status label tells you what a schedule is doing:
+
+- **Active**: it creates jobs on time.
+- **Paused**: it is switched off for now, and no jobs are created.
+- **No assignees**: it paused itself because everyone in its rotation left the project.
+- **Expired**: its end date has passed.
+
+## Create a schedule
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+You need at least one template first. Open **Templates** and create one, or click **Schedule** next to an existing template to start with it already chosen.
+
+<Steps>
+  <Step title="Start a new schedule">
+    On the **Schedules** page, click **+ New Schedule**. If there are none yet, click **Create first schedule**.
+  </Step>
+  <Step title="Name it and choose the template">
+    Type a **Name** and pick the **Template** the jobs are made from.
+  </Step>
+  <Step title="Choose when it runs">
+    Under **Schedule**, choose **Daily**, **Weekly** or **Monthly** and set the day and the time. **Advanced** is for people who know how to write a cron timetable.
+  </Step>
+  <Step title="Check the preview">
+    The line under the time says in words when the schedule runs, and **Next occurrences** lists the coming dates. Check that they are what you expect, and pick the **Timezone** the times refer to.
+  </Step>
+  <Step title="Add people (optional)">
+    Under **Assignee rotation**, add the people who should get the jobs. They take turns in the order you list them: the first job goes to the first person, the next to the second, and so on, starting again at the top.
+  </Step>
+  <Step title="Pause or end it (optional)">
+    Use **Pause until** to start the schedule on a later date, and **Expires at** to stop it on a date.
+  </Step>
+  <Step title="Create it">
+    Click **Create schedule**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/recurring-jobs-2.webp" alt="The New Schedule window with the name, the template menu, the Daily, Weekly, Monthly and Advanced choices, a weekly schedule on Monday, a line in words saying when it runs, and the list of next occurrences" caption="The preview shows in words when the schedule runs and lists the next dates." />
+
+Jobs a schedule creates look like any other job, with the note **Created by schedule** on the job's page. The person it is assigned to gets a notification.
+
+## Pause, resume, edit or delete
+
+On a schedule's row, click **Pause** and choose for how long: **1 day**, **1 week**, **1 month**, a **Custom date** or **Indefinitely**. Click **Resume** to start it again. **Edit** changes any of its settings, and **Delete** removes it after you confirm.
+
+<Callout type="warning">
+Deleting a schedule stops new jobs from being created. The jobs it already created are kept.
+</Callout>
+
+## Missed runs
+
+If OpsClear couldn't create a job at the planned time, for example because it was down for maintenance, it doesn't flood your project with late jobs. It keeps a note instead, and the schedule shows a banner such as **1 missed run**. Click the banner to open the list.
+
+<Screenshot src="/guide/en/recurring-jobs-3.webp" alt="The missed run banner opened under a schedule, listing one missed run with the buttons Create job and Dismiss" caption="Open the banner to decide what to do with each missed run." />
+
+<Steps>
+  <Step title="Look at the missed runs">
+    Click the banner. Each missed run is listed with the date it should have happened.
+  </Step>
+  <Step title="Decide for each one">
+    Click **Create job** to make the job now, or **Dismiss** if you don't need it. With several missed runs, **Dismiss all** clears them in one go.
+  </Step>
+</Steps>
+
+Owners and Admins are told about a missed run in their [notifications](/guide/notifications).

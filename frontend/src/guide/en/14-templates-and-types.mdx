@@ -1,0 +1,96 @@
+export const frontmatter = {
+  title: 'Job templates and job types',
+  description: 'Save a job you create often as a template, start new jobs from it, and sort your jobs with coloured job types.',
+};
+
+# Job templates and job types
+
+Two tools save you time on work that repeats. A job template is a ready-made job: you fill in the title, priority and other details once, and every new job starts from them. A job type is a coloured label, such as Plumbing or Gas, that sorts your jobs into kinds.
+
+<FeatureLink card="templates" />
+
+<Callout type="note">
+Job templates and job types are separate add-ons. Without one, its page says it isn't included in your plan. See [Subscription and add-ons](/guide/subscription).
+</Callout>
+
+## Job templates
+
+Open your project and click **Templates** in the top bar. Each template shows its name, the job title it creates, its priority, the deadline it adds and how many times it has been used.
+
+<Screenshot src="/guide/en/templates-and-types-1.webp" alt="The Job Templates page with three templates, each with a name, a priority label, the days to the deadline and the Schedule, Edit and Delete buttons" caption="The templates of a project." />
+
+### Create a template
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Start a new template">
+    Click **+ New Template**. If there are none yet, click **Create first template**.
+  </Step>
+  <Step title="Name it and fill in the job">
+    Type a **Name** for the template itself. Then fill in what the new jobs should start with: **Title template**, **Description template**, **Client** and **Priority**. Leave out whatever should be blank.
+  </Step>
+  <Step title="Decide who and when">
+    In **Assignee mode**, choose **None — leave blank**, **Fixed — pre-fill assignee** (then pick the person in **Assignee**) or **Ask — focus field on creation**, which puts the cursor in the **Assign to** box so whoever creates the job picks. In **Deadline offset (days)** type how many days after creation the deadline should fall, for example 7.
+  </Step>
+  <Step title="Add a milestone and type">
+    If your project has them, choose a **Milestone** and a **Default type**.
+  </Step>
+  <Step title="Save it">
+    Click **Create**.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/templates-and-types-2.webp" alt="The template window with the name, title template, description template, client, priority, assignee mode, deadline offset, assignee, milestone and default type, and a link to the available wildcards" caption="A template being edited. Every field is optional except the name." />
+
+### Placeholders that fill themselves in
+
+The title and description can contain placeholders that are replaced when a job is created. For example, the title `Report for {{project}}` becomes "Report for Kitchen refit", and `{{date}}` becomes that day's date. Click **Available wildcards** in the template window to see the full list: the date (also moved by a number of days), the day, month, year, week and quarter, the project name, the person creating the job, the assigned member's name and a counter of how many times the template has been used.
+
+### Start a job from a template
+
+<Steps>
+  <Step title="Open the New Job window">
+    On the **Jobs** list, click **+ New Job**.
+  </Step>
+  <Step title="Choose the template">
+    In **Start from template**, pick a template. The title, description, client, priority, deadline and the rest are filled in.
+  </Step>
+  <Step title="Adjust and create">
+    Change anything you like, then click **Create job**.
+  </Step>
+</Steps>
+
+A template can't be deleted while an active [recurring job](/guide/recurring-jobs) uses it. To make a template run on a timetable, click **Schedule** next to it.
+
+### Templates for the whole organisation
+
+Owners and Admins can also make templates that every project in the organisation can use. Click your name at the top right, choose **Organisation**, and look for **Org Templates** on the page. In the New Job window these templates are marked **[Org]**. Because the types belong to a project, an organisation template names its **Default type** in words, and it is matched by name against the types of the project the job is created in. If no type has that name, the job gets none.
+
+## Job types
+
+Open **Types** in the top bar to see the job types of the project. A type shows as a coloured label next to the jobs that have it. You can pick one type at a time in the **All types** menu on the **Jobs** list, and the [dashboard](/guide/dashboard) shows how many jobs there are of each type.
+
+<Screenshot src="/guide/en/templates-and-types-3.webp" alt="The Job Types page listing three coloured types, each with arrows to move it up or down and the Edit and Delete buttons" caption="The job types of a project, each in its own colour." />
+
+<RoleBadge role={['Owner', 'Admin']} />
+
+<Steps>
+  <Step title="Add a type">
+    Click **+ New Type**. If there are none yet, click **Create your first type**.
+  </Step>
+  <Step title="Name it and pick a colour">
+    Type a **Name**, such as "Gas", and click one of the ten colours under **Color**.
+  </Step>
+  <Step title="Create it">
+    Click **Create**. Now choose it in the **Type** menu when you create or edit a job.
+  </Step>
+</Steps>
+
+<Screenshot src="/guide/en/templates-and-types-4.webp" alt="The New Job Type window with a Name field and a row of ten colours to choose from" caption="A new type needs a name and a colour." />
+
+Use the arrows beside a type to change the order in which the types are listed, and **Edit** to rename it or change its colour.
+
+<Callout type="warning">
+If you delete a type, the jobs that had it keep working but lose the type. This can't be undone.
+</Callout>
