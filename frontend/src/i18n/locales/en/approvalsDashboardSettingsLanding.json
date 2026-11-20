@@ -10,6 +10,7 @@
       "milestones": "Milestones",
       "stats": "Stats",
       "notifications": "Notifications",
+      "security": "Security",
       "apiKeys": "API keys"
     },
     "saveError": "Couldn't save your preferences",
@@ -153,6 +154,18 @@
         "description": "Play a short sound when a new notification arrives in the tab you're using.",
         "on": "On",
         "off": "Off"
+      }
+    },
+    "security": {
+      "password": {
+        "label": "Password",
+        "description": "Change the password you sign in with. You choose the new one on the OpsClear sign-in page.",
+        "change": "Change password",
+        "status": {
+          "success": "Your password has been changed.",
+          "cancelled": "Password change cancelled. Your password stays the same.",
+          "error": "Couldn't change your password. Try again."
+        }
       }
     },
     "apiKeysFeatureName": "API Keys",

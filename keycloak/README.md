@@ -26,6 +26,7 @@ This folder contains Keycloak realm configuration for OpsClear.
 | Email verification | On (ADR-0059). Dev and CI mail goes to Mailpit, http://localhost:8025 |
 | Login and email theme | `opsclear` (`themes/opsclear/login`, `themes/opsclear/email`), en and sr |
 | Password policy | Min 8 characters |
+| Change password in the app | **Settings > Security** starts Keycloak's `UPDATE_PASSWORD` required action as an application-initiated action (`kc_action=UPDATE_PASSWORD`). The action is enabled by default in every realm, so the realm export doesn't list it. Page: `themes/opsclear/login/login-update-password.ftl` |
 | Access token lifespan | 5 minutes |
 | Refresh token lifespan | 30 days |
 | Brute force protection | Enabled |

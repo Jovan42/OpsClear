@@ -1,13 +1,19 @@
+import { useEffect, useState } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import ApiKeySection from './ApiKeySection';
 import NotificationTypeSettings from './NotificationTypeSettings';
+import Button from '../../components/Button';
 import UpgradeCard from '../../components/UpgradeCard';
 import { usePreferences } from '../../hooks/usePreferences';
 import { useCurrentOrg } from '../org/OrgContext';
 import { useOrgMembers } from '../org/useOrganisation';
 import { useProjectList } from '../projects/useProjects';
 import { useAuth } from '../../auth/AuthContext';
+import {
+  clearPasswordChangeStatus, peekPasswordChangeStatus, startPasswordChange,
+} from '../../auth/passwordChange';
+import type { PasswordChangeStatus } from '../../auth/passwordChange';
 import type {
   Theme, Locale, ViewMode, AccordionState, StatusTab,
   SortOrder, DeadlineFormat, ProjectPage, ProgressFormat, DateFormat, RowDensity,
@@ -92,7 +98,7 @@ function SettingRow({ label, description, children }: SettingRowProps) {
 // ---- sections (ADR-0061) ----
 
 // Page order.
-const SECTION_IDS = ['appearance', 'jobs', 'dashboard', 'navigation', 'milestones', 'stats', 'notifications', 'api-keys'] as const;
+const SECTION_IDS = ['appearance', 'jobs', 'dashboard', 'navigation', 'milestones', 'stats', 'notifications', 'security', 'api-keys'] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 
 const SECTION_LABEL_KEYS: Record<SectionId, string> = {
@@ -103,6 +109,7 @@ const SECTION_LABEL_KEYS: Record<SectionId, string> = {
   milestones: 'milestones',
   stats: 'stats',
   notifications: 'notifications',
+  security: 'security',
   'api-keys': 'apiKeys',
 };
 
@@ -160,6 +167,55 @@ function SectionIndex({ sections, label }: SectionIndexProps) {
         ))}
       </ul>
     </nav>
+  );
+}
+
+// ---- security (JOB-404) ----
+
+const PASSWORD_STATUS_STYLES: Record<PasswordChangeStatus, string> = {
+  success: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  cancelled: 'bg-gray-50 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300',
+  error: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+};
+
+/**
+ * Change password runs on Keycloak's own update-password page, so OpsClear never handles the
+ * password. Coming back, keycloak-js reports the outcome (and removes it from the URL); it is
+ * shown here once.
+ */
+function SecuritySection({ locale }: { readonly locale: string }) {
+  const { t } = useTranslation(['approvalsDashboardSettingsLanding']);
+  const [status] = useState<PasswordChangeStatus | null>(peekPasswordChangeStatus);
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (!status) return;
+    clearPasswordChangeStatus();
+    document.getElementById('security')?.scrollIntoView({ block: 'start' });
+  }, [status]);
+
+  const changePassword = () => {
+    setRedirecting(true);
+    startPasswordChange(locale).catch(() => setRedirecting(false));
+  };
+
+  return (
+    <SettingsSection id="security" heading={t('settings.sections.security')}>
+      {status && (
+        <p
+          role={status === 'error' ? 'alert' : 'status'}
+          data-testid="password-change-status"
+          className={`px-5 py-3 text-sm rounded-t-xl ${PASSWORD_STATUS_STYLES[status]}`}
+        >
+          {t(`settings.security.password.status.${status}`)}
+        </p>
+      )}
+      <SettingRow label={t('settings.security.password.label')} description={t('settings.security.password.description')}>
+        <Button variant="secondary" size="sm" loading={redirecting} onClick={changePassword}>
+          {t('settings.security.password.change')}
+        </Button>
+      </SettingRow>
+    </SettingsSection>
   );
 }
 
@@ -451,6 +507,8 @@ export default function SettingsPage() {
             </SettingRow>
             <NotificationTypeSettings />
           </SettingsSection>
+
+          <SecuritySection locale={prefs.locale} />
 
           {/* ApiKeySection and UpgradeCard bring their own heading. */}
           <div id="api-keys" className="scroll-mt-6">
