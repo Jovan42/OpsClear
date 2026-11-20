@@ -143,9 +143,9 @@ Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 
 4. In tab A click **Mark all as read**.
 5. Look at tab B.
 
-- [ ] Tab B's badge drops by one shortly after step 2, without a refresh
-- [ ] Tab B's badge disappears after step 4
-- [ ] Opening the bell in tab B shows every entry as read
+- [x] Tab B's badge drops by one shortly after step 2, without a refresh
+- [x] Tab B's badge disappears after step 4
+- [x] Opening the bell in tab B shows every entry as read
 
 ## NTF-08 Missed notifications catch up after a lost connection
 **As:** Luka (and Ana to cause the event) · **Day:** 1 · **Needs:** NTF-02 done
