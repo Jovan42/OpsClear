@@ -84,7 +84,7 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 - [ ] **Daily** shows a line in words saying every day at 07:00 and five consecutive days in **Next occurrences**, each at 07:00 UTC
 - [ ] **Monthly** shows the 1st of the next five months at 09:00 UTC
 - [ ] **Advanced** lists five dates, Monday to Friday only, at 08:00 UTC, and the line in words says the same
-- [ ] With only five fields, **Next occurrences** disappears or stops updating instead of showing wrong dates, and the form still opens and closes normally
+- [ ] With only five fields, **Next occurrences** disappears (the form doesn't ask for a preview) and the form still opens and closes normally
 - [ ] The helper text under the **Advanced** field says it is a 6-field cron: sec min hour dom month dow
 
 ## SCH-04 Bad input is refused and nothing is created
@@ -273,45 +273,46 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 - [ ] Its **Next:** is still the day-3 run plus one week
 
 ## SCH-17 Resume after a long pause: runs that were skipped are listed as missed
-**As:** Ana · **Day:** 7 or later, after 07:00 UTC · **Needs:** SCH-16 done. Resume at least two 07:00 UTC ticks after the pause (day 7 or later, after 07:00 UTC) so the list gets two entries. This is also what makes the `SCHEDULE_RUN_MISSED` notification of NTF-24, so do it before NTF-24.
+**As:** Ana · **Day:** 7, after 07:00 UTC and before 07:00 UTC on day 8 · **Needs:** SCH-16 done. The schedule was paused on day 4 after its run, so its next run was day 5 07:00 UTC. Resume on day 7 after 07:00 UTC, three ticks later (day 5, 6 and 7): the poller doesn't record the first skipped tick (day 5), only the ones after it, so the list gets exactly two entries (day 6 and day 7, 07:00 UTC). Resuming later gives more entries and breaks the counts in SCH-18. This is also what makes the `SCHEDULE_RUN_MISSED` notifications of NTF-24, so do it before NTF-24.
 
 1. Open Residential, **Schedules**. On **Daily site safety check** click **Resume**.
 2. Wait two minutes and reload the page.
 3. Open **Jobs** and search for "Site safety check".
 
 - [ ] After **Resume** the row says **Active**
-- [ ] The row shows a banner with "2 missed runs" (or more) under the schedule
+- [ ] The row shows a banner with "2 missed runs" under the schedule
 - [ ] **Next:** shows the next 07:00 UTC moment in the future
 - [ ] No new `Site safety check …` job was made for the time the schedule sat paused: the list still has the day-2, day-3 and day-4 jobs only
-- [ ] Ana (Owner) has a "Schedule … missed a run" entry in her notification centre (the text and the other recipients are checked in NTF-24)
+- [ ] Ana (Owner) has two "Schedule \"Daily site safety check\" missed a run in Residential Fit-outs" entries in her notification centre, one per missed run (recipients and text are checked in NTF-24)
 
 ## SCH-18 The missed-runs list
-**As:** Sara (member), then Ana (Owner) · **Day:** 7 or later · **Needs:** SCH-17 done
+**As:** Sara (member), then Ana (Owner) · **Day:** 7 · **Needs:** SCH-17 done
 
 1. As Sara, open Residential, **Schedules**, click the missed-runs banner.
 2. As Ana, open **Schedules**, click the banner to open the list.
-3. On the first entry click **Create job**.
+3. On the first (oldest) entry click **Create job**.
 4. Click **View** in the green box.
 5. Back on **Schedules**, open the banner again and click **Dismiss** on the remaining entry.
 
 - [ ] Sara can open the banner and sees the missed dates, but has no **Create job**, **Dismiss** or **Dismiss all**
-- [ ] Ana's list has one row per missed run with its date, each with **Create job** and **Dismiss**, and a **Dismiss all** button above them (shown only while there is more than one)
-- [ ] **Create job** shows a green box "Job created:" with the new job's ID and its title `Site safety check for Residential Fit-outs - <date of that missed run>`
+- [ ] Ana's list has two rows, oldest first (day 6, then day 7), each with its date, each with **Create job** and **Dismiss**, and a **Dismiss all** button above them (shown only while there is more than one)
+- [ ] **Create job** shows a green box "Job created:" with the new job's ID and its title `Site safety check for Residential Fit-outs - <day 6 date>`
 - [ ] **View** opens that job, which is **New** and shows "Created by schedule" with **Daily site safety check**
 - [ ] The entry you used is gone from the list, the banner now says "1 missed run" and **Dismiss all** is no longer shown
 - [ ] After **Dismiss** on the last entry the list is empty and no job was made for it, and after a reload the banner is gone
 
 ## SCH-19 Deleting a schedule keeps its jobs
-**As:** Ana (Residential owner) · **Day:** 7 or later · **Needs:** SCH-18 done
+**As:** Ana (Residential owner) · **Day:** 7 (before the weekly schedule's second run) · **Needs:** SCH-18 done
 
-1. Open Residential, **Schedules**. On **Weekly toolbox talk** click **Delete** and confirm.
-2. Open **Jobs** and search for "Toolbox talk".
-3. As Ana open **Templates**.
+1. Open **Templates** and note the "Used" count on **Toolbox talk**.
+2. Open **Schedules**. On **Weekly toolbox talk** click **Delete** and confirm.
+3. Open **Jobs** and search for "Toolbox talk".
+4. Open **Templates** again.
 
 - [ ] **Weekly toolbox talk** is gone from the list
 - [ ] **Daily site safety check** is still listed
 - [ ] The job `Toolbox talk week <week number>` from day 3 is still in the job list, unchanged
-- [ ] **Toolbox talk** on the Templates page still shows "Used 1×"
+- [ ] **Toolbox talk** on the Templates page shows the same "Used" count as before the delete
 
 ## SCH-20 Missed run after the app was stopped (optional)
 **As:** Nikola, then Ana, Ivana · **Day:** 7 or later · **Needs:** the developer can stop and start the prod backend. Skip this if that isn't practical: SCH-17 already covers the list and the notification. This is the only scenario where the app itself was down, and it needs the app stopped for **more than one hour**, because a missed run is only recorded when the next run time is also past. A normal deploy of a few minutes won't produce one.
@@ -331,7 +332,7 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 
 ## Not manual
 - Member, non-member and wrong-project calls to the schedule endpoints are refused (403 or 404), including an assignee from another organisation: covered by `RecurringScheduleIntegrationTest` and `ScheduleMissedRunIntegrationTest`.
-- `@RequiresAddon(RECURRING_SCHEDULING)` blocking the schedule and missed-run endpoints when the add-on is off: covered by `RequiresAddonAspectTest`. The page and top bar behaviour is SCH-09.
+- The add-on check on the schedule and missed-run endpoints: no test calls them without `RECURRING_SCHEDULING` (`RequiresAddonAspectTest` only tests the aspect in general, with mocks), and `SchedulePreviewController` has no add-on check. SCH-09 (Petra) is the only check of the gating and it covers the page and top bar only. See the follow-ups in PR #594.
 - Dismiss all as an API call, materialising a missed run with a bad timezone, and the 404 for an unknown missed run: covered by `ScheduleMissedRunIntegrationTest`.
 - The poller creating, skipping and recording runs (rotation, deadline offset, priority, template soft-deleted, invalid timezone, no future occurrence): covered by `SchedulerPollerTest`, `SchedulerPollerIntegrationTest` and `ScheduleJobCreatorTest`.
 - A schedule going to **No assignees** when the last assignee is removed from the project: covered by `RecurringScheduleIntegrationTest` (`removeMember …`) and `ProjectMemberServiceTest`.

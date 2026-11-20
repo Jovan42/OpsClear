@@ -94,9 +94,11 @@ Day boundaries are UTC. Deadline alerts run daily at 06:00 UTC (07:00 CET in win
 | 4 | OVERDUE for open jobs due day 3, none for the completed one. No duplicate alerts. Schedules ran each day; pause one. |
 | 5+ | Paused schedule created nothing. Remaining areas, then `15-cross-cutting.md`. |
 
-A run spans roughly a working week. Single-sitting areas fit around the multi-day checks. A deploy
-during the run restarts the app, which is the only realistic way to see a missed schedule run: an
-optional check with a per-minute schedule created just before a deploy.
+A run spans roughly a working week. Single-sitting areas fit around the multi-day checks. A missed
+schedule run is produced by pausing the daily schedule on day 4 and resuming it on day 7 after
+07:00 UTC (`SCH-17` in `08-schedules.md`). The optional `SCH-20` stops the backend for more than an
+hour. A normal deploy can't do it: schedules run at most once an hour, and a run is only missed
+when the next one is also past.
 
 ## Scenario format
 
