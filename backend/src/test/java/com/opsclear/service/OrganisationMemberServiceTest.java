@@ -1,16 +1,12 @@
 package com.opsclear.service;
 
-import com.opsclear.dto.AddOrgMemberRequest;
 import com.opsclear.dto.UpdateOrgMemberRoleRequest;
-import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.OrgMemberModel;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
-import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrganisationRepository;
-import com.opsclear.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,9 +30,6 @@ class OrganisationMemberServiceTest {
     @Mock
     private OrganisationRepository organisationRepository;
 
-    @Mock
-    private UserRepository userRepository;
-
     private OrganisationMemberService service;
 
     private UUID orgId;
@@ -46,7 +39,7 @@ class OrganisationMemberServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OrganisationMemberService(organisationRepository, userRepository);
+        service = new OrganisationMemberService(organisationRepository);
 
         orgId = UUID.randomUUID();
         ownerId = UUID.randomUUID();
@@ -107,121 +100,6 @@ class OrganisationMemberServiceTest {
         assertThatThrownBy(() -> service.listMembers(orgId, outsiderId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("You are not a member of this organisation");
-    }
-
-    // ─── addMember ────────────────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("addMember_shouldAddMember_whenCallerIsOwner")
-    void addMember_shouldAddMember_whenCallerIsOwner() {
-        UUID newUserId = UUID.randomUUID();
-        AddOrgMemberRequest request = AddOrgMemberRequest.builder()
-                .userId(newUserId).role(OrganisationRole.MEMBER).build();
-        OrgMemberModel saved = OrgMemberModel.builder()
-                .organisationId(orgId).userId(newUserId).role(OrganisationRole.MEMBER).build();
-
-        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
-        when(organisationRepository.findMemberRole(orgId, ownerId))
-                .thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(userRepository.findById(newUserId))
-                .thenReturn(Optional.of(UserModel.builder().id(newUserId).build()));
-        when(organisationRepository.existsMember(orgId, newUserId)).thenReturn(false);
-        when(organisationRepository.findMember(orgId, newUserId)).thenReturn(Optional.of(saved));
-
-        OrgMemberModel result = service.addMember(orgId, ownerId, request);
-
-        verify(organisationRepository).saveMember(orgId, newUserId, OrganisationRole.MEMBER);
-        assertThat(result.getRole()).isEqualTo(OrganisationRole.MEMBER);
-        assertThat(result.getUserId()).isEqualTo(newUserId);
-    }
-
-    @Test
-    @DisplayName("addMember_shouldAddMember_whenCallerIsAdmin")
-    void addMember_shouldAddMember_whenCallerIsAdmin() {
-        UUID adminId = UUID.randomUUID();
-        UUID newUserId = UUID.randomUUID();
-        AddOrgMemberRequest request = AddOrgMemberRequest.builder()
-                .userId(newUserId).role(OrganisationRole.MEMBER).build();
-        OrgMemberModel saved = OrgMemberModel.builder()
-                .organisationId(orgId).userId(newUserId).role(OrganisationRole.MEMBER).build();
-
-        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
-        when(organisationRepository.findMemberRole(orgId, adminId))
-                .thenReturn(Optional.of(OrganisationRole.ADMIN));
-        when(userRepository.findById(newUserId))
-                .thenReturn(Optional.of(UserModel.builder().id(newUserId).build()));
-        when(organisationRepository.existsMember(orgId, newUserId)).thenReturn(false);
-        when(organisationRepository.findMember(orgId, newUserId)).thenReturn(Optional.of(saved));
-
-        service.addMember(orgId, adminId, request);
-
-        verify(organisationRepository).saveMember(orgId, newUserId, OrganisationRole.MEMBER);
-    }
-
-    @Test
-    @DisplayName("addMember_shouldThrow_whenCallerIsMember")
-    void addMember_shouldThrow_whenCallerIsMember() {
-        UUID memberId = UUID.randomUUID();
-        AddOrgMemberRequest request = AddOrgMemberRequest.builder()
-                .userId(UUID.randomUUID()).role(OrganisationRole.MEMBER).build();
-
-        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
-        when(organisationRepository.findMemberRole(orgId, memberId))
-                .thenReturn(Optional.of(OrganisationRole.MEMBER));
-
-        assertThatThrownBy(() -> service.addMember(orgId, memberId, request))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
-    }
-
-    @Test
-    @DisplayName("addMember_shouldThrow_whenAssigningOwnerRole")
-    void addMember_shouldThrow_whenAssigningOwnerRole() {
-        AddOrgMemberRequest request = AddOrgMemberRequest.builder()
-                .userId(UUID.randomUUID()).role(OrganisationRole.OWNER).build();
-
-        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
-        when(organisationRepository.findMemberRole(orgId, ownerId))
-                .thenReturn(Optional.of(OrganisationRole.OWNER));
-
-        assertThatThrownBy(() -> service.addMember(orgId, ownerId, request))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Cannot assign OWNER role");
-    }
-
-    @Test
-    @DisplayName("addMember_shouldThrow_whenUserNotFound")
-    void addMember_shouldThrow_whenUserNotFound() {
-        UUID missingId = UUID.randomUUID();
-        AddOrgMemberRequest request = AddOrgMemberRequest.builder()
-                .userId(missingId).role(OrganisationRole.MEMBER).build();
-
-        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
-        when(organisationRepository.findMemberRole(orgId, ownerId))
-                .thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(userRepository.findById(missingId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.addMember(orgId, ownerId, request))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessage("User not found");
-    }
-
-    @Test
-    @DisplayName("addMember_shouldThrow_whenAlreadyMember")
-    void addMember_shouldThrow_whenAlreadyMember() {
-        AddOrgMemberRequest request = AddOrgMemberRequest.builder()
-                .userId(ownerId).role(OrganisationRole.MEMBER).build();
-
-        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
-        when(organisationRepository.findMemberRole(orgId, ownerId))
-                .thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(userRepository.findById(ownerId))
-                .thenReturn(Optional.of(UserModel.builder().id(ownerId).build()));
-        when(organisationRepository.existsMember(orgId, ownerId)).thenReturn(true);
-
-        assertThatThrownBy(() -> service.addMember(orgId, ownerId, request))
-                .isInstanceOf(ConflictException.class)
-                .hasMessage("User is already a member of this organisation");
     }
 
     // ─── updateRole ───────────────────────────────────────────────────────────
@@ -390,26 +268,6 @@ class OrganisationMemberServiceTest {
     }
 
     // ─── post-write reload edge cases ─────────────────────────────────────────
-
-    @Test
-    @DisplayName("addMember_shouldThrow_whenReloadAfterSaveFails")
-    void addMember_shouldThrow_whenReloadAfterSaveFails() {
-        UUID newUserId = UUID.randomUUID();
-        AddOrgMemberRequest request = AddOrgMemberRequest.builder()
-                .userId(newUserId).role(OrganisationRole.MEMBER).build();
-
-        when(organisationRepository.findByIdAndDeletedAtIsNull(orgId)).thenReturn(Optional.of(org));
-        when(organisationRepository.findMemberRole(orgId, ownerId))
-                .thenReturn(Optional.of(OrganisationRole.OWNER));
-        when(userRepository.findById(newUserId))
-                .thenReturn(Optional.of(UserModel.builder().id(newUserId).build()));
-        when(organisationRepository.existsMember(orgId, newUserId)).thenReturn(false);
-        when(organisationRepository.findMember(orgId, newUserId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.addMember(orgId, ownerId, request))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessage("Member not found in this organisation");
-    }
 
     @Test
     @DisplayName("updateRole_shouldThrow_whenReloadAfterUpdateFails")

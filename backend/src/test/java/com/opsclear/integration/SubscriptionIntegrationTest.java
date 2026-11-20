@@ -80,12 +80,7 @@ class SubscriptionIntegrationTest {
 
         orgId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
 
-        mockMvc.perform(post(ApiPaths.orgMembers(orgId))
-                        .with(jwt().jwt(j -> j.subject(ownerId.toString())
-                                .claim("email", "owner@example.com").claim("name", "Owner")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("userId", memberId, "role", "MEMBER"))))
-                .andExpect(status().isCreated());
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.MEMBER);
 
         tierId = tierRepository.findAll().getFirst().getId();
         addonId = addonRepository.findAll().stream()
