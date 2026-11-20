@@ -325,7 +325,10 @@ export function completeProjectAs(email: string, projectId: string) {
  *
  *  Fails loudly like the endpoint did: the insert only happens when `ownerEmail` is an OWNER or
  *  ADMIN of `orgId`, a missing `users` row (see userIdFor) breaks the foreign key, and adding an
- *  existing member breaks the primary key. */
+ *  existing member breaks the primary key.
+ *
+ *  Yields nothing: unlike the old cy.request version it no longer returns an HTTP response
+ *  (no caller used it). */
 export function addMember(orgId: string, ownerEmail: string, targetUserId: string, role: 'MEMBER' | 'ADMIN') {
   return cy
     .task('queryDb', {
