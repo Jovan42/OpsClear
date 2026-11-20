@@ -183,11 +183,11 @@ Set **Notification sound** back to **On** at the end. Ivana now has four "Deadli
 1. Open the user menu, **Account settings**, and scroll to **Notifications**.
 2. Read **Notification types** from top to bottom.
 
-- [ ] **Notification types** has two groups, **Job events** and **Project, organisation and account**
-- [ ] 16 types are listed, 11 job events and 5 project, organisation and account ones
-- [ ] Every type is on and none is muted by default
-- [ ] **Subscription past due** is on and locked, with "Always on: billing problems affect the whole organisation."
-- [ ] The section says the settings apply on all your devices
+- [x] **Notification types** has two groups, **Job events** and **Project, organisation and account**
+- [x] 16 types are listed, 11 job events and 5 project, organisation and account ones
+- [x] Every type is on and none is muted by default
+- [x] **Subscription past due** is on and locked, with "Always on: billing problems affect the whole organisation."
+- [x] The section says the settings apply on all your devices
 
 ## NTF-11 Mute and unmute a type
 **As:** Luka, with Ana causing events · **Day:** 1 · **Needs:** NTF-10 done, "Fit heated towel rail at 14 Elm St" still **New** and assigned to Luka
