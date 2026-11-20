@@ -258,8 +258,8 @@ describe('Organisation Management — Invites', () => {
   });
 
   // ADR-0049 edge case: "Accepting an email that became a member via another path in
-  // the meantime → 409 EMAIL_ALREADY_MEMBER" — e.g. the OWNER manually adds them via
-  // the members picker while their invite is still sitting pending.
+  // the meantime → 409 EMAIL_ALREADY_MEMBER". Direct add is gone (JOB-402), so the
+  // addMember fixture writes the membership row while the invite is still pending.
   it('accepting an invite for an email that became a member another way in the meantime 409s', () => {
     const ownerEmail = uniqueEmail('midair-owner');
     const inviteeEmail = uniqueEmail('midair-invitee');
