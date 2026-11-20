@@ -12,9 +12,15 @@ export type PasswordChangeStatus = 'success' | 'cancelled' | 'error';
 
 let pendingStatus: PasswordChangeStatus | null = null;
 
-/** `keycloak.onActionUpdate` handler: remembers the outcome of a password change. */
+/**
+ * `keycloak.onActionUpdate` handler: remembers the outcome of a password change.
+ *
+ * Keycloak 24 (our version) sends only `kc_action_status`, not `kc_action`, so `action` is
+ * undefined there. Update password is the only application-initiated action OpsClear starts,
+ * so a status without an action is taken as its result. Another named action is ignored.
+ */
 export function recordAccountAction(status: PasswordChangeStatus, action?: string): void {
-  if (action === UPDATE_PASSWORD_ACTION) pendingStatus = status;
+  if (action === undefined || action === UPDATE_PASSWORD_ACTION) pendingStatus = status;
 }
 
 /** The outcome of the password change the user just came back from, if any. */

@@ -26,9 +26,13 @@ describe('password change status', () => {
     expect(peekPasswordChangeStatus()).toBe(status);
   });
 
-  it('ignores other Keycloak actions', () => {
+  it('takes a status without an action as the password result (Keycloak 24 sends no kc_action)', () => {
+    recordAccountAction('cancelled');
+    expect(peekPasswordChangeStatus()).toBe('cancelled');
+  });
+
+  it('ignores other named Keycloak actions', () => {
     recordAccountAction('success', 'UPDATE_PROFILE');
-    recordAccountAction('success');
     expect(peekPasswordChangeStatus()).toBeNull();
   });
 
