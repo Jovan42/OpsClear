@@ -148,7 +148,6 @@ public final class ErrorMessages {
                 "Insufficient permissions: OWNER or ADMIN role required";
         public static final String NOT_A_MEMBER = "You are not a member of this organisation";
         public static final String MEMBER_NOT_FOUND = "Member not found in this organisation";
-        public static final String ALREADY_A_MEMBER = "User is already a member of this organisation";
         public static final String CANNOT_ASSIGN_OWNER_ROLE = "Cannot assign OWNER role";
         public static final String CANNOT_CHANGE_OWNER_ROLE = "Cannot change the organisation owner's role";
         public static final String CANNOT_REMOVE_OWNER = "Cannot remove the organisation owner";

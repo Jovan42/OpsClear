@@ -213,10 +213,17 @@ echo ""
 echo "==> [4/6] Creating organisation..."
 
 ORG=$(api POST "/api/organisations" "$TOKEN_TEST" "{\"name\":\"$ORG_NAME\",\"slug\":\"$ORG_SLUG\"}" | jid)
-api POST "/api/organisations/$ORG/members" "$TOKEN_TEST" "{\"userId\":\"$ID_ALICE\",\"role\":\"ADMIN\"}"  > /dev/null
-api POST "/api/organisations/$ORG/members" "$TOKEN_TEST" "{\"userId\":\"$ID_BOB\",\"role\":\"ADMIN\"}"    > /dev/null
-api POST "/api/organisations/$ORG/members" "$TOKEN_TEST" "{\"userId\":\"$ID_CAROL\",\"role\":\"MEMBER\"}" > /dev/null
-api POST "/api/organisations/$ORG/members" "$TOKEN_TEST" "{\"userId\":\"$ID_DAVE\",\"role\":\"MEMBER\"}"  > /dev/null
+# JOB-402: invites are the only way into an organisation (no direct-add API). Demo members go
+# straight into organisation_members, as an accepted invite would leave them, without invite emails
+# or join notifications.
+psql_exec -v org_id="$ORG" -v alice="$ID_ALICE" -v bob="$ID_BOB" -v carol="$ID_CAROL" \
+  -v dave="$ID_DAVE" > /dev/null <<'SQL'
+INSERT INTO organisation_members (organisation_id, user_id, org_role) VALUES
+  (:'org_id'::uuid, :'alice'::uuid, 'ADMIN'),
+  (:'org_id'::uuid, :'bob'::uuid,   'ADMIN'),
+  (:'org_id'::uuid, :'carol'::uuid, 'MEMBER'),
+  (:'org_id'::uuid, :'dave'::uuid,  'MEMBER');
+SQL
 echo "  $ORG_NAME ($ORG_SLUG): testuser owner, alice + bob admins, carol + dave members."
 
 # Add-on access needs real Paddle billing or an internal org. ADR-0030: is_internal is set in the

@@ -57,8 +57,8 @@ export function userIdFor(email: string) {
     const userId = payload.sub as string;
     // UserSyncFilter only creates the backend `users` row on this user's first
     // authenticated request — a brand-new Keycloak user has no such row yet, so
-    // anything referencing them by id (e.g. addMember) 404s "User not found" until
-    // they've made one. Any authenticated GET does it; this one's harmless.
+    // anything referencing them by id (e.g. addMember) fails until they've made one.
+    // Any authenticated GET does it; this one's harmless.
     return cy
       .request({ method: 'GET', url: `${API}/api/organisations/mine`, headers: { Authorization: `Bearer ${token}` } })
       .then(() => userId);
@@ -313,16 +313,39 @@ export function completeProjectAs(email: string, projectId: string) {
   );
 }
 
-/** Adds `targetUserId` to `orgId` with `role`, acting as the org's owner. */
+/** Puts `targetUserId` into `orgId` with `role`, on behalf of `ownerEmail` (an OWNER or ADMIN
+ *  of the org, as the removed direct-add endpoint required).
+ *
+ *  JOB-402: invites are the only way into an organisation, and the direct-add endpoint is gone.
+ *  Fixture setup writes the membership row through the queryDb task instead (same pattern as
+ *  makeOrgInternal and makeSuperUser), so there's no test-only endpoint. It doesn't go through
+ *  invite + accept because accepting notifies the inviter asynchronously (JOB-279), which would
+ *  add stray unread notifications to the owner of every fixture org. The invite flow itself is
+ *  covered in invites.cy.ts.
+ *
+ *  Fails loudly like the endpoint did: the insert only happens when `ownerEmail` is an OWNER or
+ *  ADMIN of `orgId`, a missing `users` row (see userIdFor) breaks the foreign key, and adding an
+ *  existing member breaks the primary key.
+ *
+ *  Yields nothing: unlike the old cy.request version it no longer returns an HTTP response
+ *  (no caller used it). */
 export function addMember(orgId: string, ownerEmail: string, targetUserId: string, role: 'MEMBER' | 'ADMIN') {
-  return tokenFor(ownerEmail).then((token) =>
-    cy.request({
-      method: 'POST',
-      url: `${API}/api/organisations/${orgId}/members`,
-      headers: { Authorization: `Bearer ${token}` },
-      body: { userId: targetUserId, role },
-    }),
-  );
+  return cy
+    .task('queryDb', {
+      sql: `INSERT INTO organisation_members (organisation_id, user_id, org_role)
+            SELECT $1::uuid, $2::uuid, $3::varchar
+            WHERE EXISTS (
+              SELECT 1 FROM organisation_members m JOIN users u ON u.id = m.user_id
+              WHERE m.organisation_id = $1::uuid AND lower(u.email) = lower($4::text)
+                AND m.org_role IN ('OWNER', 'ADMIN'))
+            RETURNING user_id`,
+      params: [orgId, targetUserId, role, ownerEmail],
+    })
+    .then((rows) => {
+      if ((rows as unknown[]).length === 0) {
+        throw new Error(`addMember: ${ownerEmail} is not an OWNER or ADMIN of organisation ${orgId}`);
+      }
+    });
 }
 
 /** Sends an invite for `email` from `orgId`, acting as its owner, and returns the

@@ -1,15 +1,12 @@
 package com.opsclear.service;
 
-import com.opsclear.dto.AddOrgMemberRequest;
 import com.opsclear.dto.UpdateOrgMemberRoleRequest;
-import com.opsclear.exception.ConflictException;
 import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.OrgMemberModel;
 import com.opsclear.model.OrganisationRole;
 import com.opsclear.repository.OrganisationRepository;
-import com.opsclear.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,27 +21,12 @@ import java.util.UUID;
 public class OrganisationMemberService {
 
     private final OrganisationRepository organisationRepository;
-    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public List<OrgMemberModel> listMembers(UUID orgId, UUID callerId) {
         requireOrgExists(orgId);
         requireMember(orgId, callerId);
         return organisationRepository.findMembers(orgId);
-    }
-
-    @Transactional
-    public OrgMemberModel addMember(UUID orgId, UUID callerId, AddOrgMemberRequest request) {
-        requireOrgExists(orgId);
-        requireOwnerOrAdmin(orgId, callerId);
-        requireRoleAssignable(request.getRole());
-        requireUserExists(request.getUserId());
-        requireNotAlreadyMember(orgId, request.getUserId());
-
-        organisationRepository.saveMember(orgId, request.getUserId(), request.getRole());
-        log.info("Added user {} as {} to organisation {}", request.getUserId(), request.getRole(), orgId);
-
-        return requireMemberRecord(orgId, request.getUserId());
     }
 
     @Transactional
@@ -83,12 +65,6 @@ public class OrganisationMemberService {
         }
     }
 
-    private void requireNotAlreadyMember(UUID orgId, UUID userId) {
-        if (organisationRepository.existsMember(orgId, userId)) {
-            throw new ConflictException(ErrorMessages.Organisation.ALREADY_A_MEMBER);
-        }
-    }
-
     private void requireTargetNotOwner(OrgMemberModel target, String message) {
         if (target.getRole() == OrganisationRole.OWNER) {
             throw new ForbiddenException(message);
@@ -100,11 +76,6 @@ public class OrganisationMemberService {
     private void requireOrgExists(UUID orgId) {
         organisationRepository.findByIdAndDeletedAtIsNull(orgId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Organisation.NOT_FOUND));
-    }
-
-    private void requireUserExists(UUID userId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
     }
 
     private OrgMemberModel requireMemberRecord(UUID orgId, UUID userId) {

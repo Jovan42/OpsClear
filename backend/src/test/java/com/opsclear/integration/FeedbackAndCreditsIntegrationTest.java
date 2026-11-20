@@ -1,6 +1,7 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
 import com.opsclear.paddle.PaddleCustomer;
@@ -100,8 +101,8 @@ class FeedbackAndCreditsIntegrationTest {
         dsl.update(USERS).set(USERS.SUPER_USER, true).where(USERS.ID.eq(superUserId)).execute();
 
         orgId = createOrg(ownerId, "owner@example.com", "Acme Corp", "ACM");
-        addMember(orgId, ownerId, adminId, "ADMIN");
-        addMember(orgId, ownerId, memberId, "MEMBER");
+        organisationRepository.saveMember(orgId, adminId, OrganisationRole.ADMIN);
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.MEMBER);
 
         otherOrgId = createOrg(outsiderId, "outsider@example.com", "Other Corp", "OTH");
 
@@ -117,14 +118,6 @@ class FeedbackAndCreditsIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return UUID.fromString(objectMapper.readTree(response).get("id").asText());
-    }
-
-    private void addMember(UUID orgId, UUID ownerId, UUID userId, String role) throws Exception {
-        mockMvc.perform(post(ApiPaths.orgMembers(orgId))
-                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("userId", userId, "role", role))))
-                .andExpect(status().isCreated());
     }
 
     private UUID submitFeedback(UUID callerId, String email, String type, String title, String description)

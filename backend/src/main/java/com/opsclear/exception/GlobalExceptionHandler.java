@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.StringUtils;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -90,6 +91,15 @@ public class GlobalExceptionHandler {
         // "bad URL" into a scary Internal Server Error.
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of("Not Found", "No such endpoint"));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        // A known path called with a method it doesn't support, e.g. POST on the removed org direct add (JOB-402).
+        // Without this handler it fell through to the generic 500 catch-all below.
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .headers(headers -> headers.setAllow(ex.getSupportedHttpMethods()))
+                .body(ErrorResponse.of("Method Not Allowed", "Method not supported for this endpoint"));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

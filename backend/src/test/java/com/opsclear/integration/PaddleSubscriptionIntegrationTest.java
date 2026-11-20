@@ -1,6 +1,7 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.model.OrganisationRole;
 import com.opsclear.model.SubscriptionAddonModel;
 import com.opsclear.model.UserModel;
 import com.opsclear.paddle.PaddleClient;
@@ -117,11 +118,7 @@ class PaddleSubscriptionIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         orgId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
 
-        mockMvc.perform(post(ApiPaths.orgMembers(orgId))
-                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", ownerEmail)))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("userId", memberId, "role", "MEMBER"))))
-                .andExpect(status().isCreated());
+        organisationRepository.saveMember(orgId, memberId, OrganisationRole.MEMBER);
 
         tierId = tierRepository.findAll().getFirst().getId();
 
