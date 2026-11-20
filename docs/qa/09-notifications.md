@@ -1,6 +1,6 @@
 # Notifications
 
-Last run:
+Last run: 2026-11-20, Jovan (in progress)
 Guide: /guide/notifications
 
 This file covers the notification centre (bell, dropdown and `/notifications` page), live updates
@@ -48,10 +48,10 @@ played as Sara or Ivana.
 2. Click **View all**.
 3. Click **Unread**, then pick one type in **Filter by type**.
 
-- [ ] The bell shows no badge
-- [ ] The dropdown says "No notifications yet." and has no **Mark all as read**
-- [ ] `/notifications` says "No notifications yet."
-- [ ] **Unread** shows "No unread notifications." and a type filter shows "No notifications of this type."
+- [x] The bell shows no badge
+- [x] The dropdown says "No notifications yet." and has no **Mark all as read**
+- [x] `/notifications` says "No notifications yet."
+- [x] **Unread** shows "No unread notifications." and a type filter shows "No notifications of this type."
 
 ## NTF-02 Create the notification working jobs
 **As:** Ana (Residential owner) · **Day:** 1 · **Needs:** `01-onboarding.md` done
@@ -70,11 +70,11 @@ title.
 
 Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 Willow Lane", client Ashby family, no deadline, Low priority. Delete it again (**Delete Job**) once checked.
 
-- [ ] All five jobs in the table are created as **New**
-- [ ] Luka, Sara, Nikola and Ivana each get an "Assigned you to …" notification (type **Job assigned**) for each job assigned to them, with Ana as the source
-- [ ] Sara has two of them, one for the shower and one for the shed
-- [ ] Ana gets none, because she created them
-- [ ] The sixth job, created with **Assign to** empty, notifies no one
+- [x] All five jobs in the table are created as **New**
+- [x] Luka, Sara, Nikola and Ivana each get an "Assigned you to …" notification (type **Job assigned**) for each job assigned to them, with Ana as the source
+- [x] Sara has two of them, one for the shower and one for the shed
+- [x] Ana gets none, because she created them
+- [x] The sixth job, created with **Assign to** empty, notifies no one
 
 ## NTF-03 A reassigned job notifies the new assignee live
 **As:** Ana, watching Ivana's screen too · **Day:** 1 · **Needs:** NTF-02 done, the shed job still **New** with Sara. Ivana has the app open on **Projects**, with the bell closed.
@@ -84,11 +84,11 @@ Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 
 3. As Ana, edit the job again and assign it back to Sara.
 4. Check the centre as Sara, Ivana, Nikola and Ana.
 
-- [ ] Ivana's badge goes up by one within a few seconds, with no refresh
-- [ ] Ivana's entry reads "Assigned you to …", names Ana, shows "Remove garden shed at 3 Willow Lane" and is highlighted as unread
-- [ ] Sara, the previous assignee, gets nothing when it moves to Ivana
-- [ ] Sara gets "Assigned you to …" when it moves back
-- [ ] Nikola and Ana get nothing for either change (Ana made them)
+- [x] Ivana's badge goes up by one within a few seconds, with no refresh
+- [x] Ivana's entry reads "Assigned you to …", names Ana, shows "Remove garden shed at 3 Willow Lane" and is highlighted as unread
+- [x] Sara, the previous assignee, gets nothing when it moves to Ivana
+- [x] Sara gets "Assigned you to …" when it moves back
+- [x] Nikola and Ana get nothing for either change (Ana made them)
 
 ## NTF-04 Dropdown and click-through
 **As:** Ivana · **Day:** 1 · **Needs:** NTF-03 done, and Ivana has more than 10 notifications. If she has fewer, check the other boxes now and the "10 newest" one later.
@@ -98,11 +98,11 @@ Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 
 3. Click the bell again, then **Mark all as read**.
 4. Click the bell and **View all**.
 
-- [ ] The dropdown lists at most the 10 newest entries, with unread ones highlighted and a relative time ("5 min ago")
-- [ ] Clicking an entry opens that job, marks the entry read and drops the badge by one
-- [ ] **Mark all as read** removes the badge and the highlight on every entry
-- [ ] **View all** opens `/notifications`
-- [ ] Pressing Escape, or clicking outside, closes the dropdown
+- [x] The dropdown lists at most the 10 newest entries, with unread ones highlighted and a relative time ("5 min ago")
+- [x] Clicking an entry opens that job, marks the entry read and drops the badge by one
+- [x] **Mark all as read** removes the badge and the highlight on every entry
+- [x] **View all** opens `/notifications`
+- [x] Pressing Escape, or clicking outside, closes the dropdown
 
 ## NTF-05 Where each entry opens
 **As:** Ana, Sara, Ivana · **Day:** 2 · **Needs:** the job events (NTF-13 to NTF-23) done, so the centres hold one of each type except schedule and past due, which NTF-24 and NTF-25 check themselves.
