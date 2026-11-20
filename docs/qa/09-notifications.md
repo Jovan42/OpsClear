@@ -36,10 +36,10 @@ deadlines, assignees or status here: the day plan's deadline checks (`NTF-26` to
 The scenarios run in the order written, and several leave a job in a state the next one expects
 (named in `Needs:`).
 
-**Luka's language.** From ONB-33 Luka uses the Serbian UI. Where a scenario has Luka check an entry
-or a setting, the English text quoted here is the English wording: in his window read the Serbian
-equivalent and tick when it means the same (NTF-33 judges the Serbian text itself). The scenarios
-that check exact English wording are played as Sara or Ivana instead.
+**Luka's language.** From ONB-33 Luka uses the Serbian UI. In every check where Luka reads an entry
+or a setting, the quoted English text is the English wording: read the Serbian equivalent and tick
+when it means the same. NTF-33 judges the Serbian text itself. Checks of exact English wording are
+played as Sara or Ivana.
 
 ## NTF-01 An empty notification centre
 **As:** Petra (owner, Pine & Pixel Studio) · **Day:** 1 · **Needs:** Petra signed up and her org created in `01-onboarding.md`
@@ -105,7 +105,7 @@ Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 
 - [ ] Pressing Escape, or clicking outside, closes the dropdown
 
 ## NTF-05 Where each entry opens
-**As:** Ana, Ivana, Luka · **Day:** 2 · **Needs:** the job events (NTF-13 to NTF-23) done, so the centres hold one of each type except schedule and past due, which NTF-24 and NTF-25 check themselves.
+**As:** Ana, Sara, Ivana · **Day:** 2 · **Needs:** the job events (NTF-13 to NTF-23) done, so the centres hold one of each type except schedule and past due, which NTF-24 and NTF-25 check themselves.
 
 1. For each entry below, open it from the centre and note where you land.
 2. Use Ana for the approval and members entries, Sara for the project entry, Ivana for the deleted-job and feedback entries.
@@ -151,7 +151,7 @@ Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 
 **As:** Luka (and Ana to cause the event) · **Day:** 1 · **Needs:** NTF-02 done
 
 1. As Luka, open the app. In the browser's developer tools, Network tab, set throttling to **Offline**. Note the badge. If the open stream keeps delivering anyway (DevTools Offline doesn't always cut it), turn off the computer's Wi-Fi or network instead, and turn it back on in step 4.
-2. As Ana, add a note on "Fit heated towel rail at 14 Elm St" and confirm it.
+2. As Ana, add a note on "Fit heated towel rail at 14 Elm St" and confirm it. If you took the whole computer offline, do this from the second device used in NTF-09.
 3. Wait ten seconds. Look at Luka's badge.
 4. Set Luka's throttling back to **No throttling**. Wait up to a minute.
 
@@ -293,7 +293,7 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 1. Open the job, click **Edit**, set **Assign to** to Ivana and Deadline to Day 4 + 30 days, and save once.
 2. Check Ivana's, Sara's and Ana's centres.
 
-- [ ] Ivana gets exactly one "Assigned you to …" entry, which shows the deadline, and no "Deadline or priority changed"
+- [ ] Ivana gets exactly one new "Assigned you to …" entry (on top of the one from NTF-03), which shows the deadline, and no "Deadline or priority changed"
 - [ ] Sara, the previous assignee, gets nothing
 - [ ] Ana gets nothing
 
