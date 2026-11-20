@@ -198,11 +198,11 @@ Set **Notification sound** back to **On** at the end. Ivana now has four "Deadli
 4. As Luka, check the centre.
 5. Turn **Status changed** on again.
 
-- [ ] Turning the toggle off saves with no error and stays off after a reload
-- [ ] The private window also shows **Status changed** off
-- [ ] Luka gets the "Deadline or priority changed" entry but no "Moved … to In Progress" one, and the badge counted only that entry
-- [ ] After turning it on again, the missed status notification doesn't show up later
-- [ ] Other types keep arriving while one is muted (the priority entry is the proof; NTF-14 proves **Status changed** works again)
+- [x] Turning the toggle off saves with no error and stays off after a reload
+- [x] The private window also shows **Status changed** off
+- [x] Luka gets the "Deadline or priority changed" entry but no "Moved … to In Progress" one, and the badge counted only that entry
+- [x] After turning it on again, the missed status notification doesn't show up later
+- [x] Other types keep arriving while one is muted (the priority entry is the proof; NTF-14 proves **Status changed** works again)
 
 Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect that.
 
