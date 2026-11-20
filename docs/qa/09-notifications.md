@@ -155,9 +155,9 @@ Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 
 3. Wait ten seconds. Look at Luka's badge.
 4. Set Luka's throttling back to **No throttling**. Wait up to a minute.
 
-- [ ] While offline, Luka's badge doesn't change
-- [ ] After going back online the badge catches up by itself, with no manual refresh, and the note entry is in the list
-- [ ] No duplicate entry appears
+- [x] While offline, Luka's badge doesn't change
+- [x] After going back online the badge catches up by itself, with no manual refresh, and the note entry is in the list
+- [x] No duplicate entry appears
 
 Ana's note makes her a participant in the thread. NTF-15 expects that: its first step adds a second note by her.
 
