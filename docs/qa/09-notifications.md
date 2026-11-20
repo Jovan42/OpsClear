@@ -367,14 +367,14 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 - [ ] Nobody else in Brightline gets either notification
 
 ## NTF-24 Schedule run missed
-**As:** Ana, Nikola, Ivana · **Day:** 7 or later, after 07:00 UTC · **Needs:** SCH-17 in `08-schedules.md` done (resuming the paused **Daily site safety check** in Residential Fit-outs, which records two or more missed runs). A deploy can't cause a missed run: a run counts as missed only when the next one is past too, so the app would have to be down for over an hour. The optional SCH-20 (backend stopped for about 65 minutes, **Hourly yard check**) causes the same kind of notification, but its entries name **Hourly yard check** and there is usually only one. The steps and boxes below are written for SCH-17.
+**As:** Ana, Nikola, Ivana · **Day:** 7, after 07:00 UTC · **Needs:** SCH-17 in `08-schedules.md` done on day 7 (resuming the paused **Daily site safety check** in Residential Fit-outs, which records exactly two missed runs: day 6 and day 7; the first skipped run, day 5, isn't recorded). A deploy can't cause a missed run: a run counts as missed only when the next one is past too, so the app would have to be down for over an hour. The optional SCH-20 (backend stopped for about 65 minutes, **Hourly yard check**) causes the same kind of notification, but its entries name **Hourly yard check** and there is usually only one. The steps and boxes below are written for SCH-17.
 
 1. After the resume in SCH-17, wait two minutes.
 2. As Ana (Owner) and Nikola (Admin), check the centre.
 3. As Ivana and Sara (Members of Residential Fit-outs), check theirs.
 4. As Ana, click the entry.
 
-- [ ] Ana and Nikola each get "Schedule \"Daily site safety check\" missed a run in Residential Fit-outs" with "Missed run: …" and the time, one entry per missed run
+- [ ] Ana and Nikola each get "Schedule \"Daily site safety check\" missed a run in Residential Fit-outs" with "Missed run: …" and the time, two entries each (day 6 and day 7)
 - [ ] Ivana and Sara get nothing
 - [ ] The entries come from **OpsClear**
 - [ ] Clicking an entry opens Residential Fit-outs, **Schedules**
@@ -459,7 +459,7 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 ## NTF-31 Each persona only hears what they should
 **As:** Luka, Ivana, Sara, Nikola, Ana · **Day:** 7 or later, after NTF-24 · **Needs:** the scenarios above done
 
-1. Open `/notifications` for each persona and read every entry, newest to oldest. After NTF-24, Ana and Nikola also have **Schedule run missed** entries (two or more each), which are expected. Nobody else has any.
+1. Open `/notifications` for each persona and read every entry, newest to oldest. After NTF-24, Ana and Nikola also have **Schedule run missed** entries (two each), which are expected. Nobody else has any.
 2. Use **Filter by type** for each type a persona shouldn't have.
 
 - [ ] Luka has no **Approval requested**, no **Invite accepted**, and no entry about a job that isn't his
