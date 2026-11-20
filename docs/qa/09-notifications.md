@@ -169,11 +169,11 @@ Ana's note makes her a participant in the thread. NTF-15 expects that: its first
 3. Switch Ivana's tab to the background (another tab or window). As Ana, remove the deadline.
 4. In Ivana's settings set **Notification sound** to **Off** and reload. As Ana, set the priority back to Low.
 
-- [ ] A short sound plays in the tab you're using when a notification arrives
-- [ ] The two quick events play one sound, not two
-- [ ] Nothing plays while the tab is in the background
-- [ ] With the sound **Off**, nothing plays and the notification still appears
-- [ ] The choice is still **Off** after a reload
+- [x] A short sound plays in the tab you're using when a notification arrives
+- [x] The two quick events play one sound, not two
+- [x] Nothing plays while the tab is in the background
+- [x] With the sound **Off**, nothing plays and the notification still appears
+- [x] The choice is still **Off** after a reload
 
 Set **Notification sound** back to **On** at the end. Ivana now has four "Deadline or priority changed" entries for this job.
 
