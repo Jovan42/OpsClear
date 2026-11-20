@@ -10,6 +10,7 @@
       "milestones": "Etape",
       "stats": "Statistika",
       "notifications": "Obaveštenja",
+      "security": "Bezbednost",
       "apiKeys": "API ključevi"
     },
     "saveError": "Nije uspelo čuvanje vaših podešavanja",
@@ -154,6 +155,18 @@
         "description": "Pusti kratak zvuk kada novo obaveštenje stigne u karticu koju koristite.",
         "on": "Uključen",
         "off": "Isključen"
+      }
+    },
+    "security": {
+      "password": {
+        "label": "Lozinka",
+        "description": "Promenite lozinku kojom se prijavljujete. Novu birate na stranici za prijavu u OpsClear.",
+        "change": "Promeni lozinku",
+        "status": {
+          "success": "Vaša lozinka je promenjena.",
+          "cancelled": "Promena lozinke je otkazana. Lozinka ostaje ista.",
+          "error": "Promena lozinke nije uspela. Pokušajte ponovo."
+        }
       }
     },
     "apiKeysFeatureName": "API ključevi",

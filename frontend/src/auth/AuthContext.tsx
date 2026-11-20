@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import keycloak from './keycloak';
 import { E2E_TOKEN_KEY, E2E_REFRESH_TOKEN_KEY, E2E_ID_TOKEN_KEY } from './e2eAuth';
+import { recordAccountAction } from './passwordChange';
 
 export interface AuthState {
   ready: boolean;
@@ -56,6 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           checkLoginIframe: false,
         }
       : { onLoad: 'check-sso' as const, checkLoginIframe: false };
+
+    // Set before init: init reads Keycloak's redirect back from an account action
+    // (Settings > Change password) and reports its outcome through this callback.
+    keycloak.onActionUpdate = recordAccountAction;
 
     keycloak
       .init(initOptions)
