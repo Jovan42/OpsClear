@@ -498,7 +498,7 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 - The stream's 25-second heartbeat and dropping closed streams: covered by `NotificationStreamRegistryTest` and `NotificationStreamIntegrationTest`.
 - Deadline alert edge cases (an unassigned job records the alert but notifies no one, completed or deleted jobs and projects get none, stale alerts dropped before fan-out, the duplicate-run guard): covered by `DeadlineAlertJobTest` and `NotificationScheduledEventsIntegrationTest`.
 - A Member who wrote notes and was later unassigned stops getting `NOTE_ADDED`, and fan-out skipped when a job or project was deleted in between: covered by `NotificationFanOutIntegrationTest` and `NotificationJobLifecycleIntegrationTest`.
-- `SCHEDULE_RUN_MISSED` fan-out and mutes: covered by `NotificationScheduledEventsIntegrationTest` (NTF-24 is the optional manual check).
+- `SCHEDULE_RUN_MISSED` fan-out and mutes: covered by `NotificationScheduledEventsIntegrationTest` (NTF-24 is the manual check, after SCH-17).
 - `SUBSCRIPTION_PAST_DUE` only on the first move into `PAST_DUE`, and never muted: covered by `PaddleWebhookServiceTest`, `PaddleWebhookIntegrationTest` and `NotificationOrgEventsIntegrationTest` (NTF-25 runs only if Chore 12, JOB-377, finds a way to get the sandbox into that state).
 
 ## Findings
