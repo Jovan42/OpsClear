@@ -17,7 +17,7 @@ scenario ID in that file.
 | # | File | ID prefix | Covers |
 |---|------|-----------|--------|
 | 01 | `01-onboarding.md` | `ONB` | Sign-up, email verification, onboarding, org creation; builds the test world |
-| 02 | `02-org-admin.md` | `ORG` | Org members and roles, invites (email, Copy link, Resend, accept, expired), org settings, ID prefixes, org switch |
+| 02 | `02-org-admin.md` | `ORG` | Org members and roles, invites (email, Copy link, Resend, accept, expired), org settings, ID prefixes, can't join or create a second org |
 | 03 | `03-projects.md` | `PRJ` | Create, edit, archive, project settings, project members and roles, section visibility, project links, project directory |
 | 04 | `04-jobs.md` | `JOB` | Create, edit, assign, statuses, block reasons, delete, list filters and search, job links |
 | 05 | `05-notes-history-relationships.md` | `NHR` | Notes (immutable), status history, job relationships |
@@ -30,16 +30,16 @@ scenario ID in that file.
 | 12 | `12-billing.md` | `BIL` | Subscription, Paddle checkout (sandbox), add-on gating, credits, past due |
 | 13 | `13-api-keys.md` | `API` | API keys, rate limiting and the 429 toast |
 | 14 | `14-feedback-admin.md` | `ADM` | Feedback, super-admin feedback triage, pricing, credits |
-| 15 | `15-cross-cutting.md` | `XC` | Permissions per role across all areas, mobile layout, the 3-clicks rule, empty states, errors, en/sr |
+| 15 | `15-cross-cutting.md` | `XC` | Permissions per role across all areas, org isolation, mobile layout, the 3-clicks rule, empty states, errors, en/sr |
 
 Files are added by Chores 3 to 17 of the ADR. Until a file exists, its row is the plan.
 
 ## How to run
 
-1. **Check Paddle first.** Paddle must be in sandbox on prod. `12-billing.md` checks this as its
-   first scenario and stops the run if it's live.
-2. **Set up the users.** Five personas share one real mailbox through plus addressing
-   (`you+ana@…`, `you+nikola@…`, `you+ivana@…`, `you+luka@…`, `you+sara@…`). Email verification is
+1. **Check Paddle first.** Paddle must be in sandbox on prod. `ONB-01` in `01-onboarding.md` checks
+   this before any purchase and stops the run if it's live. `12-billing.md` checks it again.
+2. **Set up the users.** Six personas share one real mailbox through plus addressing
+   (`you+ana@…`, `you+nikola@…`, `you+ivana@…`, `you+luka@…`, `you+sara@…`, `you+petra@…`). Email verification is
    live (ADR-0059), so every address must receive mail. Use one browser profile per persona so
    sessions don't mix.
 3. **Build the world** with `01-onboarding.md` on day 1, then follow the day plan.
@@ -67,8 +67,9 @@ maintenance company. Every add-on, bought through Paddle sandbox.
 
 Milestones read like real phases ("Kitchen phase", "Handover"). Clients are fictional customers.
 
-**Pine & Pixel Studio** (second org): a small design agency with **no add-ons**. Shows that gated
-features are hidden or blocked. Deleted after the run.
+**Pine & Pixel Studio** (second org): a small design agency with **no add-ons**, owned by Petra. Shows that gated
+features are hidden or blocked. Deleted after the run. The app allows one org per user, so no
+persona belongs to both orgs.
 
 **Personas**
 
@@ -78,7 +79,8 @@ features are hidden or blocked. Deleted after the run.
 | Nikola | Org admin; owner of Office Refurbishments, admin of Residential | none | |
 | Ivana | Member; admin of Office Refurbishments, member of Residential | none | |
 | Luka | Member; member of both projects | none | Uses the Serbian UI |
-| Sara | Member; member of Residential | Org owner | Checks org switching and that no data leaks between orgs |
+| Sara | Member; member of Residential | none | Checks that she can't create or join a second org |
+| Petra | none | Org owner | Owns Pine & Pixel Studio; checks that no data leaks between orgs |
 
 ### Day plan
 

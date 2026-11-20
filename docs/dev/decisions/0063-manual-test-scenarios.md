@@ -32,7 +32,7 @@ Promoted from JOB-364 (Future Consideration, PRJ-002) into PRJ-015 "Launch QA: C
 - **Scenario files in `docs/qa/`**, one markdown file per functional area (15 areas), plus `docs/qa/README.md` with the format, the test world, the day plan, the rules for logging findings and an area → routes map.
 - **Each area is one `Chore:` job in MIL-047.** An agent or the developer writes the file and opens the PR. The developer runs it on prod and ticks the boxes on the PR branch. The PR merges when every box is ticked or linked to a finding.
 - **Results are stored in the file:** ticked boxes plus a `Last run: <date>, <who>` line. The next run resets the ticks in its own PR, and git history keeps each run.
-- **A realistic test world on prod:** two fictional companies, five users with plus-addressed emails, and projects with different settings. All data (clients, projects, milestones, jobs, notes) looks like real business data. After the run, the main org is cleaned up and kept as a demo org for potential customers.
+- **A realistic test world on prod:** two fictional companies, six users with plus-addressed emails, and projects with different settings. All data (clients, projects, milestones, jobs, notes) looks like real business data. After the run, the main org is cleaned up and kept as a demo org for potential customers.
 - **Findings go to the project's own milestones:** defects to MIL-048 Bugs as `Bug:` jobs, and small UX fixes to MIL-049 UX improvements as `UX:` jobs using a new `UX improvement` template. Bigger ideas go to PRJ-002.
 - **Upkeep is a process rule,** like the guide: a template checkbox, a PR template line and a `pr-reviewer` check using the area → routes map.
 
@@ -44,7 +44,7 @@ Promoted from JOB-364 (Future Consideration, PRJ-002) into PRJ-015 "Launch QA: C
 | Structure | MIL-047 Test scenarios (one job per area), MIL-048 Bugs, MIL-049 UX improvements. Only MIL-047 has an ADR. |
 | File split | By functional area, not by user guide section. The guide is too coarse for role and permission checks. Files can link the matching guide pages. |
 | Where results live | In the file: ticks plus `Last run`. The next run resets them in its PR. |
-| Test world | Two orgs, five users, three projects in the main org (below). Realistic data everywhere. |
+| Test world | Two orgs, six users, three projects in the main org (below). Realistic data everywhere. |
 | What can't be run by hand | Listed in the file as `Not manual: covered by <test>`, so the file still covers 100% on paper. |
 | Logging findings | Defect → `Bug:` in MIL-048. Small UX fix → `UX:` in MIL-049. Bigger idea → Future Consideration in PRJ-002. A wrong scenario → fix the file in the same PR. Bugs found later, outside a run, → PRJ-001 MIL-001. |
 | UX jobs | Title prefix `UX:`, template `UX improvement`, routed to `frontend-dev`. |
@@ -58,7 +58,7 @@ Promoted from JOB-364 (Future Consideration, PRJ-002) into PRJ-015 "Launch QA: C
 | # | File | ID prefix | Covers |
 |---|------|-----------|--------|
 | 01 | `01-onboarding.md` | `ONB` | Sign-up, email verification, onboarding, org creation; builds the test world |
-| 02 | `02-org-admin.md` | `ORG` | Org members and roles, invites (email, Copy link, Resend, accept, expired), org settings, ID prefixes, org switch |
+| 02 | `02-org-admin.md` | `ORG` | Org members and roles, invites (email, Copy link, Resend, accept, expired), org settings, ID prefixes, can't join or create a second org |
 | 03 | `03-projects.md` | `PRJ` | Create, edit, archive, project settings, project members and roles, section visibility, project links, project directory |
 | 04 | `04-jobs.md` | `JOB` | Create, edit, assign, statuses New → In Progress → Blocked → Completed, block reasons, delete, list filters and search, job links |
 | 05 | `05-notes-history-relationships.md` | `NHR` | Notes (immutable), status history, job relationships |
@@ -71,7 +71,7 @@ Promoted from JOB-364 (Future Consideration, PRJ-002) into PRJ-015 "Launch QA: C
 | 12 | `12-billing.md` | `BIL` | Subscription, Paddle checkout (sandbox), add-on gating, credits, past due |
 | 13 | `13-api-keys.md` | `API` | API keys, rate limiting and the 429 toast |
 | 14 | `14-feedback-admin.md` | `ADM` | Feedback, super-admin feedback triage, pricing, credits |
-| 15 | `15-cross-cutting.md` | `XC` | Permissions per role across all areas, mobile layout, the 3-clicks rule, empty states, errors, en/sr |
+| 15 | `15-cross-cutting.md` | `XC` | Permissions per role across all areas, org isolation, mobile layout, the 3-clicks rule, empty states, errors, en/sr |
 
 ### Test world
 
@@ -87,7 +87,7 @@ All names are fictional. No real company or person is used.
 
 Clients, milestones (for example "Kitchen phase", "Handover"), jobs ("Tile bathroom at 14 Elm St") and notes read like real work.
 
-**Pine & Pixel Studio** (second org): a small design agency with **no add-ons**. Shows that gated features are hidden or blocked. Deleted after the run.
+**Pine & Pixel Studio** (second org): a small design agency with **no add-ons**, owned by Petra. Shows that gated features are hidden or blocked. Deleted after the run.
 
 **Users** (plus-addressed on one mailbox, separate browser profiles):
 
@@ -97,7 +97,10 @@ Clients, milestones (for example "Kitchen phase", "Handover"), jobs ("Tile bathr
 | Nikola | Org admin; owner of Office Refurbishments, admin of Residential | — | |
 | Ivana | Member; admin of Office Refurbishments, member of Residential | — | |
 | Luka | Member; member of both projects | — | Uses the Serbian UI |
-| Sara | Member; member of Residential | Org owner | Checks org switching and that no data leaks between orgs |
+| Sara | Member; member of Residential | — | Checks that she can't create or join a second org |
+| Petra | — | Org owner | Owns Pine & Pixel Studio; checks that no data leaks between orgs |
+
+> **Amended 2026-11-19 (JOB-368):** the app allows one org per user, so Petra owns Pine & Pixel Studio and Sara is only a Brightline member. There is no org switching to test; Sara checks that she can't create or join a second org.
 
 Super-admin checks use the developer's real account.
 
