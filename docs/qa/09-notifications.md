@@ -366,16 +366,18 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 - [ ] The entry opens **Feedback**
 - [ ] Nobody else in Brightline gets either notification
 
-## NTF-24 Schedule run missed (optional)
-**As:** Ana, Nikola, Ivana · **Day:** 5+ · **Needs:** the optional deploy check in `08-schedules.md` (a per-minute schedule created just before a deploy). Skip it if that check isn't run.
+## NTF-24 Schedule run missed
+**As:** Ana, Nikola, Ivana · **Day:** 7 or later, after 07:00 UTC · **Needs:** SCH-17 in `08-schedules.md` done (resuming the paused **Daily site safety check** in Residential Fit-outs, which records two or more missed runs). A deploy can't cause a missed run: a run counts as missed only when the next one is past too, so the app would have to be down for over an hour. The optional SCH-20 (backend stopped for about 65 minutes, **Hourly yard check**) gives the same notifications.
 
-1. After the deploy, wait for the schedule's next poll.
-2. As the Owner and an Admin of the schedule's project, check the centre.
-3. As a Member of that project, check theirs.
+1. After the resume in SCH-17, wait two minutes.
+2. As Ana (Owner) and Nikola (Admin), check the centre.
+3. As Ivana and Sara (Members of Residential Fit-outs), check theirs.
+4. As Ana, click the entry.
 
-- [ ] The project's Owner and Admins get "Schedule \"…\" missed a run in …" with "Missed run: …" and the time
-- [ ] Members who aren't Owner or Admin get nothing
-- [ ] The entry comes from **OpsClear** and opens the project's schedules page
+- [ ] Ana and Nikola each get "Schedule \"Daily site safety check\" missed a run in Residential Fit-outs" with "Missed run: …" and the time, one entry per missed run
+- [ ] Ivana and Sara get nothing
+- [ ] The entries come from **OpsClear**
+- [ ] Clicking an entry opens Residential Fit-outs, **Schedules**
 
 ## NTF-25 Subscription past due (depends on Chore 12, JOB-377)
 **As:** Ana, Nikola, Ivana · **Day:** 5+ · **Needs:** `12-billing.md` has put Brightline's subscription into PAST_DUE. The Paddle sandbox has no way to fail a renewal on demand, so run this only if that file finds a way. Otherwise leave it unticked, and the type stays covered under **Not manual**.
@@ -405,15 +407,15 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 - [ ] The entries arrived after 06:00 UTC and not before
 
 ## NTF-27 Schedule-created jobs notify the assignee
-**As:** the schedule's assignee, Ana · **Day:** 2 · **Needs:** the daily schedule from `08-schedules.md`, with an assignee, that ran on day 2
+**As:** Ivana, Sara, Ana, Nikola · **Day:** 2 and 3, after 07:00 UTC · **Needs:** `08-schedules.md` done up to the day-2 and day-3 runs: **Daily site safety check** in Residential Fit-outs (07:00 UTC, Ivana first, then Sara) and **Weekly toolbox talk** (no assignee, runs on day 3)
 
-1. Open the centre of the schedule's assignee.
-2. Check Ana's centre.
+1. On day 2 after 07:00 UTC, check Ivana's centre, then Ana's and Nikola's.
+2. On day 3 after 07:00 UTC, check Sara's centre and the others again.
 
-- [ ] The assignee has "Assigned you to …" for the job the schedule created, from **OpsClear**, with no person as the source
-- [ ] The job is the one the schedule created today
-- [ ] Ana gets nothing just because the schedule ran
-- [ ] A schedule with no assignee (if one exists) notifies no one
+- [ ] Ivana has "Assigned you to …" for `Site safety check for Residential Fit-outs - <day 2 date>`, from **OpsClear**, with no person as the source
+- [ ] Sara has the same for `Site safety check for Residential Fit-outs - <day 3 date>` on day 3
+- [ ] Ana and Nikola get nothing just because the schedule ran
+- [ ] `Toolbox talk week <week number>`, made on day 3 with no assignee, notifies no one
 
 ## NTF-28 Day 3: deadline soon for jobs due on day 4, and complete the tile job
 **As:** Luka, Ana, Ivana, Sara · **Day:** 3, after 06:00 UTC · **Needs:** NTF-26 done
@@ -457,7 +459,7 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 ## NTF-31 Each persona only hears what they should
 **As:** Luka, Ivana, Sara, Nikola, Ana · **Day:** 5+ · **Needs:** the scenarios above done
 
-1. Open `/notifications` for each persona and read every entry, newest to oldest.
+1. Open `/notifications` for each persona and read every entry, newest to oldest. After NTF-24, Ana and Nikola also have **Schedule run missed** entries (two or more each), which are expected. Nobody else has any.
 2. Use **Filter by type** for each type a persona shouldn't have.
 
 - [ ] Luka has no **Approval requested**, no **Invite accepted**, and no entry about a job that isn't his
