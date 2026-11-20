@@ -36,6 +36,11 @@ deadlines, assignees or status here: the day plan's deadline checks (`NTF-26` to
 The scenarios run in the order written, and several leave a job in a state the next one expects
 (named in `Needs:`).
 
+**Luka's language.** From ONB-33 Luka uses the Serbian UI. Where a scenario has Luka check an entry
+or a setting, the English text quoted here is the English wording: in his window read the Serbian
+equivalent and tick when it means the same (NTF-33 judges the Serbian text itself). The scenarios
+that check exact English wording are played as Sara or Ivana instead.
+
 ## NTF-01 An empty notification centre
 **As:** Petra (owner, Pine & Pixel Studio) · **Day:** 1 · **Needs:** Petra signed up and her org created in `01-onboarding.md`
 
@@ -63,22 +68,24 @@ title.
 | Make good plaster at 27 Hawthorn Rd | Calloway family | none | Low | Kitchen phase | Ivana |
 | Remove garden shed at 3 Willow Lane | Ashby family | none | Low | Handover | Sara |
 
-- [ ] All five jobs are created as **New**
+Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 Willow Lane", client Ashby family, no deadline, Low priority. Delete it again (**Delete Job**) once checked.
+
+- [ ] All five jobs in the table are created as **New**
 - [ ] Luka, Sara, Nikola and Ivana each get an "Assigned you to …" notification (type **Job assigned**) for each job assigned to them, with Ana as the source
 - [ ] Sara has two of them, one for the shower and one for the shed
 - [ ] Ana gets none, because she created them
-- [ ] A job created with **Assign to** empty notifies no one
+- [ ] The sixth job, created with **Assign to** empty, notifies no one
 
 ## NTF-03 A reassigned job notifies the new assignee live
-**As:** Ana, watching Ivana's screen too · **Day:** 1 · **Needs:** NTF-02 done. Ivana has the app open on **Projects**, with the bell closed.
+**As:** Ana, watching Ivana's screen too · **Day:** 1 · **Needs:** NTF-02 done, the shed job still **New** with Sara. Ivana has the app open on **Projects**, with the bell closed.
 
-1. As Ana, open "Order bathroom fittings for 14 Elm St" (Sara's job), click **Edit**, change **Assign to** to Ivana and save.
+1. As Ana, open "Remove garden shed at 3 Willow Lane" (Sara's job), click **Edit**, change **Assign to** to Ivana and save.
 2. Watch Ivana's top bar without touching her page.
 3. As Ana, edit the job again and assign it back to Sara.
 4. Check the centre as Sara, Ivana, Nikola and Ana.
 
 - [ ] Ivana's badge goes up by one within a few seconds, with no refresh
-- [ ] Ivana's entry reads "Assigned you to …", names Ana, shows "Order bathroom fittings for 14 Elm St" and is highlighted as unread
+- [ ] Ivana's entry reads "Assigned you to …", names Ana, shows "Remove garden shed at 3 Willow Lane" and is highlighted as unread
 - [ ] Sara, the previous assignee, gets nothing when it moves to Ivana
 - [ ] Sara gets "Assigned you to …" when it moves back
 - [ ] Nikola and Ana get nothing for either change (Ana made them)
@@ -98,19 +105,18 @@ title.
 - [ ] Pressing Escape, or clicking outside, closes the dropdown
 
 ## NTF-05 Where each entry opens
-**As:** Ana, Ivana, Luka · **Day:** 3 · **Needs:** most scenarios in this file done, so the centres hold one of each type. Run it after the job events.
+**As:** Ana, Ivana, Luka · **Day:** 2 · **Needs:** the job events (NTF-13 to NTF-23) done, so the centres hold one of each type except schedule and past due, which NTF-24 and NTF-25 check themselves.
 
 1. For each entry below, open it from the centre and note where you land.
-2. Use Ana for the approval, project, members, feedback and billing entries, Ivana for the deleted-job entry, and the schedule's project Owner for the schedule entry.
+2. Use Ana for the approval and members entries, Sara for the project entry, Ivana for the deleted-job and feedback entries.
+3. Hover over the deleted-job entry.
 
 - [ ] A job entry (assigned, status, blocked, note, deadline) opens that job
 - [ ] An approval entry opens the job at its approvals section
 - [ ] **Added to project** opens the project
 - [ ] **Invite accepted** opens the org members page
 - [ ] **Feedback resolved** opens **Feedback**
-- [ ] **Schedule run missed** (only if NTF-24 was run) opens the project's schedules page
-- [ ] **Subscription past due** (only if NTF-25 was run) opens **Organisation Settings**, at billing for Ana
-- [ ] A deleted-job entry reads as plain text, says "This job was deleted" and isn't a link
+- [ ] A deleted-job entry reads "Deleted …" with the job's title, has no link, and shows the tooltip "This job was deleted" on hover
 
 ## NTF-06 The Notifications page, filters and paging
 **As:** Ana · **Day:** 4 · **Needs:** Ana has more than 20 notifications. Run this once the invites, jobs and deadline alerts have piled up. If she has fewer, run it on day 5.
@@ -144,7 +150,7 @@ title.
 ## NTF-08 Missed notifications catch up after a lost connection
 **As:** Luka (and Ana to cause the event) · **Day:** 1 · **Needs:** NTF-02 done
 
-1. As Luka, open the app. In the browser's developer tools, Network tab, set throttling to **Offline**. Note the badge.
+1. As Luka, open the app. In the browser's developer tools, Network tab, set throttling to **Offline**. Note the badge. If the open stream keeps delivering anyway (DevTools Offline doesn't always cut it), turn off the computer's Wi-Fi or network instead, and turn it back on in step 4.
 2. As Ana, add a note on "Fit heated towel rail at 14 Elm St" and confirm it.
 3. Wait ten seconds. Look at Luka's badge.
 4. Set Luka's throttling back to **No throttling**. Wait up to a minute.
@@ -156,11 +162,11 @@ title.
 Ana's note makes her a participant in the thread. NTF-15 expects that: its first step adds a second note by her.
 
 ## NTF-09 Notification sound
-**As:** Ivana, with Ana causing events · **Day:** 1 · **Needs:** NTF-02 done. Ivana's browser has sound on.
+**As:** Ivana, with Ana causing events from a second device · **Day:** 1 · **Needs:** NTF-02 done. Ivana's browser has sound on. Ana uses a phone, or another computer, logged in as Ana. Don't use another browser window on Ivana's machine: the sound only plays in a visible, focused tab, so acting in another window takes focus away from Ivana's tab.
 
 1. As Ivana, open the user menu, **Account settings**, and find **Notifications**. Check **Notification sound** is **On**.
-2. Keep Ivana's tab in front. As Ana, open "Make good plaster at 27 Hawthorn Rd" and change the priority to Medium, then straight away set a deadline of Day 4 + 25 days (two saves within three seconds).
-3. Switch Ivana's tab to the background, or to another window. As Ana, remove the deadline.
+2. Keep Ivana's tab in front and focused, and don't touch her machine. On the second device, as Ana, open "Make good plaster at 27 Hawthorn Rd" and change the priority to Medium, then straight away set a deadline of Day 4 + 25 days (two saves within three seconds).
+3. Switch Ivana's tab to the background (another tab or window). As Ana, remove the deadline.
 4. In Ivana's settings set **Notification sound** to **Off** and reload. As Ana, set the priority back to Low.
 
 - [ ] A short sound plays in the tab you're using when a notification arrives
@@ -172,7 +178,7 @@ Ana's note makes her a participant in the thread. NTF-15 expects that: its first
 Set **Notification sound** back to **On** at the end. Ivana now has four "Deadline or priority changed" entries for this job.
 
 ## NTF-10 Settings list every type
-**As:** Luka · **Day:** 1 · **Needs:** NTF-02 done
+**As:** Sara · **Day:** 1 · **Needs:** NTF-02 done
 
 1. Open the user menu, **Account settings**, and scroll to **Notifications**.
 2. Read **Notification types** from top to bottom.
@@ -201,7 +207,7 @@ Set **Notification sound** back to **On** at the end. Ivana now has four "Deadli
 Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect that.
 
 ## NTF-12 A change that can't be saved is put back
-**As:** Luka · **Day:** 1 · **Needs:** NTF-10 done
+**As:** Sara · **Day:** 1 · **Needs:** NTF-10 done
 
 1. Open **Account settings**, **Notifications**. Set the browser to **Offline** in developer tools.
 2. Turn **Note added** off.
@@ -231,7 +237,9 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 - [ ] Ana and Nikola get **Job blocked** ("Blocked …") with "Reason: Waiting on client", in the urgent (red) style
 - [ ] Only the one **Job blocked** entry arrives, with no extra "Status changed" entry for the same move
 - [ ] Luka (who did it), Ivana and Sara get nothing
-- [ ] Unblocking gives Luka a "Moved … from Blocked to In Progress" entry and gives Nikola one, and Ana (who did it) none, which also shows **Status changed** works again for Luka
+- [ ] Unblocking gives Luka a "Moved … from Blocked to In Progress" entry, which shows **Status changed** works again for him
+- [ ] Unblocking also gives Nikola a "Moved … from Blocked to In Progress" entry
+- [ ] Ana, who unblocked it, gets none
 
 ## NTF-15 Notes notify the assignee and everyone already in the thread
 **As:** Ana, Luka, Nikola · **Day:** 1 · **Needs:** NTF-14 done. Ana already wrote one note on the towel rail job in NTF-08.
@@ -295,9 +303,9 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 1. Open "Remove garden shed at 3 Willow Lane", click **Delete Job** and confirm.
 2. Check Ivana's centre. Click the entry.
 
-- [ ] Ivana gets "Deleted …" with Ana as the source and "The job was deleted"
-- [ ] The entry still shows the job's title and ID, though the job is gone
-- [ ] It says "This job was deleted" and doesn't open anything
+- [ ] Ivana gets "Deleted …" with Ana as the source
+- [ ] The entry still shows the job's title, though the job is gone
+- [ ] Clicking it opens nothing, and hovering over it shows the tooltip "This job was deleted"
 - [ ] Ana and Sara get nothing
 
 ## NTF-20 Completing a blocker clears the jobs waiting on it
