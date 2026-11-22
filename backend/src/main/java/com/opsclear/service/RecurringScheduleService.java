@@ -139,8 +139,14 @@ public class RecurringScheduleService {
         row.setTemplateId(req.getTemplateId());
         row.setCronExpression(req.getCronExpression());
         row.setTimezone(req.getTimezone());
-        row.setPausedUntil(req.getPausedUntil() != null ? req.getPausedUntil().atOffset(ZoneOffset.UTC) : null);
-        row.setExpiresAt(req.getExpiresAt() != null ? req.getExpiresAt().atOffset(ZoneOffset.UTC) : null);
+        // JOB-405: a null pausedUntil or expiresAt means "unchanged", so an edit never un-pauses the schedule or
+        // drops its end date. Only resume clears a pause (ADR-0034), including the no-assignees auto-pause.
+        if (req.getPausedUntil() != null) {
+            row.setPausedUntil(req.getPausedUntil().atOffset(ZoneOffset.UTC));
+        }
+        if (req.getExpiresAt() != null) {
+            row.setExpiresAt(req.getExpiresAt().atOffset(ZoneOffset.UTC));
+        }
         row.setNextRunAt(nextRunAt.atOffset(ZoneOffset.UTC));
 
         assigneeRepository.replaceForSchedule(scheduleId, req.getAssigneeIds());

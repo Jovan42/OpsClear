@@ -31,8 +31,16 @@ public class UpdateScheduleRequest {
     @Size(max = 60, message = "Timezone must be at most 60 characters")
     private String timezone;
 
+    /**
+     * New pause end, or {@code null} to keep the current pause unchanged (JOB-405). An update never clears a pause:
+     * use the resume endpoint for that (ADR-0034).
+     */
     private Instant pausedUntil;
 
+    /**
+     * New end date, or {@code null} to keep the current end date unchanged (JOB-405). An update can't clear an end
+     * date yet (JOB-407).
+     */
     private Instant expiresAt;
 
     @NotNull(message = "Assignees list is required")

@@ -14,10 +14,11 @@ import {
   createTemplateAs,
   createScheduleAs,
   getScheduleAs,
+  listSchedulesAs,
 } from '../../support/orgApi';
 
 describe('Schedule form modal and pause dialog', () => {
-  it('builds an assignee rotation in the modal (add, reorder, remove), sets pause-until and expiry, then edits it', { tags: '@smoke' }, () => {
+  it('builds an assignee rotation in the modal (add, reorder, remove), sets pause-until and expiry, then renames it and it stays paused until resumed', { tags: '@smoke' }, () => {
     const email = uniqueEmail('sched-form');
     cy.createKeycloakUser(email, 'Olga', 'Owner');
     createOrgWithFullAccess(email, 'Sched Form Corp', uniqueSlug()).then((orgId) =>
@@ -64,18 +65,35 @@ describe('Schedule form modal and pause dialog', () => {
 
         cy.contains('p', 'Rotating checklist').should('be.visible');
         cy.contains('Paused').should('be.visible');
+        listSchedulesAs(email, projectId).then(([created]) => {
+          expect(created.pausedUntil).to.not.equal(null);
+          expect(created.expiresAt).to.not.equal(null);
 
-        cy.contains('button', 'Edit').click();
-        cy.get('.fixed.inset-0.z-50:visible').within(() => {
-          cy.contains('Edit Schedule').should('be.visible');
-          cy.get('input[placeholder="e.g. Weekly deploy checklist"]').should('have.value', 'Rotating checklist');
-          cy.get('input[placeholder="e.g. Weekly deploy checklist"]').clear();
-          cy.get('input[placeholder="e.g. Weekly deploy checklist"]').type('Renamed checklist');
-          cy.contains('label', 'Pause until').parent().find('input').clear();
-          cy.contains('button', 'Save changes').click();
+          // JOB-405: renaming keeps the pause and the end date (the edit form leaves both fields empty)
+          cy.contains('button', 'Edit').click();
+          cy.get('.fixed.inset-0.z-50:visible').within(() => {
+            cy.contains('Edit Schedule').should('be.visible');
+            cy.get('input[placeholder="e.g. Weekly deploy checklist"]').should('have.value', 'Rotating checklist');
+            cy.get('input[placeholder="e.g. Weekly deploy checklist"]').clear();
+            cy.get('input[placeholder="e.g. Weekly deploy checklist"]').type('Renamed checklist');
+            cy.contains('button', 'Save changes').click();
+          });
+          cy.contains('p', 'Renamed checklist').should('be.visible');
+          cy.contains('Paused').should('be.visible');
+          cy.contains('button', 'Resume').should('be.visible');
+          // The page doesn't show the end date, so check it through the API
+          getScheduleAs(email, projectId, created.id).then((edited) => {
+            expect(edited.name).to.equal('Renamed checklist');
+            expect(edited.status).to.equal('PAUSED');
+            expect(edited.pausedUntil).to.equal(created.pausedUntil);
+            expect(edited.expiresAt).to.equal(created.expiresAt);
+          });
+
+          // Only Resume clears the pause
+          cy.contains('button', 'Resume').click();
+          cy.contains('Active').should('be.visible');
+          cy.contains('button', 'Pause').should('be.visible');
         });
-        cy.contains('p', 'Renamed checklist').should('be.visible');
-        cy.contains('Active').should('be.visible');
       }),
     );
     cy.deleteKeycloakUser(email);
