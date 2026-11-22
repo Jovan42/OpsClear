@@ -264,11 +264,11 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 4. Remove the deadline and save.
 5. Check Luka's centre.
 
-- [ ] A description-only edit notifies no one
-- [ ] The priority change gives Luka one "Deadline or priority changed" entry with "Priority: Low"
-- [ ] The deadline change gives Luka one entry with "New deadline: …" in his date format
-- [ ] Removing the deadline gives an entry saying "Deadline removed"
-- [ ] Ana, who made each change, gets none
+- [x] A description-only edit notifies no one
+- [x] The priority change gives Luka one "Deadline or priority changed" entry with "Priority: Low"
+- [x] The deadline change gives Luka one entry with "New deadline: …" in his date format
+- [x] Removing the deadline gives an entry saying "Deadline removed"
+- [x] Ana, who made each change, gets none
 
 ## NTF-17 Approval request and decision
 **As:** Luka, Ana, Nikola · **Day:** 1 · **Needs:** NTF-16 done, Residential's gate on (`01-onboarding.md`)
@@ -280,12 +280,12 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 5. As Nikola, approve the request with the comment "Looks fine".
 6. Check Luka's centre.
 
-- [ ] Ana and Nikola each get "Requested to complete …" from Luka, and it opens the job at its approvals
-- [ ] Ivana, Sara and Luka get nothing about the request
-- [ ] Luka gets "Rejected your request on …" from Ana, with the comment shown
-- [ ] After the second request Ana and Nikola each get a new request entry
-- [ ] Luka gets "Approved completion of …" from Nikola
-- [ ] The job is **Completed**
+- [x] Ana and Nikola each get "Requested to complete …" from Luka, and it opens the job at its approvals
+- [x] Ivana, Sara and Luka get nothing about the request
+- [x] Luka gets "Rejected your request on …" from Ana, with the comment shown
+- [x] After the second request Ana and Nikola each get a new request entry
+- [x] Luka gets "Approved completion of …" from Nikola
+- [x] The job is **Completed**
 
 ## NTF-18 Changing the assignee and the deadline in one edit
 **As:** Ana · **Day:** 1 · **Needs:** NTF-02 done, "Remove garden shed at 3 Willow Lane" still **New** with Sara
