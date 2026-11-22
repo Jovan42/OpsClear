@@ -30,7 +30,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -1211,7 +1213,122 @@ class RecurringScheduleIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // --- updateSchedule — keeps pause and end date the request leaves out (JOB-405) ---
+
+    @Test
+    @DisplayName("updateSchedule — keeps an indefinite pause when the request has no pausedUntil (JOB-405)")
+    void updateSchedule_shouldKeepPausedUntil_whenRequestOmitsIt() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        UUID scheduleId = createScheduleWith("\"assigneeIds\": [\"%s\"]".formatted(ownerId));
+        pauseSchedule(scheduleId, "{}");
+
+        renameSchedule(scheduleId, "[\"%s\"]".formatted(ownerId))
+                .andExpect(jsonPath("$.name").value("Renamed"))
+                .andExpect(jsonPath("$.status").value("PAUSED"))
+                .andExpect(jsonPath("$.pausedUntil").value("9999-01-01T00:00:00Z"));
+
+        assertThat(scheduleRepository.findById(scheduleId).orElseThrow().getPausedUntil().toInstant())
+                .isEqualTo(Instant.parse("9999-01-01T00:00:00Z"));
+    }
+
+    @Test
+    @DisplayName("updateSchedule — keeps expiresAt when the request has no expiresAt (JOB-405)")
+    void updateSchedule_shouldKeepExpiresAt_whenRequestOmitsIt() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        UUID scheduleId = createScheduleWith(
+                "\"assigneeIds\": [\"%s\"], \"expiresAt\": \"2031-01-01T00:00:00Z\"".formatted(ownerId));
+
+        renameSchedule(scheduleId, "[\"%s\"]".formatted(ownerId))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.pausedUntil").isEmpty())
+                .andExpect(jsonPath("$.expiresAt").value("2031-01-01T00:00:00Z"));
+
+        assertThat(scheduleRepository.findById(scheduleId).orElseThrow().getExpiresAt().toInstant())
+                .isEqualTo(Instant.parse("2031-01-01T00:00:00Z"));
+    }
+
+    @Test
+    @DisplayName("updateSchedule — removing every assignee still pauses the schedule (JOB-405)")
+    void updateSchedule_shouldPauseForNoAssignees_whenAssigneesRemoved() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        UUID scheduleId = createScheduleWith("\"assigneeIds\": [\"%s\"]".formatted(ownerId));
+
+        renameSchedule(scheduleId, "[]")
+                .andExpect(jsonPath("$.status").value("PAUSED_NO_ASSIGNEES"))
+                .andExpect(jsonPath("$.pausedUntil").value("9999-01-01T00:00:00Z"));
+    }
+
+    @Test
+    @DisplayName("updateSchedule — adding assignees back lifts the no-assignees pause (JOB-405)")
+    void updateSchedule_shouldResume_whenAssigneesAddedToNoAssigneesPausedSchedule() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        UUID scheduleId = createScheduleWith("\"assigneeIds\": [\"%s\"]".formatted(ownerId));
+        renameSchedule(scheduleId, "[]")
+                .andExpect(jsonPath("$.status").value("PAUSED_NO_ASSIGNEES"));
+
+        renameSchedule(scheduleId, "[\"%s\"]".formatted(ownerId))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.pausedUntil").isEmpty());
+    }
+
+    @Test
+    @DisplayName("updateSchedule — adding assignees keeps a dated pause on a schedule without assignees (JOB-405)")
+    void updateSchedule_shouldKeepDatedPause_whenAssigneesAddedToScheduleWithoutAssignees() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        UUID scheduleId = createScheduleWith("\"assigneeIds\": []");
+        pauseSchedule(scheduleId, "{\"until\": \"2030-06-01T00:00:00Z\"}");
+
+        renameSchedule(scheduleId, "[\"%s\"]".formatted(ownerId))
+                .andExpect(jsonPath("$.status").value("PAUSED"))
+                .andExpect(jsonPath("$.pausedUntil").value("2030-06-01T00:00:00Z"));
+    }
+
     // --- Helpers ---
+
+    private UUID createScheduleWith(String extraFields) throws Exception {
+        String body = mockMvc.perform(post(ApiPaths.schedules(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Original",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  %s
+                                }
+                                """.formatted(templateId, extraFields)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(extractId(body));
+    }
+
+    private void pauseSchedule(UUID scheduleId, String body) throws Exception {
+        mockMvc.perform(post(ApiPaths.schedulePause(projectId, scheduleId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk());
+    }
+
+    // Sends an edit like the schedule form does: name and assignees, no pausedUntil or expiresAt.
+    private ResultActions renameSchedule(UUID scheduleId, String assigneeIdsJson) throws Exception {
+        return mockMvc.perform(put(ApiPaths.schedule(projectId, scheduleId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Renamed",
+                                  "templateId": "%s",
+                                  "cronExpression": "0 0 9 * * MON",
+                                  "timezone": "UTC",
+                                  "pausedUntil": null,
+                                  "expiresAt": null,
+                                  "assigneeIds": %s
+                                }
+                                """.formatted(templateId, assigneeIdsJson)))
+                .andExpect(status().isOk());
+    }
 
     private String extractId(String json) throws Exception {
         return objectMapper.readTree(json).get("id").asText();
