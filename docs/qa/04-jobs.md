@@ -1,7 +1,7 @@
 # Jobs
 
 Last run:
-Guide: /guide/create-job, /guide/job-blocked, /guide/finding-jobs, /guide/roles-permissions
+Guide: /guide/create-job, /guide/job-blocked, /guide/finding-jobs, /guide/roles-permissions, /guide/job-done, /guide/notes-links-history
 
 Jobs are the core of the app: the list, the job screen, creating and editing, assigning, the four
 statuses, block reasons, deleting, filters, search and links. The world is built by
@@ -34,7 +34,7 @@ statuses, block reasons, deleting, filters, search and links. The world is built
 | **D** Install fire door at Marlow Accounting | Office Refurbishments | JOB-17 | a member in a project without the approval gate; deleted at the end of JOB-23 |
 | **P** Draft logo options for Juniper Cafe | Pine & Pixel | JOB-22 | an org without add-ons |
 
-**Deadline alerts stay clean.** The 06:00 UTC alerts only look at open jobs with a deadline. F is
+**Deadline alerts stay clean.** Run JOB-10 and JOB-11 in one sitting without crossing 06:00 UTC: F has a past deadline and is open until JOB-11 step 4, and an overdue alert for it would reach Ana and Nikola. The 06:00 UTC alerts only look at open jobs with a deadline. F is
 completed and then deleted, G, H, K and D are deleted, and A, B, C and P end with no deadline, so
 nothing this file leaves behind raises a DEADLINE_SOON or OVERDUE entry for `09-notifications.md`.
 The jobs with deadlines are assigned to Ana or Luka, and all of it happens in one sitting.
@@ -43,9 +43,12 @@ The jobs with deadlines are assigned to Ana or Luka, and all of it happens in on
 - Ivana: "Assigned you to Install extractor fan…" (JOB-03), two "Deadline or priority changed" for A
   (JOB-04), and Status changed entries for A when Nikola completes it and Ana reopens it (JOB-15).
 - Nikola: one "Assigned you to Strip kitchen floor…" for B (JOB-04).
-- Luka: "Assigned you to Install fire door…" (JOB-17) and a Status changed entry when Ivana reopens D.
-- Ana, Nikola and Ivana (as owner or admin): Status changed and Job blocked entries for A, B, C and D
-  as the others change them (JOB-12 to JOB-15, JOB-17).
+- Luka: "Assigned you to Install fire door…" (JOB-17), a Status changed entry when Ivana reopens D,
+  and "Deleted Install fire door…" when Nikola deletes D (JOB-23).
+- Ana: "Deleted Collect keys…" when Nikola deletes F (JOB-18).
+- Ana and Nikola (as owner and admin of Residential): Status changed and Job blocked entries for A, B,
+  C and F as the others change them (JOB-11 to JOB-15). Nikola (owner of Office) and Ivana (admin of
+  Office) get the same kind of entries for D only (JOB-17).
 
 **Settings.** Every user's settings start at their defaults (Row density Comfortable, Deadline format
 Absolute, Due-soon highlight 3 days, Default assignee filter Everyone, Default view mode Grouped).
@@ -245,8 +248,8 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 ## JOB-11 Relative deadlines, row density and completing clears the highlight
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-10 done, F still New and overdue, G, H and K still open
 
-1. Open **Account settings**, **Appearance**, and set **Deadline format** to **Relative**. Open the Residential list.
-2. Set **Row density** (also under **Appearance**) to **Compact** and open the list again.
+1. Open **Account settings**, **Jobs**, and set **Deadline format** to **Relative**. Open the Residential list.
+2. Set **Row density** (under **Appearance**) to **Compact** and open the list again.
 3. Set **Row density** back to **Comfortable**.
 4. Open F, click **Start**, click **Complete**, confirm **Mark Complete**. Go back to the list and look at F.
 5. Set **Deadline format** back to **Absolute**.
@@ -464,7 +467,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 ## JOB-23 Relative deadlines in the Serbian UI
 **As:** Luka (member, Serbian UI), then Nikola (owner, Office) · **Day:** any, after ONB-33 · **Needs:** JOB-17 done (D is due in 3 days and assigned to Luka), Luka's Deadline format on Absolute
 
-1. As Luka, open the **Account settings** and, under **Appearance**, set **Deadline format** to its second option (Relative).
+1. As Luka, open **Account settings**, **Jobs**, and set **Deadline format** to its second option (Relative).
 2. Open Office **Jobs** and look at the deadline of D, and at the small label beside it.
 3. Open D and look at its deadline.
 4. Set the Deadline format back to its first option (Absolute).
