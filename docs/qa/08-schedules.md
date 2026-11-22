@@ -1,6 +1,6 @@
 # Recurring schedules
 
-Last run:
+Last run: 2026-11-22, Jovan (in progress)
 Guide: /guide/recurring-jobs
 
 Recurring schedules create a job from a template on a timetable, hand it to people in turn, and keep
@@ -52,9 +52,9 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 2. Name **Site safety check**, Title template `Site safety check for {{project}} - {{date}}`, Description template "Walk every active site, check exits and tool storage, photograph anything unsafe.", Client "Brightline internal", Priority **Medium**, Deadline offset (days) `1`. Click **Create**.
 3. Click **+ New Template** again. Name **Toolbox talk**, Title template `Toolbox talk week {{week}}`, Description template "Ten-minute talk with the crew before the first job of the week.", Priority **Low**, leave the deadline offset empty. Click **Create**.
 
-- [ ] **Site safety check** is listed with a "+1d deadline" badge
-- [ ] **Toolbox talk** is listed with no deadline badge
-- [ ] Both show "Used 0×"
+- [x] **Site safety check** is listed with a "+1d deadline" badge
+- [x] **Toolbox talk** is listed with no deadline badge
+- [x] Both show "Used 0×"
 
 ## SCH-02 The Schedules page starts empty and the form opens with sensible defaults
 **As:** Ana (Residential owner) · **Day:** 1 · **Needs:** SCH-01 done
@@ -64,12 +64,12 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 3. Open the **Template** menu.
 4. Look at the **Schedule** section and the **Timezone** field.
 
-- [ ] The page is titled **Schedules** and says "No schedules yet. Create a recurring schedule to automatically create jobs from templates."
-- [ ] The page has **+ New Schedule** and **Create first schedule**
-- [ ] The **New Schedule** window opens with **Weekly** chosen, "Every" **Monday** "at" 09:00 and a line in words describing it
-- [ ] The **Template** menu lists **Site safety check** and **Toolbox talk**
-- [ ] **Next occurrences** lists five dates, all Mondays at 09:00, and **Timezone** starts as your browser's timezone
-- [ ] **Cancel** closes the window without creating anything
+- [x] The page is titled **Schedules** and says "No schedules yet. Create a recurring schedule to automatically create jobs from templates."
+- [x] The page has **+ New Schedule** and **Create first schedule**
+- [x] The **New Schedule** window opens with **Weekly** chosen, "Every" **Monday** "at" 09:00 and a line in words describing it
+- [x] The **Template** menu lists **Site safety check** and **Toolbox talk**
+- [x] **Next occurrences** lists five dates, all Mondays at 09:00, and **Timezone** starts as your browser's timezone
+- [x] **Cancel** closes the window without creating anything
 
 ## SCH-03 The preview follows the choices
 **As:** Ana (Residential owner) · **Day:** 1 · **Needs:** SCH-02 done
@@ -81,11 +81,11 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 5. Replace the text with `0 0 8 * *` (five fields only), wait a second.
 6. Click **Cancel**.
 
-- [ ] **Daily** shows a line in words saying every day at 07:00 and five consecutive days in **Next occurrences**, each at 07:00 UTC
-- [ ] **Monthly** shows the 1st of the next five months at 09:00 UTC
-- [ ] **Advanced** lists five dates, Monday to Friday only, at 08:00 UTC, and the line in words says the same
-- [ ] With only five fields, **Next occurrences** disappears (the form doesn't ask for a preview) and the form still opens and closes normally
-- [ ] The helper text under the **Advanced** field says it is a 6-field cron: sec min hour dom month dow
+- [x] **Daily** shows a line in words saying every day at 07:00 and five consecutive days in **Next occurrences**, each at 07:00 UTC
+- [x] **Monthly** shows the 1st of the next five months at 09:00 UTC
+- [x] **Advanced** lists five dates, Monday to Friday only, at 08:00 UTC, and the line in words says the same
+- [x] With only five fields, **Next occurrences** disappears (the form doesn't ask for a preview) and the form still opens and closes normally
+- [x] The helper text under the **Advanced** field says it is a 6-field cron: sec min hour dom month dow
 
 ## SCH-04 Bad input is refused and nothing is created
 **As:** Ana (Residential owner) · **Day:** 1 · **Needs:** SCH-01 done
@@ -98,12 +98,12 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 6. Clear **Name**, pick a template, click **Create schedule**.
 7. Click **Cancel**.
 
-- [ ] Step 2 shows "Cron expression must have a minimum interval of 1 hour" in the window and the window stays open
-- [ ] Step 3 shows a message starting "Invalid cron expression:" and the window stays open
-- [ ] Step 4 shows "Invalid timezone: Mars/Olympus" and the window stays open
-- [ ] Step 5 doesn't submit: the browser asks for a template
-- [ ] Step 6 doesn't submit: the browser asks for a name
-- [ ] After **Cancel** the Schedules page still shows the empty state
+- [x] Step 2 shows "Cron expression must have a minimum interval of 1 hour" in the window and the window stays open
+- [x] Step 3 shows a message starting "Invalid cron expression:" and the window stays open
+- [x] Step 4 shows "Invalid timezone: Mars/Olympus" and the window stays open
+- [x] Step 5 doesn't submit: the browser asks for a template
+- [x] Step 6 doesn't submit: the browser asks for a name
+- [x] After **Cancel** the Schedules page still shows the empty state
 
 ## SCH-05 Create the daily schedule with two people in rotation
 **As:** Ana (Residential owner) · **Day:** 1, after 07:00 UTC · **Needs:** SCH-01 done
@@ -114,13 +114,13 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 4. Click the up arrow (▲) on Ivana's row.
 5. Leave **Pause until** and **Expires at** empty and click **Create schedule**.
 
-- [ ] Sara is listed as #1 and Ivana as #2 after step 3, and Ivana is #1 and Sara #2 after step 4
-- [ ] The first row's up arrow and the last row's down arrow are greyed out
-- [ ] The window closes and the page lists **Daily site safety check** with an **Active** label
-- [ ] The row shows "Template: Site safety check" and a line in words saying it runs every day at 07:00
-- [ ] **Next:** shows the next 07:00 UTC moment, the same one the preview listed first
-- [ ] The row shows two circles, "I" then "S" (Ivana first)
-- [ ] The row has **Pause**, **Edit** and **Delete**
+- [x] Sara is listed as #1 and Ivana as #2 after step 3, and Ivana is #1 and Sara #2 after step 4
+- [x] The first row's up arrow and the last row's down arrow are greyed out
+- [x] The window closes and the page lists **Daily site safety check** with an **Active** label
+- [x] The row shows "Template: Site safety check" and a line in words saying it runs every day at 07:00
+- [x] **Next:** shows the next 07:00 UTC moment, the same one the preview listed first
+- [x] The row shows two circles, "I" then "S" (Ivana first)
+- [x] The row has **Pause**, **Edit** and **Delete**
 
 ## SCH-06 Create the weekly schedule with no assignee
 **As:** Ana (Residential owner) · **Day:** 1 · **Needs:** SCH-05 done
@@ -129,10 +129,10 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 2. Click **Weekly**, choose the weekday of day 3 (today + 2 days), time 07:00, **Timezone** `UTC`.
 3. Don't add anyone under **Assignee rotation**. Click **Create schedule**.
 
-- [ ] The schedule is listed as **Active** with "Template: Toolbox talk"
-- [ ] The row shows no assignee circles
-- [ ] **Next:** is day 3 at 07:00 UTC
-- [ ] The page now lists two schedules
+- [x] The schedule is listed as **Active** with "Template: Toolbox talk"
+- [x] The row shows no assignee circles
+- [x] **Next:** is day 3 at 07:00 UTC
+- [x] The page now lists two schedules
 
 ## SCH-07 Create a schedule that starts paused
 **As:** Ana (Residential owner) · **Day:** 1 · **Needs:** SCH-06 done
@@ -142,9 +142,9 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 3. Add Sara under **Assignee rotation**.
 4. Set **Pause until** to a date three months from now, leave **Expires at** empty, click **Create schedule**.
 
-- [ ] The schedule is listed with a **Paused** label, not **Active**
-- [ ] The row has **Resume** instead of **Pause**
-- [ ] The other two schedules are still **Active**
+- [x] The schedule is listed with a **Paused** label, not **Active**
+- [x] The row has **Resume** instead of **Pause**
+- [x] The other two schedules are still **Active**
 
 ## SCH-08 Members can look but not manage, and the role is per project
 **As:** Sara (Residential member), then Ivana (Residential member, Office admin) · **Day:** 1 · **Needs:** SCH-07 done
@@ -153,11 +153,11 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 2. As Ivana, open Residential, **Schedules**.
 3. As Ivana, open **Office Refurbishments**, **Schedules**.
 
-- [ ] Sara sees all three schedules with their status, template, timing, **Next:** and circles
-- [ ] Sara has no **+ New Schedule**, **Pause**, **Resume**, **Edit** or **Delete** anywhere on the page
-- [ ] Ivana sees the same read-only page in Residential
-- [ ] In Office Refurbishments Ivana (admin there) sees the empty state with **+ New Schedule**
-- [ ] Sara and Ivana still see **Schedules** in the top bar of Residential (it is not hidden from members)
+- [x] Sara sees all three schedules with their status, template, timing, **Next:** and circles
+- [x] Sara has no **+ New Schedule**, **Pause**, **Resume**, **Edit** or **Delete** anywhere on the page
+- [x] Ivana sees the same read-only page in Residential
+- [x] In Office Refurbishments Ivana (admin there) sees the empty state with **+ New Schedule**
+- [x] Sara and Ivana still see **Schedules** in the top bar of Residential (it is not hidden from members)
 
 ## SCH-09 Without the add-on the schedules are locked
 **As:** Petra (owner of Pine & Pixel Studio, no add-ons), then Ana · **Day:** 1 · **Needs:** ONB-31 done (Petra's project **Brand refresh for Juniper Cafe** exists)
@@ -168,11 +168,11 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 4. Open the project's **Templates** page.
 5. As Ana, open Residential and look at the top bar.
 
-- [ ] The top bar shows **Schedules** with a lock next to it
-- [ ] The page says "Recurring Scheduling is not included in your plan" with "Add this feature to your subscription to unlock it for your team." and no **+ New Schedule**
-- [ ] **Upgrade in org settings** opens **Organisation Settings**
-- [ ] **Templates** is locked the same way, so there is no **Schedule** button to start from
-- [ ] Ana's top bar shows **Schedules** without a lock
+- [x] The top bar shows **Schedules** with a lock next to it
+- [x] The page says "Recurring Scheduling is not included in your plan" with "Add this feature to your subscription to unlock it for your team." and no **+ New Schedule**
+- [x] **Upgrade in org settings** opens **Organisation Settings**
+- [x] **Templates** is locked the same way, so there is no **Schedule** button to start from
+- [x] Ana's top bar shows **Schedules** without a lock
 
 ## SCH-10 Pause and resume
 **As:** Nikola (Residential admin) · **Day:** 1 · **Needs:** SCH-07 done
@@ -184,13 +184,13 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 5. On **Monthly fire drill log** (already paused) click **Resume**.
 6. Click **Pause** on **Monthly fire drill log**, choose **Indefinitely**, click **Pause**.
 
-- [ ] The window is titled `Pause "Weekly toolbox talk"` and offers **1 day**, **1 week**, **1 month**, **Custom date** and **Indefinitely**
-- [ ] With **Custom date** chosen and no date entered, the **Pause** button in the window is disabled
-- [ ] After step 3 the row shows **Paused** and **Resume**
-- [ ] After step 4 the row is **Active** again with **Pause**
-- [ ] After step 5 **Monthly fire drill log** is **Active**
-- [ ] After step 6 it is **Paused** again and stays so after a reload
-- [ ] Nikola, as an admin, could do all of this without an error message
+- [x] The window is titled `Pause "Weekly toolbox talk"` and offers **1 day**, **1 week**, **1 month**, **Custom date** and **Indefinitely**
+- [x] With **Custom date** chosen and no date entered, the **Pause** button in the window is disabled
+- [x] After step 3 the row shows **Paused** and **Resume**
+- [x] After step 4 the row is **Active** again with **Pause**
+- [x] After step 5 **Monthly fire drill log** is **Active**
+- [x] After step 6 it is **Paused** again and stays so after a reload
+- [x] Nikola, as an admin, could do all of this without an error message
 
 ## SCH-11 Edit schedules
 **As:** Nikola (Residential admin) · **Day:** 1 · **Needs:** SCH-10 done. Known bug JOB-405 (see the expected-to-fail box): the edit form doesn't send the schedule's current pause or end dates, so saving an edit may clear them.
@@ -201,12 +201,12 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 4. On **Monthly fire drill log** (paused indefinitely in SCH-10) click **Edit**, change only the name to **Monthly fire drill log (head office)**, click **Save changes**.
 5. Click **Edit** on it again, remove Sara with the × on her row and click **Save changes**.
 
-- [ ] The window for the daily schedule is titled **Edit Schedule** with the name, the template **Site safety check**, the timing 07:00 UTC (shown as **Daily** at 07:00, or as the cron `0 0 7 * * *` on **Advanced**) and the two people in order (Ivana #1, Sara #2) already filled in
-- [ ] The weekly schedule's window shows **Weekly**, the day-3 weekday, 07:00 and `UTC` already filled in
-- [ ] After step 2 the row shows the new name and is still **Active**, and **Next:** is unchanged
-- [ ] After step 4 the row shows the new name and is still **Paused** (known bug JOB-405: expected to fail until it is fixed)
-- [ ] After step 5 the row shows **No assignees** and no circles
-- [ ] **Resume** is shown on that row
+- [x] The window for the daily schedule is titled **Edit Schedule** with the name, the template **Site safety check**, the timing 07:00 UTC (shown as **Daily** at 07:00, or as the cron `0 0 7 * * *` on **Advanced**) and the two people in order (Ivana #1, Sara #2) already filled in
+- [x] The weekly schedule's window shows **Weekly**, the day-3 weekday, 07:00 and `UTC` already filled in
+- [x] After step 2 the row shows the new name and is still **Active**, and **Next:** is unchanged
+- [ ] After step 4 the row shows the new name and is still **Paused** — ❌ JOB-405 (fix in PR #598)
+- [x] After step 5 the row shows **No assignees** and no circles
+- [x] **Resume** is shown on that row
 
 ## SCH-12 Expiry and delete
 **As:** Ana (Residential owner) · **Day:** 1 · **Needs:** SCH-11 done
@@ -215,10 +215,10 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 2. Click **Delete** on that row, then **Cancel**.
 3. Click **Delete** again and read the window, then click **Delete** in it.
 
-- [ ] The row shows **Expired**
-- [ ] After **Cancel** the schedule is still listed
-- [ ] The window is titled **Delete Schedule** and says `Delete "Monthly fire drill log (head office)"? Jobs already created by this schedule will not be deleted.`
-- [ ] After the second **Delete** the row is gone and the other two schedules are untouched and **Active**
+- [x] The row shows **Expired**
+- [x] After **Cancel** the schedule is still listed
+- [x] The window is titled **Delete Schedule** and says `Delete "Monthly fire drill log (head office)"? Jobs already created by this schedule will not be deleted.`
+- [x] After the second **Delete** the row is gone and the other two schedules are untouched and **Active**
 
 ## SCH-13 Day 2: the daily schedule created a job
 **As:** Ana, Ivana, Sara · **Day:** 2, after 07:00 UTC · **Needs:** SCH-05 done on day 1 after 07:00 UTC, and the poller has had two minutes. The assigned-to notification for this job is checked in NTF-27.
