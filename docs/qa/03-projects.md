@@ -111,19 +111,23 @@ This project is the throwaway for PRJ-04 to PRJ-11. PRJ-14 deletes it.
 
 1. As Ivana, open **Warehouse Extension 2026**, **Settings**, **Members**.
 2. In **Search by name or email…** type `N`.
-3. Type `Jov`. Pick Nikola, choose **Admin** and click **Add**.
-4. Type `Petro`. Pick Ana, leave the role on **Member** and click **Add**.
-5. Type `Petra`, then `Stank`.
-6. Type `Marko`.
-7. Type `Luka`, pick Luka, choose **Owner** and click **Add**.
+3. Type `vanov`. Pick Nikola, choose **Admin** and click **Add**.
+4. Type `etro`. Pick Ana, leave the role on **Member** and click **Add**.
+5. Type `etra`, then `tanko`.
+6. Type `arkov`.
+7. Type `uka`, pick Luka, choose **Owner** and click **Add**.
 8. As Nikola and as Ana, open the bell.
 
+The search matches a name that contains the text, or an email that starts with it. All personas share one mailbox, so the fragments above sit in the middle of a name and can't be the start of the shared address. Don't replace them with the start of a name.
+
+The two notification boxes below only look for the one entry named in them. Other files' scenarios add their own entries to the same centres, so scroll to find it.
+
 - [ ] One character shows no suggestions
-- [ ] `Jov` lists only Nikola Jovanović, with his email, found by his last name
+- [ ] `vanov` lists only Nikola Jovanović, with his email, found by a fragment of his last name
 - [ ] Nikola is added and the table shows him as **Admin**
-- [ ] `Petro` finds Ana by her last name, and she is added as **Member**
-- [ ] `Petra` and `Stank` list nobody, because Petra isn't in Brightline
-- [ ] `Marko` lists Ivana Marković greyed out with "(already a member)", and she can't be picked
+- [ ] `etro` finds Ana by a fragment of her last name, and she is added as **Member**
+- [ ] `etra` and `tanko` list nobody, because Petra isn't in Brightline
+- [ ] `arkov` lists Ivana Marković greyed out with "(already a member)", and she can't be picked
 - [ ] Adding Luka as **Owner** is refused with "Cannot assign OWNER role", and Luka isn't in the table
 - [ ] Nikola gets "Added you to Warehouse Extension 2026 as Admin" in the notification centre
 - [ ] Ana gets "Added you to Warehouse Extension 2026 as Member" in the notification centre
@@ -182,6 +186,7 @@ The project is now called **Warehouse Extension 2026 - phase 1**. Use that name 
 - [ ] After Nikola sets Ana back to **Member**, Ana's page is read-only again
 - [ ] Luka is found by the email start `<mailbox>+luka`, added as **Member**, and **Warehouse Extension 2026 - phase 1** shows in his **Projects** list
 - [ ] After **Remove** Luka's row is gone, and the project is no longer in his **Projects** list after a reload
+- [ ] Ivana, the Owner, sees a role box and **Remove** on Nikola's row
 - [ ] Nikola's row shows only a badge for Ivana's Owner role and for himself, with no role box or **Remove**
 
 ## PRJ-10 Hiding job sections changes the job screen for everyone
@@ -276,7 +281,7 @@ Residential ends with three links: **Floor plans rev 2**, **Kitchen layouts** an
 - [ ] Neither switcher lists it any more
 
 ## PRJ-15 Completing a project is refused while it has open jobs
-**As:** Ana (Spring owner) · **Day:** 6 · **Needs:** ONB-28 done (the boiler job is in Spring Maintenance 2026) and **NTF-21 done**: that scenario adds Sara to Spring Maintenance 2026 on day 2, and a completed project refuses changes, so don't run this before it. Spring should hold only the boiler job. If anything else is still open there, complete it first, so the count below is 1.
+**As:** Ana (Spring owner) · **Day:** 6 · **Needs:** ONB-28 done (the boiler job is in Spring Maintenance 2026) and **NTF-21 done**: that scenario adds Sara to Spring Maintenance 2026 on day 2 and then removes her again, and a completed project refuses changes, so don't run this before it. Spring should hold only the boiler job. If anything else is still open there, complete it first, so the count below is 1.
 
 1. Open **Spring Maintenance 2026**, **Settings**, **Danger zone**. Click **Complete project** while "Quarterly boiler service at Hartley Court" is still **New**.
 2. Open the boiler job and click **Start**. Go back to **Settings** and click **Complete project** again.
@@ -336,6 +341,6 @@ Residential ends with three links: **Floor plans rev 2**, **Kitchen layouts** an
 - Removing the only assignee of a schedule pauses it: covered by `ProjectMemberIntegrationTest` (`removeMember — auto-pauses schedule when removed member was its only assignee`) and checked from the schedules side in `08-schedules.md`. Nobody is removed from a project with schedules in this file.
 - The settings API (gate and hidden sections): a Member gets 403, a completed project gets 409, an unknown section gets 400, the gate can't be turned on without an active Approvals add-on or while the subscription is past due, and the section endpoints keep working when a section is hidden: covered by `ProjectSettingsIntegrationTest` and `ProjectJobSectionsIntegrationTest`. ONB-31 checks the locked gate in the UI.
 - A Member can't edit or delete a project link, a member of another project can't touch the links, and project links appear in the project list and detail responses: covered by `ProjectLinkIntegrationTest`. The Job links add-on gate on `ProjectLinkController` is the shared `@RequiresAddon` check, covered by `RequiresAddonAspectTest`, and PRJ-12 checks the locked **Links** item for Petra.
-- The soft-deleted project hidden from the list and refused by every endpoint: covered by `ProjectIntegrationTest` (`Should not list soft-deleted projects`, `Should soft delete project and return 204`).
+- A soft-deleted project missing from the project list, and deleting a project answering 204: covered by `ProjectIntegrationTest` (`Should not list soft-deleted projects`, `Should soft delete project and return 204`).
 
 ## Findings
