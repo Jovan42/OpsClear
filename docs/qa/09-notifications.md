@@ -424,10 +424,10 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 2. As Luka, open "Tile bathroom at 14 Elm St" and click **Request completion**, with a reason, before the day ends.
 3. As Ana, approve it.
 
-- [ ] Luka has "Install kitchen worktops at 31 Oak Ave is due tomorrow" and "Replace ceiling lights in the open-plan office is due tomorrow"
-- [ ] Nobody gets a second **Deadline tomorrow** for a job that already had one on day 2
-- [ ] Sara has no new **Deadline tomorrow** today, because the shower deadline moved to Day 5 (NTF-29 checks it tomorrow)
-- [ ] The tile job becomes **Completed** and Luka gets "Approved completion of …"
+- [x] Luka has "Install kitchen worktops at 31 Oak Ave is due tomorrow" and "Replace ceiling lights in the open-plan office is due tomorrow"
+- [x] Nobody gets a second **Deadline tomorrow** for a job that already had one on day 2
+- [x] Sara has no new **Deadline tomorrow** today, because the shower deadline moved to Day 5 (NTF-29 checks it tomorrow)
+- [x] The tile job becomes **Completed** and Luka gets "Approved completion of …"
 
 ## NTF-29 Day 4: overdue, and no repeats
 **As:** Ivana, Ana, Nikola, Luka, Sara · **Day:** 4, after 06:00 UTC · **Needs:** NTF-28 done. Open on day 4: "Paint hallway and stairs at 9 Birch Rd" and "Fit partition walls on the 3rd floor". Completed: the tile job.
