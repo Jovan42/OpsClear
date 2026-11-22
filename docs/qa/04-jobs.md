@@ -5,20 +5,21 @@ Guide: /guide/create-job, /guide/job-blocked, /guide/finding-jobs, /guide/roles-
 
 Jobs are the core of the app: the list, the job screen, creating and editing, assigning, the four
 statuses, block reasons, deleting, filters, search and links. The world is built by
-`01-onboarding.md` ([README](README.md#test-world)). Run this file on day 1, after ONB-33, in order.
+`01-onboarding.md` ([README](README.md#test-world)). Run it on any day after ONB-33, in order.
 
 **What other files already did, and how this one stays out of their way.**
 
 - The eight day-1 jobs from ONB-26 and the two from ONB-27 and ONB-28 stay as they are. This file
   only reads them (list, search, filters, due-soon highlight) and never changes their status,
-  deadline or assignee. Their Day 3 and Day 4 deadlines are what the due-soon checks use.
+  deadline or assignee. The due-soon and overdue checks use jobs this file creates itself, because
+  the ONB-26 deadlines move into the past as the run goes on.
 - `09-notifications.md` creates its own working jobs in Residential Fit-outs and relies on their
   status, assignee and deadline. This file doesn't touch them either, and creates its own jobs
   (below). Lists in Residential can therefore hold more rows than ONB-26 made, so list checks say
   "includes" or "every row shown", never an exact count.
 - `08-schedules.md` makes jobs such as `Site safety check for Residential Fit-outs - <date>` and
-  `Toolbox talk week <n>` in Residential from day 2. This file is meant for day 1, before any of
-  them exist. Every check is worded to survive them if you run it later.
+  `Toolbox talk week <n>` in Residential from its day 2 on. They may be in the lists when this file
+  runs, so every list check says "includes" or "every row shown", never an exact count.
 - Spring Maintenance 2026 is archived late by `03-projects.md`, so no job scenario here uses it.
 
 **Jobs this file creates** (all in the test world, fictional clients):
@@ -29,25 +30,35 @@ statuses, block reasons, deleting, filters, search and links. The world is built
 | **B** Strip kitchen floor at 31 Oak Ave | Residential | JOB-03 | assigning, owner status changes, delete |
 | **C** Fix roof flashing at 12 Rowan Close | Residential | JOB-03 | block reasons, links, Mine filter |
 | **F** Collect keys for 8 Pear Tree Rd | Residential | JOB-10 | overdue highlight, delete by an admin |
-| **D** Install fire door at Marlow Accounting | Office Refurbishments | JOB-17 | a member in a project without the approval gate |
+| **G**, **H**, **K** Check scaffolding at 17 Cherry Hill, Order skirting boards for 17 Cherry Hill, Book skip for 17 Cherry Hill | Residential | JOB-10 | due-soon highlight, relative deadlines; deleted at the end of JOB-11 |
+| **D** Install fire door at Marlow Accounting | Office Refurbishments | JOB-17 | a member in a project without the approval gate; deleted at the end of JOB-23 |
 | **P** Draft logo options for Juniper Cafe | Pine & Pixel | JOB-22 | an org without add-ons |
 
-Some of these assign jobs to Ivana, Nikola and Luka, so each of them gets a few "assigned you"
-notifications. They are easy to tell apart by title.
+**Deadline alerts stay clean.** The 06:00 UTC alerts only look at open jobs with a deadline. F is
+completed and then deleted, G, H, K and D are deleted, and A, B, C and P end with no deadline, so
+nothing this file leaves behind raises a DEADLINE_SOON or OVERDUE entry for `09-notifications.md`.
+The jobs with deadlines are assigned to Ana or Luka, and all of it happens in one sitting.
+
+**Notifications this file sends** (by title they are easy to tell apart in the centres):
+- Ivana: "Assigned you to Install extractor fan…" (JOB-03), two "Deadline or priority changed" for A
+  (JOB-04), and Status changed entries for A when Nikola completes it and Ana reopens it (JOB-15).
+- Nikola: one "Assigned you to Strip kitchen floor…" for B (JOB-04).
+- Luka: "Assigned you to Install fire door…" (JOB-17) and a Status changed entry when Ivana reopens D.
+- Ana, Nikola and Ivana (as owner or admin): Status changed and Job blocked entries for A, B, C and D
+  as the others change them (JOB-12 to JOB-15, JOB-17).
 
 **Settings.** Every user's settings start at their defaults (Row density Comfortable, Deadline format
 Absolute, Due-soon highlight 3 days, Default assignee filter Everyone, Default view mode Grouped).
 Scenarios that change a setting change it back at the end. The settings page itself is covered in
 `11-account.md`; here only its effect on jobs is checked.
 
-**Dates.** As in `01-onboarding.md`: "today" is day 1 (UTC). Near midnight UTC, work the dates out
-from the UTC clock. The due-soon check counts calendar days in your own time zone.
+**Dates.** "Today" is the current date (UTC). Near midnight UTC, work the dates out from the UTC clock. The due-soon check counts calendar days in your own time zone.
 
 **Luka** uses the Serbian UI. His scenarios judge that the screens read in Serbian and never check
 exact English text.
 
 ## JOB-01 The New Job form checks its input
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** ONB-26 done
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** ONB-26 done
 
 1. Open **Residential Fit-outs**, **Jobs**, click **+ New Job**.
 2. Click **Create job** with **Title** empty.
@@ -60,10 +71,10 @@ exact English text.
 - [ ] The 256 characters show "Max 255 characters" and no job is created
 - [ ] **Cancel** closes the form without creating a job
 - [ ] Reopening the form shows every box empty again, not the "Test" title
-- [ ] **Milestone** offers **No milestone**, **Kitchen phase**, **Bathroom phase** and **Handover**
+- [ ] **Milestone** offers **No milestone** and includes **Kitchen phase**, **Bathroom phase** and **Handover**
 
 ## JOB-02 The assignee picker offers project members, found by name or email
-**As:** Ana (owner, Residential Fit-outs), then Nikola (owner, Office Refurbishments) · **Day:** 1 · **Needs:** JOB-01 done. The picker lists the members of the project, who are all in the organisation, so nobody from Pine & Pixel can appear. The org-wide search for adding project members is in `03-projects.md`.
+**As:** Ana (owner, Residential Fit-outs), then Nikola (owner, Office Refurbishments) · **Day:** any, after ONB-33 · **Needs:** JOB-01 done. The picker lists the members of the project, who are all in the organisation, so nobody from Pine & Pixel can appear. The org-wide search for adding project members is in `03-projects.md`.
 
 1. As Ana, click **+ New Job** in Residential, then click the **Assign to** box.
 2. Type `ana`.
@@ -80,7 +91,7 @@ exact English text.
 - [ ] Nikola's picker in Office lists only Nikola, Ivana and Luka, not Ana or Sara
 
 ## JOB-03 Create jobs A, B and C and read the job screen
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-02 done
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-02 done
 
 Use **+ New Job** in Residential and fill the form from the table. For **Assign to**, type a part of the name and pick the person.
 
@@ -88,7 +99,7 @@ Use **+ New Job** in Residential and fill the form from the table. For **Assign 
 |-----|-------|--------|----------|----------|-----------|-----------|-------------|
 | A | Install extractor fan at 5 Linden Walk | Sutherland family | today + 10 days | High | Bathroom phase | Ivana | Needs a `**scaffold tower**` for the roof vent. Ask the client about parking. |
 | B | Strip kitchen floor at 31 Oak Ave | Delaney family | none | High | Kitchen phase | nobody | none |
-| C | Fix roof flashing at 12 Rowan Close | Nolan family | today + 12 days | Medium | No milestone | Ana | none |
+| C | Fix roof flashing at 12 Rowan Close | Nolan family | none | Medium | No milestone | Ana | none |
 
 Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 
@@ -101,13 +112,13 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] Clicking **Jobs** in the breadcrumb returns to the list
 
 ## JOB-04 Edit a job and change who it is assigned to
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-03 done
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-03 done
 
 1. Open job A and click **Edit**.
 2. Clear **Title** and click **Save changes**.
 3. Type the title **Install extractor fan at 5 Linden Walk** back. Change **Client** to "Sutherland household", **Deadline** to today + 14 days, **Priority** to **Critical** and **Milestone** to **Kitchen phase**. Click **Save changes**. Reload the page.
 4. Click **Edit**, clear **Deadline** and **Client**, and click **Save changes**.
-5. Click **Edit** again, type "Sutherland household" and today + 14 days back, and click **Save changes**.
+5. Click **Edit** again, type "Sutherland household" back in **Client** (leave **Deadline** empty), and click **Save changes**.
 6. Open job B, click **Edit**, pick Nikola in **Assign to** and click **Save changes**.
 7. Click **Edit** on B, click the **×** in **Assign to**, and click **Save changes**.
 
@@ -116,12 +127,12 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] After saving, A's screen shows "Sutherland household", the new deadline date and a **Critical** badge, and they are still there after the reload
 - [ ] In the list A now sits under **Kitchen phase**
 - [ ] With **Deadline** and **Client** cleared, A's screen shows "—" for both
-- [ ] A's assignee is still "Ivana Marković" after all the edits
+- [ ] A's assignee is still "Ivana Marković" after all the edits, and A is left with no deadline so it raises no deadline alert later
 - [ ] B's screen shows "Nikola Jovanović" as the assignee after step 6
 - [ ] B's screen shows "—" as the assignee after step 7
 
 ## JOB-05 The job list: groups, flat view, tabs
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-04 done, Ana's settings at their defaults
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-04 done, Ana's settings at their defaults
 
 1. Open **Residential Fit-outs**, **Jobs**. Look at the groups and the tab row.
 2. Click the **Kitchen phase** header, then click it again.
@@ -133,13 +144,13 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] **Bathroom phase** includes "Tile bathroom at 14 Elm St" and "Order bathroom fittings for 14 Elm St"; **Kitchen phase** includes "Install kitchen worktops at 31 Oak Ave" and A; **Handover** includes "Paint hallway and stairs at 9 Birch Rd" and "Final snag list at 22 Mill Lane"; **Ungrouped** includes "Fix leaking tap at 7 Cedar Close" and C
 - [ ] Clicking a group header collapses it and clicking again expands it
 - [ ] The button reads **Grouped** while grouped, and after one click the list is one flat table and the button reads **Flat**
-- [ ] The flat table has the columns Title, Client, Assigned to, Deadline, Priority and Status, and each title carries its milestone as a small chip
+- [ ] The flat table includes the columns Title, Client, Assigned to, Deadline, Priority and Status in that order (plus Type once the project has job types), and each title carries its milestone as a small chip
 - [ ] Clicking a row opens that job's screen
 - [ ] The tab row shows **All**, **New**, **In Progress**, **Blocked** and **Completed**, each with a count, and the **All** count equals the four others added up
 - [ ] A tab with a count of 0 is dimmed
 
 ## JOB-06 Sorting the flat list
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-05 done, list in the flat view, tab **All**
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-05 done, list in the flat view, tab **All**
 
 1. Look at the table headers and the first rows.
 2. Click **Deadline** once, then again.
@@ -153,7 +164,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] Clicking **Title** sorts A to Z ignoring capitals, and a second click sorts Z to A
 
 ## JOB-07 Search
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-06 done. Results appear about a third of a second after you stop typing.
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-06 done. Results appear about a third of a second after you stop typing.
 
 1. Type `elm st` (lower case) in the search box.
 2. Replace it with `Okafor`.
@@ -172,7 +183,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] Clearing the box brings back the full list
 
 ## JOB-08 Priority and milestone filters
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-07 done, search box empty, tab **All**, no other Critical job in Residential
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-07 done, search box empty, tab **All**, no other Critical job in Residential
 
 1. Open the priority box next to the search box and look at its options.
 2. Choose **Critical**, then **Low**, then **All priorities**.
@@ -190,12 +201,12 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] After choosing **All milestones**, the **Grouped**/**Flat** button is back
 
 ## JOB-09 Everyone and Mine
-**As:** Ana (owner, Residential Fit-outs), then Ivana (member) · **Day:** 1 · **Needs:** JOB-08 done, filters reset
+**As:** Ana (owner, Residential Fit-outs), then Ivana (member) · **Day:** any, after ONB-33 · **Needs:** JOB-08 done, filters reset
 
 1. As Ana, open the list and look at the **Everyone** / **Mine** switch next to the tabs.
 2. Click **Mine**, then click through the tabs.
 3. Reload the page.
-4. Open **Account settings**, **Job list**, set **Default assignee filter** to **Mine**, and open **Residential Fit-outs**, **Jobs**.
+4. Open **Account settings**, **Jobs**, set **Default assignee filter** to **Mine**, and open **Residential Fit-outs**, **Jobs**.
 5. Click **Everyone** on the list, then go back to **Account settings**.
 6. Set **Default assignee filter** back to **Everyone**.
 7. As Ivana, open Residential **Jobs**, click **Mine**, then **Everyone**.
@@ -208,38 +219,48 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] Ivana sees the same jobs under **Mine** and **Everyone**, because a member only sees her own
 
 ## JOB-10 Due-soon and overdue deadlines
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-09 done, Due-soon highlight at 3 days. The amber check relies on the Day 3 and Day 4 deadlines of ONB-26 being 2 and 3 days away, so do it on day 1.
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-09 done, Due-soon highlight at 3 days. The jobs are created here with dates counted from today, so the check works on any day.
 
-1. Click **+ New Job** in Residential. Title **Collect keys for 8 Pear Tree Rd**, Client "Whitlock family", Deadline **yesterday**, Priority **Low**, no milestone, **Assign to** Ana. Click **Create job**. This is job F.
-2. In the flat list, look at the Deadline column for F, "Tile bathroom at 14 Elm St", "Install kitchen worktops at 31 Oak Ave", "Final snag list at 22 Mill Lane" and "Order bathroom fittings for 14 Elm St".
-3. Open **Account settings**, **Job list**, **Due-soon highlight**, choose **1 day**, and look at the list again.
+1. Click **+ New Job** in Residential and create four jobs, each with **Assign to** Ana, no milestone and a client "Whitlock family". Use the **Title**, **Deadline** and **Priority** below, then **Create job**.
+
+   | Job | Title | Deadline | Priority |
+   |-----|-------|----------|----------|
+   | F | Collect keys for 8 Pear Tree Rd | yesterday | Low |
+   | G | Check scaffolding at 17 Cherry Hill | today + 2 days | Medium |
+   | H | Order skirting boards for 17 Cherry Hill | today + 3 days | Medium |
+   | K | Book skip for 17 Cherry Hill | today + 8 days | Low |
+
+2. In the flat list, look at the Deadline column for F, G, H and K.
+3. Open **Account settings**, **Jobs**, **Due-soon highlight**, choose **1 day**, and look at the list again.
 4. Choose **Off** and look at the list.
-5. Choose **3 days**, open "Tile bathroom at 14 Elm St" and look at its **Deadline**.
+5. Choose **3 days**, open G and look at its **Deadline**.
 
-- [ ] "Tile bathroom at 14 Elm St" and "Install kitchen worktops at 31 Oak Ave" show their deadline in amber with a small **Due soon** label
-- [ ] "Final snag list at 22 Mill Lane" shows its deadline in the normal colour and no label, and "Order bathroom fittings for 14 Elm St" shows "—"
+- [ ] G and H show their deadline in amber with a small **Due soon** label
+- [ ] K shows its deadline in the normal colour and no label
 - [ ] F shows its deadline in red and no **Due soon** label
-- [ ] With **1 day**, the two Day 3 and Day 4 jobs lose the amber colour and the label, and F stays red
+- [ ] With **1 day**, G and H lose the amber colour and the label, and F stays red
 - [ ] With **Off**, no row has a **Due soon** label, and F stays red
-- [ ] The job screen of "Tile bathroom at 14 Elm St" shows the amber deadline with **Due soon** beside it
+- [ ] G's job screen shows the amber deadline with **Due soon** beside it
 
 ## JOB-11 Relative deadlines, row density and completing clears the highlight
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-10 done, F still New and overdue
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-10 done, F still New and overdue, G, H and K still open
 
-1. Open **Account settings** and set **Deadline format** to **Relative**. Open the Residential list.
-2. Set **Row density** to **Compact** and open the list again.
+1. Open **Account settings**, **Appearance**, and set **Deadline format** to **Relative**. Open the Residential list.
+2. Set **Row density** (also under **Appearance**) to **Compact** and open the list again.
 3. Set **Row density** back to **Comfortable**.
 4. Open F, click **Start**, click **Complete**, confirm **Mark Complete**. Go back to the list and look at F.
 5. Set **Deadline format** back to **Absolute**.
+6. Open G, H and K in turn, and on each click **⋮**, **Delete Job**, **Delete**. Look at the list.
 
-- [ ] "Tile bathroom at 14 Elm St" reads "in 2 days", "Install kitchen worktops at 31 Oak Ave" reads "in 3 days" and F reads "1 day overdue"
+- [ ] G reads "in 2 days", H reads "in 3 days" and F reads "1 day overdue"
 - [ ] With **Compact**, the table rows are visibly tighter and the text smaller
 - [ ] With **Comfortable**, the rows are back to the roomier spacing
 - [ ] Once F is Completed, its deadline is no longer red and shows a date, not "days overdue"
 - [ ] With **Absolute**, deadlines show dates again
+- [ ] G, H and K are gone from the list, so they raise no deadline alert
 
 ## JOB-12 An owner moves a job through the statuses
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-04 done, B unassigned and New. Ana is not the assignee: owners and admins may change any job.
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-04 done, B unassigned and New. Ana is not the assignee: owners and admins may change any job.
 
 1. Open job B. Look at the action bar under the details.
 2. Click **Start**.
@@ -258,7 +279,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] **Status history** shows a count of 4: created, started, completed, reopened
 
 ## JOB-13 Block a job with a reason, and unblock it
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-12 done (B In Progress), C New. Note the **Blocked** tab count before you start.
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-12 done (B In Progress), C New. Note the **Blocked** tab count before you start.
 
 1. Open job C, click **Start**, then click **Block**. Look at the box without typing.
 2. Type three spaces.
@@ -281,7 +302,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] B's Block box now also offers **Waiting on scaffold hire**, because typed reasons are remembered
 
 ## JOB-14 Manage block reasons in the project settings
-**As:** Ana (owner), then Nikola (admin), then Ivana (member), all in Residential Fit-outs · **Day:** 1 · **Needs:** JOB-13 done, C Blocked with "Waiting on scaffold hire"
+**As:** Ana (owner), then Nikola (admin), then Ivana (member), all in Residential Fit-outs · **Day:** any, after ONB-33 · **Needs:** JOB-13 done, C Blocked with "Waiting on scaffold hire"
 
 1. As Ana, open **Residential Fit-outs**, **Settings**, and find **Block Reasons**.
 2. Click **Remove** next to **Waiting on scaffold hire**.
@@ -300,7 +321,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] Ivana, a member, sees no **Block Reasons** section
 
 ## JOB-15 A member changes the status of her own job, and an admin of someone else's
-**As:** Ivana (member, Residential), then Nikola (admin, Residential), then Ana · **Day:** 1 · **Needs:** JOB-04 done, A New and assigned to Ivana, Residential's approval gate on
+**As:** Ivana (member, Residential), then Nikola (admin, Residential), then Ana · **Day:** any, after ONB-33 · **Needs:** JOB-04 done, A New and assigned to Ivana, Residential's approval gate on
 
 1. As Ivana, open job A. Look at the action bar.
 2. Click **Start**.
@@ -319,7 +340,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] Ana's **Reopen** makes A **In Progress** again, and Ivana sees **Block** again after her reload
 
 ## JOB-16 What a member can't see, edit or delete
-**As:** Ivana (member, Residential; admin, Office), then Sara (member, Residential) · **Day:** 1 · **Needs:** JOB-15 done
+**As:** Ivana (member, Residential; admin, Office), then Sara (member, Residential) · **Day:** any, after ONB-33 · **Needs:** JOB-15 done
 
 1. As Ivana, open Residential **Jobs**, then job A.
 2. As Ana, copy the address of job A.
@@ -333,9 +354,9 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] In Office Ivana is an admin: she sees every Office job, including Luka's, and the job has **Edit** and **⋮**
 
 ## JOB-17 Office Refurbishments: no approval gate, and Luka in Serbian
-**As:** Nikola (owner, Office), then Luka (member, Serbian UI), then Ivana (admin, Office) · **Day:** 1 · **Needs:** ONB-33 and ONB-23 done (Office's gate is off)
+**As:** Nikola (owner, Office), then Luka (member, Serbian UI), then Ivana (admin, Office) · **Day:** any, after ONB-33 · **Needs:** ONB-33 and ONB-23 done (Office's gate is off). Don't run it while PRJ-11 in `03-projects.md` has Office's gate on: Luka would then get **Request completion** instead of completing
 
-1. As Nikola, open Office **Jobs**, **+ New Job**. Title **Install fire door at Marlow Accounting**, Client "Marlow Accounting", Deadline today + 9 days, Priority **High**, Milestone **Fit-out**, **Assign to** Luka. Click **Create job**. This is job D.
+1. As Nikola, open Office **Jobs**, **+ New Job**. Title **Install fire door at Marlow Accounting**, Client "Marlow Accounting", Deadline today + 3 days, Priority **High**, Milestone **Fit-out**, **Assign to** Luka. Click **Create job**. This is job D.
 2. As Luka, open Office **Jobs**, then open job D.
 3. Click the first button on the action bar, which starts the job.
 4. Click the first button on the bar again, which completes the job, and confirm.
@@ -343,7 +364,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 6. As Luka, reload job D.
 
 - [ ] D is created as **New** with "Luka Ilić" as the assignee
-- [ ] Luka's Office list shows D and "Replace ceiling lights in the open-plan office" and no other job
+- [ ] Luka's Office list includes D and no job assigned to anyone else
 - [ ] Luka's list, tabs, column headings and status badges are in Serbian
 - [ ] Luka's job screen, buttons and boxes are in Serbian
 - [ ] Starting D makes it **In Progress** (the status badge changes)
@@ -352,7 +373,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] Ivana's **Reopen** makes D **In Progress**, and Luka sees the action buttons again after his reload
 
 ## JOB-18 Delete a job
-**As:** Ana (owner), then Nikola (admin), both in Residential Fit-outs · **Day:** 1 · **Needs:** JOB-14 and JOB-11 done: B In Progress, F Completed
+**As:** Ana (owner), then Nikola (admin), both in Residential Fit-outs · **Day:** any, after ONB-33 · **Needs:** JOB-14 and JOB-11 done: B In Progress, F Completed
 
 1. As Ana, open job B, click **⋮**, then **Delete Job**. Look at the box and click **Cancel**.
 2. Click **⋮**, **Delete Job**, and **Delete**.
@@ -370,7 +391,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] F no longer shows in Ana's list
 
 ## JOB-19 Addresses that don't match
-**As:** Nikola, then Ana · **Day:** 1 · **Needs:** JOB-18 done. Ana isn't a member of Office Refurbishments.
+**As:** Nikola, then Ana · **Day:** any, after ONB-33 · **Needs:** JOB-18 done. Ana isn't a member of Office Refurbishments.
 
 1. As Nikola, copy the address of the Office **Jobs** list.
 2. As Ana, paste it into the address bar.
@@ -382,7 +403,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] A job number that doesn't exist shows "Failed to load job." and no red message
 
 ## JOB-20 Add, edit and remove job links as an owner
-**As:** Ana (owner, Residential Fit-outs) · **Day:** 1 · **Needs:** JOB-14 done (job C exists), the Job links add-on bought (ONB-08)
+**As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-14 done (job C exists), the Job links add-on bought (ONB-08)
 
 1. Open job C and click **Links** (closed because the job has none). Click **+ Add link**.
 2. Look at **Save** with the URL empty. Type `not a url` and click **Save**.
@@ -407,7 +428,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] After the reload the two remaining links are still there
 
 ## JOB-21 A member can add a link but not edit or remove one
-**As:** Ana (owner), then Ivana (member), then Ana · **Day:** 1 · **Needs:** JOB-15 done (A is In Progress, assigned to Ivana)
+**As:** Ana (owner), then Ivana (member), then Ana · **Day:** any, after ONB-33 · **Needs:** JOB-15 done (A is In Progress, assigned to Ivana)
 
 1. As Ana, open job A, open **Links**, click **+ Add link**, type `https://www.figma.com/file/ext-fan-layout` and click **Save**.
 2. As Ivana, open job A and look at **Links**.
@@ -421,7 +442,7 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] Ana sees both links, each with the copy icon, a pencil icon and a **×**
 
 ## JOB-22 A job in an org without add-ons
-**As:** Petra (owner, Pine & Pixel Studio) · **Day:** 1 · **Needs:** ONB-31 done. Pine & Pixel has no add-ons.
+**As:** Petra (owner, Pine & Pixel Studio) · **Day:** any, after ONB-33 · **Needs:** ONB-31 done. Pine & Pixel has no add-ons.
 
 1. Open **Brand refresh for Juniper Cafe**, **Jobs**. Look at the list tools.
 2. Click **+ New Job**. Look at the form, click **Assign to**. Title **Draft logo options for Juniper Cafe**, Client "Juniper Cafe", Priority **High**, no deadline. **Create job**. This is job P.
@@ -441,16 +462,18 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [ ] **Upgrade in org settings** opens **Organisation Settings**
 
 ## JOB-23 Relative deadlines in the Serbian UI
-**As:** Luka (member, Serbian UI) · **Day:** 1 · **Needs:** JOB-17 done, Luka's Deadline format on Absolute
+**As:** Luka (member, Serbian UI), then Nikola (owner, Office) · **Day:** any, after ONB-33 · **Needs:** JOB-17 done (D is due in 3 days and assigned to Luka), Luka's Deadline format on Absolute
 
-1. Open **Account settings**, change **Deadline format** to its second option (Relative).
-2. Open Office **Jobs** and look at the deadline of "Replace ceiling lights in the open-plan office" (due Day 4).
-3. Open the same job and look at its deadline.
+1. As Luka, open the **Account settings** and, under **Appearance**, set **Deadline format** to its second option (Relative).
+2. Open Office **Jobs** and look at the deadline of D, and at the small label beside it.
+3. Open D and look at its deadline.
 4. Set the Deadline format back to its first option (Absolute).
+5. As Nikola, open D, click **⋮**, **Delete Job**, **Delete**. As Luka, reload the Office list.
 
-- [ ] The list shows the deadline as a Serbian relative time, not English words such as "in 3 days" (known bug: `useFormatDeadline.formatRelative` has English text hard-coded, so this is expected to fail, job to be linked)
+- [ ] The list shows D's deadline as a Serbian relative time, not English words such as "in 3 days" (known bug: `useFormatDeadline.formatRelative` has English text hard-coded, so this is expected to fail, job to be linked)
 - [ ] The job screen shows the deadline the same way
-- [ ] With the due-soon highlight on, the small label beside a Day 3 or Day 4 deadline is in Serbian ("Rok uskoro")
+- [ ] The small label beside D's deadline is in Serbian ("Rok uskoro")
+- [ ] D is gone from Luka's list, so it raises no deadline alert
 
 ## Not manual
 - Every illegal status transition (New to Completed, New to Blocked, Blocked to Completed, Completed to New, and so on) and the 400 "Invalid transition": covered by `JobStatusTransitionerTest` ("validate rejects every illegal transition with 400, even for an Owner") and, through the API, by `JobIntegrationTest` (New to Completed, Blocked to Completed, Completed to New). The screen never offers them, so JOB-12, JOB-13 and JOB-15 check the buttons per status instead.
