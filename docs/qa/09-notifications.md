@@ -331,11 +331,11 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 5. Check Sara's centre and badge again.
 6. Check Nikola's and Ivana's centres for their day-1 entries.
 
-- [ ] The day-1 entry opens Residential Fit-outs
-- [ ] Sara gets "Added you to Spring Maintenance 2026 as Member" from Ana, and Ana gets none
-- [ ] The entry opens the project
-- [ ] After she's removed, Sara's centre and badge no longer show the Spring Maintenance entry, while her Residential entries stay
-- [ ] Nikola's day-1 entry for Residential says "as Admin" and Ivana's says "as Member"
+- [x] The day-1 entry opens Residential Fit-outs
+- [x] Sara gets "Added you to Spring Maintenance 2026 as Member" from Ana, and Ana gets none
+- [x] The entry opens the project
+- [x] After she's removed, Sara's centre and badge no longer show the Spring Maintenance entry, while her Residential entries stay
+- [x] Nikola's day-1 entry for Residential says "as Admin" and Ivana's says "as Member"
 
 Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 
@@ -346,9 +346,9 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 2. Click one.
 3. As Nikola, check the centre for any "Accepted your invite" entries.
 
-- [ ] Ana has four "Accepted your invite to Brightline Renovations" entries, one each from Nikola, Ivana, Luka and Sara
-- [ ] An entry opens **Manage members**
-- [ ] Nikola has none, because Ana is the inviter
+- [x] Ana has four "Accepted your invite to Brightline Renovations" entries, one each from Nikola, Ivana, Luka and Sara
+- [x] An entry opens **Manage members**
+- [x] Nikola has none, because Ana is the inviter
 
 ## NTF-23 Feedback resolved
 **As:** Ivana, and the super-admin (the developer's real account) · **Day:** 2 · **Needs:** nothing
@@ -359,12 +359,12 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 4. As Ivana, check the centre and **My submissions**.
 5. Click the credit entry.
 
-- [ ] Both submissions show **Pending review** in Ivana's **My submissions** until reviewed
-- [ ] Ivana gets "\"Print button missing on job page\" was reviewed and declined" from **OpsClear**
-- [ ] Ivana gets "\"Add a photo field to jobs\" earned a credit of 5" from **OpsClear**
-- [ ] **My submissions** shows **Declined** and **Credit granted** to match
-- [ ] The entry opens **Feedback**
-- [ ] Nobody else in Brightline gets either notification
+- [x] Both submissions show **Pending review** in Ivana's **My submissions** until reviewed
+- [x] Ivana gets "\"Print button missing on job page\" was reviewed and declined" from **OpsClear**
+- [x] Ivana gets "\"Add a photo field to jobs\" earned a credit of 5" from **OpsClear**
+- [x] **My submissions** shows **Declined** and **Credit granted** to match
+- [x] The entry opens **Feedback**
+- [x] Nobody else in Brightline gets either notification
 
 ## NTF-24 Schedule run missed
 **As:** Ana, Nikola, Ivana · **Day:** 7, after 07:00 UTC · **Needs:** SCH-17 in `08-schedules.md` done on day 7 (resuming the paused **Daily site safety check** in Residential Fit-outs, which records exactly two missed runs: day 6 and day 7; the first skipped run, day 5, isn't recorded). A deploy can't cause a missed run: a run counts as missed only when the next one is past too, so the app would have to be down for over an hour. The optional SCH-20 (backend stopped for about 65 minutes, **Hourly yard check**) causes the same kind of notification, but its entries name **Hourly yard check** and there is usually only one. The steps and boxes below are written for SCH-17.
@@ -399,12 +399,12 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 2. As Ana, open "Re-seal shower at 6 Alder Court", click **Edit**, change the deadline to Day 5 and save.
 3. Check Sara's centre.
 
-- [ ] Luka has "Tile bathroom at 14 Elm St is due tomorrow", under **Deadline tomorrow**, from **OpsClear**
-- [ ] Ivana has one such entry for the paint job and one for the partition walls
-- [ ] Sara has one for the shower job, then "Updated …" with "New deadline: …" after Ana's edit
-- [ ] Ana and Nikola have no **Deadline tomorrow** entry (only the assignee gets it)
-- [ ] The jobs due on day 4, and the jobs with no deadline, have none yet
-- [ ] The entries arrived after 06:00 UTC and not before
+- [x] Luka has "Tile bathroom at 14 Elm St is due tomorrow", under **Deadline tomorrow**, from **OpsClear**
+- [x] Ivana has one such entry for the paint job and one for the partition walls
+- [x] Sara has one for the shower job, then "Updated …" with "New deadline: …" after Ana's edit
+- [x] Ana and Nikola have no **Deadline tomorrow** entry (only the assignee gets it)
+- [x] The jobs due on day 4, and the jobs with no deadline, have none yet
+- [x] The entries arrived after 06:00 UTC and not before
 
 ## NTF-27 Schedule-created jobs notify the assignee
 **As:** Ivana, Sara, Ana, Nikola · **Day:** 2 and 3, after 07:00 UTC · **Needs:** `08-schedules.md` done up to the day-2 and day-3 runs: **Daily site safety check** in Residential Fit-outs (07:00 UTC, Ivana first, then Sara) and **Weekly toolbox talk** (no assignee, runs on day 3)
