@@ -341,5 +341,5 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 - The preview endpoint's 400s (blank or invalid cron, invalid timezone) and the empty list for a cron with no future run: covered by `RecurringScheduleIntegrationTest` (`previewCron …`).
 
 ## Findings
-## Findings
+
 - SCH-11: JOB-405 (Bug) editing a schedule un-pauses it and clears its end date: the edit form doesn't send the current pause or end dates and `RecurringScheduleService.update` writes them as null.
