@@ -22,10 +22,15 @@ Pine & Pixel Studio, which has no add-ons. Run `01-onboarding.md` first. Rules i
   in a browser tab session only.
 - **Status history** lists every status change oldest first: from, to, who, when, and the block
   reason when the move was to Blocked. Editing a job's other fields adds nothing.
-- **Relationships** link two jobs of the same project. Only project Owners and Admins see **+ Add**
-  and **×**. A **Blocked by** link is a record: it stops nothing and changes no status, but when the
+- **Relationships** link two jobs of the same project. The screen shows **+ Add** and **×** to
+  project Owners and Admins only. The API is looser: ADR-0022 says any project member can add or
+  remove relationships, and `JobRelationshipService` only checks membership, so only the UI hides
+  the buttons from Members. A **Blocked by** link is a record: it stops nothing and changes no status, but when the
   blocking job is completed the waiting job's assignee gets **Blocker cleared**.
 - A Member sees only the jobs assigned to them, so the pages below are played by the assignee.
+- **Sections open by themselves** when they hold something: Notes when the job has notes, Status
+  history always (every job has a "Created as" entry), Relationships when the job has links. A step
+  that says "find" a section means: open it if it is collapsed, leave it if it is open.
 
 **Jobs this file creates.** `NHR-01` creates five jobs in Residential Fit-outs for client Harlow
 family, none with a deadline, so no deadline alert is ever sent for them. Other scenarios call them
@@ -84,7 +89,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-02 The first note
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-01 done, Ana in a new tab
 
-1. Open A. Click **Notes** to open the section.
+1. Open A. Find **Notes** (it is collapsed, because A has no notes yet) and click it to open it.
 2. Look at the box and the button under it. Type three spaces.
 3. Select the spaces, delete them, then type "Measured the opening on site: 1200 x 1050 mm. Client wants the same grey frame as the front door." Look under the box.
 4. Click **Add Note**. In the question, click **Cancel**.
@@ -95,7 +100,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - [ ] A counter under the box shows the number of characters out of 10000 and goes up as you type
 - [ ] **Add Note** asks "Notes cannot be edited or deleted. Add anyway?"
 - [ ] **Cancel** adds no note and keeps the text in the box
-- [ ] After confirming, the note appears with "Ana Petrović" and the date and time, and the box and counter are empty again
+- [ ] After confirming, the note appears with "Ana Petrović" and the date and time, and the box is empty again and the counter is back to 0/10000
 - [ ] The note has no edit, delete or other change control
 - [ ] Luka gets one "Added a note on …" notification from Ana
 
@@ -117,8 +122,8 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-04 Markdown in notes
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-03 done, Ana still in the tab of NHR-02
 
-1. Open A and its **Notes**. In the box click the bold button of the toolbar and type "Window spec" over the placeholder.
-2. Start a new line, click the unordered list button and type "Frame: grey aluminium, double glazed". On the next line, click it again and type "Opening: 1200 x 1050 mm".
+1. Open A and find its **Notes** (open them if collapsed). In the box click the bold button of the toolbar and type "Window spec" over the placeholder.
+2. Start a new line, click the unordered list button and type over the "List item" placeholder with "Frame: grey aluminium, double glazed". On the next line, click it again and type over the placeholder with "Opening: 1200 x 1050 mm".
 3. On a new line type `Catalogue: [Glazing supplier](https://example.com/glazing)`. On another line type `<script>alert('x')</script>` and on the next `<b>raw html</b>`.
 4. Click **Preview**, then **Write**.
 5. Click **Add Note**.
@@ -135,11 +140,11 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-05 Who can read and add notes
 **As:** Nikola (Residential admin), then Sara (member, not assigned to A) · **Day:** any, after ONB-33 · **Needs:** NHR-04 done
 
-1. As Nikola open A and its **Notes**. Add the note "Glazing supplier confirmed delivery for next Tuesday." and confirm.
+1. As Nikola open A and find its **Notes** (open them if collapsed). Add the note "Glazing supplier confirmed delivery for next Tuesday." and confirm.
 2. Look at Luka's and Ana's bells.
 3. As Sara, copy the address of A from Nikola's browser bar and open it.
 
-- [ ] Nikola sees the four notes of A in order: Ana, Luka, Ana, with the markdown note formatted
+- [ ] Nikola sees the notes of A in order: Ana, Luka, Ana, with the markdown note formatted, and after step 1 a fourth by Nikola
 - [ ] Nikola can add a note although he isn't the assignee, and sees no edit or delete control on any note, including his own
 - [ ] Luka gets a third "Added a note on …" notification from Nikola, and Ana gets a second one from Nikola
 - [ ] Nikola gets none for his own note
@@ -150,8 +155,8 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-06 The history starts with the creation
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-01 done, A still **New**
 
-1. Open B. Click **Status history** to open it.
-2. Open A and click **Status history**.
+1. Open B. Find **Status history** (open it if it's collapsed; it normally opens by itself).
+2. Open A and find its **Status history** the same way.
 
 - [ ] B's **Status history** has one entry, "Created as" with a **New** badge
 - [ ] The entry says "Ana Petrović" and a date and time
@@ -164,15 +169,15 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 
 1. As Luka open A and click **Start**.
 2. As Luka click **Block**, pick **Materials not delivered** from the list and confirm.
-3. As Ana open A and open **Status history**.
-4. As Ana click **Unblock** and confirm. Open **Status history** again.
+3. As Ana open A and find **Status history** (open it if it's collapsed).
+4. As Ana click **Unblock** and confirm. Check **Status history** again (reload if it doesn't show the new entry).
 
 - [ ] After step 3 the history has three entries in order: Created as New, **New** → **In Progress** by "Luka Ilić", **In Progress** → **Blocked** by "Luka Ilić"
 - [ ] The Blocked entry shows "Reason: Materials not delivered" in red, and no other entry shows a reason
 - [ ] After step 4 a fourth entry **Blocked** → **In Progress** by "Ana Petrović" appears, without a reason, and the count shows 4
 - [ ] Every entry shows the person and a date and time
-- [ ] Between entries a line gives the time the job stayed in the earlier status, for example "3 minutes in …"
-- [ ] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS
+- [ ] Between entries a line gives the time the job stayed in the earlier status, for example "0 minutes in …" when the moves were seconds apart
+- [ ] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS (known bug: `StatusHistory.tsx` passes the raw `entry.changedTo`, so it reads "… in IN_PROGRESS", expected to fail, Bug job to be linked)
 - [ ] Ana and Nikola each get **Status changed** for the start, **Job blocked** for the block, and Luka and Nikola get **Status changed** for the unblock
 
 ## NHR-08 Only status changes are in the history
@@ -190,7 +195,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-01 done
 
 1. Open C. Look at the **Relationships** header.
-2. Click **Relationships** to open it.
+2. Click **Relationships** to open it (C has no links, so it starts collapsed).
 3. Click **+ Add**. Look at the window.
 4. Type "carpet in reception" in **Job**. Clear it, type "Maple".
 5. Click **Cancel**.
@@ -205,7 +210,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-10 Blocked by
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-07 done (A **In Progress**), B **New**
 
-1. Open A. Click **Relationships**, **+ Add**, choose **Blocked by**.
+1. Open A. Click **Relationships** to open it (A has no links yet), then **+ Add**, and choose **Blocked by**.
 2. Type "glazing" in **Job**. Click "Order window glazing for 18 Maple Row" (not the "entered twice" one) and click **Add**.
 3. Look at A. Click the title of B in the list.
 4. Look at B's **Relationships**.
@@ -219,7 +224,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-11 A Blocked by link stops nothing
 **As:** Ana (Residential owner), then Sara (member, assignee of C) · **Day:** any, after ONB-33 · **Needs:** NHR-10 done, C **New**
 
-1. As Ana open C, click **+ Add**, choose **Blocked by**, search "glazing", pick B (not E) and add it.
+1. As Ana open C, click **Relationships** to open it (no links yet), then **+ Add**, and choose **Blocked by**, search "glazing", pick B (not E) and add it.
 2. As Sara open C and click **Start**.
 
 - [ ] C lists **Blocked by** with the title of B and a **New** badge
@@ -240,7 +245,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-13 Duplicates
 **As:** Nikola (admin of Residential, assignee of D) · **Day:** any, after ONB-33 · **Needs:** NHR-12 done
 
-1. Open D. Click **Relationships**, **+ Add**, choose **Duplicates**.
+1. Open D. Click **Relationships** to open it (no links yet), then **+ Add**, choose **Duplicates**.
 2. Type "Maple Row" in **Job**, click "Replace kitchen window at 18 Maple Row" and click **Add**.
 3. Open A from the link.
 
@@ -251,8 +256,8 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-14 The same link twice, and a cycle
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-13 done
 
-1. Open A, click **+ Add**, choose **Blocked by**, pick B and click **Add**.
-2. Open B. Click **+ Add**, choose **Blocked by**, search "Replace kitchen window at 18 Maple Row", pick A and click **Add**.
+1. Open A, find **Relationships** (open it if collapsed), click **+ Add**, choose **Blocked by**, pick B (not E) and click **Add**.
+2. Open B, find **Relationships**, click **+ Add**, choose **Blocked by**, search "Replace kitchen window at 18 Maple Row", pick A and click **Add**.
 3. Look at B's list.
 4. Click the **×** on the **Blocked by** row of B.
 
@@ -278,26 +283,26 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-16 A linked job that gets deleted
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-15 done, E unassigned and **New**
 
-1. Open A, click **+ Add**, choose **Related to**, search "entered twice", pick E and click **Add**.
+1. Open A, find **Relationships** (open it if collapsed), click **+ Add**, choose **Related to**, search "entered twice", pick E and click **Add**.
 2. Open E from the link. Open the menu (the three dots), click **Delete Job** and confirm.
 3. Open A again.
 4. Click the **×** on the new row.
 
 - [ ] E opens from the link, and the delete is confirmed with its title in the message
-- [ ] A's row for E now shows "(deleted)" in grey italics, not as a link and without a status badge
+- [ ] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge (known bug: the backend keeps the deleted job's id, so `RelationshipsSection` shows "(deleted)" as a normal link to the deleted job, without a status badge; expected to fail, Bug job to be linked)
 - [ ] The header count still includes the row, and the **×** removes it
 - [ ] Nobody gets a notification for E being deleted, because it had no assignee
 
-## NHR-17 Members see links, but can't manage them
+## NHR-17 The screen hides link management from Members
 **As:** Ivana (member, assignee of B), then Luka (member, assignee of A) · **Day:** any, after ONB-33 · **Needs:** NHR-16 done
 
-1. As Ivana open B and open **Relationships**.
-2. As Luka open A and open **Relationships**.
+1. As Ivana open B and find **Relationships** (open it if collapsed).
+2. As Luka open A and find **Relationships** (open it if collapsed).
 3. Click the title of B in Luka's list.
 
 - [ ] Ivana sees two **Blocks** rows (A and C), each with a status badge
-- [ ] Ivana has no **+ Add** and no **×**
-- [ ] Luka sees **Blocked by** B and has no **+ Add** and no **×**
+- [ ] Ivana's screen shows no **+ Add** and no **×**
+- [ ] Luka sees **Blocked by** B, and his screen shows no **+ Add** and no **×**
 - [ ] Luka's click on B ends on the page that says the job failed to load, because B isn't assigned to him
 
 ## NHR-18 Completing a blocker tells the waiting jobs
@@ -319,9 +324,9 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 **As:** Ana (owner), then Luka · **Day:** any, after ONB-33 · **Needs:** NHR-18 done, A **In Progress**
 
 1. As Ana open A, click **Complete** and confirm.
-2. Open **Status history**.
+2. Find **Status history** (open it if it's collapsed).
 3. As Luka open A and look at the buttons.
-4. As Ana click **Reopen** and open **Status history** again.
+4. As Ana click **Reopen** and check **Status history** again.
 
 - [ ] An owner can complete the job directly although the project's approval gate is on
 - [ ] The history gets **In Progress** → **Completed** by "Ana Petrović", with a line for the time spent In Progress
@@ -333,7 +338,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 **As:** Luka (member, Serbian UI) · **Day:** any, after ONB-33 · **Needs:** NHR-19 done
 
 1. Open A. Look at the headings of **Notes**, **Relationships** and **Status history**.
-2. Open each section.
+2. Make sure each section is open (open it if collapsed).
 
 - [ ] The three headings are in Serbian, with no English left in the sections
 - [ ] The history labels ("Created as", the arrow between statuses, "Reason: …") and the status badges are in Serbian
@@ -365,10 +370,12 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - [ ] **Upgrade in org settings** opens **Organisation Settings**
 
 ## NHR-23 Pine & Pixel: the server refuses the gated calls too
-**As:** Petra (owner of Pine & Pixel, no add-ons) · **Day:** any, after ONB-33 · **Needs:** NHR-22 done. A terminal with `curl`.
+**As:** Petra (owner of Pine & Pixel, no add-ons) · **Day:** any, after ONB-33 · **Needs:** NHR-22 done. A terminal with `curl` (on macOS use **Copy as cURL (bash)**).
 
-1. In Petra's browser, Network tab, right-click any request to `/api/` (for example the job) and choose **Copy as cURL**. Paste it in the terminal. The project and job IDs in the path are the friendly IDs in the browser address bar of "Design menu cards for Juniper Cafe".
-2. Change the path to `/api/projects/<project>/jobs/<job>/notes` and send it.
+**Keep the token private.** The copied command holds the tester's `Authorization: Bearer …` token. Never paste it, or any header from it, into a job, PR, finding, chat or doc: record only the status and message. Start each command line with a space (works when `HISTCONTROL=ignorespace` is set) so it stays out of the shell history. The token lasts 5 minutes: copy a fresh request just before each call, and again on a 401.
+
+1. In Petra's browser, Network tab, right-click any request to `/api/` (for example the job) and choose **Copy as cURL**. Paste it in the terminal, with a leading space. The project and job IDs in the path are the friendly IDs in the browser address bar of "Design menu cards for Juniper Cafe".
+2. Change the path to `/api/projects/<project>/jobs/<job>/notes` and send it. Copy a fresh request first for each step below.
 3. Change it to `/api/projects/<project>/jobs/<job>/history` and send it.
 4. Change it to `/api/projects/<project>/jobs/<job>/relationships`, add `-X POST -H 'Content-Type: application/json' -d '{"targetJobId":"00000000-0000-0000-0000-000000000001","type":"RELATED_TO"}'`, and send it.
 
@@ -380,7 +387,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 **As:** Ana, Nikola, Luka, Ivana, Sara, Petra · **Day:** any, after NHR-23 · **Needs:** the scenarios above done
 
 1. For each person open `/notifications` and read the entries about the Maple Row and Maple Road jobs.
-2. Compare with the table at the top of this file. Filter by type to count them.
+2. Compare with the table at the top of this file. Filter by type to count them, counting only the entries about the Maple Row and Maple Road jobs (other files add their own).
 
 - [ ] Ana has 2 **Note added**, 3 **Status changed** and 1 **Job blocked**, and nothing else from this file
 - [ ] Nikola has 1 **Job assigned**, 7 **Status changed** and 1 **Job blocked**, and no **Note added** or **Blocker cleared**
@@ -390,12 +397,25 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - [ ] Petra has no notification, and nobody has an entry for an action they did themselves
 - [ ] No entry was sent for adding, removing or deleting a relationship, for the client edit or for the deleted job E
 
+## NHR-25 A member can't read notes of a job that isn't theirs (API)
+**As:** Sara (member, not assigned to A) · **Day:** any, after NHR-05 · **Needs:** NHR-05 done. A terminal with `curl`. Read the token warning in NHR-23: it applies here too.
+
+1. In Sara's browser, Network tab, right-click any request to `/api/` and choose **Copy as cURL**, and paste it with a leading space. The project and job IDs are the friendly IDs from A's address (the one Nikola copied in NHR-05).
+2. Change the path to `/api/projects/<Residential>/jobs/<A>/notes` and send it.
+3. With a fresh copy, change the path to `/api/projects/<Residential>/notes` and send it.
+4. With a fresh copy, change the path to `/api/projects/<Residential>/jobs/<A>/history` and send it.
+
+- [ ] The history call is refused with status 403 and "Access denied: you are not assigned to this job"
+- [ ] The notes call for A is refused with status 403, as the history call is (likely bug: `NoteService.listByJob` only checks project membership, so Sara probably gets the notes, expected to fail, Bug job to be linked)
+- [ ] The project notes call is refused with status 403 (likely bug: `NoteService.listByProject` only checks membership, so it probably returns every job's notes to a Member, expected to fail, Bug job to be linked)
+
 ## Not manual
 - A job can't be linked to itself (the window never offers it): covered by `JobRelationshipIntegrationTest` ("Should return 400 when job references itself") and `JobRelationshipServiceTest`.
 - A job from another project can't be linked: covered by `JobRelationshipIntegrationTest` ("Should return 404 when target job belongs to a different project"); NHR-09 checks that the window doesn't offer one.
 - A relationship id on the wrong job is refused: covered by `JobRelationshipIntegrationTest` ("Should return 404 when relationship does not belong to the given job").
 - Callers who aren't project members get 403 on notes, history and relationships: covered by `NoteIntegrationTest` ("create should return 403 when caller is not a project member"), `JobHistoryIntegrationTest` ("getHistory_shouldReturn403_whenCallerIsNotMember") and `JobRelationshipIntegrationTest` ("Should return 403 when requester is not a project member").
 - A member can't read the history of a job that isn't theirs: covered by `JobHistoryIntegrationTest` ("getHistory_shouldReturn403_whenMemberAccessesUnassignedJob").
+- A Member adding or removing a relationship through the API is allowed by design (ADR-0022): covered by `JobRelationshipIntegrationTest` ("Member should create a BLOCKED_BY relationship and receive 201" and "Member should delete a relationship and receive 204"). NHR-17 checks that the screen hides the buttons.
 - A blank note or one over 10,000 characters is refused by the server: covered by `NoteIntegrationTest` ("create should return 400 when content is blank" and "… when content exceeds 10000 characters").
 - `GET /api/projects/{projectId}/notes` (all notes of a project, grouped by job) has no screen: covered by `NoteIntegrationTest` ("listByProject should return notes grouped by job, jobs ordered by most recent note").
 - Notes on a completed (read-only) project are refused: covered by `NoteIntegrationTest` ("createNote_shouldReturn409_whenProjectIsCompleted"). `03-projects.md` completes a project on day 6.
