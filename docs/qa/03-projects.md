@@ -1,6 +1,6 @@
 # Projects
 
-Last run:
+Last run: 2026-11-22, Jovan (in progress)
 Guide: /guide/first-project, /guide/project-settings, /guide/roles-permissions
 
 Create, edit, complete and delete projects, the project directory, project members and roles,
@@ -36,12 +36,12 @@ notification scenarios that still need the projects as they are.
 3. Click the gear icon at the bottom right of the **Residential Fit-outs** card.
 4. Go back to **Projects**. As Nikola, open **Projects**.
 
-- [ ] Ana's **Active** tab lists **Residential Fit-outs** and **Spring Maintenance 2026**, each with an **Owner** badge
-- [ ] The tab counts read **Active** 2, **Completed** 0 and **All** 2
-- [ ] The **Completed** tab says "No projects match this filter."
-- [ ] The gear icon opens **Project Settings** for Residential Fit-outs
-- [ ] Nikola's **Active** tab lists **Office Refurbishments** with an **Owner** badge and **Residential Fit-outs** with no badge, because he is only its Admin
-- [ ] Nikola's counts read **Active** 2, **Completed** 0 and **All** 2
+- [x] Ana's **Active** tab lists **Residential Fit-outs** and **Spring Maintenance 2026**, each with an **Owner** badge
+- [x] The tab counts read **Active** 2, **Completed** 0 and **All** 2
+- [x] The **Completed** tab says "No projects match this filter."
+- [x] The gear icon opens **Project Settings** for Residential Fit-outs
+- [x] Nikola's **Active** tab lists **Office Refurbishments** with an **Owner** badge and **Residential Fit-outs** with no badge, because he is only its Admin
+- [x] Nikola's counts read **Active** 2, **Completed** 0 and **All** 2
 
 ## PRJ-02 The new project form checks its input
 **As:** Ana (org owner) · **Day:** 1 · **Needs:** PRJ-01 done
@@ -53,12 +53,12 @@ notification scenarios that still need the projects as they are.
 5. Click **Remove** on the entry.
 6. Click **Cancel**. Click **+ New Project** again.
 
-- [ ] The 81-character name shows "Max 80 characters" and no project is created
-- [ ] The duplicate name is refused with "A project with this name already exists", the window stays open with the typed values, and the **Active** count stays 2
-- [ ] The second identical block reason isn't added: the list has one entry and **Block reasons** shows (1)
-- [ ] **Remove** takes the entry out and the (1) disappears
-- [ ] **Cancel** closes the window and creates nothing
-- [ ] The window opened again is empty: no name, no description, no block reasons
+- [x] The 81-character name shows "Max 80 characters" and no project is created
+- [x] The duplicate name is refused with "A project with this name already exists", the window stays open with the typed values, and the **Active** count stays 2
+- [x] The second identical block reason isn't added: the list has one entry and **Block reasons** shows (1)
+- [x] **Remove** takes the entry out and the (1) disappears
+- [x] **Cancel** closes the window and creates nothing
+- [x] The window opened again is empty: no name, no description, no block reasons
 
 ## PRJ-03 An org member creates a project and becomes its Owner
 **As:** Ivana (org member), then Ana and Nikola · **Day:** 1 · **Needs:** PRJ-02 done
@@ -69,11 +69,11 @@ notification scenarios that still need the projects as they are.
 4. Open **Projects** again as Ivana, then as Ana and as Nikola.
 5. As Ivana open the project, **Settings**.
 
-- [ ] **Create project** works for an org member who is neither Owner nor Admin
-- [ ] Ivana's **Active** tab lists **Warehouse Extension 2026** with an **Owner** badge, next to **Office Refurbishments** and **Residential Fit-outs** with no badge, so the count reads 3
-- [ ] **Project Settings** lists both block reasons
-- [ ] Ana's **Projects** list doesn't show it, although she is the org Owner
-- [ ] Nikola's **Projects** list doesn't show it, although he is an org Admin
+- [x] **Create project** works for an org member who is neither Owner nor Admin
+- [x] Ivana's **Active** tab lists **Warehouse Extension 2026** with an **Owner** badge, next to **Office Refurbishments** and **Residential Fit-outs** with no badge, so the count reads 3
+- [x] **Project Settings** lists both block reasons
+- [x] Ana's **Projects** list doesn't show it, although she is the org Owner
+- [x] Nikola's **Projects** list doesn't show it, although he is an org Admin
 
 This project is the throwaway for PRJ-04 to PRJ-11. PRJ-14 deletes it.
 
@@ -87,12 +87,12 @@ This project is the throwaway for PRJ-04 to PRJ-11. PRJ-14 deletes it.
 5. As Ivana, open **Warehouse Extension 2026** and click the project name in the top bar.
 6. As Petra, open **Brand refresh for Juniper Cafe** and click the project name in the top bar.
 
-- [ ] Ana's list shows **Spring Maintenance 2026** as a normal entry, and **Office Refurbishments** and **Warehouse Extension 2026** greyed out, because she is the org Owner but not a member of them
-- [ ] Clicking a greyed entry does nothing: the page and the list stay as they are
-- [ ] Clicking **Spring Maintenance 2026** opens its **Milestones** page, the same kind of page she was on
-- [ ] Nikola's list shows **Office Refurbishments** as a normal entry, and **Spring Maintenance 2026** and **Warehouse Extension 2026** greyed out
-- [ ] Ivana's list shows **Office Refurbishments** and **Residential Fit-outs** as normal entries and nothing greyed, and **Spring Maintenance 2026** isn't listed, because she is only an org Member
-- [ ] Petra's list says "No other active projects", and nothing from Brightline appears
+- [x] Ana's list shows **Spring Maintenance 2026** as a normal entry, and **Office Refurbishments** and **Warehouse Extension 2026** greyed out, because she is the org Owner but not a member of them
+- [x] Clicking a greyed entry does nothing: the page and the list stay as they are
+- [x] Clicking **Spring Maintenance 2026** opens its **Milestones** page, the same kind of page she was on
+- [x] Nikola's list shows **Office Refurbishments** as a normal entry, and **Spring Maintenance 2026** and **Warehouse Extension 2026** greyed out
+- [x] Ivana's list shows **Office Refurbishments** and **Residential Fit-outs** as normal entries and nothing greyed, and **Spring Maintenance 2026** isn't listed, because she is only an org Member
+- [x] Petra's list says "No other active projects", and nothing from Brightline appears
 
 ## PRJ-05 Opening a project by address, and a project you're not in
 **As:** Ana, then Nikola · **Day:** 1 · **Needs:** PRJ-04 done
@@ -102,9 +102,9 @@ This project is the throwaway for PRJ-04 to PRJ-11. PRJ-14 deletes it.
 3. As Nikola, open **Office Refurbishments** and copy its friendly ID from the address bar.
 4. As Ana, type `/projects/<Office ID>/settings` in the address bar.
 
-- [ ] The ID alone sends Ana on to the project's default page (**Dashboard**, unless she changed **Default project page** in **Account settings**) without staying on a blank page
-- [ ] Opening Office's settings as Ana shows a red message "You are not a member of this project"
-- [ ] That page shows no Office data: the name box is empty and **Members** lists nobody
+- [x] The ID alone sends Ana on to the project's default page (**Dashboard**, unless she changed **Default project page** in **Account settings**) without staying on a blank page
+- [x] Opening Office's settings as Ana shows a red message "You are not a member of this project"
+- [x] That page shows no Office data: the name box is empty and **Members** lists nobody
 
 ## PRJ-06 Add members by name or email
 **As:** Ivana (Warehouse owner), then Nikola and Ana · **Day:** 1 · **Needs:** PRJ-04 done
@@ -122,15 +122,15 @@ The search matches a name that contains the text, or an email that starts with i
 
 The two notification boxes below only look for the one entry named in them. Other files' scenarios add their own entries to the same centres, so scroll to find it.
 
-- [ ] One character shows no suggestions
-- [ ] `vanov` lists only Nikola Jovanović, with his email, found by a fragment of his last name
-- [ ] Nikola is added and the table shows him as **Admin**
-- [ ] `etro` finds Ana by a fragment of her last name, and she is added as **Member**
-- [ ] `etra` and `tanko` list nobody, because Petra isn't in Brightline
-- [ ] `arkov` lists Ivana Marković greyed out with "(already a member)", and she can't be picked
-- [ ] Adding Luka as **Owner** is refused with "Cannot assign OWNER role", and Luka isn't in the table
-- [ ] Nikola gets "Added you to Warehouse Extension 2026 as Admin" in the notification centre
-- [ ] Ana gets "Added you to Warehouse Extension 2026 as Member" in the notification centre
+- [x] One character shows no suggestions
+- [x] `vanov` lists only Nikola Jovanović, with his email, found by a fragment of his last name
+- [x] Nikola is added and the table shows him as **Admin**
+- [x] `etro` finds Ana by a fragment of her last name, and she is added as **Member**
+- [x] `etra` and `tanko` list nobody, because Petra isn't in Brightline
+- [x] `arkov` lists Ivana Marković greyed out with "(already a member)", and she can't be picked
+- [x] Adding Luka as **Owner** is refused with "Cannot assign OWNER role", and Luka isn't in the table
+- [x] Nikola gets "Added you to Warehouse Extension 2026 as Admin" in the notification centre
+- [x] Ana gets "Added you to Warehouse Extension 2026 as Member" in the notification centre
 
 ## PRJ-07 What each project role sees on Settings
 **As:** Ivana (project Owner), Nikola (project Admin), then Ana (project Member) · **Day:** 1 · **Needs:** PRJ-06 done
@@ -139,18 +139,18 @@ The two notification boxes below only look for the one entry named in them. Othe
 2. Repeat as Nikola.
 3. Repeat as Ana.
 
-- [ ] Owner: **Name** and **Description** are editable with **Save changes**
-- [ ] Owner: **Members** has the add form, a role box and **Remove** on Nikola's and Ana's rows, and only a badge on her own
-- [ ] Owner: **Block Reasons** lists both reasons, each with **Remove**
-- [ ] Owner: **Danger zone** has **Complete project** and **Delete project**
-- [ ] Admin: **Name** and **Description** are editable with **Save changes**
-- [ ] Admin: **Members** has the add form and a role box and **Remove** on Ana's row, and only badges on Ivana's (Owner) row and his own
-- [ ] Admin: **Block Reasons** is shown with **Remove**, and the **Job screen** switches can be changed
-- [ ] Admin: there's no **Danger zone**
-- [ ] Member (Ana, although she is the org Owner): **Name** and **Description** are greyed out with no **Save changes**
-- [ ] Member: **Members** lists everyone with badges only, no add form, role boxes or **Remove**
-- [ ] Member: there's no **Block Reasons** section and no **Danger zone**
-- [ ] Member: the **Job screen** switches are locked with "Only project Owners and Admins can change this."
+- [x] Owner: **Name** and **Description** are editable with **Save changes**
+- [x] Owner: **Members** has the add form, a role box and **Remove** on Nikola's and Ana's rows, and only a badge on her own
+- [x] Owner: **Block Reasons** lists both reasons, each with **Remove**
+- [x] Owner: **Danger zone** has **Complete project** and **Delete project**
+- [x] Admin: **Name** and **Description** are editable with **Save changes**
+- [x] Admin: **Members** has the add form and a role box and **Remove** on Ana's row, and only badges on Ivana's (Owner) row and his own
+- [x] Admin: **Block Reasons** is shown with **Remove**, and the **Job screen** switches can be changed
+- [x] Admin: there's no **Danger zone**
+- [x] Member (Ana, although she is the org Owner): **Name** and **Description** are greyed out with no **Save changes**
+- [x] Member: **Members** lists everyone with badges only, no add form, role boxes or **Remove**
+- [x] Member: there's no **Block Reasons** section and no **Danger zone**
+- [x] Member: the **Job screen** switches are locked with "Only project Owners and Admins can change this."
 
 ## PRJ-08 Edit the name and description
 **As:** Ivana (Warehouse owner), then Nikola (Warehouse admin) · **Day:** 1 · **Needs:** PRJ-07 done
@@ -162,11 +162,11 @@ The two notification boxes below only look for the one entry named in them. Othe
 5. As Nikola, open the same **Settings**. Change **Description** to "Slab, steel frame and cladding for the yard warehouse. Planning approval received." and click **Save changes**.
 6. As Ivana, reload the page and look at the project name in the top bar.
 
-- [ ] **Save changes** is disabled until something is edited
-- [ ] An empty name shows "Name is required" and nothing is saved
-- [ ] **Cancel** puts the original name back
-- [ ] After **Save changes** and a reload the new name is still there, and the project name in the top bar shows it
-- [ ] Nikola (Admin) can save a new description, and Ivana sees it after a reload
+- [x] **Save changes** is disabled until something is edited
+- [x] An empty name shows "Name is required" and nothing is saved
+- [x] **Cancel** puts the original name back
+- [x] After **Save changes** and a reload the new name is still there, and the project name in the top bar shows it
+- [x] Nikola (Admin) can save a new description, and Ivana sees it after a reload
 
 The project is now called **Warehouse Extension 2026 - phase 1**. Use that name from here on.
 
@@ -180,14 +180,14 @@ The project is now called **Warehouse Extension 2026 - phase 1**. Use that name 
 5. As Nikola, click **Remove** on Luka's row. As Luka, reload **Projects**.
 6. As Ivana, look at Nikola's row. As Nikola, look at his own row and at Ivana's.
 
-- [ ] Choosing **Owner** is refused with "Cannot assign OWNER role", and Ana's role box goes back to **Member**
-- [ ] Ana's role changes to **Admin** and stays after a reload
-- [ ] Ana as Admin now has the add form and editable **Name** and **Description**, and still no **Danger zone**
-- [ ] After Nikola sets Ana back to **Member**, Ana's page is read-only again
-- [ ] Luka is found by the email start `<mailbox>+luka`, added as **Member**, and **Warehouse Extension 2026 - phase 1** shows in his **Projects** list
-- [ ] After **Remove** Luka's row is gone, and the project is no longer in his **Projects** list after a reload
-- [ ] Ivana, the Owner, sees a role box and **Remove** on Nikola's row
-- [ ] Nikola's row shows only a badge for Ivana's Owner role and for himself, with no role box or **Remove**
+- [x] Choosing **Owner** is refused with "Cannot assign OWNER role", and Ana's role box goes back to **Member**
+- [x] Ana's role changes to **Admin** and stays after a reload
+- [x] Ana as Admin now has the add form and editable **Name** and **Description**, and still no **Danger zone**
+- [x] After Nikola sets Ana back to **Member**, Ana's page is read-only again
+- [x] Luka is found by the email start `<mailbox>+luka`, added as **Member**, and **Warehouse Extension 2026 - phase 1** shows in his **Projects** list
+- [x] After **Remove** Luka's row is gone, and the project is no longer in his **Projects** list after a reload
+- [x] Ivana, the Owner, sees a role box and **Remove** on Nikola's row
+- [x] Nikola's row shows only a badge for Ivana's Owner role and for himself, with no role box or **Remove**
 
 ## PRJ-10 Hiding job sections changes the job screen for everyone
 **As:** Ivana (Office admin), then Luka, then Ana · **Day:** 1 · **Needs:** ONB-23 and ONB-28 done (Office hides Relationships, Links and Job status history, and "Fit partition walls on the 3rd floor" has Ivana's note)
@@ -198,12 +198,12 @@ The project is now called **Warehouse Extension 2026 - phase 1**. Use that name 
 4. As Ana, open "Tile bathroom at 14 Elm St" in Residential.
 5. As Ivana, go back to **Settings** and switch **Notes** on. Open "Fit partition walls on the 3rd floor" again.
 
-- [ ] Ivana, an Admin and not the Owner, can switch **Notes** off, and a message such as "Notes now hidden on jobs" appears
-- [ ] The partition job shows no notes section for Ivana
-- [ ] Luka's job in Office shows no notes section either
-- [ ] Ana's job in Residential still shows its notes, because the setting is per project
-- [ ] After switching **Notes** on, "Frames delivered to site, waiting for plasterboard." is back with its author and time, so nothing was deleted
-- [ ] **Relationships**, **Links** and **Job status history** are still off and **Notes** and **Approvals** are on, as ONB-23 left them
+- [x] Ivana, an Admin and not the Owner, can switch **Notes** off, and a message such as "Notes now hidden on jobs" appears
+- [x] The partition job shows no notes section for Ivana
+- [x] Luka's job in Office shows no notes section either
+- [x] Ana's job in Residential still shows its notes, because the setting is per project
+- [x] After switching **Notes** on, "Frames delivered to site, waiting for plasterboard." is back with its author and time, so nothing was deleted
+- [x] **Relationships**, **Links** and **Job status history** are still off and **Notes** and **Approvals** are on, as ONB-23 left them
 
 ## PRJ-11 An Admin turns the completion approval gate on and off
 **As:** Ivana (Office admin) · **Day:** 1 · **Needs:** PRJ-10 done. Office's gate is off (ONB-23).
@@ -212,9 +212,9 @@ The project is now called **Warehouse Extension 2026 - phase 1**. Use that name 
 2. Reload the page.
 3. Switch it off again.
 
-- [ ] Switching it on shows "Jobs now need approval to complete"
-- [ ] After the reload the gate is still on
-- [ ] Switching it off shows "Jobs no longer need approval to complete"
+- [x] Switching it on shows "Jobs now need approval to complete"
+- [x] After the reload the gate is still on
+- [x] Switching it off shows "Jobs no longer need approval to complete"
 
 Leave the gate off, as ONB-23 set it.
 
@@ -233,21 +233,21 @@ Leave the gate off, as ONB-23 set it.
 10. As Nikola, open **Office Refurbishments**, **Links**.
 11. As Petra, click **Links** in the top bar of her project.
 
-- [ ] The list says "No links yet." before the first link
-- [ ] **Floor plans** shows in the list and opens its address in a new tab when clicked
-- [ ] Typing the Figma address fills the label with "Figma" by itself
-- [ ] The link with no label shows its address as the text
-- [ ] The **Links** item in the top bar shows the number of links
-- [ ] `javascript:alert(1)` is refused with "URL is invalid or uses a disallowed scheme" and nothing is added
-- [ ] `data:text/html,hello` is refused with the same message
-- [ ] `floor plans` (no scheme) is refused with the same message
-- [ ] **Cancel** on the edit keeps the old label, and **Save** replaces both the label and the address
-- [ ] The **×** asks for confirmation first, then the link is gone
-- [ ] Sara (a Member) can add a link
-- [ ] Sara sees no pencil icon and no **×** on any link, including her own
-- [ ] Ana sees Sara's **Client contact sheet** and has the pencil and **×** on it
-- [ ] Office's **Links** says "No links yet.", so links don't cross projects
-- [ ] Petra's **Links** item has a lock, and clicking it opens **Organisation Settings**, not a dropdown
+- [x] The list says "No links yet." before the first link
+- [x] **Floor plans** shows in the list and opens its address in a new tab when clicked
+- [x] Typing the Figma address fills the label with "Figma" by itself
+- [x] The link with no label shows its address as the text
+- [x] The **Links** item in the top bar shows the number of links
+- [x] `javascript:alert(1)` is refused with "URL is invalid or uses a disallowed scheme" and nothing is added
+- [x] `data:text/html,hello` is refused with the same message
+- [x] `floor plans` (no scheme) is refused with the same message
+- [x] **Cancel** on the edit keeps the old label, and **Save** replaces both the label and the address
+- [x] The **×** asks for confirmation first, then the link is gone
+- [x] Sara (a Member) can add a link
+- [x] Sara sees no pencil icon and no **×** on any link, including her own
+- [x] Ana sees Sara's **Client contact sheet** and has the pencil and **×** on it
+- [x] Office's **Links** says "No links yet.", so links don't cross projects
+- [x] Petra's **Links** item has a lock, and clicking it opens **Organisation Settings**, not a dropdown
 
 Residential ends with three links: **Floor plans rev 2**, **Kitchen layouts** and **Client contact sheet**.
 
@@ -258,11 +258,11 @@ Residential ends with three links: **Floor plans rev 2**, **Kitchen layouts** an
 2. Look at every section of the settings page.
 3. Open the project's **Links** item in the top bar.
 
-- [ ] The heading, tabs, tab counts and badges of the project list are in Serbian, with no English words left
-- [ ] The settings page headings, labels, role names and the read-only note on the **Job screen** are in Serbian, and no raw text keys appear
-- [ ] The project names, descriptions and link labels stay as typed
-- [ ] The links panel is in Serbian, shows **Floor plans rev 2**, **Kitchen layouts** and **Client contact sheet**, and has no edit or delete controls
-- [ ] The **Add link** control is there, because a Member may add links, and the page doesn't break
+- [x] The heading, tabs, tab counts and badges of the project list are in Serbian, with no English words left
+- [x] The settings page headings, labels, role names and the read-only note on the **Job screen** are in Serbian, and no raw text keys appear
+- [x] The project names, descriptions and link labels stay as typed
+- [x] The links panel is in Serbian, shows **Floor plans rev 2**, **Kitchen layouts** and **Client contact sheet**, and has no edit or delete controls
+- [x] The **Add link** control is there, because a Member may add links, and the page doesn't break
 
 ## PRJ-14 Delete a project
 **As:** Ivana (Warehouse owner), then Nikola and Ana · **Day:** 5 · **Needs:** PRJ-04 to PRJ-09 done. Nothing later uses this project.
@@ -273,12 +273,12 @@ Residential ends with three links: **Floor plans rev 2**, **Kitchen layouts** an
 4. Type the name exactly as it is: `Warehouse Extension 2026 - phase 1`. Click **Delete project** in the window.
 5. As Nikola and as Ana, open **Projects**, then open the project switcher in the top bar of Residential.
 
-- [ ] The window "Delete project?" says the project and all its jobs, notes and approvals will be deleted and that this can't be undone
-- [ ] The **Delete project** button in the window stays disabled until the name matches exactly, so lower case doesn't work
-- [ ] **Cancel** closes the window and the project is still there
-- [ ] The exact name enables the button, and deleting opens **Projects**, where **Warehouse Extension 2026 - phase 1** is gone and the **Active** count is 2
-- [ ] Nikola's and Ana's **Projects** lists no longer show it
-- [ ] Neither switcher lists it any more
+- [x] The window "Delete project?" says the project and all its jobs, notes and approvals will be deleted and that this can't be undone
+- [x] The **Delete project** button in the window stays disabled until the name matches exactly, so lower case doesn't work
+- [x] **Cancel** closes the window and the project is still there
+- [x] The exact name enables the button, and deleting opens **Projects**, where **Warehouse Extension 2026 - phase 1** is gone and the **Active** count is 2
+- [x] Nikola's and Ana's **Projects** lists no longer show it
+- [x] Neither switcher lists it any more
 
 ## PRJ-15 Completing a project is refused while it has open jobs
 **As:** Ana (Spring owner) · **Day:** 6 · **Needs:** ONB-28 done (the boiler job is in Spring Maintenance 2026) and **NTF-21 done**: that scenario adds Sara to Spring Maintenance 2026 on day 2 and then removes her again, and a completed project refuses changes, so don't run this before it. Spring should hold only the boiler job. If anything else is still open there, complete it first, so the count below is 1.
