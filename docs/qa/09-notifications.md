@@ -249,11 +249,11 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 3. As Luka, add the note "Fitted, waiting for the plumber to pressure test." Confirm it.
 4. Check the centre as Ana, Nikola and Luka.
 
-- [ ] Luka (assignee) gets "Added a note on …" from Ana
-- [ ] Nikola (admin, not in the thread) and Sara get nothing from Ana's note
-- [ ] Ana (in the thread) gets "Added a note on …" from Luka
-- [ ] Nikola still gets nothing for Luka's note
-- [ ] Luka gets nothing for his own note, and Ana gets nothing for hers
+- [x] Luka (assignee) gets "Added a note on …" from Ana
+- [x] Nikola (admin, not in the thread) and Sara get nothing from Ana's note
+- [x] Ana (in the thread) gets "Added a note on …" from Luka
+- [x] Nikola still gets nothing for Luka's note
+- [x] Luka gets nothing for his own note, and Ana gets nothing for hers
 
 ## NTF-16 Only a changed deadline or priority notifies
 **As:** Ana · **Day:** 1 · **Needs:** NTF-15 done
