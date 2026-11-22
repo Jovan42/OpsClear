@@ -340,7 +340,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 1. Open A. Look at the headings of **Notes**, **Relationships** and **Status history**.
 2. Make sure each section is open (open it if collapsed).
 
-- [ ] The three headings are in Serbian, with no English left in the sections
+- [ ] The three headings are in Serbian, with no English left in the sections (apart from the status code in the duration line, the known bug in NHR-07)
 - [ ] The history labels ("Created as", the arrow between statuses, "Reason: …") and the status badges are in Serbian
 - [ ] The line about the time spent in a status uses Serbian words and plural forms, for example "5 minuta"
 - [ ] The relationship label is in Serbian
@@ -372,7 +372,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## NHR-23 Pine & Pixel: the server refuses the gated calls too
 **As:** Petra (owner of Pine & Pixel, no add-ons) · **Day:** any, after ONB-33 · **Needs:** NHR-22 done. A terminal with `curl` (on macOS use **Copy as cURL (bash)**).
 
-**Keep the token private.** The copied command holds the tester's `Authorization: Bearer …` token. Never paste it, or any header from it, into a job, PR, finding, chat or doc: record only the status and message. Start each command line with a space (works when `HISTCONTROL=ignorespace` is set) so it stays out of the shell history. The token lasts 5 minutes: copy a fresh request just before each call, and again on a 401.
+**Keep the token private.** The copied command holds the tester's `Authorization: Bearer …` token. Never paste it, or any header from it, into a job, PR, finding, chat or doc: record only the status and message. Start each command line with a space (it stays out of the history in zsh, the macOS default, after `setopt hist_ignore_space`, and in bash after `HISTCONTROL=ignorespace`) so it stays out of the shell history. The token lasts 5 minutes: copy a fresh request just before each call, and again on a 401.
 
 1. In Petra's browser, Network tab, right-click any request to `/api/` (for example the job) and choose **Copy as cURL**. Paste it in the terminal, with a leading space. The project and job IDs in the path are the friendly IDs in the browser address bar of "Design menu cards for Juniper Cafe".
 2. Change the path to `/api/projects/<project>/jobs/<job>/notes` and send it. Copy a fresh request first for each step below.
