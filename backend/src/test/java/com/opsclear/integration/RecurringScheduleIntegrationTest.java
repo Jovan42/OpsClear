@@ -1259,16 +1259,28 @@ class RecurringScheduleIntegrationTest {
     }
 
     @Test
-    @DisplayName("updateSchedule — adding assignees back lifts the no-assignees pause (JOB-405)")
-    void updateSchedule_shouldResume_whenAssigneesAddedToNoAssigneesPausedSchedule() throws Exception {
+    @DisplayName("updateSchedule — adding assignees back keeps the no-assignees pause until resume (JOB-405)")
+    void updateSchedule_shouldStayPaused_whenAssigneesAddedToNoAssigneesPausedSchedule() throws Exception {
         assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
         UUID scheduleId = createScheduleWith("\"assigneeIds\": [\"%s\"]".formatted(ownerId));
         renameSchedule(scheduleId, "[]")
                 .andExpect(jsonPath("$.status").value("PAUSED_NO_ASSIGNEES"));
 
         renameSchedule(scheduleId, "[\"%s\"]".formatted(ownerId))
-                .andExpect(jsonPath("$.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.pausedUntil").isEmpty());
+                .andExpect(jsonPath("$.status").value("PAUSED"))
+                .andExpect(jsonPath("$.pausedUntil").value("9999-01-01T00:00:00Z"));
+    }
+
+    @Test
+    @DisplayName("updateSchedule — a schedule paused by hand stays paused after an edit that adds assignees (JOB-405)")
+    void updateSchedule_shouldKeepManualPause_whenAssigneesAdded() throws Exception {
+        assumeTrue(hasAddon(), "RECURRING_SCHEDULING addon not seeded — skipping");
+        UUID scheduleId = createScheduleWith("\"assigneeIds\": []");
+        pauseSchedule(scheduleId, "{}");
+
+        renameSchedule(scheduleId, "[\"%s\"]".formatted(ownerId))
+                .andExpect(jsonPath("$.status").value("PAUSED"))
+                .andExpect(jsonPath("$.pausedUntil").value("9999-01-01T00:00:00Z"));
     }
 
     @Test

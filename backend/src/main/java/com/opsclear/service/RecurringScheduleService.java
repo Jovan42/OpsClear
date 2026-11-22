@@ -135,19 +135,14 @@ public class RecurringScheduleService {
                 CronExpression.parse(req.getCronExpression())
                         .next(ZonedDateTime.now(resolveZone(req.getTimezone())))).toInstant();
 
-        boolean pausedForNoAssignees = isPausedForNoAssignees(row);
-
         row.setName(req.getName().strip());
         row.setTemplateId(req.getTemplateId());
         row.setCronExpression(req.getCronExpression());
         row.setTimezone(req.getTimezone());
-        // JOB-405: a null pausedUntil or expiresAt means "unchanged", so an edit doesn't un-pause the schedule or
-        // drop its end date. Pausing and resuming have their own endpoints. The one exception: a schedule paused
-        // because it had no assignees resumes when the edit gives it assignees (re-paused below if it doesn't).
+        // JOB-405: a null pausedUntil or expiresAt means "unchanged", so an edit never un-pauses the schedule or
+        // drops its end date. Only resume clears a pause (ADR-0034), including the no-assignees auto-pause.
         if (req.getPausedUntil() != null) {
             row.setPausedUntil(req.getPausedUntil().atOffset(ZoneOffset.UTC));
-        } else if (pausedForNoAssignees) {
-            row.setPausedUntil(null);
         }
         if (req.getExpiresAt() != null) {
             row.setExpiresAt(req.getExpiresAt().atOffset(ZoneOffset.UTC));
@@ -304,12 +299,6 @@ public class RecurringScheduleService {
         } catch (Exception e) {
             throw new BadRequestException(ErrorMessages.RecurringSchedule.INVALID_TIMEZONE + timezone);
         }
-    }
-
-    private boolean isPausedForNoAssignees(RecurringSchedulesRecord row) {
-        return row.getPausedUntil() != null
-                && row.getPausedUntil().toInstant().equals(INDEFINITE_SENTINEL)
-                && assigneeRepository.findByScheduleId(row.getId()).isEmpty();
     }
 
     private String loadTemplateName(UUID templateId) {

@@ -594,6 +594,75 @@ class RecurringScheduleServiceTest {
         assertThat(captor.getValue().getExpiresAt().toInstant()).isEqualTo(expiresAt);
     }
 
+    @Test
+    @DisplayName("update — keeps current pausedUntil and expiresAt when the request leaves them null (JOB-405)")
+    void update_shouldKeepPausedUntilAndExpiresAt_whenRequestOmitsThem() {
+        OffsetDateTime pausedUntil = OffsetDateTime.parse("2030-06-01T00:00:00Z");
+        OffsetDateTime expiresAt = OffsetDateTime.parse("2031-01-01T00:00:00Z");
+        UUID assigneeId = UUID.randomUUID();
+        RecurringSchedulesRecord row = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        row.setPausedUntil(pausedUntil);
+        row.setExpiresAt(expiresAt);
+
+        RecurringSchedulesRecord saved = updateWithoutDates(row, List.of(assigneeId));
+
+        assertThat(saved.getPausedUntil()).isEqualTo(pausedUntil);
+        assertThat(saved.getExpiresAt()).isEqualTo(expiresAt);
+    }
+
+    @Test
+    @DisplayName("update — keeps an indefinite pause when the edit adds assignees (JOB-405, ADR-0034)")
+    void update_shouldKeepIndefinitePause_whenAssigneesAdded() {
+        OffsetDateTime sentinel = RecurringScheduleService.INDEFINITE_SENTINEL.atOffset(ZoneOffset.UTC);
+        RecurringSchedulesRecord row = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        row.setPausedUntil(sentinel);
+
+        RecurringSchedulesRecord saved = updateWithoutDates(row, List.of(UUID.randomUUID()));
+
+        assertThat(saved.getPausedUntil()).isEqualTo(sentinel);
+        assertThat(saved.getExpiresAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("update — still auto-pauses when the edit removes every assignee from a dated pause (JOB-405)")
+    void update_shouldAutoPause_whenAssigneesRemovedFromDatedPause() {
+        RecurringSchedulesRecord row = buildRecord(projectId, templateId, VALID_CRON, VALID_TZ);
+        row.setPausedUntil(OffsetDateTime.parse("2030-06-01T00:00:00Z"));
+
+        RecurringSchedulesRecord saved = updateWithoutDates(row, List.of());
+
+        assertThat(saved.getPausedUntil().toInstant()).isEqualTo(RecurringScheduleService.INDEFINITE_SENTINEL);
+    }
+
+    // Runs an update like the edit form sends it (no pausedUntil or expiresAt) and returns the saved record.
+    private RecurringSchedulesRecord updateWithoutDates(RecurringSchedulesRecord row, List<UUID> assigneeIds) {
+        UUID scheduleId = row.getId();
+        UpdateScheduleRequest req = new UpdateScheduleRequest();
+        req.setName("Renamed");
+        req.setTemplateId(templateId);
+        req.setCronExpression(VALID_CRON);
+        req.setTimezone(VALID_TZ);
+        req.setAssigneeIds(assigneeIds);
+        for (UUID assigneeId : assigneeIds) {
+            when(organisationRepository.existsMember(project.getOrganisationId(), assigneeId)).thenReturn(true);
+        }
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, ownerId))
+                .thenReturn(Optional.of(ownerMembership));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(row));
+        when(scheduleRepository.update(any())).thenReturn(row);
+        when(assigneeRepository.findByScheduleId(scheduleId)).thenReturn(List.of());
+        when(jobTemplateRepository.findByIdAndDeletedAtIsNull(templateId)).thenReturn(Optional.of(template));
+
+        service.update(projectId, scheduleId, req, ownerId);
+
+        ArgumentCaptor<RecurringSchedulesRecord> captor = ArgumentCaptor.forClass(RecurringSchedulesRecord.class);
+        verify(scheduleRepository).update(captor.capture());
+        assertThat(captor.getValue().getName()).isEqualTo("Renamed");
+        return captor.getValue();
+    }
+
     // --- list / get ---
 
     @Test
