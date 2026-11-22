@@ -193,7 +193,7 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 - [ ] Nikola, as an admin, could do all of this without an error message
 
 ## SCH-11 Edit schedules
-**As:** Nikola (Residential admin) · **Day:** 1 · **Needs:** SCH-10 done. Known quirk (see the expected-to-fail box): the edit form doesn't send the schedule's current pause or end dates, so saving an edit may clear them.
+**As:** Nikola (Residential admin) · **Day:** 1 · **Needs:** SCH-10 done. Known bug JOB-405 (see the expected-to-fail box): the edit form doesn't send the schedule's current pause or end dates, so saving an edit may clear them.
 
 1. On **Daily site safety check** click **Edit**, look at the form, click **Cancel**.
 2. On **Weekly toolbox talk** click **Edit**. Change the name to **Weekly toolbox talk (all sites)** and click **Save changes**.
@@ -204,7 +204,7 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 - [ ] The window for the daily schedule is titled **Edit Schedule** with the name, the template **Site safety check**, the timing 07:00 UTC (shown as **Daily** at 07:00, or as the cron `0 0 7 * * *` on **Advanced**) and the two people in order (Ivana #1, Sara #2) already filled in
 - [ ] The weekly schedule's window shows **Weekly**, the day-3 weekday, 07:00 and `UTC` already filled in
 - [ ] After step 2 the row shows the new name and is still **Active**, and **Next:** is unchanged
-- [ ] After step 4 the row shows the new name and is still **Paused** (known quirk: expected to fail, job to be linked)
+- [ ] After step 4 the row shows the new name and is still **Paused** (known bug JOB-405: expected to fail until it is fixed)
 - [ ] After step 5 the row shows **No assignees** and no circles
 - [ ] **Resume** is shown on that row
 
@@ -341,3 +341,5 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 - The preview endpoint's 400s (blank or invalid cron, invalid timezone) and the empty list for a cron with no future run: covered by `RecurringScheduleIntegrationTest` (`previewCron …`).
 
 ## Findings
+## Findings
+- SCH-11: JOB-405 (Bug) editing a schedule un-pauses it and clears its end date: the edit form doesn't send the current pause or end dates and `RecurringScheduleService.update` writes them as null.
