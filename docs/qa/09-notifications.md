@@ -234,12 +234,12 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 3. As Ana, open the same job, click **Unblock** and confirm.
 4. Check the centre as Luka and Nikola.
 
-- [ ] Ana and Nikola get **Job blocked** ("Blocked …") with "Reason: Waiting on client", in the urgent (red) style
-- [ ] Only the one **Job blocked** entry arrives, with no extra "Status changed" entry for the same move
-- [ ] Luka (who did it), Ivana and Sara get nothing
+- [x] Ana and Nikola get **Job blocked** ("Blocked …") with "Reason: Waiting on client", in the urgent (red) style
+- [x] Only the one **Job blocked** entry arrives, with no extra "Status changed" entry for the same move
+- [x] Luka (who did it), Ivana and Sara get nothing
 - [ ] Unblocking gives Luka a "Moved … from Blocked to In Progress" entry, which shows **Status changed** works again for him
-- [ ] Unblocking also gives Nikola a "Moved … from Blocked to In Progress" entry
-- [ ] Ana, who unblocked it, gets none
+- [x] Unblocking also gives Nikola a "Moved … from Blocked to In Progress" entry
+- [x] Ana, who unblocked it, gets none
 
 ## NTF-15 Notes notify the assignee and everyone already in the thread
 **As:** Ana, Luka, Nikola · **Day:** 1 · **Needs:** NTF-14 done. Ana already wrote one note on the towel rail job in NTF-08.
