@@ -293,9 +293,9 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 1. Open the job, click **Edit**, set **Assign to** to Ivana and Deadline to Day 4 + 30 days, and save once.
 2. Check Ivana's, Sara's and Ana's centres.
 
-- [ ] Ivana gets exactly one new "Assigned you to …" entry (on top of the one from NTF-03), which shows the deadline, and no "Deadline or priority changed"
-- [ ] Sara, the previous assignee, gets nothing
-- [ ] Ana gets nothing
+- [x] Ivana gets exactly one new "Assigned you to …" entry (on top of the one from NTF-03), which shows the deadline, and no "Deadline or priority changed"
+- [x] Sara, the previous assignee, gets nothing
+- [x] Ana gets nothing
 
 ## NTF-19 A deleted job notifies its assignee
 **As:** Ana · **Day:** 1 · **Needs:** NTF-18 done
@@ -303,10 +303,10 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 1. Open "Remove garden shed at 3 Willow Lane", click **Delete Job** and confirm.
 2. Check Ivana's centre. Click the entry.
 
-- [ ] Ivana gets "Deleted …" with Ana as the source
-- [ ] The entry still shows the job's title, though the job is gone
-- [ ] Clicking it opens nothing, and hovering over it shows the tooltip "This job was deleted"
-- [ ] Ana and Sara get nothing
+- [x] Ivana gets "Deleted …" with Ana as the source
+- [x] The entry still shows the job's title, though the job is gone
+- [x] Clicking it opens nothing, and hovering over it shows the tooltip "This job was deleted"
+- [x] Ana and Sara get nothing
 
 ## NTF-20 Completing a blocker clears the jobs waiting on it
 **As:** Ana, Nikola, Ivana · **Day:** 1 · **Needs:** NTF-02 done. Both Hawthorn Rd jobs still **New**.
