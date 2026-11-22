@@ -316,10 +316,10 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 3. Check Nikola's centre. As Ana, click **Complete** and confirm.
 4. Check Ivana's, Nikola's, Sara's and Ana's centres.
 
-- [ ] Nikola, who is both the assignee and a project admin, gets exactly one "Moved … from New to In Progress" at step 2, and one "Moved … to Completed" at step 3
-- [ ] Ivana gets "Replace boiler flue … is completed, so … is no longer waiting on it", about the plaster job
-- [ ] Ivana gets exactly one entry for the completion, and no "Status changed" for the flue (she isn't on it)
-- [ ] Ana and Sara get nothing
+- [x] Nikola, who is both the assignee and a project admin, gets exactly one "Moved … from New to In Progress" at step 2, and one "Moved … to Completed" at step 3
+- [x] Ivana gets "Replace boiler flue … is completed, so … is no longer waiting on it", about the plaster job
+- [x] Ivana gets exactly one entry for the completion, and no "Status changed" for the flue (she isn't on it)
+- [x] Ana and Sara get nothing
 
 ## NTF-21 Added to a project, and what happens when you're removed
 **As:** Ana, Sara · **Day:** 2 · **Needs:** `01-onboarding.md` done, Spring Maintenance 2026 not archived yet. Do this before `03-projects.md` archives it.
