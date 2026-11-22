@@ -26,18 +26,26 @@ export function buildCron(
   return '';
 }
 
-// Detect preset type from a Spring cron expression, or 'advanced'.
+const PRESET_DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+function isIntIn(value: string, min: number, max: number): boolean {
+  if (!/^\d+$/.test(value)) return false;
+  const n = parseInt(value, 10);
+  return n >= min && n <= max;
+}
+
+// Detect which preset tab can show a Spring cron expression, or 'advanced'.
+// Only crons the preset would build again unchanged map to a preset: second 0, a single
+// minute and hour, every month, and then every day (daily), one day of the week (weekly)
+// or one day of the month in the 1-28 range the Monthly tab allows (monthly).
 export function detectPreset(cron: string): 'daily' | 'weekly' | 'monthly' | 'advanced' {
   const parts = cron.trim().split(/\s+/);
   if (parts.length !== 6) return 'advanced';
-  const [, , , dom, month, dow] = parts;
-  if (month !== '*') return 'advanced';
-  if (dom === '*' && dow === '*') return 'advanced';
-  if (dom !== '*' && dow === '*') return 'monthly';
-  if (dom === '*' && dow !== '*' && !dow.includes(',') && !dow.includes('-')) return 'weekly';
+  const [sec, min, hour, dom, month, dow] = parts;
+  if (sec !== '0' || !isIntIn(min, 0, 59) || !isIntIn(hour, 0, 23) || month !== '*') return 'advanced';
   if (dom === '*' && dow === '*') return 'daily';
-  // daily: dom=* dow=*
-  if (dom === '*' && dow === '*') return 'daily';
+  if (dom === '*' && PRESET_DAYS.includes(dow)) return 'weekly';
+  if (dow === '*' && isIntIn(dom, 1, 28)) return 'monthly';
   return 'advanced';
 }
 

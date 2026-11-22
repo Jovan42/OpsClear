@@ -1,12 +1,8 @@
 // ADR-0049 Appendix §15 (Recurring Schedules + Missed Runs + Cron Preview). Uses
 // cy.loginAs() per docs/dev/process/E2E.md.
 //
-// Two ADR-0049-flagged design/behavior facts are treated as REGRESSION GUARDS
-// documenting actual current behavior, not bugs to file:
-// - `detectPreset` (frontend/src/utils/cron.ts) has an unreachable daily-detection
-//   branch — an earlier, identical condition returns 'advanced' first — so editing a
-//   schedule originally created via the Daily preset reopens the edit modal on the
-//   "Advanced" tab, not "Daily". Confirmed in source; asserted as-is below.
+// An ADR-0049-flagged design/behavior fact is treated as a REGRESSION GUARD
+// documenting actual current behavior, not a bug to file:
 // - Monthly preset's UI caps day-of-month at 1-28 (avoiding "no Feb 30"), but
 //   Advanced mode's raw cron input has no such guard. Confirmed via the stateless
 //   preview endpoint that Spring's CronExpression treats an impossible day (e.g.
@@ -757,7 +753,7 @@ describe('Recurring Schedules (+ Missed Runs + Cron Preview)', () => {
     cy.deleteKeycloakUser(email);
   });
 
-  it('editing a Daily-preset-created schedule reopens the edit modal on the Advanced tab, not Daily (known detectPreset gap, regression guard)', () => {
+  it('editing a Daily-preset-created schedule reopens the edit modal on the Daily tab with its time filled in', () => {
     const email = uniqueEmail('detect-preset-gap');
     cy.createKeycloakUser(email, 'E2E', 'Tester');
     createOrgWithFullAccess(email, 'Plover Corp', uniqueSlug());
@@ -773,10 +769,10 @@ describe('Recurring Schedules (+ Missed Runs + Cron Preview)', () => {
           cy.contains('button', 'Edit').click();
 
           cy.get('.z-50:visible').within(() => {
-            // detectPreset('0 0 9 * * *') returns 'advanced', not 'daily' — the earlier
-            // `dom === '*' && dow === '*'` check at the "advanced" branch shadows the
-            // identical daily-detection condition below it, which is unreachable.
-            cy.get('button.bg-white, button.dark\\:bg-gray-600').contains('Advanced').should('exist');
+            // The active preset tab is the one with the white background.
+            cy.get('button.bg-white').contains('Daily').should('exist');
+            cy.get('button.bg-white').contains('Advanced').should('not.exist');
+            cy.get('input[type="time"]').should('have.value', '09:00');
           });
         }),
       ),
