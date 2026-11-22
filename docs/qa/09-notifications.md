@@ -111,12 +111,12 @@ Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 
 2. Use Ana for the approval and members entries, Sara for the project entry, Ivana for the deleted-job and feedback entries.
 3. Hover over the deleted-job entry.
 
-- [ ] A job entry (assigned, status, blocked, note, deadline) opens that job
-- [ ] An approval entry opens the job at its approvals section
-- [ ] **Added to project** opens the project
-- [ ] **Invite accepted** opens the org members page
-- [ ] **Feedback resolved** opens **Feedback**
-- [ ] A deleted-job entry reads "Deleted …" with the job's title, has no link, and shows the tooltip "This job was deleted" on hover
+- [x] A job entry (assigned, status, blocked, note, deadline) opens that job
+- [x] An approval entry opens the job at its approvals section
+- [x] **Added to project** opens the project
+- [x] **Invite accepted** opens the org members page
+- [x] **Feedback resolved** opens **Feedback**
+- [x] A deleted-job entry reads "Deleted …" with the job's title, has no link, and shows the tooltip "This job was deleted" on hover
 
 ## NTF-06 The Notifications page, filters and paging
 **As:** Ana · **Day:** 4 · **Needs:** Ana has more than 20 notifications. Run this once the invites, jobs and deadline alerts have piled up. If she has fewer, run it on day 5.
@@ -486,10 +486,10 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 2. Open **Account settings**, **Notifications**.
 3. Switch **Language** to English, check the centre, then switch back to Serbian.
 
-- [ ] The entries, type names, filters, buttons and the settings section are in Serbian
-- [ ] The relative times and dates are in Serbian
-- [ ] Switching to English changes the existing entries too, without a reload, and switching back restores Serbian
-- [ ] Names, job titles and project names stay as typed
+- [x] The entries, type names, filters, buttons and the settings section are in Serbian
+- [x] The relative times and dates are in Serbian
+- [x] Switching to English changes the existing entries too, without a reload, and switching back restores Serbian
+- [x] Names, job titles and project names stay as typed
 
 ## Not manual
 - Notification cleanup (read after 30 days, unread after 90): covered by `NotificationCleanupJobTest` and the cleanup test in `NotificationIntegrationTest`.
