@@ -213,8 +213,8 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 2. Turn **Note added** off.
 3. Set the browser back online and reload.
 
-- [ ] The toggle jumps back on and "Couldn't save that change, so it was put back." shows
-- [ ] After the reload **Note added** is still on
+- [x] The toggle jumps back on and "Couldn't save that change, so it was put back." shows
+- [x] After the reload **Note added** is still on
 
 ## NTF-13 Status changes notify the assignee's watchers
 **As:** Luka, Ana, Nikola · **Day:** 1 · **Needs:** NTF-11 done
@@ -222,9 +222,9 @@ Leave the towel rail **In Progress** with priority High: NTF-14 to NTF-17 expect
 1. As Luka, open "Fix leaking tap at 7 Cedar Close" and click **Start**.
 2. Check the centre as Ana, Nikola, Luka, Ivana and Sara.
 
-- [ ] Ana and Nikola each get "Moved … from New to In Progress", with Luka as the source
-- [ ] Luka, who did it, gets nothing
-- [ ] Ivana and Sara, who are only members and not assigned, get nothing
+- [x] Ana and Nikola each get "Moved … from New to In Progress", with Luka as the source
+- [x] Luka, who did it, gets nothing
+- [x] Ivana and Sara, who are only members and not assigned, get nothing
 
 ## NTF-14 Blocked jobs notify urgently, and unblocking says so
 **As:** Luka, then Ana · **Day:** 1 · **Needs:** NTF-11 done (towel rail **In Progress**)
