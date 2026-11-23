@@ -6,7 +6,7 @@ import ApprovalDecisionModal from './ApprovalDecisionModal';
 import { ApprovalKindBadge, ApprovalStatusBadge } from './ApprovalBadges';
 import { useApprovals } from '../useApprovals';
 import { approvalDescription, autoCancelReason, isApprovedNotApplied } from '../completionApproval';
-import { jobStatusLabel } from '../../notifications/notificationContent';
+import { jobStatusLabel } from '../../../utils/jobStatusLabel';
 import type { ApprovalResponse, ProjectMemberResponse } from '../../../types';
 import { usePreferences } from '../../../hooks/usePreferences';
 import { formatDateTime } from '../../../utils/formatDate';

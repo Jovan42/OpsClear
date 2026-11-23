@@ -72,14 +72,20 @@ describe('Job Status History', () => {
                 cy.get('ol > li').should('have.length', 5);
                 cy.contains('Reason: Waiting on parts').should('be.visible');
 
-                // Every entry except the last shows a duration line ("N minutes in X").
+                // Every entry except the last shows a duration line ("N minutes in X"), with
+                // the same status label as the badge, never the raw code (JOB-410).
+                const durationStatuses = ['New', 'In Progress', 'Blocked', 'In Progress'];
                 cy.get('ol > li').each(($li, index, $all) => {
                   if (index < $all.length - 1) {
-                    cy.wrap($li).contains(/ in /).should('be.visible');
+                    cy.wrap($li)
+                      .find('[data-testid="status-history-duration"]')
+                      .invoke('text')
+                      .should('match', new RegExp(` in ${durationStatuses[index]}$`));
                   } else {
                     cy.wrap($li).contains(/ in /).should('not.exist');
                   }
                 });
+                cy.contains(/ in (NEW|IN_PROGRESS|BLOCKED|COMPLETED)$/).should('not.exist');
               }),
             ),
           ),

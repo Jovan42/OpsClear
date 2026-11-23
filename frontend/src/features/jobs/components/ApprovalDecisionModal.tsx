@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import { useDecideApproval } from '../useApprovals';
-import { jobStatusLabel } from '../../notifications/notificationContent';
+import { jobStatusLabel } from '../../../utils/jobStatusLabel';
 
 interface Props {
   open: boolean;

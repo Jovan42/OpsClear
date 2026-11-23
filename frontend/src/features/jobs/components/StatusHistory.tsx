@@ -9,6 +9,7 @@ import StatusBadge from '../../../components/StatusBadge';
 import type { JobHistoryEntry, JobStatus } from '../../../types';
 import { usePreferences } from '../../../hooks/usePreferences';
 import { formatDateTime } from '../../../utils/formatDate';
+import { jobStatusLabel } from '../../../utils/jobStatusLabel';
 
 function TransitionLabel({ entry, t }: { entry: JobHistoryEntry; t: TFunction }) {
   if (entry.changedFrom === null) {
@@ -37,7 +38,7 @@ interface Props {
 }
 
 export default function StatusHistory({ projectId, jobId, defaultExpanded = false }: Props) {
-  const { t } = useTranslation(['jobsComponents', 'common']);
+  const { t } = useTranslation(['jobsComponents', 'common', 'shared2']);
   const { prefs } = usePreferences();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const { data: entries = [], isLoading } = useJobHistory(projectId, jobId);
@@ -82,7 +83,7 @@ export default function StatusHistory({ projectId, jobId, defaultExpanded = fals
                         new Date(entry.changedAt).getTime(),
                         new Date(next.changedAt).getTime(),
                       ),
-                      status: entry.changedTo,
+                      status: jobStatusLabel(entry.changedTo, t),
                     })
                   : null;
 
@@ -105,7 +106,7 @@ export default function StatusHistory({ projectId, jobId, defaultExpanded = fals
                       </div>
                     </div>
                     {durationLabel && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 pl-5 pb-1 italic">
+                      <p data-testid="status-history-duration" className="text-xs text-gray-400 dark:text-gray-500 pl-5 pb-1 italic">
                         {durationLabel}
                       </p>
                     )}
