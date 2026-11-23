@@ -21,7 +21,7 @@ Where the wordmark appears in the product:
 - App top bars (signed-in header, public pages, onboarding): `frontend/src/components/Logo.tsx`, the
   W1 style (checkbox O + "psClear") drawn as inline SVG plus Inter text, in `currentColor`
 - Keycloak login pages: `keycloak/themes/opsclear/login/resources/img/wordmark.png`, the W4 style
-  (green "Ops", navy "Clear"), cropped from `explorations/wordmarks/opsclear-wordmark-w4.png`
+  (green "Ops", navy "Clear" on a light background)
 
 ## Colours
 
@@ -45,9 +45,3 @@ font (Montserrat, Inter).
 - Don't put the full "OpsClear" name in a small avatar; it's unreadable at 40 px.
 - Don't recolour the checkbox O and the C the same colour on a dark background: the green/white
   split is what makes the mark.
-
-## Explorations
-
-`explorations/` holds the options considered before picking the logos above (avatars A–S,
-wordmarks W1/W2/W4, icons X2/X3). Kept for reference; not in use. Avatar F was rejected because
-it reads as the © symbol.
