@@ -50,8 +50,17 @@ body,
   padding: 2rem 0 0.5rem;
 }
 
+/* The realm display name ("OpsClear") is replaced by the brand wordmark (docs/brand, W4). The
+   text stays in the DOM at font-size 0, so screen readers still read it. PNG, not SVG: an SVG used
+   as an image can't load the wordmark font. */
 #kc-header-wrapper {
   color: inherit;
+  font-size: 0;
+  line-height: 0;
+  width: 200px;
+  height: 52px;
+  margin: 0 auto;
+  background: url("../img/wordmark.png") center / contain no-repeat;
 }
 
 /* Card */

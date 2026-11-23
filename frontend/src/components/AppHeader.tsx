@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import UserMenu from './UserMenu';
+import Logo from './Logo';
 import NotificationBell from '../features/notifications/NotificationBell';
 
 interface AppHeaderProps {
@@ -23,9 +24,10 @@ export default function AppHeader({ start, afterLogo, end }: Readonly<AppHeaderP
           {start}
           <Link
             to="/projects"
-            className="font-semibold text-lg tracking-tight text-white hover:text-white/80 transition-colors shrink-0"
+            aria-label="OpsClear"
+            className="text-lg text-white hover:text-white/80 transition-colors shrink-0"
           >
-            OpsClear
+            <Logo />
           </Link>
           {afterLogo}
         </div>
