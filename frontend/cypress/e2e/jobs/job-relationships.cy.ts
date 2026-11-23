@@ -350,6 +350,12 @@ describe('Job Relationships', () => {
             cy.visit(`/projects/${projectId}/jobs/${jobA}`);
             // Section auto-expands since jobA already has a relationship — no click.
             cy.contains('(deleted)').should('be.visible');
+            // JOB-409: the deleted row is plain text, not a link to the deleted job's 404 page,
+            // and has no status badge.
+            cy.contains('li', '(deleted)').within(() => {
+              cy.get('a').should('not.exist');
+              cy.contains('New').should('not.exist');
+            });
           }),
         ),
       );

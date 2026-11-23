@@ -6,6 +6,7 @@ import { GitBranch } from 'lucide-react';
 import EmptyState from '../../../components/EmptyState';
 import StatusBadge from '../../../components/StatusBadge';
 import { useDeleteRelationship } from '../useJobs';
+import { relatedJobPath } from '../relatedJob';
 import type { JobRelationshipDirection, JobRelationshipType, JobRelationshipView } from '../../../types';
 
 interface Props {
@@ -112,47 +113,50 @@ export default function RelationshipsSection({
             />
           ) : (
             <ul className="space-y-2">
-              {relationships.map((rel) => (
-                <li key={rel.id} className="flex items-center gap-3 text-sm">
-                  <span
-                    className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full ${TYPE_COLORS[rel.type]}`}
-                  >
-                    {directionLabel(rel.type, rel.direction, t)}
-                  </span>
-
-                  {rel.job.id ? (
-                    <Link
-                      to={`/projects/${projectId}/jobs/${rel.job.friendlyId ?? rel.job.id}`}
-                      className={`flex-1 truncate font-medium hover:underline ${
-                        rel.job.status === 'COMPLETED'
-                          ? 'line-through text-gray-400 dark:text-gray-500'
-                          : 'text-gray-900 dark:text-gray-100'
-                      }`}
+              {relationships.map((rel) => {
+                const jobPath = relatedJobPath(projectId, rel.job);
+                return (
+                  <li key={rel.id} className="flex items-center gap-3 text-sm">
+                    <span
+                      className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full ${TYPE_COLORS[rel.type]}`}
                     >
-                      {rel.job.title ?? t('jobsComponents:relationshipsSection.deletedJob')}
-                    </Link>
-                  ) : (
-                    <span className="flex-1 truncate text-gray-400 dark:text-gray-500 italic">
-                      {rel.job.title ?? t('jobsComponents:relationshipsSection.deletedJob')}
+                      {directionLabel(rel.type, rel.direction, t)}
                     </span>
-                  )}
 
-                  {rel.job.status && (
-                    <StatusBadge status={rel.job.status} />
-                  )}
+                    {jobPath ? (
+                      <Link
+                        to={jobPath}
+                        className={`flex-1 truncate font-medium hover:underline ${
+                          rel.job.status === 'COMPLETED'
+                            ? 'line-through text-gray-400 dark:text-gray-500'
+                            : 'text-gray-900 dark:text-gray-100'
+                        }`}
+                      >
+                        {rel.job.title ?? t('jobsComponents:relationshipsSection.deletedJob')}
+                      </Link>
+                    ) : (
+                      <span className="flex-1 truncate text-gray-400 dark:text-gray-500 italic">
+                        {rel.job.title ?? t('jobsComponents:relationshipsSection.deletedJob')}
+                      </span>
+                    )}
 
-                  {canManage && !projectCompleted && (
-                    <button
-                      onClick={() => deleteRel(rel.id)}
-                      disabled={isDeleting}
-                      className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none cursor-pointer disabled:opacity-50"
-                      title={t('jobsComponents:relationshipsSection.removeRelationship')}
-                    >
-                      ×
-                    </button>
-                  )}
-                </li>
-              ))}
+                    {jobPath && rel.job.status && (
+                      <StatusBadge status={rel.job.status} />
+                    )}
+
+                    {canManage && !projectCompleted && (
+                      <button
+                        onClick={() => deleteRel(rel.id)}
+                        disabled={isDeleting}
+                        className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none cursor-pointer disabled:opacity-50"
+                        title={t('jobsComponents:relationshipsSection.removeRelationship')}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
