@@ -158,11 +158,11 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 1. Open B. Find **Status history** (open it if it's collapsed; it normally opens by itself).
 2. Open A and find its **Status history** the same way.
 
-- [ ] B's **Status history** has one entry, "Created as" with a **New** badge
-- [ ] The entry says "Ana Petrović" and a date and time
-- [ ] The section header shows a count of 1
-- [ ] There is no line about how long the job stayed in a status, because the entry is the latest one
-- [ ] A shows the same: one "Created as New" entry by Ana
+- [x] B's **Status history** has one entry, "Created as" with a **New** badge
+- [x] The entry says "Ana Petrović" and a date and time
+- [x] The section header shows a count of 1
+- [x] There is no line about how long the job stayed in a status, because the entry is the latest one
+- [x] A shows the same: one "Created as New" entry by Ana
 
 ## NHR-07 Status changes are recorded with who, when and why
 **As:** Luka (assignee of A), then Ana · **Day:** any, after ONB-33 · **Needs:** NHR-06 done, A **New**, Luka's and Ana's bells open on another page
@@ -172,13 +172,13 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. As Ana open A and find **Status history** (open it if it's collapsed).
 4. As Ana click **Unblock** and confirm. Check **Status history** again (reload if it doesn't show the new entry).
 
-- [ ] After step 3 the history has three entries in order: Created as New, **New** → **In Progress** by "Luka Ilić", **In Progress** → **Blocked** by "Luka Ilić"
-- [ ] The Blocked entry shows "Reason: Materials not delivered" in red, and no other entry shows a reason
-- [ ] After step 4 a fourth entry **Blocked** → **In Progress** by "Ana Petrović" appears, without a reason, and the count shows 4
-- [ ] Every entry shows the person and a date and time
-- [ ] Between entries a line gives the time the job stayed in the earlier status, for example "0 minutes in …" when the moves were seconds apart
+- [x] After step 3 the history has three entries in order: Created as New, **New** → **In Progress** by "Luka Ilić", **In Progress** → **Blocked** by "Luka Ilić"
+- [x] The Blocked entry shows "Reason: Materials not delivered" in red, and no other entry shows a reason
+- [x] After step 4 a fourth entry **Blocked** → **In Progress** by "Ana Petrović" appears, without a reason, and the count shows 4
+- [x] Every entry shows the person and a date and time
+- [x] Between entries a line gives the time the job stayed in the earlier status, for example "0 minutes in …" when the moves were seconds apart
 - [ ] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS (known bug: `StatusHistory.tsx` passes the raw `entry.changedTo`, so it reads "… in IN_PROGRESS", expected to fail, Bug job to be linked)
-- [ ] Ana and Nikola each get **Status changed** for the start, **Job blocked** for the block, and Luka and Nikola get **Status changed** for the unblock
+- [x] Ana and Nikola each get **Status changed** for the start, **Job blocked** for the block, and Luka and Nikola get **Status changed** for the unblock
 
 ## NHR-08 Only status changes are in the history
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-07 done
@@ -186,10 +186,10 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 1. Open A. Click **Edit**, change **Client** to "Harlow family, 18 Maple Row" and save.
 2. Open **Status history**.
 
-- [ ] The new client shows on the job
-- [ ] The history still has the same four entries
-- [ ] None of the notes of A (or their authors) appears in the history
-- [ ] Nobody gets a notification for the client change
+- [x] The new client shows on the job
+- [x] The history still has the same four entries
+- [x] None of the notes of A (or their authors) appears in the history
+- [x] Nobody gets a notification for the client change
 
 ## NHR-09 The Relationships section and the Add Relationship window
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-01 done
@@ -200,12 +200,12 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 4. Type "carpet in reception" in **Job**. Clear it, type "Maple".
 5. Click **Cancel**.
 
-- [ ] The header shows no count and no **+ Add**, and the section opens on "No relationships yet." with a **+ Add** button
-- [ ] The window is titled **Add Relationship** with three choices: **Blocked by**, **Related to** and **Duplicates**, each with a short description, and **Related to** is preselected
-- [ ] "carpet in reception" shows "No jobs found.", so the Office job "Strip old carpet in reception" can't be linked to a Residential job
-- [ ] "Maple" lists A, B, D and E but not C itself
-- [ ] **Add** is greyed out until a job is chosen
-- [ ] **Cancel** closes the window and adds nothing
+- [x] The header shows no count and no **+ Add**, and the section opens on "No relationships yet." with a **+ Add** button
+- [x] The window is titled **Add Relationship** with three choices: **Blocked by**, **Related to** and **Duplicates**, each with a short description, and **Related to** is preselected
+- [x] "carpet in reception" shows "No jobs found.", so the Office job "Strip old carpet in reception" can't be linked to a Residential job
+- [x] "Maple" lists A, B, D and E but not C itself
+- [x] **Add** is greyed out until a job is chosen
+- [x] **Cancel** closes the window and adds nothing
 
 ## NHR-10 Blocked by
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-07 done (A **In Progress**), B **New**
@@ -215,11 +215,11 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. Look at A. Click the title of B in the list.
 4. Look at B's **Relationships**.
 
-- [ ] A's list shows a red **Blocked by** label, the title of B as a link and a **New** badge, and the header count shows 1
-- [ ] A's own status is unchanged, still **In Progress**, with no **Blocked** banner
-- [ ] The title link opens B
-- [ ] B shows **Blocks** with the title of A and an **In Progress** badge
-- [ ] Nobody gets a notification for adding the link
+- [x] A's list shows a red **Blocked by** label, the title of B as a link and a **New** badge, and the header count shows 1
+- [x] A's own status is unchanged, still **In Progress**, with no **Blocked** banner
+- [x] The title link opens B
+- [x] B shows **Blocks** with the title of A and an **In Progress** badge
+- [x] Nobody gets a notification for adding the link
 
 ## NHR-11 A Blocked by link stops nothing
 **As:** Ana (Residential owner), then Sara (member, assignee of C) · **Day:** any, after ONB-33 · **Needs:** NHR-10 done, C **New**
@@ -227,10 +227,10 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 1. As Ana open C, click **Relationships** to open it (no links yet), then **+ Add**, and choose **Blocked by**, search "glazing", pick B (not E) and add it.
 2. As Sara open C and click **Start**.
 
-- [ ] C lists **Blocked by** with the title of B and a **New** badge
-- [ ] Sara can click **Start** and C moves to **In Progress** although B isn't done
-- [ ] Ana and Nikola get **Status changed** for it
-- [ ] B now lists **Blocks** twice, for A and for C
+- [x] C lists **Blocked by** with the title of B and a **New** badge
+- [x] Sara can click **Start** and C moves to **In Progress** although B isn't done
+- [x] Ana and Nikola get **Status changed** for it
+- [x] B now lists **Blocks** twice, for A and for C
 
 ## NHR-12 Related to
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-11 done
@@ -238,9 +238,9 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 1. Open A, click **+ Add**, leave **Related to** chosen, search "Remove old", pick C and click **Add**.
 2. Open C from the link.
 
-- [ ] A lists a grey **Related to** label, the title of C and its **In Progress** badge, and the header count shows 2
-- [ ] C lists **Related to** with the title of A, next to its **Blocked by** link to B
-- [ ] The label reads the same ("Related to") on both jobs
+- [x] A lists a grey **Related to** label, the title of C and its **In Progress** badge, and the header count shows 2
+- [x] C lists **Related to** with the title of A, next to its **Blocked by** link to B
+- [x] The label reads the same ("Related to") on both jobs
 
 ## NHR-13 Duplicates
 **As:** Nikola (admin of Residential, assignee of D) · **Day:** any, after ONB-33 · **Needs:** NHR-12 done
@@ -249,9 +249,9 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 2. Type "Maple Row" in **Job**, click "Replace kitchen window at 18 Maple Row" and click **Add**.
 3. Open A from the link.
 
-- [ ] Nikola, an admin, sees **+ Add** and can add the link
-- [ ] D lists a yellow **Duplicates** label with the title of A
-- [ ] A lists **Duplicated by** with the title of D, next to **Blocked by** B and **Related to** C
+- [x] Nikola, an admin, sees **+ Add** and can add the link
+- [x] D lists a yellow **Duplicates** label with the title of A
+- [x] A lists **Duplicated by** with the title of D, next to **Blocked by** B and **Related to** C
 
 ## NHR-14 The same link twice, and a cycle
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-13 done
@@ -261,11 +261,11 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. Look at B's list.
 4. Click the **×** on the **Blocked by** row of B.
 
-- [ ] Step 1 shows an error toast that says "This relationship already exists", and A still has one **Blocked by** row for B
-- [ ] Step 2 is accepted (the app has no cycle check): B now shows **Blocks** A and **Blocked by** A
-- [ ] Nothing breaks: A and B both still open and their other links stay
-- [ ] The **×** removes the **Blocked by** row at once, without a confirmation question, and B shows only **Blocks** for A and C
-- [ ] A still shows **Blocked by** B
+- [x] Step 1 shows an error toast that says "This relationship already exists", and A still has one **Blocked by** row for B
+- [x] Step 2 is accepted (the app has no cycle check): B now shows **Blocks** A and **Blocked by** A
+- [x] Nothing breaks: A and B both still open and their other links stay
+- [x] The **×** removes the **Blocked by** row at once, without a confirmation question, and B shows only **Blocks** for A and C
+- [x] A still shows **Blocked by** B
 
 ## NHR-15 Remove a link from either side
 **As:** Nikola (admin), then Ana · **Day:** any, after ONB-33 · **Needs:** NHR-14 done
@@ -275,10 +275,10 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. As Ana open A and click the **×** on its **Duplicated by** row (D).
 4. Open D.
 
-- [ ] C no longer lists A, and A no longer lists C
-- [ ] The jobs A and C are unchanged: same status, same other links
-- [ ] A no longer lists **Duplicated by** D, and D no longer lists **Duplicates**, so a link is removed from the side that didn't create it
-- [ ] A still lists **Blocked by** B and C still lists **Blocked by** B
+- [x] C no longer lists A, and A no longer lists C
+- [x] The jobs A and C are unchanged: same status, same other links
+- [x] A no longer lists **Duplicated by** D, and D no longer lists **Duplicates**, so a link is removed from the side that didn't create it
+- [x] A still lists **Blocked by** B and C still lists **Blocked by** B
 
 ## NHR-16 A linked job that gets deleted
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-15 done, E unassigned and **New**
@@ -288,10 +288,10 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. Open A again.
 4. Click the **×** on the new row.
 
-- [ ] E opens from the link, and the delete is confirmed with its title in the message
-- [ ] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge (known bug: the backend keeps the deleted job's id, so `RelationshipsSection` shows "(deleted)" as a normal link to the deleted job, without a status badge; expected to fail, Bug job to be linked)
-- [ ] The header count still includes the row, and the **×** removes it
-- [ ] Nobody gets a notification for E being deleted, because it had no assignee
+- [x] E opens from the link, and the delete is confirmed with its title in the message
+- [ ] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge — ❌ JOB-409 (it is a link, and clicking it opens a 404)
+- [x] The header count still includes the row, and the **×** removes it
+- [x] Nobody gets a notification for E being deleted, because it had no assignee
 
 ## NHR-17 The screen hides link management from Members
 **As:** Ivana (member, assignee of B), then Luka (member, assignee of A) · **Day:** any, after ONB-33 · **Needs:** NHR-16 done
@@ -423,3 +423,4 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - The block reason in the history is stored trimmed: covered by `JobHistoryIntegrationTest` ("getHistory_shouldRecordTrimmedBlockReason_notRawPaddedInput (JOB-256)").
 
 ## Findings
+- NHR-16: JOB-409 (Bug) a relationship to a deleted job shows "(deleted)" as a link, and clicking it opens the deleted job's page with a 404, instead of plain grey italic text.
