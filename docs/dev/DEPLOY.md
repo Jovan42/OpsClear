@@ -58,7 +58,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod start frontend
 git pull
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
-# 6. Let the Keycloak client accept logins from the new URL
+# 6. Point the Keycloak client at the new URL (root URL for "Back to OpsClear", login/logout URLs)
 ./keycloak/apply-realm-config.sh docker-compose.prod.yml .env.prod
 
 # 7. Switch renewals to the webroot (no downtime from now on) and reload nginx after each renewal

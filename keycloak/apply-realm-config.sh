@@ -49,7 +49,7 @@ compose exec -T keycloak /opt/keycloak/bin/kcadm.sh update realms/opsclear \
 
 echo "Realm 'opsclear' updated: displayName=OpsClear, loginTheme=opsclear, internationalizationEnabled=true, supportedLocales=[en,sr], ssoSessionIdleTimeout=7200 (120 min)"
 
-# Production only: make sure the frontend client accepts logins from the app's public URL
+# Production only: point the frontend client at the app's public URL and accept logins from it
 # (APP_URL, or https://APP_HOST:APP_PORT as docker-compose.prod.yml builds it). realm-export.json
 # is only imported on a realm's first start, so a new domain has to be added here. Adds the URL
 # next to what's already there; never removes an entry.
@@ -81,5 +81,10 @@ if [ -n "$ENV_FILE" ]; then
         -s "attributes.\"post.logout.redirect.uris\"=${LOGOUT_URIS}${SEP}${APP_ORIGIN}/*##" ;;
   esac
 
-  echo "Client 'opsclear-frontend': login, origin and logout URLs include $APP_ORIGIN"
+  # Root URL: Keycloak builds the "Back to OpsClear" link on its pages (after a password reset,
+  # email verification, ...) from it. realm-export.json has the local dev URL.
+  compose exec -T keycloak /opt/keycloak/bin/kcadm.sh update "clients/$CLIENT_UUID" -r opsclear \
+    -s "rootUrl=$APP_ORIGIN" -s baseUrl=/
+
+  echo "Client 'opsclear-frontend': root URL $APP_ORIGIN; login, origin and logout URLs include it"
 fi
