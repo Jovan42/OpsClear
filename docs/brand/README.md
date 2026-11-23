@@ -11,6 +11,15 @@ job) followed by a **C**: OpsClear = Operations + Clarity.
 | `opsclear-logo-stacked` | ![stacked](opsclear-logo-stacked.png) | Square logo with the name: post images, decks, Product Hunt |
 | `opsclear-wordmark-dark` | ![wordmark](opsclear-wordmark-dark.png) | Wide logo: cover banners, website header, email signature |
 
+Other colour versions, for places the main ones don't suit:
+
+| File | Preview | Use for |
+|---|---|---|
+| `opsclear-icon-green` | ![icon green](opsclear-icon-green.png) | Icon on green: brighter avatar or post image |
+| `opsclear-icon-light` | ![icon light](opsclear-icon-light.png) | Icon on white: documents, invoices, light pages |
+| `opsclear-wordmark-green` | ![wordmark green](opsclear-wordmark-green.png) | All-white wordmark on green, same style as the app's top bar |
+| `opsclear-wordmark-light` | ![wordmark light](opsclear-wordmark-light.png) | Wordmark on white, same as the Keycloak login page |
+
 Each comes as `.png` (upload this one) and `.svg` (the master, scales to any size).
 
 Favicons generated from `opsclear-icon-dark.png`:
