@@ -87,8 +87,8 @@ public class NoteModel {
 | Method | Path | Description | Access |
 |--------|------|-------------|--------|
 | `POST` | `/api/projects/{projectId}/jobs/{jobId}/notes` | Add a note to a job | Any project member |
-| `GET` | `/api/projects/{projectId}/jobs/{jobId}/notes` | List notes for a job (oldest first) | Any project member |
-| `GET` | `/api/projects/{projectId}/notes` | All notes in the project, grouped by job | Any project member |
+| `GET` | `/api/projects/{projectId}/jobs/{jobId}/notes` | List notes for a job (oldest first) | OWNER/ADMIN, or the job's assignee (amended, JOB-411) |
+| `GET` | `/api/projects/{projectId}/notes` | All notes in the project, grouped by job | OWNER/ADMIN (amended, JOB-411) |
 
 #### Create Request
 

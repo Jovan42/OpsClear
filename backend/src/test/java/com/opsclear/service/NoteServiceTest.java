@@ -238,6 +238,22 @@ class NoteServiceTest {
     }
 
     @Test
+    @DisplayName("An Admin should be able to list notes for a job not assigned to them (JOB-411)")
+    void listByJob_shouldReturnNotes_forUnassignedAdmin() {
+        membership.setRole(ProjectMemberRole.ADMIN);
+        job.setAssignedTo(UUID.randomUUID());
+        List<NoteModel> notes = List.of(
+                NoteModel.builder().id(UUID.randomUUID()).jobId(jobId).content("First note").build());
+
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId)).thenReturn(Optional.of(membership));
+        when(noteRepository.findByJobId(jobId)).thenReturn(notes);
+
+        assertThat(noteService.listByJob(projectId, jobId, callerId)).hasSize(1);
+    }
+
+    @Test
     @DisplayName("listByJob should throw ForbiddenException when a Member is not assigned to the job (JOB-411)")
     void listByJob_shouldThrow_whenMemberNotAssigned() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));

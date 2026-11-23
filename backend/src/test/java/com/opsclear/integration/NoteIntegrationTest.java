@@ -278,6 +278,24 @@ class NoteIntegrationTest {
     }
 
     @Test
+    @DisplayName("listByJob should return 403 when a Member reads notes on a job assigned to another Member (JOB-411)")
+    void listByJob_shouldReturn403_whenJobIsAssignedToAnotherMember() throws Exception {
+        UUID otherMemberId = UUID.randomUUID();
+        userRepository.save(UserModel.builder().id(otherMemberId).email("other-member@example.com")
+                .name("Other Member").build());
+        organisationRepository.saveMember(orgId, otherMemberId, OrganisationRole.MEMBER);
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(otherMemberId).role(ProjectMemberRole.MEMBER).build());
+        assignJobTo(otherMemberId);
+        noteRepository.insert(jobId, otherMemberId, "Client agreed to the price");
+
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied: you are not assigned to this job"));
+    }
+
+    @Test
     @DisplayName("listByJob should return 200 when a Member reads notes on a job assigned to them (JOB-411)")
     void listByJob_shouldReturn200_whenMemberIsAssigned() throws Exception {
         assignJobTo(memberId);
