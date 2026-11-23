@@ -177,7 +177,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - [x] After step 4 a fourth entry **Blocked** → **In Progress** by "Ana Petrović" appears, without a reason, and the count shows 4
 - [x] Every entry shows the person and a date and time
 - [x] Between entries a line gives the time the job stayed in the earlier status, for example "0 minutes in …" when the moves were seconds apart
-- [ ] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS — ❌ JOB-410 (reads "47 minutes in NEW", "0 minutes in IN_PROGRESS")
+- [x] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS (fixed in JOB-410, PR #603)
 - [x] Ana and Nikola each get **Status changed** for the start, **Job blocked** for the block, and Luka and Nikola get **Status changed** for the unblock
 
 ## NHR-08 Only status changes are in the history
@@ -289,7 +289,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 4. Click the **×** on the new row.
 
 - [x] E opens from the link, and the delete is confirmed with its title in the message
-- [ ] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge — ❌ JOB-409 (it is a link, and clicking it opens a 404)
+- [x] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge (fixed in JOB-409, PR #601)
 - [x] The header count still includes the row, and the **×** removes it
 - [x] Nobody gets a notification for E being deleted, because it had no assignee
 
@@ -406,8 +406,8 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 4. With a fresh copy, change the path to `/api/projects/<Residential>/jobs/<A>/history` and send it.
 
 - [x] The history call is refused with status 403 and "Access denied: you are not assigned to this job"
-- [ ] The notes call for A is refused with status 403, as the history call is — ❌ JOB-411 (returned 200 with the notes)
-- [ ] The project notes call is refused with status 403 — ❌ JOB-411 (returned 200 with every job's notes)
+- [x] The notes call for A is refused with status 403, as the history call is (fixed in JOB-411, PR #602)
+- [x] The project notes call is refused with status 403 (fixed in JOB-411, PR #602)
 
 ## Not manual
 - A job can't be linked to itself (the window never offers it): covered by `JobRelationshipIntegrationTest` ("Should return 400 when job references itself") and `JobRelationshipServiceTest`.
@@ -423,6 +423,6 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - The block reason in the history is stored trimmed: covered by `JobHistoryIntegrationTest` ("getHistory_shouldRecordTrimmedBlockReason_notRawPaddedInput (JOB-256)").
 
 ## Findings
-- NHR-16: JOB-409 (Bug) a relationship to a deleted job shows "(deleted)" as a link, and clicking it opens the deleted job's page with a 404, instead of plain grey italic text.
-- NHR-07: JOB-410 (UX) the status history duration line shows raw status codes ("0 minutes in IN_PROGRESS") instead of the badge labels, in English and Serbian.
-- NHR-25: JOB-411 (Bug) a Member can read notes on jobs not assigned to them through the API: the job notes and the project-wide notes both return 200, while the status history for the same job is refused with 403.
+- NHR-16: JOB-409 (Bug) a relationship to a deleted job shows "(deleted)" as a link, and clicking it opens the deleted job's page with a 404, instead of plain grey italic text. Fixed in PR #601.
+- NHR-07: JOB-410 (UX) the status history duration line shows raw status codes ("0 minutes in IN_PROGRESS") instead of the badge labels, in English and Serbian. Fixed in PR #603.
+- NHR-25: JOB-411 (Bug) a Member can read notes on jobs not assigned to them through the API: the job notes and the project-wide notes both return 200, while the status history for the same job is refused with 403. Fixed in PR #602.
