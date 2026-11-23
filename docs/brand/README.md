@@ -17,6 +17,12 @@ Favicons generated from `opsclear-icon-dark.png`:
 - `frontend/public/favicon.png` (64×64) and `frontend/public/apple-touch-icon.png` (180×180)
 - `keycloak/themes/opsclear/login/resources/img/favicon.ico` (64×64)
 
+Where the wordmark appears in the product:
+- App top bars (signed-in header, public pages, onboarding): `frontend/src/components/Logo.tsx`, the
+  W1 style (checkbox O + "psClear") drawn as inline SVG plus Inter text, in `currentColor`
+- Keycloak login pages: `keycloak/themes/opsclear/login/resources/img/wordmark.png`, the W4 style
+  (green "Ops", navy "Clear"), cropped from `explorations/wordmarks/opsclear-wordmark-w4.png`
+
 ## Colours
 
 | Name | Hex | Where |

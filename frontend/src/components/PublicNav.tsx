@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import ThemeToggleButton from './ThemeToggleButton';
 import LanguageToggleButton from './LanguageToggleButton';
+import Logo from './Logo';
 
 /**
  * Shared header for the public pages (Landing, Features, and the Guide when logged out). Unlike the
@@ -20,7 +21,7 @@ export default function PublicNav() {
 
   return (
     <nav className="px-6 h-14 flex items-center justify-between shrink-0" style={{ backgroundColor: 'var(--brand)' }}>
-      <Link to="/" className="font-semibold text-lg tracking-tight text-white">OpsClear</Link>
+      <Link to="/" aria-label="OpsClear" className="text-lg text-white"><Logo /></Link>
       <div className="flex items-center gap-3">
         <Link to="/guide" className="text-sm text-white/80 hover:text-white transition-colors">
           {tGuide('entry.nav')}
