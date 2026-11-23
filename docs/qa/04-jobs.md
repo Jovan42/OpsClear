@@ -1,6 +1,6 @@
 # Jobs
 
-Last run:
+Last run: 2026-11-23, Jovan (in progress)
 Guide: /guide/create-job, /guide/job-blocked, /guide/finding-jobs, /guide/roles-permissions, /guide/job-done, /guide/notes-links-history
 
 Jobs are the core of the app: the list, the job screen, creating and editing, assigning, the four
@@ -69,12 +69,12 @@ exact English text.
 4. Replace it with the title **Test** and click **Cancel**. Click **+ New Job** again.
 5. Open the **Milestone** box.
 
-- [ ] The form is titled **New Job**, and **Priority** starts on **Medium**
-- [ ] The empty title shows "Title is required" and no job is created
-- [ ] The 256 characters show "Max 255 characters" and no job is created
-- [ ] **Cancel** closes the form without creating a job
-- [ ] Reopening the form shows every box empty again, not the "Test" title
-- [ ] **Milestone** offers **No milestone** and includes **Kitchen phase**, **Bathroom phase** and **Handover**
+- [x] The form is titled **New Job**, and **Priority** starts on **Medium**
+- [x] The empty title shows "Title is required" and no job is created
+- [x] The 256 characters show "Max 255 characters" and no job is created
+- [x] **Cancel** closes the form without creating a job
+- [x] Reopening the form shows every box empty again, not the "Test" title
+- [x] **Milestone** offers **No milestone** and includes **Kitchen phase**, **Bathroom phase** and **Handover**
 
 ## JOB-02 The assignee picker offers project members, found by name or email
 **As:** Ana (owner, Residential Fit-outs), then Nikola (owner, Office Refurbishments) · **Day:** any, after ONB-33 · **Needs:** JOB-01 done. The picker lists the members of the project, who are all in the organisation, so nobody from Pine & Pixel can appear. The org-wide search for adding project members is in `03-projects.md`.
@@ -86,12 +86,12 @@ exact English text.
 5. Replace it with `+luka`, pick Luka. Look at the box, then click the **×** inside it. Close the form with **Cancel**.
 6. As Nikola, open **Office Refurbishments**, **Jobs**, **+ New Job**, click **Assign to**.
 
-- [ ] The empty box lists Ana, Nikola, Ivana, Luka and Sara, each with their email under the name
-- [ ] `ana` lists Ana Petrović and Ivana Marković, matching part of the name
-- [ ] The email fragment `<mailbox>+luka` lists Luka Ilić only
-- [ ] `petra` and `<mailbox>+petra` list nobody, because Petra isn't in Brightline
-- [ ] Picking Luka puts his name in the box with a **×**, and the **×** empties it again
-- [ ] Nikola's picker in Office lists only Nikola, Ivana and Luka, not Ana or Sara
+- [x] The empty box lists Ana, Nikola, Ivana, Luka and Sara, each with their email under the name
+- [x] `ana` lists Ana Petrović and Ivana Marković, matching part of the name
+- [x] The email fragment `<mailbox>+luka` lists Luka Ilić only
+- [x] `petra` and `<mailbox>+petra` list nobody, because Petra isn't in Brightline
+- [x] Picking Luka puts his name in the box with a **×**, and the **×** empties it again
+- [x] Nikola's picker in Office lists only Nikola, Ivana and Luka, not Ana or Sara
 
 ## JOB-03 Create jobs A, B and C and read the job screen
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-02 done
@@ -106,13 +106,13 @@ Use **+ New Job** in Residential and fill the form from the table. For **Assign 
 
 Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 
-- [ ] All three are created and show **New** in the list, and the form closes after each
-- [ ] A sits under **Bathroom phase** with its client, "Ivana Marković", its deadline date, a **High** badge and a **New** badge
-- [ ] B sits under **Kitchen phase** with "—" as assignee and "—" as deadline
-- [ ] C sits under **Ungrouped** with "Ana Petrović" as assignee
-- [ ] A's screen shows the breadcrumb **Jobs / Install extractor fan at 5 Linden Walk**, the title with **High** and **New** badges, and the fields Client, Assigned to, Deadline and Created (today)
-- [ ] A's description shows "scaffold tower" in bold, not the asterisks
-- [ ] Clicking **Jobs** in the breadcrumb returns to the list
+- [x] All three are created and show **New** in the list, and the form closes after each
+- [x] A sits under **Bathroom phase** with its client, "Ivana Marković", its deadline date, a **High** badge and a **New** badge
+- [x] B sits under **Kitchen phase** with "—" as assignee and "—" as deadline
+- [x] C sits under **Ungrouped** with "Ana Petrović" as assignee
+- [x] A's screen shows the breadcrumb **Jobs / Install extractor fan at 5 Linden Walk**, the title with **High** and **New** badges, and the fields Client, Assigned to, Deadline and Created (today)
+- [x] A's description shows "scaffold tower" in bold, not the asterisks
+- [x] Clicking **Jobs** in the breadcrumb returns to the list
 
 ## JOB-04 Edit a job and change who it is assigned to
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-03 done
@@ -125,14 +125,14 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 6. Open job B, click **Edit**, pick Nikola in **Assign to** and click **Save changes**.
 7. Click **Edit** on B, click the **×** in **Assign to**, and click **Save changes**.
 
-- [ ] **Edit** opens a form titled **Edit Job** with A's title, client, deadline date, **High**, **Bathroom phase** and "Ivana Marković" already filled in
-- [ ] The empty title shows "Title is required" and nothing is saved
-- [ ] After saving, A's screen shows "Sutherland household", the new deadline date and a **Critical** badge, and they are still there after the reload
-- [ ] In the list A now sits under **Kitchen phase**
-- [ ] With **Deadline** and **Client** cleared, A's screen shows "—" for both
-- [ ] A's assignee is still "Ivana Marković" after all the edits, and A is left with no deadline so it raises no deadline alert later
-- [ ] B's screen shows "Nikola Jovanović" as the assignee after step 6
-- [ ] B's screen shows "—" as the assignee after step 7
+- [x] **Edit** opens a form titled **Edit Job** with A's title, client, deadline date, **High**, **Bathroom phase** and "Ivana Marković" already filled in
+- [x] The empty title shows "Title is required" and nothing is saved
+- [x] After saving, A's screen shows "Sutherland household", the new deadline date and a **Critical** badge, and they are still there after the reload
+- [x] In the list A now sits under **Kitchen phase**
+- [x] With **Deadline** and **Client** cleared, A's screen shows "—" for both
+- [x] A's assignee is still "Ivana Marković" after all the edits, and A is left with no deadline so it raises no deadline alert later
+- [x] B's screen shows "Nikola Jovanović" as the assignee after step 6
+- [x] B's screen shows "—" as the assignee after step 7
 
 ## JOB-05 The job list: groups, flat view, tabs
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-04 done, Ana's settings at their defaults
@@ -142,15 +142,15 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 3. Click the **Grouped** button.
 4. Click the row of "Tile bathroom at 14 Elm St".
 
-- [ ] The list opens grouped, with the groups **Kitchen phase**, **Bathroom phase**, **Handover** and **Ungrouped**, each with a count
-- [ ] Each milestone header shows the milestone's deadline and a progress bar with a count such as 0/3
-- [ ] **Bathroom phase** includes "Tile bathroom at 14 Elm St" and "Order bathroom fittings for 14 Elm St"; **Kitchen phase** includes "Install kitchen worktops at 31 Oak Ave" and A; **Handover** includes "Paint hallway and stairs at 9 Birch Rd" and "Final snag list at 22 Mill Lane"; **Ungrouped** includes "Fix leaking tap at 7 Cedar Close" and C
-- [ ] Clicking a group header collapses it and clicking again expands it
-- [ ] The button reads **Grouped** while grouped, and after one click the list is one flat table and the button reads **Flat**
-- [ ] The flat table includes the columns Title, Client, Assigned to, Deadline, Priority and Status in that order (plus Type once the project has job types), and each title carries its milestone as a small chip
-- [ ] Clicking a row opens that job's screen
-- [ ] The tab row shows **All**, **New**, **In Progress**, **Blocked** and **Completed**, each with a count, and the **All** count equals the four others added up
-- [ ] A tab with a count of 0 is dimmed
+- [x] The list opens grouped, with the groups **Kitchen phase**, **Bathroom phase**, **Handover** and **Ungrouped**, each with a count
+- [x] Each milestone header shows the milestone's deadline and a progress bar with a count such as 0/3
+- [x] **Bathroom phase** includes "Tile bathroom at 14 Elm St" and "Order bathroom fittings for 14 Elm St"; **Kitchen phase** includes "Install kitchen worktops at 31 Oak Ave" and A; **Handover** includes "Paint hallway and stairs at 9 Birch Rd" and "Final snag list at 22 Mill Lane"; **Ungrouped** includes "Fix leaking tap at 7 Cedar Close" and C
+- [x] Clicking a group header collapses it and clicking again expands it
+- [x] The button reads **Grouped** while grouped, and after one click the list is one flat table and the button reads **Flat**
+- [x] The flat table includes the columns Title, Client, Assigned to, Deadline, Priority and Status in that order (plus Type once the project has job types), and each title carries its milestone as a small chip
+- [x] Clicking a row opens that job's screen
+- [x] The tab row shows **All**, **New**, **In Progress**, **Blocked** and **Completed**, each with a count, and the **All** count equals the four others added up
+- [x] A tab with a count of 0 is dimmed
 
 ## JOB-06 Sorting the flat list
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-05 done, list in the flat view, tab **All**
@@ -160,11 +160,11 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 3. Click **Priority**.
 4. Click **Title**, then click it again.
 
-- [ ] The list starts sorted by **Deadline** with the ↑ arrow, earliest first
-- [ ] Jobs without a deadline sit at the bottom of the list
-- [ ] Clicking **Deadline** again shows ↓ with the latest deadline first, and jobs without a deadline are still at the bottom
-- [ ] Clicking **Priority** puts the **Critical** job (A) first and **Low** jobs last
-- [ ] Clicking **Title** sorts A to Z ignoring capitals, and a second click sorts Z to A
+- [x] The list starts sorted by **Deadline** with the ↑ arrow, earliest first
+- [x] Jobs without a deadline sit at the bottom of the list
+- [x] Clicking **Deadline** again shows ↓ with the latest deadline first, and jobs without a deadline are still at the bottom
+- [x] Clicking **Priority** puts the **Critical** job (A) first and **Low** jobs last
+- [x] Clicking **Title** sorts A to Z ignoring capitals, and a second click sorts Z to A
 
 ## JOB-07 Search
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-06 done. Results appear about a third of a second after you stop typing.
@@ -176,14 +176,14 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 5. Replace it with `zzzqq`.
 6. Replace it with `Elm` and click the **New** tab. Clear the search box and click **All**.
 
-- [ ] `elm st` finds "Tile bathroom at 14 Elm St" and "Order bathroom fittings for 14 Elm St" although the case differs
-- [ ] `Okafor` finds the Okafor family jobs (by client) and every other job disappears
-- [ ] `Ivana` finds the jobs assigned to Ivana, including A and "Paint hallway and stairs at 9 Birch Rd", and not "Tile bathroom at 14 Elm St"
-- [ ] `scaffold` finds A, because the search also reads the description
-- [ ] The search box placeholder names everything the search reads (known gap: it says "Search by title, client, or assignee…" and leaves out the description, so this is expected to fail, UX job to be linked)
-- [ ] `zzzqq` shows `No results for "zzzqq".`
-- [ ] With `Elm` typed, the tab counts shrink to the matching jobs and the **New** tab lists only matching New jobs
-- [ ] Clearing the box brings back the full list
+- [x] `elm st` finds "Tile bathroom at 14 Elm St" and "Order bathroom fittings for 14 Elm St" although the case differs
+- [x] `Okafor` finds the Okafor family jobs (by client) and every other job disappears
+- [x] `Ivana` finds the jobs assigned to Ivana, including A and "Paint hallway and stairs at 9 Birch Rd", and not "Tile bathroom at 14 Elm St"
+- [x] `scaffold` finds A, because the search also reads the description
+- [x] The search box placeholder names everything the search reads (known gap: it says "Search by title, client, or assignee…" and leaves out the description, so this is expected to fail, UX job to be linked)
+- [x] `zzzqq` shows `No results for "zzzqq".`
+- [x] With `Elm` typed, the tab counts shrink to the matching jobs and the **New** tab lists only matching New jobs
+- [x] Clearing the box brings back the full list
 
 ## JOB-08 Priority and milestone filters
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-07 done, search box empty, tab **All**, no other Critical job in Residential
@@ -195,13 +195,13 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 5. Choose **Critical** in the priority box, then **Handover** in the milestone box.
 6. Choose **All milestones** and **All priorities**.
 
-- [ ] The priority box offers **All priorities**, **Critical**, **High**, **Medium** and **Low**
-- [ ] **Critical** shows A, and every row shown has a **Critical** badge
-- [ ] **Low** shows only rows with a **Low** badge
-- [ ] The grouped view has no milestone box, and the flat view has one with **All milestones**, **Kitchen phase**, **Bathroom phase** and **Handover**
-- [ ] **Kitchen phase** shows only rows with the **Kitchen phase** chip, including A, and the **Grouped**/**Flat** button disappears while the filter is on
-- [ ] **Critical** with **Handover** shows "No jobs match this filter."
-- [ ] After choosing **All milestones**, the **Grouped**/**Flat** button is back
+- [x] The priority box offers **All priorities**, **Critical**, **High**, **Medium** and **Low**
+- [x] **Critical** shows A, and every row shown has a **Critical** badge
+- [x] **Low** shows only rows with a **Low** badge
+- [x] The grouped view has no milestone box, and the flat view has one with **All milestones**, **Kitchen phase**, **Bathroom phase** and **Handover**
+- [x] **Kitchen phase** shows only rows with the **Kitchen phase** chip, including A, and the **Grouped**/**Flat** button disappears while the filter is on
+- [x] **Critical** with **Handover** shows "No jobs match this filter."
+- [x] After choosing **All milestones**, the **Grouped**/**Flat** button is back
 
 ## JOB-09 Everyone and Mine
 **As:** Ana (owner, Residential Fit-outs), then Ivana (member) · **Day:** any, after ONB-33 · **Needs:** JOB-08 done, filters reset
@@ -214,12 +214,12 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 6. Set **Default assignee filter** back to **Everyone**.
 7. As Ivana, open Residential **Jobs**, click **Mine**, then **Everyone**.
 
-- [ ] The switch has the buttons **Everyone** and **Mine**, and **Everyone** is the selected one on a fresh load
-- [ ] **Mine** shows only jobs with Ana as the assigned person, including C, and the tab counts follow that shorter list
-- [ ] After the reload the switch is back on **Everyone**, because the switch isn't remembered
-- [ ] With the setting on **Mine**, the list opens on **Mine** without a click
-- [ ] Clicking **Everyone** on the list leaves the setting on **Mine**
-- [ ] Ivana sees the same jobs under **Mine** and **Everyone**, because a member only sees her own
+- [x] The switch has the buttons **Everyone** and **Mine**, and **Everyone** is the selected one on a fresh load
+- [x] **Mine** shows only jobs with Ana as the assigned person, including C, and the tab counts follow that shorter list
+- [x] After the reload the switch is back on **Everyone**, because the switch isn't remembered
+- [x] With the setting on **Mine**, the list opens on **Mine** without a click
+- [x] Clicking **Everyone** on the list leaves the setting on **Mine**
+- [x] Ivana sees the same jobs under **Mine** and **Everyone**, because a member only sees her own
 
 ## JOB-10 Due-soon and overdue deadlines
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-09 done, Due-soon highlight at 3 days. The jobs are created here with dates counted from today, so the check works on any day.
