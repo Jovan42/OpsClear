@@ -177,7 +177,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - [x] After step 4 a fourth entry **Blocked** → **In Progress** by "Ana Petrović" appears, without a reason, and the count shows 4
 - [x] Every entry shows the person and a date and time
 - [x] Between entries a line gives the time the job stayed in the earlier status, for example "0 minutes in …" when the moves were seconds apart
-- [ ] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS (known bug: `StatusHistory.tsx` passes the raw `entry.changedTo`, so it reads "… in IN_PROGRESS", expected to fail, Bug job to be linked)
+- [ ] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS — ❌ JOB-410 (reads "47 minutes in NEW", "0 minutes in IN_PROGRESS")
 - [x] Ana and Nikola each get **Status changed** for the start, **Job blocked** for the block, and Luka and Nikola get **Status changed** for the unblock
 
 ## NHR-08 Only status changes are in the history
@@ -424,3 +424,4 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 
 ## Findings
 - NHR-16: JOB-409 (Bug) a relationship to a deleted job shows "(deleted)" as a link, and clicking it opens the deleted job's page with a 404, instead of plain grey italic text.
+- NHR-07: JOB-410 (UX) the status history duration line shows raw status codes ("0 minutes in IN_PROGRESS") instead of the badge labels, in English and Serbian.
