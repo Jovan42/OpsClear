@@ -184,7 +184,7 @@ On a fresh Mac, from the repo root:
    `scripts/opsclear` reads `OPSCLEAR_API_KEY` first and falls back to this file. Use the file, not
    `~/.zshrc`: Claude Code's tool shell and the implementation agents don't load `~/.zshrc`, and
    worktree agents can't run `zsh -i`. Optional: `OPSCLEAR_KEY_FILE` points at another file, and
-   `OPSCLEAR_URL` overrides the default (prod, `https://46-101-205-77.sslip.io:8443`). Check with
+   `OPSCLEAR_URL` overrides the default (prod, `https://opsclear.app`). Check with
    `scripts/opsclear job get JOB-293`.
 2. **GitHub CLI.** `brew install gh`, then `gh auth login` (HTTPS). Check with `gh pr list`.
 3. **Docker** (integration tests use Testcontainers). Install OrbStack and start it

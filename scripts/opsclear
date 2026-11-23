@@ -7,7 +7,7 @@ Configuration (environment):
   OPSCLEAR_API_KEY   an API key starting with opck_ (never printed). If unset, the key is read
                      from OPSCLEAR_KEY_FILE (default ~/.config/opsclear/api-key), so subagent
                      shells that don't load ~/.zshrc still find it.
-  OPSCLEAR_URL       optional, default https://46-101-205-77.sslip.io:8443
+  OPSCLEAR_URL       optional, default https://opsclear.app
 
 IDs are friendly IDs everywhere: PRJ-013, MIL-038, JOB-303, TPL-007.
 
@@ -41,7 +41,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-DEFAULT_URL = "https://46-101-205-77.sslip.io:8443"
+DEFAULT_URL = "https://opsclear.app"
 
 EXIT_OK = 0
 EXIT_ERROR = 1
