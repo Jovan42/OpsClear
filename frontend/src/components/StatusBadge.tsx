@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { JobStatus } from '../types';
+import { STATUS_KEYS } from '../utils/jobStatusLabel';
 
 const classNames: Record<JobStatus, string> = {
   NEW: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -14,15 +15,9 @@ interface StatusBadgeProps {
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
   const { t } = useTranslation('shared2');
-  const labels: Record<JobStatus, string> = {
-    NEW: t('status.new'),
-    IN_PROGRESS: t('status.inProgress'),
-    BLOCKED: t('status.blocked'),
-    COMPLETED: t('status.completed'),
-  };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${classNames[status]}`}>
-      {labels[status]}
+      {t(STATUS_KEYS[status])}
     </span>
   );
 }

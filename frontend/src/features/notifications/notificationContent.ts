@@ -21,11 +21,11 @@ import {
 import { autoCancelReason, completionRequestMessage } from '../jobs/completionApproval';
 import type { DateFormat } from '../../hooks/usePreferences';
 import { appLocale, formatDate, formatDateTime, intlLocale, type DatePrefs } from '../../utils/formatDate';
+import { jobStatusLabel, STATUS_KEYS } from '../../utils/jobStatusLabel';
 import type {
   ApprovalDecidedPayload,
   JobNotificationPayload,
   JobPriority,
-  JobStatus,
   NotificationResponse,
   NotificationType,
   OrgRole,
@@ -211,23 +211,6 @@ export function formatRelativeTime(
   if (abs < 86_400) return rtf.format(Math.round(diffSec / 3600), 'hour');
   if (abs < 7 * 86_400) return rtf.format(Math.round(diffSec / 86_400), 'day');
   return formatDate(iso, { locale: appLocale(language), dateFormat });
-}
-
-/** i18n keys for each job status label (also used by ApprovalDecisionModal's toast). */
-export const STATUS_KEYS: Record<JobStatus, string> = {
-  NEW: 'shared2:status.new',
-  IN_PROGRESS: 'shared2:status.inProgress',
-  BLOCKED: 'shared2:status.blocked',
-  COMPLETED: 'shared2:status.completed',
-};
-
-/**
- * A job status sent as a plain string (e.g. a completion approval's "not applied" reason) as its
- * translated label. An unknown value is shown as is, a missing one as a dash.
- */
-export function jobStatusLabel(status: string | null | undefined, t: TFunction): string {
-  if (!status) return '—';
-  return status in STATUS_KEYS ? t(STATUS_KEYS[status as JobStatus]) : status;
 }
 
 const PRIORITY_KEYS: Record<JobPriority, string> = {
