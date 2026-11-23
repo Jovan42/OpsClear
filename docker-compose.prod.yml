@@ -2,7 +2,7 @@
 #
 # Usage:
 #   cp .env.prod.example .env.prod
-#   # edit .env.prod — at minimum set APP_HOST
+#   # edit .env.prod — at minimum set APP_HOST (or APP_URL for a domain on the standard port)
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 #
 # Local (alongside dev compose):
@@ -12,7 +12,8 @@
 #     Portainer → http://localhost:9001
 #
 # VPS deployment:
-#   Set APP_HOST=your-ip-or-domain and adjust ports as needed in .env.prod.
+#   With a domain on the standard HTTPS port, set APP_URL=https://your.domain in .env.prod
+#   (otherwise every URL is built as https://APP_HOST:APP_PORT). TLS setup: docs/dev/DEPLOY.md.
 
 services:
 
@@ -50,7 +51,7 @@ services:
       # an HTTPS upgrade on some TLDs (e.g. .io, via legacy HSTS preload), so an http://
       # link on a hostname like sslip.io gets silently upgraded and then fails outright
       # against a plain-HTTP listener.
-      KC_HOSTNAME_URL: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
+      KC_HOSTNAME_URL: ${APP_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}
       KC_HOSTNAME_STRICT: "false"
     ports:
       - "${KEYCLOAK_PORT:-8280}:8080"
@@ -75,9 +76,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-opsclear}
       # Must equal KC_HOSTNAME_URL + /realms/opsclear so JWT iss validation passes.
       # extra_hosts lets the container resolve APP_HOST=host.docker.internal locally.
-      KEYCLOAK_ISSUER_URI: https://${APP_HOST:-localhost}:${APP_PORT:-8443}/realms/opsclear
+      KEYCLOAK_ISSUER_URI: ${APP_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}/realms/opsclear
       # Allow requests from the frontend origin (nginx HTTPS endpoint).
-      CORS_ALLOWED_ORIGINS: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
+      CORS_ALLOWED_ORIGINS: ${APP_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}
       PADDLE_API_KEY: ${PADDLE_API_KEY:-}
       PADDLE_WEBHOOK_SECRET: ${PADDLE_WEBHOOK_SECRET:-}
       # Transactional email (ADR-0059). Keycloak's own SMTP settings are applied with
@@ -90,7 +91,7 @@ services:
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
       SMTP_AUTH: ${SMTP_AUTH:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-}
-      APP_BASE_URL: ${APP_BASE_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}
+      APP_BASE_URL: ${APP_BASE_URL:-${APP_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -105,15 +106,24 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: ""
-        VITE_KEYCLOAK_URL: https://${APP_HOST:-localhost}:${APP_PORT:-8443}
+        VITE_KEYCLOAK_URL: ${APP_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-opsclear}
         VITE_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-opsclear-frontend}
         VITE_PADDLE_CLIENT_TOKEN: ${PADDLE_CLIENT_TOKEN:-}
+    # 443 serves the app at https://opsclear.app; 8443 is the old port, kept so old
+    # https://…sslip.io:8443 links reach nginx and get redirected (see frontend/nginx.conf).
+    # APP_URL (or APP_HOST/APP_PORT) only shapes the URLs the app builds; it doesn't pick the
+    # published port.
     ports:
       - "80:80"
-      - "${APP_PORT:-8443}:443"
+      - "443:443"
+      - "8443:443"
     volumes:
+      # Old sslip.io certificate, used only by the redirect for the old address.
       - /etc/nginx/certs:/etc/nginx/certs:ro
+      # Let's Encrypt certificate for opsclear.app, and the webroot certbot renews through.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     healthcheck:
       test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://127.0.0.1/"]
       interval: 30s

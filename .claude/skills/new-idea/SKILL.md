@@ -43,7 +43,7 @@ Turn an idea into a well-formed OpsClear job, in the right place, without duplic
    - new: `scripts/opsclear job create <PRJ> --template "<template>" --title "<title>" [--milestone <MIL>] --assignee <user's email> --description-file <file>`.
      Check the printed plan matches what was approved, then re-run with `--yes`.
    - refine: `scripts/opsclear job update <ID> --description-file <file>` (and `--title` if it changed).
-8. **Report** the job ID and its link: `https://46-101-205-77.sslip.io:8443/projects/<PRJ>/jobs/<JOB>`.
+8. **Report** the job ID and its link: `https://opsclear.app/projects/<PRJ>/jobs/<JOB>`.
 
 ## Stop conditions
 
