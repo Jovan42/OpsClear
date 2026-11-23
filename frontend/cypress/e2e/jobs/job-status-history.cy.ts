@@ -78,7 +78,7 @@ describe('Job Status History', () => {
                 cy.get('ol > li').each(($li, index, $all) => {
                   if (index < $all.length - 1) {
                     cy.wrap($li)
-                      .find('p.italic')
+                      .find('[data-testid="status-history-duration"]')
                       .invoke('text')
                       .should('match', new RegExp(` in ${durationStatuses[index]}$`));
                   } else {

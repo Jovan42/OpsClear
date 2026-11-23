@@ -106,7 +106,7 @@ export default function StatusHistory({ projectId, jobId, defaultExpanded = fals
                       </div>
                     </div>
                     {durationLabel && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 pl-5 pb-1 italic">
+                      <p data-testid="status-history-duration" className="text-xs text-gray-400 dark:text-gray-500 pl-5 pb-1 italic">
                         {durationLabel}
                       </p>
                     )}
