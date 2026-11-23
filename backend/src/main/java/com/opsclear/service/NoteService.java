@@ -7,6 +7,8 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.JobModel;
 import com.opsclear.model.NoteModel;
+import com.opsclear.model.ProjectMemberModel;
+import com.opsclear.model.ProjectMemberRole;
 import com.opsclear.model.ProjectModel;
 import com.opsclear.repository.JobRepository;
 import com.opsclear.repository.NoteRepository;
@@ -48,15 +50,16 @@ public class NoteService {
     @Transactional(readOnly = true)
     public List<NoteModel> listByJob(UUID projectId, UUID jobId, UUID callerId) {
         requireProjectExistsById(projectId);
-        requireJobInProject(jobId, projectId);
-        requireMember(projectId, callerId);
+        JobModel job = requireJobInProject(jobId, projectId);
+        ProjectMemberModel member = requireMember(projectId, callerId);
+        requireCanViewJob(member, job, callerId);
         return noteRepository.findByJobId(jobId);
     }
 
     @Transactional(readOnly = true)
     public List<NoteModel> listByProject(UUID projectId, UUID callerId) {
         requireProjectExistsById(projectId);
-        requireMember(projectId, callerId);
+        requireOwnerOrAdmin(projectId, callerId);
         return noteRepository.findByProjectId(projectId);
     }
 
@@ -75,16 +78,31 @@ public class NoteService {
         }
     }
 
-    private void requireJobInProject(UUID jobId, UUID projectId) {
+    private JobModel requireJobInProject(UUID jobId, UUID projectId) {
         JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Job.NOT_FOUND));
         if (!job.getProjectId().equals(projectId)) {
             throw new NotFoundException(ErrorMessages.Job.NOT_FOUND);
         }
+        return job;
     }
 
-    private void requireMember(UUID projectId, UUID userId) {
-        projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+    private ProjectMemberModel requireMember(UUID projectId, UUID userId) {
+        return projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new ForbiddenException(ErrorMessages.Member.NOT_A_MEMBER));
+    }
+
+    // JOB-411: same rule as JobService and JobHistoryService, a Member only sees the jobs assigned to them
+    private void requireCanViewJob(ProjectMemberModel member, JobModel job, UUID callerId) {
+        if (member.getRole() == ProjectMemberRole.MEMBER && !callerId.equals(job.getAssignedTo())) {
+            throw new ForbiddenException(ErrorMessages.Job.ACCESS_DENIED_NOT_ASSIGNED);
+        }
+    }
+
+    // JOB-411: the project-wide list spans every job, so a Member can't use it (it has no screen)
+    private void requireOwnerOrAdmin(UUID projectId, UUID userId) {
+        if (requireMember(projectId, userId).getRole() == ProjectMemberRole.MEMBER) {
+            throw new ForbiddenException(ErrorMessages.Member.INSUFFICIENT_PERMISSIONS_OWNER_OR_ADMIN);
+        }
     }
 }

@@ -448,8 +448,10 @@ class ProjectJobSectionsIntegrationTest {
     void sectionEndpoints_shouldStillWork_whenSectionsHidden() throws Exception {
         givenSubscriptionWithAddons("NOTES", "JOB_LINKS");
         givenHidden(projectId, JobSection.NOTES, JobSection.LINKS);
+        // Assigned to the Member: a Member reads notes only on their own jobs (JOB-411)
         JobModel job = jobRepository.save(JobModel.builder()
-                .projectId(projectId).title("Deploy").status(JobStatus.NEW).createdBy(ownerId).build());
+                .projectId(projectId).title("Deploy").status(JobStatus.NEW).createdBy(ownerId)
+                .assignedTo(memberId).build());
 
         mockMvc.perform(post(ApiPaths.notes(projectId, job.getId())).with(as(memberId))
                         .contentType(MediaType.APPLICATION_JSON)

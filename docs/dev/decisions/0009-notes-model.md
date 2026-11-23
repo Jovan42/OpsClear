@@ -4,6 +4,13 @@
 **Date:** 2026-02-27
 **Author:** Jovan Manojlovic
 
+> **Amended 2026-11-23 (JOB-411):** reading notes follows job visibility (ADR-0005, ADR-0007: a
+> MEMBER sees only the jobs assigned to them). `GET .../jobs/{jobId}/notes` returns 403 "Access
+> denied: you are not assigned to this job" to a MEMBER who isn't the job's assignee, like the job and
+> its status history. `GET /api/projects/{projectId}/notes` spans every job and has no screen, so it
+> is OWNER/ADMIN only (403 for a MEMBER). Adding a note is unchanged: any project member, per the
+> Requirements below.
+
 ## Context
 
 OpsClear needs a way for team members to record contextual information on a job — decisions made,

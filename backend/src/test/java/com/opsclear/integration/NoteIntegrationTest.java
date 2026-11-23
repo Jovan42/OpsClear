@@ -67,6 +67,7 @@ class NoteIntegrationTest {
 
     private UUID ownerId;
     private UUID memberId;
+    private UUID adminId;
     private UUID projectId;
     private UUID jobId;
     private UUID orgId;
@@ -93,15 +94,18 @@ class NoteIntegrationTest {
 
         ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();
+        adminId = UUID.randomUUID();
 
         userRepository.save(UserModel.builder().id(ownerId).email("owner@example.com").name("Owner").build());
         userRepository.save(UserModel.builder().id(memberId).email("member@example.com").name("Member").build());
+        userRepository.save(UserModel.builder().id(adminId).email("admin@example.com").name("Admin").build());
 
         OrganisationModel org = organisationRepository.save(
                 OrganisationModel.builder().name("Test Org").slug("TST").createdBy(ownerId).build());
         orgId = org.getId();
         organisationRepository.saveMember(orgId, ownerId, OrganisationRole.OWNER);
         organisationRepository.saveMember(orgId, memberId, OrganisationRole.OWNER);
+        organisationRepository.saveMember(orgId, adminId, OrganisationRole.MEMBER);
 
         ProjectModel project = projectRepository.save(
                 ProjectModel.builder().name("Test Project").ownerId(ownerId).organisationId(orgId).build());
@@ -111,6 +115,8 @@ class NoteIntegrationTest {
                 .projectId(projectId).userId(ownerId).role(ProjectMemberRole.OWNER).build());
         projectMemberRepository.save(ProjectMemberModel.builder()
                 .projectId(projectId).userId(memberId).role(ProjectMemberRole.MEMBER).build());
+        projectMemberRepository.save(ProjectMemberModel.builder()
+                .projectId(projectId).userId(adminId).role(ProjectMemberRole.ADMIN).build());
 
         JobModel job = jobRepository.save(JobModel.builder()
                 .projectId(projectId)
@@ -221,13 +227,13 @@ class NoteIntegrationTest {
     // --- GET /api/projects/{projectId}/jobs/{jobId}/notes ---
 
     @Test
-    @DisplayName("Any project member should be able to list notes for a job ordered oldest first")
+    @DisplayName("Owner should be able to list notes for a job ordered oldest first")
     void listByJob_shouldReturn200_withNotesOldestFirst() throws Exception {
         noteRepository.insert(jobId, ownerId, "First note");
         noteRepository.insert(jobId, memberId, "Second note");
 
         mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
-                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].content").value("First note"))
@@ -238,7 +244,7 @@ class NoteIntegrationTest {
     @DisplayName("listByJob should return empty array when job has no notes")
     void listByJob_shouldReturnEmptyArray_whenNoNotes() throws Exception {
         mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
-                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -260,10 +266,58 @@ class NoteIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("listByJob should return 403 when a Member reads notes on a job not assigned to them (JOB-411)")
+    void listByJob_shouldReturn403_whenMemberIsNotAssigned() throws Exception {
+        noteRepository.insert(jobId, ownerId, "Client agreed to the price");
+
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied: you are not assigned to this job"));
+    }
+
+    @Test
+    @DisplayName("listByJob should return 200 when a Member reads notes on a job assigned to them (JOB-411)")
+    void listByJob_shouldReturn200_whenMemberIsAssigned() throws Exception {
+        assignJobTo(memberId);
+        noteRepository.insert(jobId, ownerId, "Client agreed to the price");
+
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].content").value("Client agreed to the price"));
+    }
+
+    @Test
+    @DisplayName("listByJob should return 200 when an Admin reads notes on a job not assigned to them (JOB-411)")
+    void listByJob_shouldReturn200_whenAdminIsNotAssigned() throws Exception {
+        assignJobTo(memberId);
+        noteRepository.insert(jobId, ownerId, "Client agreed to the price");
+
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(adminId.toString()).claim("email", "admin@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("listByJob should return 200 when the Owner reads notes on a job assigned to someone else (JOB-411)")
+    void listByJob_shouldReturn200_whenOwnerIsNotAssigned() throws Exception {
+        assignJobTo(memberId);
+        noteRepository.insert(jobId, memberId, "Parts arrived");
+
+        mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
     // --- GET /api/projects/{projectId}/notes ---
 
     @Test
-    @DisplayName("listByProject should return notes grouped by job, jobs ordered by most recent note")
+    @DisplayName("listByProject should return notes grouped by job, jobs ordered by most recent note, for the Owner")
     void listByProject_shouldReturn200_groupedByJob() throws Exception {
         JobModel job2 = jobRepository.save(JobModel.builder()
                 .projectId(projectId)
@@ -276,7 +330,7 @@ class NoteIntegrationTest {
         noteRepository.insert(jobId, memberId, "Note on job1");
 
         mockMvc.perform(get(ApiPaths.projectNotes(projectId))
-                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].jobId").value(jobId.toString()))
@@ -292,7 +346,7 @@ class NoteIntegrationTest {
     @DisplayName("listByProject should return empty array when project has no notes")
     void listByProject_shouldReturnEmptyArray_whenNoNotes() throws Exception {
         mockMvc.perform(get(ApiPaths.projectNotes(projectId))
-                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -304,6 +358,31 @@ class NoteIntegrationTest {
         mockMvc.perform(get(ApiPaths.projectNotes(projectId))
                         .with(jwt().jwt(jwt -> jwt.subject(outsider.toString()).claim("email", "outsider@example.com"))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("listByProject should return 403 for a Member, even one with assigned jobs (JOB-411)")
+    void listByProject_shouldReturn403_forMember() throws Exception {
+        assignJobTo(memberId);
+        noteRepository.insert(jobId, ownerId, "Note on the member's job");
+
+        mockMvc.perform(get(ApiPaths.projectNotes(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Insufficient permissions: OWNER or ADMIN role required"));
+    }
+
+    @Test
+    @DisplayName("listByProject should return 200 with every job's notes for an Admin (JOB-411)")
+    void listByProject_shouldReturn200_forAdmin() throws Exception {
+        assignJobTo(memberId);
+        noteRepository.insert(jobId, memberId, "Note on the member's job");
+
+        mockMvc.perform(get(ApiPaths.projectNotes(projectId))
+                        .with(jwt().jwt(jwt -> jwt.subject(adminId.toString()).claim("email", "admin@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].notes[0].content").value("Note on the member's job"));
     }
 
     @Test
@@ -352,9 +431,15 @@ class NoteIntegrationTest {
         markSubscriptionPastDue();
 
         mockMvc.perform(get(ApiPaths.notes(projectId, jobId))
-                        .with(jwt().jwt(jwt -> jwt.subject(memberId.toString()).claim("email", "member@example.com"))))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString()).claim("email", "owner@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    private void assignJobTo(UUID userId) {
+        JobModel job = jobRepository.findByIdAndDeletedAtIsNull(jobId).orElseThrow();
+        job.setAssignedTo(userId);
+        jobRepository.save(job);
     }
 
     private void markSubscriptionPastDue() {

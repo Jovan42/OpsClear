@@ -196,8 +196,9 @@ class NoteServiceTest {
     // --- listByJob ---
 
     @Test
-    @DisplayName("Any project member should be able to list notes for a job")
-    void listByJob_shouldReturnNotes_forMember() {
+    @DisplayName("The assigned Member should be able to list notes for a job")
+    void listByJob_shouldReturnNotes_forAssignedMember() {
+        job.setAssignedTo(callerId);
         List<NoteModel> notes = List.of(
                 NoteModel.builder().id(UUID.randomUUID()).jobId(jobId).content("First note").build(),
                 NoteModel.builder().id(UUID.randomUUID()).jobId(jobId).content("Second note").build()
@@ -237,6 +238,18 @@ class NoteServiceTest {
     }
 
     @Test
+    @DisplayName("listByJob should throw ForbiddenException when a Member is not assigned to the job (JOB-411)")
+    void listByJob_shouldThrow_whenMemberNotAssigned() {
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(jobRepository.findByIdAndDeletedAtIsNull(jobId)).thenReturn(Optional.of(job));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId)).thenReturn(Optional.of(membership));
+
+        assertThatThrownBy(() -> noteService.listByJob(projectId, jobId, callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Access denied: you are not assigned to this job");
+    }
+
+    @Test
     @DisplayName("listByJob should throw ForbiddenException when caller is not a project member")
     void listByJob_shouldThrow_whenNotMember() {
         when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
@@ -251,8 +264,9 @@ class NoteServiceTest {
     // --- listByProject ---
 
     @Test
-    @DisplayName("Any project member should be able to list all notes in a project")
-    void listByProject_shouldReturnNotes_forMember() {
+    @DisplayName("An Admin should be able to list all notes in a project")
+    void listByProject_shouldReturnNotes_forAdmin() {
+        membership.setRole(ProjectMemberRole.ADMIN);
         UUID jobId2 = UUID.randomUUID();
         List<NoteModel> notes = List.of(
                 NoteModel.builder().id(UUID.randomUUID()).jobId(jobId).jobName("Install panel").content("Note A").build(),
@@ -278,6 +292,17 @@ class NoteServiceTest {
         assertThatThrownBy(() -> noteService.listByProject(projectId, callerId))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found");
+    }
+
+    @Test
+    @DisplayName("listByProject should throw ForbiddenException for a Member (JOB-411)")
+    void listByProject_shouldThrow_forMember() {
+        when(projectRepository.findByIdAndDeletedAtIsNull(projectId)).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(projectId, callerId)).thenReturn(Optional.of(membership));
+
+        assertThatThrownBy(() -> noteService.listByProject(projectId, callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Insufficient permissions: OWNER or ADMIN role required");
     }
 
     @Test
