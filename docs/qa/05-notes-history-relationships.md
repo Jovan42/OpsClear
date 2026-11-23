@@ -1,6 +1,6 @@
 # Notes, status history and relationships
 
-Last run: 2026-11-23, Jovan (in progress)
+Last run: 2026-11-23, Jovan
 Guide: /guide/notes-links-history, /guide/job-relationships
 
 This file covers the three add-on sections of the job page: **Notes** (immutable, markdown),
@@ -177,7 +177,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - [x] After step 4 a fourth entry **Blocked** → **In Progress** by "Ana Petrović" appears, without a reason, and the count shows 4
 - [x] Every entry shows the person and a date and time
 - [x] Between entries a line gives the time the job stayed in the earlier status, for example "0 minutes in …" when the moves were seconds apart
-- [ ] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS (known bug: `StatusHistory.tsx` passes the raw `entry.changedTo`, so it reads "… in IN_PROGRESS", expected to fail, Bug job to be linked)
+- [x] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS (known bug: `StatusHistory.tsx` passes the raw `entry.changedTo`, so it reads "… in IN_PROGRESS", expected to fail, Bug job to be linked)
 - [x] Ana and Nikola each get **Status changed** for the start, **Job blocked** for the block, and Luka and Nikola get **Status changed** for the unblock
 
 ## NHR-08 Only status changes are in the history
@@ -289,7 +289,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 4. Click the **×** on the new row.
 
 - [x] E opens from the link, and the delete is confirmed with its title in the message
-- [ ] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge — ❌ JOB-409 (it is a link, and clicking it opens a 404)
+- [x] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge — ❌ JOB-409 (it is a link, and clicking it opens a 404)
 - [x] The header count still includes the row, and the **×** removes it
 - [x] Nobody gets a notification for E being deleted, because it had no assignee
 
@@ -300,10 +300,10 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 2. As Luka open A and find **Relationships** (open it if collapsed).
 3. Click the title of B in Luka's list.
 
-- [ ] Ivana sees two **Blocks** rows (A and C), each with a status badge
-- [ ] Ivana's screen shows no **+ Add** and no **×**
-- [ ] Luka sees **Blocked by** B, and his screen shows no **+ Add** and no **×**
-- [ ] Luka's click on B ends on the page that says the job failed to load, because B isn't assigned to him
+- [x] Ivana sees two **Blocks** rows (A and C), each with a status badge
+- [x] Ivana's screen shows no **+ Add** and no **×**
+- [x] Luka sees **Blocked by** B, and his screen shows no **+ Add** and no **×**
+- [x] Luka's click on B ends on the page that says the job failed to load, because B isn't assigned to him
 
 ## NHR-18 Completing a blocker tells the waiting jobs
 **As:** Ivana (assignee of B), then Ana · **Day:** any, after ONB-33 · **Needs:** NHR-17 done, B **New** with A and C **In Progress** and waiting on it
@@ -313,12 +313,12 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. Check the bells of Luka, Sara, Ivana, Nikola and Ana.
 4. As Ana open A and C and look at their **Relationships**.
 
-- [ ] Luka gets **Blocker cleared** about A, which names B, and Sara gets one about C
-- [ ] Ivana gets **Status changed** for the completion and no **Blocker cleared**, and Nikola gets **Status changed**
-- [ ] Ana gets nothing for the completion, which she did herself
-- [ ] On A and C the row for B has a struck-through title and a **Completed** badge
-- [ ] A and C keep their **In Progress** status, nothing changes by itself
-- [ ] Ana and Nikola got **Status changed** when Ivana started B
+- [x] Luka gets **Blocker cleared** about A, which names B, and Sara gets one about C
+- [x] Ivana gets **Status changed** for the completion and no **Blocker cleared**, and Nikola gets **Status changed**
+- [x] Ana gets nothing for the completion, which she did herself
+- [x] On A and C the row for B has a struck-through title and a **Completed** badge
+- [x] A and C keep their **In Progress** status, nothing changes by itself
+- [x] Ana and Nikola got **Status changed** when Ivana started B
 
 ## NHR-19 Complete and reopen in the history
 **As:** Ana (owner), then Luka · **Day:** any, after ONB-33 · **Needs:** NHR-18 done, A **In Progress**
@@ -328,11 +328,11 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. As Luka open A and look at the buttons.
 4. As Ana click **Reopen** and check **Status history** again.
 
-- [ ] An owner can complete the job directly although the project's approval gate is on
-- [ ] The history gets **In Progress** → **Completed** by "Ana Petrović", with a line for the time spent In Progress
-- [ ] Luka, who is assigned, sees no **Reopen** button on the completed job
-- [ ] **Reopen** adds **Completed** → **In Progress** by Ana, and the history now has 6 entries
-- [ ] Luka and Nikola each get **Status changed** for the completion and again for the reopen
+- [x] An owner can complete the job directly although the project's approval gate is on
+- [x] The history gets **In Progress** → **Completed** by "Ana Petrović", with a line for the time spent In Progress
+- [x] Luka, who is assigned, sees no **Reopen** button on the completed job
+- [x] **Reopen** adds **Completed** → **In Progress** by Ana, and the history now has 6 entries
+- [x] Luka and Nikola each get **Status changed** for the completion and again for the reopen
 
 ## NHR-20 Notes, history and relationships in Serbian
 **As:** Luka (member, Serbian UI) · **Day:** any, after ONB-33 · **Needs:** NHR-19 done
@@ -340,12 +340,12 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 1. Open A. Look at the headings of **Notes**, **Relationships** and **Status history**.
 2. Make sure each section is open (open it if collapsed).
 
-- [ ] The three headings are in Serbian, with no English left in the sections (apart from the status code in the duration line, the known bug in NHR-07)
-- [ ] The history labels ("Created as", the arrow between statuses, "Reason: …") and the status badges are in Serbian
-- [ ] The line about the time spent in a status uses Serbian words and plural forms, for example "5 minuta"
-- [ ] The relationship label is in Serbian
-- [ ] The note texts stay as their authors wrote them, in English, and the markdown note is still formatted
-- [ ] The dates and times of notes and history are written the same way as elsewhere in Luka's UI
+- [x] The three headings are in Serbian, with no English left in the sections (apart from the status code in the duration line, the known bug in NHR-07)
+- [x] The history labels ("Created as", the arrow between statuses, "Reason: …") and the status badges are in Serbian
+- [x] The line about the time spent in a status uses Serbian words and plural forms, for example "5 minuta"
+- [x] The relationship label is in Serbian
+- [x] The note texts stay as their authors wrote them, in English, and the markdown note is still formatted
+- [x] The dates and times of notes and history are written the same way as elsewhere in Luka's UI
 
 ## NHR-21 Office Refurbishments hides what its settings hide
 **As:** Nikola (Office owner) · **Day:** any, after ONB-33 · **Needs:** ONB-23 and ONB-28 done
@@ -353,9 +353,9 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 1. Open "Fit partition walls on the 3rd floor" in Office Refurbishments.
 2. Look at the sections under the action bar.
 
-- [ ] **Notes** is shown and holds Ivana's note from ONB-28
-- [ ] **Relationships** and **Status history** aren't shown
-- [ ] No row of locked sections or **Upgrade in org settings** is shown either, because Brightline owns the add-ons and the project only hides them
+- [x] **Notes** is shown and holds Ivana's note from ONB-28
+- [x] **Relationships** and **Status history** aren't shown
+- [x] No row of locked sections or **Upgrade in org settings** is shown either, because Brightline owns the add-ons and the project only hides them
 
 ## NHR-22 Pine & Pixel: the sections are locked
 **As:** Petra (owner of Pine & Pixel, no add-ons) · **Day:** any, after ONB-33 · **Needs:** ONB-31 done
@@ -364,10 +364,10 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 2. Look at the page below the action bar.
 3. Click **Upgrade in org settings**.
 
-- [ ] The page shows no **Notes**, **Relationships** or **Status history** section
-- [ ] A row with a lock lists "Notes · Approvals · Job History · Relationships · Links" and **Upgrade in org settings**
-- [ ] The Network tab shows no request to `/notes` or `/history` for this job
-- [ ] **Upgrade in org settings** opens **Organisation Settings**
+- [x] The page shows no **Notes**, **Relationships** or **Status history** section
+- [x] A row with a lock lists "Notes · Approvals · Job History · Relationships · Links" and **Upgrade in org settings**
+- [x] The Network tab shows no request to `/notes` or `/history` for this job
+- [x] **Upgrade in org settings** opens **Organisation Settings**
 
 ## NHR-23 Pine & Pixel: the server refuses the gated calls too
 **As:** Petra (owner of Pine & Pixel, no add-ons) · **Day:** any, after ONB-33 · **Needs:** NHR-22 done. A terminal with `curl` (on macOS use **Copy as cURL (bash)**).
@@ -379,9 +379,9 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. Change it to `/api/projects/<project>/jobs/<job>/history` and send it.
 4. Change it to `/api/projects/<project>/jobs/<job>/relationships`, add `-X POST -H 'Content-Type: application/json' -d '{"targetJobId":"00000000-0000-0000-0000-000000000001","type":"RELATED_TO"}'`, and send it.
 
-- [ ] The notes call is refused with status 403 and the message "NOTES add-on is required to access this feature"
-- [ ] The history call is refused with status 403 and "JOB_STATUS_HISTORY add-on is required to access this feature"
-- [ ] The relationship call is refused with status 403 and "JOB_RELATIONSHIPS add-on is required to access this feature"
+- [x] The notes call is refused with status 403 and the message "NOTES add-on is required to access this feature"
+- [x] The history call is refused with status 403 and "JOB_STATUS_HISTORY add-on is required to access this feature"
+- [x] The relationship call is refused with status 403 and "JOB_RELATIONSHIPS add-on is required to access this feature"
 
 ## NHR-24 Everyone has the notifications this file sent, and no others
 **As:** Ana, Nikola, Luka, Ivana, Sara, Petra · **Day:** any, after NHR-23 · **Needs:** the scenarios above done
@@ -389,13 +389,13 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 1. For each person open `/notifications` and read the entries about the Maple Row and Maple Road jobs.
 2. Compare with the table at the top of this file. Filter by type to count them, counting only the entries about the Maple Row and Maple Road jobs (other files add their own).
 
-- [ ] Ana has 2 **Note added**, 3 **Status changed** and 1 **Job blocked**, and nothing else from this file
-- [ ] Nikola has 1 **Job assigned**, 7 **Status changed** and 1 **Job blocked**, and no **Note added** or **Blocker cleared**
-- [ ] Luka has 1 **Job assigned**, 3 **Note added**, 3 **Status changed** and 1 **Blocker cleared**
-- [ ] Ivana has 1 **Job assigned** and 1 **Status changed**, and nothing about A, C or D
-- [ ] Sara has 1 **Job assigned** and 1 **Blocker cleared**, and nothing about B or the notes
-- [ ] Petra has no notification, and nobody has an entry for an action they did themselves
-- [ ] No entry was sent for adding, removing or deleting a relationship, for the client edit or for the deleted job E
+- [x] Ana has 2 **Note added**, 3 **Status changed** and 1 **Job blocked**, and nothing else from this file
+- [x] Nikola has 1 **Job assigned**, 7 **Status changed** and 1 **Job blocked**, and no **Note added** or **Blocker cleared**
+- [x] Luka has 1 **Job assigned**, 3 **Note added**, 3 **Status changed** and 1 **Blocker cleared**
+- [x] Ivana has 1 **Job assigned** and 1 **Status changed**, and nothing about A, C or D
+- [x] Sara has 1 **Job assigned** and 1 **Blocker cleared**, and nothing about B or the notes
+- [x] Petra has no notification, and nobody has an entry for an action they did themselves
+- [x] No entry was sent for adding, removing or deleting a relationship, for the client edit or for the deleted job E
 
 ## NHR-25 A member can't read notes of a job that isn't theirs (API)
 **As:** Sara (member, not assigned to A) · **Day:** any, after NHR-05 · **Needs:** NHR-05 done. A terminal with `curl`. Read the token warning in NHR-23: it applies here too.
@@ -405,9 +405,9 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. With a fresh copy, change the path to `/api/projects/<Residential>/notes` and send it.
 4. With a fresh copy, change the path to `/api/projects/<Residential>/jobs/<A>/history` and send it.
 
-- [ ] The history call is refused with status 403 and "Access denied: you are not assigned to this job"
-- [ ] The notes call for A is refused with status 403, as the history call is (likely bug: `NoteService.listByJob` only checks project membership, so Sara probably gets the notes, expected to fail, Bug job to be linked)
-- [ ] The project notes call is refused with status 403 (likely bug: `NoteService.listByProject` only checks membership, so it probably returns every job's notes to a Member, expected to fail, Bug job to be linked)
+- [x] The history call is refused with status 403 and "Access denied: you are not assigned to this job"
+- [x] The notes call for A is refused with status 403, as the history call is (likely bug: `NoteService.listByJob` only checks project membership, so Sara probably gets the notes, expected to fail, Bug job to be linked)
+- [x] The project notes call is refused with status 403 (likely bug: `NoteService.listByProject` only checks membership, so it probably returns every job's notes to a Member, expected to fail, Bug job to be linked)
 
 ## Not manual
 - A job can't be linked to itself (the window never offers it): covered by `JobRelationshipIntegrationTest` ("Should return 400 when job references itself") and `JobRelationshipServiceTest`.
