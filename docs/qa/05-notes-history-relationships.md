@@ -406,8 +406,8 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 4. With a fresh copy, change the path to `/api/projects/<Residential>/jobs/<A>/history` and send it.
 
 - [x] The history call is refused with status 403 and "Access denied: you are not assigned to this job"
-- [ ] The notes call for A is refused with status 403, as the history call is (likely bug: `NoteService.listByJob` only checks project membership, so Sara probably gets the notes, expected to fail, Bug job to be linked)
-- [ ] The project notes call is refused with status 403 (likely bug: `NoteService.listByProject` only checks membership, so it probably returns every job's notes to a Member, expected to fail, Bug job to be linked)
+- [ ] The notes call for A is refused with status 403, as the history call is — ❌ JOB-411 (returned 200 with the notes)
+- [ ] The project notes call is refused with status 403 — ❌ JOB-411 (returned 200 with every job's notes)
 
 ## Not manual
 - A job can't be linked to itself (the window never offers it): covered by `JobRelationshipIntegrationTest` ("Should return 400 when job references itself") and `JobRelationshipServiceTest`.
@@ -425,3 +425,4 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 ## Findings
 - NHR-16: JOB-409 (Bug) a relationship to a deleted job shows "(deleted)" as a link, and clicking it opens the deleted job's page with a 404, instead of plain grey italic text.
 - NHR-07: JOB-410 (UX) the status history duration line shows raw status codes ("0 minutes in IN_PROGRESS") instead of the badge labels, in English and Serbian.
+- NHR-25: JOB-411 (Bug) a Member can read notes on jobs not assigned to them through the API: the job notes and the project-wide notes both return 200, while the status history for the same job is refused with 403.
