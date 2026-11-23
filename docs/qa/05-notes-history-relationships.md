@@ -1,6 +1,6 @@
 # Notes, status history and relationships
 
-Last run:
+Last run: 2026-11-23, Jovan (in progress)
 Guide: /guide/notes-links-history, /guide/job-relationships
 
 This file covers the three add-on sections of the job page: **Notes** (immutable, markdown),
@@ -81,10 +81,10 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 | Replace kitchen window at 18 Maple Road | Low | Handover | Nikola |
 | Order window glazing for 18 Maple Row (entered twice) | Low | Handover | (leave empty) |
 
-- [ ] All five jobs are created as **New**, each with a friendly ID
-- [ ] None of them shows a deadline
-- [ ] Luka, Ivana, Sara and Nikola each get one "Assigned you to …" notification, for A, B, C and D
-- [ ] Ana gets none, and nobody gets one for E, which has no assignee
+- [x] All five jobs are created as **New**, each with a friendly ID
+- [x] None of them shows a deadline
+- [x] Luka, Ivana, Sara and Nikola each get one "Assigned you to …" notification, for A, B, C and D
+- [x] Ana gets none, and nobody gets one for E, which has no assignee
 
 ## NHR-02 The first note
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-01 done, Ana in a new tab
@@ -95,14 +95,14 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 4. Click **Add Note**. In the question, click **Cancel**.
 5. Click **Add Note** again and confirm.
 
-- [ ] The section says "No notes yet." and the **Add Note** button is greyed out while the box is empty
-- [ ] **Add Note** stays greyed out while the box holds only spaces
-- [ ] A counter under the box shows the number of characters out of 10000 and goes up as you type
-- [ ] **Add Note** asks "Notes cannot be edited or deleted. Add anyway?"
-- [ ] **Cancel** adds no note and keeps the text in the box
-- [ ] After confirming, the note appears with "Ana Petrović" and the date and time, and the box is empty again and the counter is back to 0/10000
-- [ ] The note has no edit, delete or other change control
-- [ ] Luka gets one "Added a note on …" notification from Ana
+- [x] The section says "No notes yet." and the **Add Note** button is greyed out while the box is empty
+- [x] **Add Note** stays greyed out while the box holds only spaces
+- [x] A counter under the box shows the number of characters out of 10000 and goes up as you type
+- [x] **Add Note** asks "Notes cannot be edited or deleted. Add anyway?"
+- [x] **Cancel** adds no note and keeps the text in the box
+- [x] After confirming, the note appears with "Ana Petrović" and the date and time, and the box is empty again and the counter is back to 0/10000
+- [x] The note has no edit, delete or other change control
+- [x] Luka gets one "Added a note on …" notification from Ana
 
 ## NHR-03 The assignee replies
 **As:** Luka (member, assignee of A) · **Day:** any, after ONB-33 · **Needs:** NHR-02 done. Luka opens A in a new tab.
@@ -112,12 +112,12 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 3. Add the note "Frame ordered, the supplier says 5 working days." and confirm the question.
 4. As Ana, open the bell.
 
-- [ ] Luka's bell had the "Added a note on …" entry from Ana before he opened the job
-- [ ] The **Notes** section is already open, and Ana's note shows with her name and its time
-- [ ] Luka's note appears under Ana's with his name, so the order is oldest first
-- [ ] The confirmation question appeared for Luka's first note in this tab
-- [ ] Ana gets one "Added a note on …" notification from Luka, because she wrote a note on the job
-- [ ] Luka gets nothing for his own note
+- [x] Luka's bell had the "Added a note on …" entry from Ana before he opened the job
+- [x] The **Notes** section is already open, and Ana's note shows with her name and its time
+- [x] Luka's note appears under Ana's with his name, so the order is oldest first
+- [x] The confirmation question appeared for Luka's first note in this tab
+- [x] Ana gets one "Added a note on …" notification from Luka, because she wrote a note on the job
+- [x] Luka gets nothing for his own note
 
 ## NHR-04 Markdown in notes
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-03 done, Ana still in the tab of NHR-02
@@ -129,13 +129,13 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 5. Click **Add Note**.
 6. Click the **Glazing supplier** link.
 
-- [ ] **Preview** shows "Window spec" in bold, a bullet list with the two lines and the link as a link
-- [ ] **Write** shows the text again as typed, with the markdown marks
-- [ ] **Add Note** adds the note at once, without the confirmation question
-- [ ] The saved note shows the same bold text, the bullet list and the link
-- [ ] The link opens in a new browser tab
-- [ ] No alert pops up, and `raw html` is not shown in bold
-- [ ] Luka gets a second "Added a note on …" notification from Ana
+- [x] **Preview** shows "Window spec" in bold, a bullet list with the two lines and the link as a link
+- [x] **Write** shows the text again as typed, with the markdown marks
+- [x] **Add Note** adds the note at once, without the confirmation question
+- [x] The saved note shows the same bold text, the bullet list and the link
+- [x] The link opens in a new browser tab
+- [x] No alert pops up, and `raw html` is not shown in bold
+- [x] Luka gets a second "Added a note on …" notification from Ana
 
 ## NHR-05 Who can read and add notes
 **As:** Nikola (Residential admin), then Sara (member, not assigned to A) · **Day:** any, after ONB-33 · **Needs:** NHR-04 done
@@ -144,13 +144,13 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 2. Look at Luka's and Ana's bells.
 3. As Sara, copy the address of A from Nikola's browser bar and open it.
 
-- [ ] Nikola sees the notes of A in order: Ana, Luka, Ana, with the markdown note formatted, and after step 1 a fourth by Nikola
-- [ ] Nikola can add a note although he isn't the assignee, and sees no edit or delete control on any note, including his own
-- [ ] Luka gets a third "Added a note on …" notification from Nikola, and Ana gets a second one from Nikola
-- [ ] Nikola gets none for his own note
-- [ ] Sara sees the "Failed to load job." page, not the job
-- [ ] A toast tells Sara "Access denied: you are not assigned to this job"
-- [ ] Sara's and Ivana's bells have no entry about A or its notes
+- [x] Nikola sees the notes of A in order: Ana, Luka, Ana, with the markdown note formatted, and after step 1 a fourth by Nikola
+- [x] Nikola can add a note although he isn't the assignee, and sees no edit or delete control on any note, including his own
+- [x] Luka gets a third "Added a note on …" notification from Nikola, and Ana gets a second one from Nikola
+- [x] Nikola gets none for his own note
+- [x] Sara sees the "Failed to load job." page, not the job
+- [x] A toast tells Sara "Access denied: you are not assigned to this job"
+- [x] Sara's and Ivana's bells have no entry about A or its notes
 
 ## NHR-06 The history starts with the creation
 **As:** Ana (Residential owner) · **Day:** any, after ONB-33 · **Needs:** NHR-01 done, A still **New**
