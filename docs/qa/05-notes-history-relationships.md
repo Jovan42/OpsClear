@@ -177,7 +177,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 - [x] After step 4 a fourth entry **Blocked** → **In Progress** by "Ana Petrović" appears, without a reason, and the count shows 4
 - [x] Every entry shows the person and a date and time
 - [x] Between entries a line gives the time the job stayed in the earlier status, for example "0 minutes in …" when the moves were seconds apart
-- [x] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS (known bug: `StatusHistory.tsx` passes the raw `entry.changedTo`, so it reads "… in IN_PROGRESS", expected to fail, Bug job to be linked)
+- [ ] The status in that line is written like the badge ("In Progress"), not as a code such as IN_PROGRESS (known bug: `StatusHistory.tsx` passes the raw `entry.changedTo`, so it reads "… in IN_PROGRESS", expected to fail, Bug job to be linked)
 - [x] Ana and Nikola each get **Status changed** for the start, **Job blocked** for the block, and Luka and Nikola get **Status changed** for the unblock
 
 ## NHR-08 Only status changes are in the history
@@ -289,7 +289,7 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 4. Click the **×** on the new row.
 
 - [x] E opens from the link, and the delete is confirmed with its title in the message
-- [x] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge — ❌ JOB-409 (it is a link, and clicking it opens a 404)
+- [ ] A's row for E shows "(deleted)" in grey italics, not as a link, and without a status badge — ❌ JOB-409 (it is a link, and clicking it opens a 404)
 - [x] The header count still includes the row, and the **×** removes it
 - [x] Nobody gets a notification for E being deleted, because it had no assignee
 
@@ -406,8 +406,8 @@ In Residential Fit-outs, **Jobs**, **+ New Job**, create these jobs. Client "Har
 4. With a fresh copy, change the path to `/api/projects/<Residential>/jobs/<A>/history` and send it.
 
 - [x] The history call is refused with status 403 and "Access denied: you are not assigned to this job"
-- [x] The notes call for A is refused with status 403, as the history call is (likely bug: `NoteService.listByJob` only checks project membership, so Sara probably gets the notes, expected to fail, Bug job to be linked)
-- [x] The project notes call is refused with status 403 (likely bug: `NoteService.listByProject` only checks membership, so it probably returns every job's notes to a Member, expected to fail, Bug job to be linked)
+- [ ] The notes call for A is refused with status 403, as the history call is (likely bug: `NoteService.listByJob` only checks project membership, so Sara probably gets the notes, expected to fail, Bug job to be linked)
+- [ ] The project notes call is refused with status 403 (likely bug: `NoteService.listByProject` only checks membership, so it probably returns every job's notes to a Member, expected to fail, Bug job to be linked)
 
 ## Not manual
 - A job can't be linked to itself (the window never offers it): covered by `JobRelationshipIntegrationTest` ("Should return 400 when job references itself") and `JobRelationshipServiceTest`.
