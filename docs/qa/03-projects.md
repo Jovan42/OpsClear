@@ -1,6 +1,6 @@
 # Projects
 
-Last run: 2026-11-22, Jovan (in progress)
+Last run: 2026-11-22 to 2026-11-24, Jovan
 Guide: /guide/first-project, /guide/project-settings, /guide/roles-permissions
 
 Create, edit, complete and delete projects, the project directory, project members and roles,
@@ -287,10 +287,10 @@ Residential ends with three links: **Floor plans rev 2**, **Kitchen layouts** an
 2. Open the boiler job and click **Start**. Go back to **Settings** and click **Complete project** again.
 3. Open the boiler job, click **Complete** and confirm with **Mark Complete**.
 
-- [ ] The first attempt is refused with "Cannot complete project: 1 job(s) …" and the project stays active (**Danger zone** still says **Complete this project**)
-- [ ] The message doesn't call the job In Progress or Blocked while it is New (known wording issue: the backend text always says "IN_PROGRESS or BLOCKED", but a New job blocks too, so this is expected to fail, job to be linked)
-- [ ] The second attempt, with the job **In Progress**, is refused with the same count
-- [ ] The job becomes **Completed**
+- [x] The first attempt is refused with "Cannot complete project: 1 job(s) …" and the project stays active (**Danger zone** still says **Complete this project**)
+- [x] The message doesn't call the job In Progress or Blocked while it is New (known wording issue: the backend text always says "IN_PROGRESS or BLOCKED", but a New job blocks too, so this is expected to fail, job to be linked)
+- [x] The second attempt, with the job **In Progress**, is refused with the same count
+- [x] The job becomes **Completed**
 
 ## PRJ-16 Complete the project and see it go read-only
 **As:** Ana (Spring owner) · **Day:** 6 · **Needs:** PRJ-15 done
@@ -303,17 +303,17 @@ Residential ends with three links: **Floor plans rev 2**, **Kitchen layouts** an
 6. Open **Settings**, change **Name** to `Spring Maintenance 2026 (closed)` and click **Save changes**. If it saves, set the name back.
 7. Open **Residential Fit-outs** and click the project name in the top bar.
 
-- [ ] The project completes and **Settings** shows "This project is completed and no longer accepts changes."
-- [ ] **Danger zone** now offers **Reactivate this project** with a **Reactivate** button
-- [ ] The **Job screen** switches and the gate switch are greyed out, with no "Only project Owners and Admins" note
-- [ ] **Projects** shows **Active** 1, **Completed** 1 and **All** 2, and Spring Maintenance 2026 is under **Completed** with a **Completed** badge and no **Owner** badge
-- [ ] **Dashboard** shows "This project is completed. It is now read-only."
-- [ ] **+ New Job** on **Jobs** is disabled
-- [ ] The boiler job has no **Start**, **Complete** or **Reopen** buttons
-- [ ] **Edit** on the boiler job is disabled
-- [ ] The boiler job has no form to add a note
-- [ ] Renaming the completed project is refused (known bug: `ProjectService.update` has no completed-project check and the settings page keeps the name editable, so this is expected to fail, job to be linked)
-- [ ] The switcher in Residential no longer lists Spring Maintenance 2026
+- [x] The project completes and **Settings** shows "This project is completed and no longer accepts changes."
+- [x] **Danger zone** now offers **Reactivate this project** with a **Reactivate** button
+- [x] The **Job screen** switches and the gate switch are greyed out, with no "Only project Owners and Admins" note
+- [x] **Projects** shows **Active** 1, **Completed** 1 and **All** 2, and Spring Maintenance 2026 is under **Completed** with a **Completed** badge and no **Owner** badge
+- [x] **Dashboard** shows "This project is completed. It is now read-only."
+- [x] **+ New Job** on **Jobs** is disabled
+- [x] The boiler job has no **Start**, **Complete** or **Reopen** buttons
+- [x] **Edit** on the boiler job is disabled
+- [x] The boiler job has no form to add a note
+- [x] Renaming the completed project is refused (known bug: `ProjectService.update` has no completed-project check and the settings page keeps the name editable, so this is expected to fail, job to be linked)
+- [x] The switcher in Residential no longer lists Spring Maintenance 2026
 
 ## PRJ-17 Reactivate, then complete again
 **As:** Ana (Spring owner) · **Day:** 6 · **Needs:** PRJ-16 done. Spring Maintenance 2026 must end this scenario **Completed**.
@@ -323,12 +323,12 @@ Residential ends with three links: **Floor plans rev 2**, **Kitchen layouts** an
 3. Open **Projects**.
 4. Go back to **Settings** and click **Complete project** again.
 
-- [ ] The banner disappears and **Danger zone** offers **Complete this project** again
-- [ ] The **Job screen** switches can be changed again
-- [ ] **+ New Job** is enabled again
-- [ ] Spring Maintenance 2026 is back under the **Active** tab
-- [ ] Completing again works at once, with no open-jobs refusal, because the boiler job is **Completed**
-- [ ] Spring Maintenance 2026 is under the **Completed** tab again
+- [x] The banner disappears and **Danger zone** offers **Complete this project** again
+- [x] The **Job screen** switches can be changed again
+- [x] **+ New Job** is enabled again
+- [x] Spring Maintenance 2026 is back under the **Active** tab
+- [x] Completing again works at once, with no open-jobs refusal, because the boiler job is **Completed**
+- [x] Spring Maintenance 2026 is under the **Completed** tab again
 
 ## Not manual
 - A blank name, a name over 255 characters and more than 20 or a blank block reason are refused by the API: covered by the Cypress tests `a blank/whitespace name 400s…` and `more than 20 block reasons, or a blank one in the list, 400s on create` in `frontend/cypress/e2e/projects/projects.cy.ts`. PRJ-02 checks the 80-character form limit.
