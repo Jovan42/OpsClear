@@ -1,6 +1,6 @@
 # Jobs
 
-Last run: 2026-11-23, Jovan (in progress)
+Last run: 2026-11-24, Jovan
 Guide: /guide/create-job, /guide/job-blocked, /guide/finding-jobs, /guide/roles-permissions, /guide/job-done, /guide/notes-links-history
 
 Jobs are the core of the app: the list, the job screen, creating and editing, assigning, the four
@@ -238,12 +238,12 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 4. Choose **Off** and look at the list.
 5. Choose **3 days**, open G and look at its **Deadline**.
 
-- [ ] G and H show their deadline in amber with a small **Due soon** label
-- [ ] K shows its deadline in the normal colour and no label
-- [ ] F shows its deadline in red and no **Due soon** label
-- [ ] With **1 day**, G and H lose the amber colour and the label, and F stays red
-- [ ] With **Off**, no row has a **Due soon** label, and F stays red
-- [ ] G's job screen shows the amber deadline with **Due soon** beside it
+- [x] G and H show their deadline in amber with a small **Due soon** label
+- [x] K shows its deadline in the normal colour and no label
+- [x] F shows its deadline in red and no **Due soon** label
+- [x] With **1 day**, G and H lose the amber colour and the label, and F stays red
+- [x] With **Off**, no row has a **Due soon** label, and F stays red
+- [x] G's job screen shows the amber deadline with **Due soon** beside it
 
 ## JOB-11 Relative deadlines, row density and completing clears the highlight
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-10 done, F still New and overdue, G, H and K still open
@@ -255,12 +255,12 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 5. Set **Deadline format** back to **Absolute**.
 6. Open G, H and K in turn, and on each click **⋮**, **Delete Job**, **Delete**. Look at the list.
 
-- [ ] G reads "in 2 days", H reads "in 3 days" and F reads "1 day overdue"
-- [ ] With **Compact**, the table rows are visibly tighter and the text smaller
-- [ ] With **Comfortable**, the rows are back to the roomier spacing
-- [ ] Once F is Completed, its deadline is no longer red and shows a date, not "days overdue"
-- [ ] With **Absolute**, deadlines show dates again
-- [ ] G, H and K are gone from the list, so they raise no deadline alert
+- [x] G reads "in 2 days", H reads "in 3 days" and F reads "1 day overdue"
+- [x] With **Compact**, the table rows are visibly tighter and the text smaller
+- [x] With **Comfortable**, the rows are back to the roomier spacing
+- [x] Once F is Completed, its deadline is no longer red and shows a date, not "days overdue"
+- [x] With **Absolute**, deadlines show dates again
+- [x] G, H and K are gone from the list, so they raise no deadline alert
 
 ## JOB-12 An owner moves a job through the statuses
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-04 done, B unassigned and New. Ana is not the assignee: owners and admins may change any job.
@@ -272,14 +272,14 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 5. Look at the action bar, then click **Reopen**.
 6. Open **Status history** if it is closed.
 
-- [ ] On a New job the bar offers **Start** and no **Complete** or **Block**
-- [ ] **Start** makes B **In Progress** at once, with no question first
-- [ ] On an In Progress job the bar offers **Complete** and **Block**
-- [ ] **Complete** asks "Mark this job as complete? This cannot be undone by the assigned member." and **Cancel** leaves B In Progress
-- [ ] **Mark Complete** makes B **Completed** at once, although Residential's approval gate is on, because an owner completes directly
-- [ ] On a Completed job the bar offers **Reopen** and no **Start**, **Complete** or **Block**
-- [ ] **Reopen** makes B **In Progress** at once, with no question first
-- [ ] **Status history** shows a count of 4: created, started, completed, reopened
+- [x] On a New job the bar offers **Start** and no **Complete** or **Block**
+- [x] **Start** makes B **In Progress** at once, with no question first
+- [x] On an In Progress job the bar offers **Complete** and **Block**
+- [x] **Complete** asks "Mark this job as complete? This cannot be undone by the assigned member." and **Cancel** leaves B In Progress
+- [x] **Mark Complete** makes B **Completed** at once, although Residential's approval gate is on, because an owner completes directly
+- [x] On a Completed job the bar offers **Reopen** and no **Start**, **Complete** or **Block**
+- [x] **Reopen** makes B **In Progress** at once, with no question first
+- [x] **Status history** shows a count of 4: created, started, completed, reopened
 
 ## JOB-13 Block a job with a reason, and unblock it
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-12 done (B In Progress), C New. Note the **Blocked** tab count before you start.
@@ -293,16 +293,16 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 7. Click **Block**, type **Waiting on scaffold hire**, and click **Block Job**.
 8. Open job B, click **Block**, and look at the drop-down. Click **Cancel**.
 
-- [ ] The **Block Job** button is greyed out while the box is empty and while it holds only spaces
-- [ ] The drop-down lists **Waiting on client**, **Materials not delivered** and **Waiting on inspection**, and `mat` narrows it to **Materials not delivered**
-- [ ] C becomes **Blocked** and shows a red banner "Blocked since" with today's date and "Waiting on client" in quotes
-- [ ] On a Blocked job the bar offers **Unblock** and no **Complete** or **Start**
-- [ ] In the list C's row has a red edge and the **Blocked** tab count is one higher than before
-- [ ] The **Status** header puts Blocked jobs first
-- [ ] **Status history** on C shows the block with "Reason: Waiting on client"
-- [ ] **Unblock** asks "Unblock this job and resume work?", and after confirming C is **In Progress** with no banner
-- [ ] The typed reason is accepted: C is Blocked again and the banner shows "Waiting on scaffold hire" in quotes
-- [ ] B's Block box now also offers **Waiting on scaffold hire**, because typed reasons are remembered
+- [x] The **Block Job** button is greyed out while the box is empty and while it holds only spaces
+- [x] The drop-down lists **Waiting on client**, **Materials not delivered** and **Waiting on inspection**, and `mat` narrows it to **Materials not delivered**
+- [x] C becomes **Blocked** and shows a red banner "Blocked since" with today's date and "Waiting on client" in quotes
+- [x] On a Blocked job the bar offers **Unblock** and no **Complete** or **Start**
+- [x] In the list C's row has a red edge and the **Blocked** tab count is one higher than before
+- [x] The **Status** header puts Blocked jobs first
+- [x] **Status history** on C shows the block with "Reason: Waiting on client"
+- [x] **Unblock** asks "Unblock this job and resume work?", and after confirming C is **In Progress** with no banner
+- [x] The typed reason is accepted: C is Blocked again and the banner shows "Waiting on scaffold hire" in quotes
+- [x] B's Block box now also offers **Waiting on scaffold hire**, because typed reasons are remembered
 
 ## JOB-14 Manage block reasons in the project settings
 **As:** Ana (owner), then Nikola (admin), then Ivana (member), all in Residential Fit-outs · **Day:** any, after ONB-33 · **Needs:** JOB-13 done, C Blocked with "Waiting on scaffold hire"
@@ -315,13 +315,13 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 6. As Nikola, open Residential **Settings**.
 7. As Ivana, open Residential **Settings**.
 
-- [ ] **Block Reasons** lists **Waiting on client**, **Materials not delivered**, **Waiting on inspection** and **Waiting on scaffold hire**, each with **Remove**
-- [ ] **Remove** takes the reason off the list at once, without asking first
-- [ ] C, still Blocked, keeps its banner "Waiting on scaffold hire"
-- [ ] B's Block box no longer offers **Waiting on scaffold hire**
-- [ ] Blocking C with the same text again puts **Waiting on scaffold hire** back on the settings list, once
-- [ ] Nikola, an admin, sees **Block Reasons** with **Remove**
-- [ ] Ivana, a member, sees no **Block Reasons** section
+- [x] **Block Reasons** lists **Waiting on client**, **Materials not delivered**, **Waiting on inspection** and **Waiting on scaffold hire**, each with **Remove**
+- [x] **Remove** takes the reason off the list at once, without asking first
+- [x] C, still Blocked, keeps its banner "Waiting on scaffold hire"
+- [x] B's Block box no longer offers **Waiting on scaffold hire**
+- [x] Blocking C with the same text again puts **Waiting on scaffold hire** back on the settings list, once
+- [x] Nikola, an admin, sees **Block Reasons** with **Remove**
+- [x] Ivana, a member, sees no **Block Reasons** section
 
 ## JOB-15 A member changes the status of her own job, and an admin of someone else's
 **As:** Ivana (member, Residential), then Nikola (admin, Residential), then Ana · **Day:** any, after ONB-33 · **Needs:** JOB-04 done, A New and assigned to Ivana, Residential's approval gate on
@@ -334,13 +334,13 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 6. As Ivana, reload job A and look at the action bar.
 7. As Ana, open A and click **Reopen**. As Ivana, reload.
 
-- [ ] Ivana's bar on New job A offers **Start** and no **Complete** or **Block**
-- [ ] **Start** makes A **In Progress**
-- [ ] **Block** with a typed reason, and **Unblock**, both work for the assigned member
-- [ ] On the In Progress job Ivana's bar says **Request completion** instead of **Complete**, and **Cancel** on its box leaves A In Progress (the approval flow is in `06-approvals.md`)
-- [ ] Nikola, an admin who isn't the assignee, completes A directly: it shows **Completed** with no awaiting-approval badge
-- [ ] After the reload Ivana sees A **Completed** and an action bar with no buttons
-- [ ] Ana's **Reopen** makes A **In Progress** again, and Ivana sees **Block** again after her reload
+- [x] Ivana's bar on New job A offers **Start** and no **Complete** or **Block**
+- [x] **Start** makes A **In Progress**
+- [x] **Block** with a typed reason, and **Unblock**, both work for the assigned member
+- [x] On the In Progress job Ivana's bar says **Request completion** instead of **Complete**, and **Cancel** on its box leaves A In Progress (the approval flow is in `06-approvals.md`)
+- [x] Nikola, an admin who isn't the assignee, completes A directly: it shows **Completed** with no awaiting-approval badge
+- [x] After the reload Ivana sees A **Completed** and an action bar with no buttons
+- [x] Ana's **Reopen** makes A **In Progress** again, and Ivana sees **Block** again after her reload
 
 ## JOB-16 What a member can't see, edit or delete
 **As:** Ivana (member, Residential; admin, Office), then Sara (member, Residential) · **Day:** any, after ONB-33 · **Needs:** JOB-15 done
@@ -350,11 +350,11 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 3. As Sara, paste it into the address bar, then open Residential **Jobs**.
 4. As Ivana, open Office Refurbishments **Jobs** and open "Replace ceiling lights in the open-plan office".
 
-- [ ] Ivana's Residential list shows her own jobs, including A and "Paint hallway and stairs at 9 Birch Rd", and not "Tile bathroom at 14 Elm St" or "Install kitchen worktops at 31 Oak Ave"
-- [ ] A's screen for Ivana has no **Edit** button and no **⋮** menu, so no **Delete Job**
-- [ ] Sara pasting A's address sees "Failed to load job." and a red message "Access denied: you are not assigned to this job"
-- [ ] Sara's Residential list doesn't include A
-- [ ] In Office Ivana is an admin: she sees every Office job, including Luka's, and the job has **Edit** and **⋮**
+- [x] Ivana's Residential list shows her own jobs, including A and "Paint hallway and stairs at 9 Birch Rd", and not "Tile bathroom at 14 Elm St" or "Install kitchen worktops at 31 Oak Ave"
+- [x] A's screen for Ivana has no **Edit** button and no **⋮** menu, so no **Delete Job**
+- [x] Sara pasting A's address sees "Failed to load job." and a red message "Access denied: you are not assigned to this job"
+- [x] Sara's Residential list doesn't include A
+- [x] In Office Ivana is an admin: she sees every Office job, including Luka's, and the job has **Edit** and **⋮**
 
 ## JOB-17 Office Refurbishments: no approval gate, and Luka in Serbian
 **As:** Nikola (owner, Office), then Luka (member, Serbian UI), then Ivana (admin, Office) · **Day:** any, after ONB-33 · **Needs:** ONB-33 and ONB-23 done (Office's gate is off). Don't run it while PRJ-11 in `03-projects.md` has Office's gate on: Luka would then get **Request completion** instead of completing
@@ -366,14 +366,14 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 5. As Ivana, open job D and click **Reopen**.
 6. As Luka, reload job D.
 
-- [ ] D is created as **New** with "Luka Ilić" as the assignee
-- [ ] Luka's Office list includes D and no job assigned to anyone else
-- [ ] Luka's list, tabs, column headings and status badges are in Serbian
-- [ ] Luka's job screen, buttons and boxes are in Serbian
-- [ ] Starting D makes it **In Progress** (the status badge changes)
-- [ ] Completing D asks for a confirmation and then completes it directly, with no awaiting-approval badge, because Office's gate is off
-- [ ] Luka's action bar on the Completed D has no buttons
-- [ ] Ivana's **Reopen** makes D **In Progress**, and Luka sees the action buttons again after his reload
+- [x] D is created as **New** with "Luka Ilić" as the assignee
+- [x] Luka's Office list includes D and no job assigned to anyone else
+- [x] Luka's list, tabs, column headings and status badges are in Serbian
+- [x] Luka's job screen, buttons and boxes are in Serbian
+- [x] Starting D makes it **In Progress** (the status badge changes)
+- [x] Completing D asks for a confirmation and then completes it directly, with no awaiting-approval badge, because Office's gate is off
+- [x] Luka's action bar on the Completed D has no buttons
+- [x] Ivana's **Reopen** makes D **In Progress**, and Luka sees the action buttons again after his reload
 
 ## JOB-18 Delete a job
 **As:** Ana (owner), then Nikola (admin), both in Residential Fit-outs · **Day:** any, after ONB-33 · **Needs:** JOB-14 and JOB-11 done: B In Progress, F Completed
@@ -385,13 +385,13 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 5. As Nikola, open job F, click **⋮**, **Delete Job**, **Delete**.
 6. As Ana, reload the list.
 
-- [ ] **⋮** offers **Delete Job**
-- [ ] The box reads `Delete "Strip kitchen floor at 31 Oak Ave"? This cannot be undone.` and **Cancel** leaves B in place
-- [ ] **Delete** returns to the list, where B is gone
-- [ ] Searching for `Strip kitchen` finds nothing
-- [ ] B's old address shows "Failed to load job." and no red message
-- [ ] Nikola, an admin, can delete the Completed job F
-- [ ] F no longer shows in Ana's list
+- [x] **⋮** offers **Delete Job**
+- [x] The box reads `Delete "Strip kitchen floor at 31 Oak Ave"? This cannot be undone.` and **Cancel** leaves B in place
+- [x] **Delete** returns to the list, where B is gone
+- [x] Searching for `Strip kitchen` finds nothing
+- [x] B's old address shows "Failed to load job." and no red message
+- [x] Nikola, an admin, can delete the Completed job F
+- [x] F no longer shows in Ana's list
 
 ## JOB-19 Addresses that don't match
 **As:** Nikola, then Ana · **Day:** any, after ONB-33 · **Needs:** JOB-18 done. Ana isn't a member of Office Refurbishments.
@@ -401,9 +401,9 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 3. As Nikola, open a Residential job, copy its address, and replace the project part of it with the project part of the Office address.
 4. As Ana, open any Residential job, and in its address change the job number to one far beyond the last one, such as 999.
 
-- [ ] Ana opening Office's list sees "Failed to load jobs." and a red message "You are not a member of this project"
-- [ ] A Residential job under Office's address shows "Failed to load job." and no red message
-- [ ] A job number that doesn't exist shows "Failed to load job." and no red message
+- [x] Ana opening Office's list sees "Failed to load jobs." and a red message "You are not a member of this project"
+- [x] A Residential job under Office's address shows "Failed to load job." and no red message
+- [x] A job number that doesn't exist shows "Failed to load job." and no red message
 
 ## JOB-20 Add, edit and remove job links as an owner
 **As:** Ana (owner, Residential Fit-outs) · **Day:** any, after ONB-33 · **Needs:** JOB-14 done (job C exists), the Job links add-on bought (ONB-08)
@@ -419,16 +419,16 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 9. Click the **×** on the "site-photos" link, click **Cancel**, click **×** again, then **Delete**.
 10. Click the first link's label. Reload the page.
 
-- [ ] **Save** is greyed out while the URL box is empty
-- [ ] `not a url` is refused with a red message "URL is invalid or uses a disallowed scheme" and no link is added
-- [ ] `javascript:alert(1)` is refused with the same message
-- [ ] The GitHub address fills the label box with "GitHub", and the saved link shows "GitHub" with "Added by Ana Petrović"
-- [ ] The second link shows the label "Tile supplier quote", and the third, with no label, shows its URL as text
-- [ ] The copy icon changes to a tick for a moment, and the pasted text is the link's URL
-- [ ] After **Save** the second link reads "Tile quote (final)"
-- [ ] The delete box reads `Remove "https://example.com/site-photos"?`, **Cancel** keeps the link and **Delete** removes it
-- [ ] Clicking a link's label opens its URL in a new tab
-- [ ] After the reload the two remaining links are still there
+- [x] **Save** is greyed out while the URL box is empty
+- [x] `not a url` is refused with a red message "URL is invalid or uses a disallowed scheme" and no link is added
+- [x] `javascript:alert(1)` is refused with the same message
+- [x] The GitHub address fills the label box with "GitHub", and the saved link shows "GitHub" with "Added by Ana Petrović"
+- [x] The second link shows the label "Tile supplier quote", and the third, with no label, shows its URL as text
+- [x] The copy icon changes to a tick for a moment, and the pasted text is the link's URL
+- [x] After **Save** the second link reads "Tile quote (final)"
+- [x] The delete box reads `Remove "https://example.com/site-photos"?`, **Cancel** keeps the link and **Delete** removes it
+- [x] Clicking a link's label opens its URL in a new tab
+- [x] After the reload the two remaining links are still there
 
 ## JOB-21 A member can add a link but not edit or remove one
 **As:** Ana (owner), then Ivana (member), then Ana · **Day:** any, after ONB-33 · **Needs:** JOB-15 done (A is In Progress, assigned to Ivana)
@@ -438,11 +438,11 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 3. Click **+ Add link** under the list. URL `https://example.com/fan-datasheet`, label "Fan datasheet". **Save**.
 4. As Ana, reload job A.
 
-- [ ] Ana's link is saved with the label "Figma"
-- [ ] Ivana sees Ana's link with the copy icon, and with no pencil icon and no **×**
-- [ ] Ivana's new link is saved and shows "Added by Ivana Marković"
-- [ ] Ivana's own link has no pencil icon and no **×** either
-- [ ] Ana sees both links, each with the copy icon, a pencil icon and a **×**
+- [x] Ana's link is saved with the label "Figma"
+- [x] Ivana sees Ana's link with the copy icon, and with no pencil icon and no **×**
+- [x] Ivana's new link is saved and shows "Added by Ivana Marković"
+- [x] Ivana's own link has no pencil icon and no **×** either
+- [x] Ana sees both links, each with the copy icon, a pencil icon and a **×**
 
 ## JOB-22 A job in an org without add-ons
 **As:** Petra (owner, Pine & Pixel Studio) · **Day:** any, after ONB-33 · **Needs:** ONB-31 done. Pine & Pixel has no add-ons.
@@ -454,15 +454,15 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 5. Click **Unblock** and confirm. Click **Complete** and confirm **Mark Complete**. Click **Reopen**.
 6. Click **Upgrade in org settings**.
 
-- [ ] The list has the search box, the priority box, the status tabs and **Everyone** / **Mine**, and no **Grouped** / **Flat** button and no milestone box
-- [ ] The form has no **Milestone** or **Type** box, and **Assign to** lists Petra Stanković only
-- [ ] Below the action bar there are no Relationships, Notes, Approvals, Links or Status history sections
-- [ ] One locked row below the bar names the sections "Notes · Approvals · Job History · Relationships · Links" with **Upgrade in org settings**
-- [ ] The locked row and the section it hides share a name (known gap: the row says "Job History" and the section itself, in an org that has the add-on, is titled "Status history", so this is expected to fail, UX job to be linked)
-- [ ] The action bar has no **Request Approval** button
-- [ ] **Block** offers no suggestions, because the project has no block reasons, and the typed reason blocks the job
-- [ ] **Complete** completes P directly with no approval request, and **Reopen** makes it **In Progress**
-- [ ] **Upgrade in org settings** opens **Organisation Settings**
+- [x] The list has the search box, the priority box, the status tabs and **Everyone** / **Mine**, and no **Grouped** / **Flat** button and no milestone box
+- [x] The form has no **Milestone** or **Type** box, and **Assign to** lists Petra Stanković only
+- [x] Below the action bar there are no Relationships, Notes, Approvals, Links or Status history sections
+- [x] One locked row below the bar names the sections "Notes · Approvals · Job History · Relationships · Links" with **Upgrade in org settings**
+- [x] The locked row and the section it hides share a name (known gap: the row says "Job History" and the section itself, in an org that has the add-on, is titled "Status history", so this is expected to fail, UX job to be linked)
+- [x] The action bar has no **Request Approval** button
+- [x] **Block** offers no suggestions, because the project has no block reasons, and the typed reason blocks the job
+- [x] **Complete** completes P directly with no approval request, and **Reopen** makes it **In Progress**
+- [x] **Upgrade in org settings** opens **Organisation Settings**
 
 ## JOB-23 Relative deadlines in the Serbian UI
 **As:** Luka (member, Serbian UI), then Nikola (owner, Office) · **Day:** any, after ONB-33 · **Needs:** JOB-17 done (D is due in 3 days and assigned to Luka), Luka's Deadline format on Absolute
@@ -473,10 +473,10 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 4. Set the Deadline format back to its first option (Absolute).
 5. As Nikola, open D, click **⋮**, **Delete Job**, **Delete**. As Luka, reload the Office list.
 
-- [ ] The list shows D's deadline as a Serbian relative time, not English words such as "in 3 days" (known bug: `useFormatDeadline.formatRelative` has English text hard-coded, so this is expected to fail, job to be linked)
-- [ ] The job screen shows the deadline the same way
-- [ ] The small label beside D's deadline is in Serbian ("Rok uskoro")
-- [ ] D is gone from Luka's list, so it raises no deadline alert
+- [x] The list shows D's deadline as a Serbian relative time, not English words such as "in 3 days" (known bug: `useFormatDeadline.formatRelative` has English text hard-coded, so this is expected to fail, job to be linked)
+- [x] The job screen shows the deadline the same way
+- [x] The small label beside D's deadline is in Serbian ("Rok uskoro")
+- [x] D is gone from Luka's list, so it raises no deadline alert
 
 ## Not manual
 - Every illegal status transition (New to Completed, New to Blocked, Blocked to Completed, Completed to New, and so on) and the 400 "Invalid transition": covered by `JobStatusTransitionerTest` ("validate rejects every illegal transition with 400, even for an Owner") and, through the API, by `JobIntegrationTest` (New to Completed, Blocked to Completed, Completed to New). The screen never offers them, so JOB-12, JOB-13 and JOB-15 check the buttons per status instead.
