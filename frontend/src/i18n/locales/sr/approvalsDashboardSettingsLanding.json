@@ -320,6 +320,10 @@
       "heading": "Spremni za jasnoću?",
       "subtitle": "Počnite odmah. Nije potrebna kreditna kartica.",
       "button": "Počni odmah"
+    },
+    "social": {
+      "follow": "Pratite OpsClear",
+      "label": "OpsClear na mreži {{platform}}"
     }
   },
   "productPricing": {
