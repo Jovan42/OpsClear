@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/AuthContext';
 import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
 import ProductAndPricing from './ProductAndPricing';
+import SocialLinks from './SocialLinks';
 import { POST_LOGIN_REDIRECT_KEY } from '../../auth/postLoginRedirect';
 import { clearPendingInvite, readPendingInvite } from '../org/inviteLink';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -72,6 +73,9 @@ function CTAFooter() {
         <Link to="/guide" className="text-sm text-white/80 hover:text-white underline-offset-4 hover:underline">
           {tGuide('entry.nav')}
         </Link>
+      </div>
+      <div className="mt-8">
+        <SocialLinks />
       </div>
     </footer>
   );

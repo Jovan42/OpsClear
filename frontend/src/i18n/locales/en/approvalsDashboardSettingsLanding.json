@@ -319,6 +319,10 @@
       "heading": "Ready to get clarity?",
       "subtitle": "Start now. No credit card required.",
       "button": "Start now"
+    },
+    "social": {
+      "follow": "Follow OpsClear",
+      "label": "OpsClear on {{platform}}"
     }
   },
   "productPricing": {

@@ -49,7 +49,7 @@ ONB-08 and ONB-30 repeat the check in the browser.
 
 1. Open the OpsClear home page.
 2. Click the theme button (sun, moon or screen icon) in the top bar, then the **EN** language button.
-3. Scroll the page.
+3. Scroll to the bottom of the page and click each social icon in the green footer.
 4. Open `/features`. Open one card's demo and look at the badges.
 5. Click **User guide** in the top bar.
 6. Type `/projects` in the address bar.
@@ -57,6 +57,7 @@ ONB-08 and ONB-30 repeat the check in the browser.
 - [x] The home page shows the headline, **Get started** and **Log in**
 - [x] The theme button cycles light, dark and system, and the page follows it
 - [x] The language button switches the page between English and Serbian and back
+- [ ] The footer shows LinkedIn, X, Facebook and Instagram icons, and each opens the OpsClear account in a new tab
 - [x] `/features` lists every feature, with an **Included** badge on base features and the add-on name on gated ones
 - [x] A card's demo opens and can be stepped through
 - [x] The user guide opens without a login
