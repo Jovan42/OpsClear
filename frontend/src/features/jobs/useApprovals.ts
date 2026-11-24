@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { approvalsApi } from '../../api/approvals';
+import { refreshApprovalsAfterConflict } from '../approvals/approvalRefresh';
 import { useProject } from '../projects/useProjects';
 import { useSectionVisibility } from './useSectionVisibility';
 
@@ -45,6 +46,8 @@ export function useDecideApproval(projectId: string, jobId: string) {
       void queryClient.invalidateQueries({ queryKey: ['approvals'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
+    // 409: someone else already decided or withdrew it, so drop the stale pending card.
+    onError: (error) => refreshApprovalsAfterConflict(queryClient, projectId, error),
   });
 }
 
@@ -58,5 +61,6 @@ export function useCancelApproval(projectId: string, jobId: string) {
       void queryClient.invalidateQueries({ queryKey: ['approvals'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
+    onError: (error) => refreshApprovalsAfterConflict(queryClient, projectId, error),
   });
 }

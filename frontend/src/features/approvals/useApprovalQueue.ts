@@ -2,6 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { approvalsApi } from '../../api/approvals';
 import { useCurrentOrg } from '../org/OrgContext';
 import { useProjectRole } from '../projects/useProjects';
+import { APPROVAL_QUEUE_POLL_MS } from './approvalRefresh';
+
+// Shared by both pending queues. New requests also arrive through the notification stream
+// (refreshApprovalsForNotification); decisions and withdrawals by others don't, so these are
+// the fallback: refetch on every window focus, and poll while the queue is shown.
+const queueRefresh = {
+  refetchOnWindowFocus: 'always',
+  refetchInterval: APPROVAL_QUEUE_POLL_MS,
+} as const;
 
 export function useApprovalQueue(projectId: string) {
   const { hasAddon } = useCurrentOrg();
@@ -12,7 +21,7 @@ export function useApprovalQueue(projectId: string) {
   return useQuery({
     queryKey: ['approvals', projectId, 'pending'],
     queryFn: () => approvalsApi.listPending(projectId),
-    staleTime: 5 * 60 * 1000,
+    ...queueRefresh,
     enabled: !!projectId && hasAddon('APPROVALS') && (role === 'OWNER' || role === 'ADMIN'),
   });
 }
@@ -22,7 +31,7 @@ export function usePendingApprovalsAcrossOrgs() {
   return useQuery({
     queryKey: ['approvals', 'pending', 'cross-org'],
     queryFn: () => approvalsApi.listPendingAcrossOrgs(),
-    staleTime: 5 * 60 * 1000,
+    ...queueRefresh,
     enabled: hasAddon('APPROVALS'),
   });
 }
