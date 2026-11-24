@@ -127,12 +127,12 @@ Then create a sixth job with **Assign to** empty: "Get quote for skip hire at 3 
 4. On one entry click **Mark as read**, then **Mark as unread**.
 5. Click **Mark all as read**.
 
-- [ ] The page shows 20 entries, newest first, with "Page 1 of N" and **Next**
-- [ ] **Next** and **Previous** move between pages, and the page number follows
-- [ ] **Unread** lists only unread entries and **Filter by type** lists only that type, and the two combine
-- [ ] **Mark as read** and **Mark as unread** on one entry change its highlight and the bell badge at once
-- [ ] **Mark all as read** clears the badge and every highlight, including on other pages
-- [ ] A filter with no match shows "No unread notifications." or "No notifications of this type."
+- [x] The page shows 20 entries, newest first, with "Page 1 of N" and **Next**
+- [x] **Next** and **Previous** move between pages, and the page number follows
+- [x] **Unread** lists only unread entries and **Filter by type** lists only that type, and the two combine
+- [x] **Mark as read** and **Mark as unread** on one entry change its highlight and the bell badge at once
+- [x] **Mark all as read** clears the badge and every highlight, including on other pages
+- [x] A filter with no match shows "No unread notifications." or "No notifications of this type."
 
 ## NTF-07 Read state follows across tabs
 **As:** Nikola, in two tabs · **Day:** 1 · **Needs:** NTF-02 done, Nikola has unread notifications
@@ -374,10 +374,10 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 3. As Ivana and Sara (Members of Residential Fit-outs), check theirs.
 4. As Ana, click the entry.
 
-- [ ] Ana and Nikola each get "Schedule \"Daily site safety check\" missed a run in Residential Fit-outs" with "Missed run: …" and the time, two entries each (day 6 and day 7)
-- [ ] Ivana and Sara get nothing
-- [ ] The entries come from **OpsClear**
-- [ ] Clicking an entry opens Residential Fit-outs, **Schedules**
+- [x] Ana and Nikola each get "Schedule \"Daily site safety check\" missed a run in Residential Fit-outs" with "Missed run: …" and the time, two entries each (day 6 and day 7)
+- [x] Ivana and Sara get nothing
+- [x] The entries come from **OpsClear**
+- [x] Clicking an entry opens Residential Fit-outs, **Schedules**
 
 ## NTF-25 Subscription past due (depends on Chore 12, JOB-377)
 **As:** Ana, Nikola, Ivana · **Day:** 5+ · **Needs:** `12-billing.md` has put Brightline's subscription into PAST_DUE. The Paddle sandbox has no way to fail a renewal on demand, so run this only if that file finds a way. Otherwise leave it unticked, and the type stays covered under **Not manual**.
@@ -386,11 +386,11 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 2. Click the entry as Ana, then as Nikola.
 3. As Ana, open **Account settings**, **Notifications**.
 
-- [ ] Ana and Nikola get "The subscription payment for Brightline Renovations is past due" in the urgent style, from **OpsClear**
-- [ ] Ana's entry says to update the payment method in billing, and Nikola's says to ask an organisation Owner
-- [ ] Ivana (member) gets nothing
-- [ ] Ana's entry opens **Organisation Settings** at billing, and Nikola's opens **Organisation Settings**
-- [ ] **Subscription past due** is still locked on in Ana's settings
+- [x] Ana and Nikola get "The subscription payment for Brightline Renovations is past due" in the urgent style, from **OpsClear**
+- [x] Ana's entry says to update the payment method in billing, and Nikola's says to ask an organisation Owner
+- [x] Ivana (member) gets nothing
+- [x] Ana's entry opens **Organisation Settings** at billing, and Nikola's opens **Organisation Settings**
+- [x] **Subscription past due** is still locked on in Ana's settings
 
 ## NTF-26 Day 2: deadline soon for jobs due on day 3
 **As:** Luka, Ivana, Sara, Ana, Nikola · **Day:** 2, after 06:00 UTC · **Needs:** NTF-02 and the day-1 jobs of `01-onboarding.md` untouched. Jobs due day 3: "Tile bathroom at 14 Elm St" (Luka), "Paint hallway and stairs at 9 Birch Rd" (Ivana), "Fit partition walls on the 3rd floor" (Ivana), "Re-seal shower at 6 Alder Court" (Sara).
@@ -412,10 +412,10 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 1. On day 2 after 07:00 UTC, check Ivana's centre, then Ana's and Nikola's.
 2. On day 3 after 07:00 UTC, check Sara's centre and the others again.
 
-- [ ] Ivana has "Assigned you to …" for `Site safety check for Residential Fit-outs - <day 2 date>`, from **OpsClear**, with no person as the source
-- [ ] Sara has the same for `Site safety check for Residential Fit-outs - <day 3 date>` on day 3
-- [ ] Ana and Nikola get nothing just because the schedule ran
-- [ ] `Toolbox talk week <week number>`, made on day 3 with no assignee, notifies no one
+- [x] Ivana has "Assigned you to …" for `Site safety check for Residential Fit-outs - <day 2 date>`, from **OpsClear**, with no person as the source
+- [x] Sara has the same for `Site safety check for Residential Fit-outs - <day 3 date>` on day 3
+- [x] Ana and Nikola get nothing just because the schedule ran
+- [x] `Toolbox talk week <week number>`, made on day 3 with no assignee, notifies no one
 
 ## NTF-28 Day 3: deadline soon for jobs due on day 4, and complete the tile job
 **As:** Luka, Ana, Ivana, Sara · **Day:** 3, after 06:00 UTC · **Needs:** NTF-26 done
@@ -462,12 +462,12 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 1. Open `/notifications` for each persona and read every entry, newest to oldest. After NTF-24, Ana and Nikola also have **Schedule run missed** entries (two each), which are expected. Nobody else has any.
 2. Use **Filter by type** for each type a persona shouldn't have.
 
-- [ ] Luka has no **Approval requested**, no **Invite accepted**, and no entry about a job that isn't his
-- [ ] Ivana has no entry about the towel rail or the shower job, and no **Approval requested**
-- [ ] Sara has nothing about a job assigned to someone else
-- [ ] Nikola and Ana have **Job blocked**, **Status changed** and **Approval requested** only for projects where they are Owner or Admin
-- [ ] Nobody has an entry for something they did themselves
-- [ ] No notification email arrived in the mailbox for any persona (invite and verification emails apart)
+- [x] Luka has no **Approval requested**, no **Invite accepted**, and no entry about a job that isn't his
+- [x] Ivana has no entry about the towel rail or the shower job, and no **Approval requested**
+- [x] Sara has nothing about a job assigned to someone else
+- [x] Nikola and Ana have **Job blocked**, **Status changed** and **Approval requested** only for projects where they are Owner or Admin
+- [x] Nobody has an entry for something they did themselves
+- [x] No notification email arrived in the mailbox for any persona (invite and verification emails apart)
 
 ## NTF-32 Notifications don't cross organisations
 **As:** Petra, Ana · **Day:** 7 or later, after NTF-24 · **Needs:** the scenarios above done
@@ -475,9 +475,9 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 1. As Petra, open the bell and `/notifications`.
 2. As Ana, scan the centre for anything from Pine & Pixel Studio.
 
-- [ ] Petra's centre has no Brightline entry of any type
-- [ ] Ana's centre has no entry from Pine & Pixel Studio, and none mentions Petra
-- [ ] Petra's badge doesn't move when something happens in Brightline
+- [x] Petra's centre has no Brightline entry of any type
+- [x] Ana's centre has no entry from Pine & Pixel Studio, and none mentions Petra
+- [x] Petra's badge doesn't move when something happens in Brightline
 
 ## NTF-33 Notifications in Serbian
 **As:** Luka · **Day:** 2 · **Needs:** ONB-33 done (Luka's UI is Serbian), Luka has several kinds of notification
