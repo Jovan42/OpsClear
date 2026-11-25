@@ -5,9 +5,9 @@ Guide: /guide/dashboard, /guide/stats-overview, /guide/preferences, /guide/roles
 
 This file covers the project **Dashboard** (status ring, summary counts, the Blocked, Overdue and Pending Approvals lists, the breakdown by type), **Stats** (completed jobs per week, the five tiles, the range, the per-member table and drill-down), the **Overview** page (pending approvals across projects and the project directory), the preferences that change them (hidden dashboard sections, default stats range, Overview approvals, landing project), who sees what per role, and what an organisation without the Dashboard add-on sees. The world is built by `01-onboarding.md` ([README](README.md#test-world)): Brightline Renovations with Ana, Nikola, Ivana, Luka and Sara, the projects Residential Fit-outs and Office Refurbishments, and Petra in Pine & Pixel Studio, which has no add-ons. Run `01-onboarding.md` first.
 
-**Run order and time window.** Run DSH-01 to DSH-15 in order, in one sitting, on one UTC day after ONB-33: start after 07:05 UTC and finish before 23:00 UTC. Reasons: the deadline alerts run at 06:00 UTC; the `Daily site safety check` schedule of `08-schedules.md` creates a New job in Residential at 07:00 UTC, which would move the New counts and Ivana's or Sara's numbers; at midnight UTC other open jobs flip to Overdue, and near local midnight (CET) the Monday of the current week can change under the Stats range. DSH-16 and DSH-17 create nothing and can run on any later day.
+**Run order and time window.** Run DSH-01 to DSH-15 in order, in one sitting, on one UTC day after ONB-33: start after 07:05 UTC and finish before 22:00 UTC (23:00 UTC in winter), so that local midnight in Serbia and the rest of CET/CEST stays out of the sitting. Reasons: the deadline alerts run at 06:00 UTC; the `Daily site safety check` schedule of `08-schedules.md` creates a New job in Residential at 07:00 UTC, which would move the New counts and Ivana's or Sara's numbers; at midnight UTC other open jobs flip to Overdue, and near local midnight (CET) the Monday of the current week can change under the Stats range. DSH-16 and DSH-17 create nothing and can run on any later day.
 
-**If the sitting stops before DSH-11**, clear D's deadline (or delete D) before 06:00 UTC, because D is open with a past deadline. If an alert went out anyway, Ana and Nikola each have one **Job overdue** entry about D, which `09-notifications.md` day 7+ should expect.
+**If the sitting stops early** (before DSH-15), clean up before 06:00 UTC: first decide (Approve or Reject) any pending request on C or E in Residential **Approvals**, then do DSH-15's deletes (jobs A to E, then the Tiling type), and restart from DSH-01 on another day. Deciding comes first because deleting a job only cancels a pending completion request, not a manual one, and the project's pending queue currently still lists requests on deleted jobs (a known app bug, to be logged separately), which would leave a stale entry in the Approvals badge and the Dashboard count. D is the one with a past deadline: if you can't finish, at least clear D's deadline or delete D before 06:00 UTC. If an alert went out anyway, Ana and Nikola each have one **Job overdue** entry about D, which `09-notifications.md` day 7+ should expect.
 
 **Numbers depend on the other files, so this file reads before and compares after.** Residential holds the day-1 jobs, the working jobs of every other file and the jobs the schedules made, and their statuses and deadlines move as the run goes on. So no check here relies on an absolute count. DSH-01 writes down a **baseline reading**, and the later checks say "goes up by one", "goes down by two" or "is back to the baseline". DSH-15 deletes this file's jobs, after which every number is back to that baseline. Checks that name a total use "at least".
 
@@ -287,21 +287,21 @@ Write the readings on paper or in a note. They are used by the checks of every l
 ## DSH-16 Default stats range and landing project
 **As:** Ana (owner) · **Day:** any · **Needs:** DSH-15 done
 
-0. Open **Account settings** and write down Ana's current **Default range** and **Landing project** (they should be 12 weeks and Project list); put those values back at the end.
-1. Open **Account settings**. Under **Stats**, set **Default range** to **4 weeks**. Open **Stats** in Residential.
+1. Open **Account settings** and write down Ana's current **Default range** (under **Stats**) and **Landing project** (under **Navigation**). Under **Stats**, set **Default range** to **4 weeks**. Open **Stats** in Residential.
 2. Click **26 weeks**, open the **Dashboard**, then **Stats** again.
-3. Back in settings set **Default range** to **12 weeks**.
+3. Back in settings set **Default range** back to the value written down in step 1.
 4. Under **Navigation** set **Landing project** to **Specific**, choose **Residential Fit-outs** in **Project**, and type the root address of the app in the address bar.
 5. Open **Office Refurbishments** from **Projects**, set **Landing project** to **Last opened** and type the root address again.
 6. Set **Landing project** to **Project list** and type the root address again.
+7. Restore **Default range** and **Landing project** to the values written down in step 1 (skip what is already restored).
 
 - [ ] **Stats** opens on **4 weeks**
 - [ ] After picking **26 weeks** on the page and leaving, **Stats** opens on **4 weeks** again, and the setting still says 4 weeks
-- [ ] **Default range** is back at 12 weeks
+- [ ] **Default range** is back at the value written down in step 1
 - [ ] With **Specific**, the root address takes Ana to the Residential Dashboard (her **Default project page**)
 - [ ] With **Last opened**, it takes her to the Office Refurbishments Dashboard
 - [ ] With **Project list**, it takes her to **Projects**
-- [ ] **Default range** and **Landing project** are back to the values written down in step 0
+- [ ] **Default range** and **Landing project** are back to the values written down in step 1 (step 7)
 
 ## DSH-17 Add-on off: Pine & Pixel Studio
 **As:** Petra (owner, Pine & Pixel Studio) · **Day:** any · **Needs:** ONB-31 done (project Brand refresh for Juniper Cafe, no add-ons)
@@ -312,7 +312,7 @@ Write the readings on paper or in a note. They are used by the checks of every l
 4. Open the user menu.
 
 - [ ] Opening the project lands on the Dashboard, which shows "Dashboard is not included in your plan" and no numbers
-- [ ] **Dashboard** and **Stats** show in the top bar with a lock, at the end after **Settings**
+- [ ] The top bar reads **Jobs**, **Settings**, then locked items with a lock: **Dashboard** and **Stats** right after **Settings**, followed by **Milestones**, **Templates**, **Types**, **Schedules**, **Links** and **Approvals**
 - [ ] **Stats** shows "Stats is not included in your plan" and no tiles
 - [ ] **Upgrade in org settings** opens **Organisation Settings**
 - [ ] The user menu has **Overview** (Petra is the org owner), and the page lists only **Brand refresh for Juniper Cafe** in **Project Directory**, with no Brightline project, and **Pending Approvals** shows its heading with "All caught up — no pending approvals across your projects." and no request of Brightline
