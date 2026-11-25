@@ -1,6 +1,6 @@
 # Approvals
 
-Last run:
+Last run: 2026-11-25, Jovan
 Guide: /guide/job-approval, /guide/project-settings, /guide/roles-permissions
 
 This file covers approvals end to end: **manual approvals** (a person asks an Owner or Admin for a
@@ -95,10 +95,10 @@ any day after ONB-33, nothing depends on the calendar.
 2. Open each of the five jobs and click **Start**.
 3. As Nikola, in Office Refurbishments, **Jobs**, **+ New Job**, create "Fit glass partition at Dunmore Dental" and "Hang fire-rated doors at Dunmore Dental", client "Dunmore Dental", **Deadline** empty, **Priority** Medium, both assigned to Luka.
 
-- [ ] All seven jobs are created as **New**, each with a friendly ID, and none shows a deadline
-- [ ] Ana's five jobs are **In Progress** after **Start**
-- [ ] Luka, Ivana and Sara get "Assigned you to …" notifications for their jobs: Luka four (A, C, F, G), Ivana one (B), Sara two (D, E)
-- [ ] The Approvals section of a new job says "No approval requests."
+- [x] All seven jobs are created as **New**, each with a friendly ID, and none shows a deadline
+- [x] Ana's five jobs are **In Progress** after **Start**
+- [x] Luka, Ivana and Sara get "Assigned you to …" notifications for their jobs: Luka four (A, C, F, G), Ivana one (B), Sara two (D, E)
+- [x] The Approvals section of a new job says "No approval requests."
 
 ## APR-02 A member asks to complete a job
 **As:** Luka (member, assignee of C), then Ana · **Day:** any, after ONB-33 · **Needs:** APR-01 done. Ana has the Residential **Jobs** page open
@@ -110,18 +110,18 @@ any day after ONB-33, nothing depends on the calendar.
 5. Open Residential **Jobs** and look at the row of C.
 6. As Ana, without reloading, look at the bell.
 
-- [ ] C's bar offers **Request completion**, **Block** and **Request Approval**, and no **Complete**
-- [ ] The window explains that an Owner or Admin must approve and that the job stays In Progress until then, and **Message** is marked optional
-- [ ] A counter under the box shows the number of characters out of 2000 and goes up as you type
-- [ ] **Cancel** creates nothing: C shows no banner afterwards
-- [ ] After sending, a toast says "Completion requested" and C is still **In Progress**
-- [ ] A banner reads "Completion requested by Luka Ilić" with the time, and the message in quotes
-- [ ] The banner offers Luka **Withdraw** and no **Approve** or **Reject**
-- [ ] The bar's button reads **Approval requested** and is greyed out
-- [ ] The Approvals section lists the request with the label **Completion**, the status **Pending**, "Requested by Luka Ilić" and the message, and its title shows "1 pending"
-- [ ] C's row on the list shows the badge "Awaiting completion approval"
-- [ ] Ana's bell shows "Requested to complete …" from Luka without a reload
-- [ ] Luka has no notification for his own request
+- [x] C's bar offers **Request completion**, **Block** and **Request Approval**, and no **Complete**
+- [x] The window explains that an Owner or Admin must approve and that the job stays In Progress until then, and **Message** is marked optional
+- [x] A counter under the box shows the number of characters out of 2000 and goes up as you type
+- [x] **Cancel** creates nothing: C shows no banner afterwards
+- [x] After sending, a toast says "Completion requested" and C is still **In Progress**
+- [x] A banner reads "Completion requested by Luka Ilić" with the time, and the message in quotes
+- [x] The banner offers Luka **Withdraw** and no **Approve** or **Reject**
+- [x] The bar's button reads **Approval requested** and is greyed out
+- [x] The Approvals section lists the request with the label **Completion**, the status **Pending**, "Requested by Luka Ilić" and the message, and its title shows "1 pending"
+- [x] C's row on the list shows the badge "Awaiting completion approval"
+- [x] Ana's bell shows "Requested to complete …" from Luka without a reload
+- [x] Luka has no notification for his own request
 
 ## APR-03 A completion request without a message
 **As:** Ivana (member, assignee of B), then Nikola · **Day:** any, after ONB-33 · **Needs:** APR-01 done
@@ -130,11 +130,11 @@ any day after ONB-33, nothing depends on the calendar.
 2. Look at the banner and the Approvals section.
 3. As Nikola, open B and look at the banner and the Approvals section.
 
-- [ ] B stays **In Progress** and the toast says "Completion requested"
-- [ ] The banner reads "Completion requested by Ivana Marković" with the time and no quoted message
-- [ ] The request in the Approvals section reads "Requesting to complete this job" (not an empty line)
-- [ ] Nikola sees the same banner and request, and the banner offers him **Withdraw**, **Reject** and **Approve**
-- [ ] Ana and Nikola each get a second "Requested to complete …" entry, this time for B
+- [x] B stays **In Progress** and the toast says "Completion requested"
+- [x] The banner reads "Completion requested by Ivana Marković" with the time and no quoted message
+- [x] The request in the Approvals section reads "Requesting to complete this job" (not an empty line)
+- [x] Nikola sees the same banner and request, and the banner offers him **Withdraw**, **Reject** and **Approve**
+- [x] Ana and Nikola each get a second "Requested to complete …" entry, this time for B
 
 ## APR-04 The approval queue
 **As:** Ana (Residential owner), then Nikola · **Day:** any, after ONB-33 · **Needs:** APR-02 and APR-03 done (C and B pending)
@@ -144,13 +144,13 @@ any day after ONB-33, nothing depends on the calendar.
 3. Go back, open **Overview** from the main navigation and find **Pending Approvals**.
 4. As Nikola, open Residential **Approvals**.
 
-- [ ] The top bar shows an **Approvals** link with a badge, and the badge number includes at least 2
-- [ ] The page title **Approvals** has a badge "N pending" with N at least 2
-- [ ] The requests are grouped by job, the group for C above the group for B (oldest first)
-- [ ] Each card has the label **Completion**, the message of the request, "Requested by Luka Ilić" (or Ivana Marković) with the date and time, and **Reject** and **Approve**
-- [ ] **→ Job** opens that job
-- [ ] **Pending Approvals** on Overview lists both requests with the job title, the project name "Residential Fit-outs" and the label **Completion**; clicking one opens the job
-- [ ] Nikola's queue shows the same two requests with the same buttons
+- [x] The top bar shows an **Approvals** link with a badge, and the badge number includes at least 2
+- [x] The page title **Approvals** has a badge "N pending" with N at least 2
+- [x] The requests are grouped by job, the group for C above the group for B (oldest first)
+- [x] Each card has the label **Completion**, the message of the request, "Requested by Luka Ilić" (or Ivana Marković) with the date and time, and **Reject** and **Approve**
+- [x] **→ Job** opens that job
+- [x] **Pending Approvals** on Overview lists both requests with the job title, the project name "Residential Fit-outs" and the label **Completion**; clicking one opens the job
+- [x] Nikola's queue shows the same two requests with the same buttons
 
 ## APR-05 Reject a completion request
 **As:** Nikola (Residential admin), then Ivana, then Ana · **Day:** any, after ONB-33 · **Needs:** APR-03 done (B pending). Ana has Residential **Approvals** open in her own window, showing B's card
@@ -160,13 +160,13 @@ any day after ONB-33, nothing depends on the calendar.
 3. As Ivana, open B and look at the banner, the action bar and the Approvals section.
 4. As Ana, without reloading, switch back to her Residential **Approvals** window.
 
-- [ ] The window is titled "Reject Request" and its comment box is marked optional
-- [ ] **Cancel** decides nothing: B's card is still in the queue
-- [ ] After rejecting, B's card disappears from the queue and the badge number goes down by one
-- [ ] B is still **In Progress** for Ivana, with no banner, and the bar offers **Request completion** again
-- [ ] The request in the Approvals section shows the status **Rejected**, "Rejected by Nikola Jovanović" with the time, and the comment in quotes
-- [ ] Ivana gets "Rejected your request on …" from Nikola
-- [ ] Ana gets no notification for the decision, and B's card leaves her open queue when she returns to the window, without a reload
+- [x] The window is titled "Reject Request" and its comment box is marked optional
+- [x] **Cancel** decides nothing: B's card is still in the queue
+- [x] After rejecting, B's card disappears from the queue and the badge number goes down by one
+- [x] B is still **In Progress** for Ivana, with no banner, and the bar offers **Request completion** again
+- [x] The request in the Approvals section shows the status **Rejected**, "Rejected by Nikola Jovanović" with the time, and the comment in quotes
+- [x] Ivana gets "Rejected your request on …" from Nikola
+- [x] Ana gets no notification for the decision, and B's card leaves her open queue when she returns to the window, without a reload
 
 ## APR-06 Approve a completion request: the job completes by itself
 **As:** Ivana (member), then Ana (Residential owner), then Nikola · **Day:** any, after ONB-33 · **Needs:** APR-05 done
@@ -177,14 +177,14 @@ any day after ONB-33, nothing depends on the calendar.
 4. As Ivana, reload B and look at the action bar.
 5. As Nikola, open the bell.
 
-- [ ] The window is titled "Approve Request" and its comment box is marked optional
-- [ ] After approving, B's card is gone from the queue and no warning toast appears
-- [ ] B is **Completed** without any further click
-- [ ] The newest request in the Approvals section shows **Approved**, "Approved by Ana Petrović" with the time, and the comment in quotes, and the older one still shows **Rejected**
-- [ ] The status history ends with the move from In Progress to Completed by "Ana Petrović", not by Ivana
-- [ ] Ivana's action bar on the Completed B has no buttons
-- [ ] Ivana gets "Approved completion of …" and a Status changed entry for B
-- [ ] Nikola gets a Status changed entry for B, and Ana gets none for her own approval
+- [x] The window is titled "Approve Request" and its comment box is marked optional
+- [x] After approving, B's card is gone from the queue and no warning toast appears
+- [x] B is **Completed** without any further click
+- [x] The newest request in the Approvals section shows **Approved**, "Approved by Ana Petrović" with the time, and the comment in quotes, and the older one still shows **Rejected**
+- [x] The status history ends with the move from In Progress to Completed by "Ana Petrović", not by Ivana
+- [x] Ivana's action bar on the Completed B has no buttons
+- [x] Ivana gets "Approved completion of …" and a Status changed entry for B
+- [x] Nikola gets a Status changed entry for B, and Ana gets none for her own approval
 
 ## APR-07 The requester withdraws a completion request
 **As:** Luka (member, assignee of C), then Ana · **Day:** any, after ONB-33 · **Needs:** APR-02 done (C pending). Ana has Residential **Approvals** open in her own window, showing C's card
@@ -196,12 +196,12 @@ any day after ONB-33, nothing depends on the calendar.
 5. As Luka, click **Request completion**, type "Re-checked the skirting, requesting again." and send.
 6. As Ana, look at her Approvals window without reloading.
 
-- [ ] The window is titled "Withdraw completion request" and says the job stays In Progress and completion can be requested again
-- [ ] **Cancel** leaves the request pending: the banner is still there
-- [ ] After withdrawing, the banner is gone, C is still **In Progress** and the bar offers **Request completion** again
-- [ ] The request in the Approvals section shows the status **Cancelled** and "Cancelled by Luka Ilić"
-- [ ] C's card leaves Ana's open queue when she returns to the window, without a reload, and no notification about the withdrawal reaches Ana or Nikola
-- [ ] After the second request C shows the banner with the new message, and C's card is back in Ana's open queue without a reload
+- [x] The window is titled "Withdraw completion request" and says the job stays In Progress and completion can be requested again
+- [x] **Cancel** leaves the request pending: the banner is still there
+- [x] After withdrawing, the banner is gone, C is still **In Progress** and the bar offers **Request completion** again
+- [x] The request in the Approvals section shows the status **Cancelled** and "Cancelled by Luka Ilić"
+- [x] C's card leaves Ana's open queue when she returns to the window, without a reload, and no notification about the withdrawal reaches Ana or Nikola
+- [x] After the second request C shows the banner with the new message, and C's card is back in Ana's open queue without a reload
 
 ## APR-08 An admin withdraws someone else's request
 **As:** Sara (member, assignee of D), then Nikola (Residential admin), then Sara · **Day:** any, after ONB-33 · **Needs:** APR-01 done
@@ -211,10 +211,10 @@ any day after ONB-33, nothing depends on the calendar.
 3. Click **Withdraw** and confirm.
 4. As Sara, open the bell and then D.
 
-- [ ] Nikola's banner for D offers **Withdraw**, **Reject** and **Approve**
-- [ ] After withdrawing, D is **In Progress** with no banner, and its request shows **Cancelled** with "Cancelled by Nikola Jovanović"
-- [ ] Sara gets "Cancelled your completion request on …" from Nikola
-- [ ] Sara's bar on D offers **Request completion** again
+- [x] Nikola's banner for D offers **Withdraw**, **Reject** and **Approve**
+- [x] After withdrawing, D is **In Progress** with no banner, and its request shows **Cancelled** with "Cancelled by Nikola Jovanović"
+- [x] Sara gets "Cancelled your completion request on …" from Nikola
+- [x] Sara's bar on D offers **Request completion** again
 
 ## APR-09 Completing directly cancels a pending request
 **As:** Sara (member, assignee of D), then Ana (Residential owner), then Sara · **Day:** any, after ONB-33 · **Needs:** APR-08 done
@@ -224,11 +224,11 @@ any day after ONB-33, nothing depends on the calendar.
 3. Look at the Approvals section and Residential **Approvals**.
 4. As Sara, open the bell and D.
 
-- [ ] Ana's bar on D offers **Complete** (not **Request completion**), because an owner completes directly
-- [ ] D is **Completed**
-- [ ] The newest request shows **Cancelled**, "Cancelled by Ana Petrović" and the line "The job was completed directly."
-- [ ] D's card is gone from the queue
-- [ ] Sara gets "Cancelled your completion request on …" and a Status changed entry for D, and her bar on D has no buttons
+- [x] Ana's bar on D offers **Complete** (not **Request completion**), because an owner completes directly
+- [x] D is **Completed**
+- [x] The newest request shows **Cancelled**, "Cancelled by Ana Petrović" and the line "The job was completed directly."
+- [x] D's card is gone from the queue
+- [x] Sara gets "Cancelled your completion request on …" and a Status changed entry for D, and her bar on D has no buttons
 
 ## APR-10 Approved, not applied: the job was blocked meanwhile
 **As:** Luka (member, assignee of C), then Nikola (Residential admin), then Luka, then Ana · **Day:** any, after ONB-33 · **Needs:** APR-07 done (C In Progress with a pending request)
@@ -241,14 +241,14 @@ any day after ONB-33, nothing depends on the calendar.
 6. Click **Request completion**, send with no message.
 7. As Ana, open Residential **Approvals** and approve the card of C.
 
-- [ ] C is **Blocked** and the completion banner is still shown, with **Withdraw** for Luka
-- [ ] Nikola can still approve the request of the Blocked job
-- [ ] A warning toast says "Approved, but the job wasn't completed because it is Blocked."
-- [ ] C is still **Blocked** and its request shows an amber **Approved, not applied** with the line "The job wasn't completed because it was Blocked."
-- [ ] Luka gets "Approved completion of …, but it wasn't completed because it is Blocked"
-- [ ] After **Unblock** C is **In Progress** with no banner, and the bar offers **Request completion** again
-- [ ] Ana's approval completes C: C is **Completed**, and the newest request shows **Approved**
-- [ ] Luka gets "Approved completion of …" and a Status changed entry for C
+- [x] C is **Blocked** and the completion banner is still shown, with **Withdraw** for Luka
+- [x] Nikola can still approve the request of the Blocked job
+- [x] A warning toast says "Approved, but the job wasn't completed because it is Blocked."
+- [x] C is still **Blocked** and its request shows an amber **Approved, not applied** with the line "The job wasn't completed because it was Blocked."
+- [x] Luka gets "Approved completion of …, but it wasn't completed because it is Blocked"
+- [x] After **Unblock** C is **In Progress** with no banner, and the bar offers **Request completion** again
+- [x] Ana's approval completes C: C is **Completed**, and the newest request shows **Approved**
+- [x] Luka gets "Approved completion of …" and a Status changed entry for C
 
 ## APR-11 Deleting a job with a pending request
 **As:** Sara (member, assignee of E), then Ana (Residential owner), then Sara · **Day:** any, after ONB-33 · **Needs:** APR-01 done
@@ -258,9 +258,9 @@ any day after ONB-33, nothing depends on the calendar.
 3. Look at Residential **Approvals** and the job list.
 4. As Sara, open the bell.
 
-- [ ] E's card is in Ana's queue before the delete
-- [ ] After the delete E is gone from the job list and its card is gone from the queue
-- [ ] Sara gets one "Deleted …" notification for E
+- [x] E's card is in Ana's queue before the delete
+- [x] After the delete E is gone from the job list and its card is gone from the queue
+- [x] Sara gets one "Deleted …" notification for E
 
 ## APR-12 A manual approval request
 **As:** Luka (member, assignee of A), then Ana, then Nikola · **Day:** any, after ONB-33 · **Needs:** APR-01 done
@@ -270,12 +270,12 @@ any day after ONB-33, nothing depends on the calendar.
 3. Click **Submit**. Look at the Approvals section and A's status.
 4. As Ana, open Residential **Approvals**. As Nikola, open the bell.
 
-- [ ] **Submit** is greyed out while **Description** is empty and while it holds only spaces
-- [ ] A counter under the box shows the number of characters out of 2000
-- [ ] The request appears in A's Approvals section with the status **Pending**, "Requested by Luka Ilić" and **no** label **Completion**; A is still **In Progress**
-- [ ] Ana's queue shows A's card without the label **Completion**, with **Reject** and **Approve**
-- [ ] Ana and Nikola each get "Requested approval on …" from Luka
-- [ ] Luka sees no **Approve** or **Reject** on his own pending request
+- [x] **Submit** is greyed out while **Description** is empty and while it holds only spaces
+- [x] A counter under the box shows the number of characters out of 2000
+- [x] The request appears in A's Approvals section with the status **Pending**, "Requested by Luka Ilić" and **no** label **Completion**; A is still **In Progress**
+- [x] Ana's queue shows A's card without the label **Completion**, with **Reject** and **Approve**
+- [x] Ana and Nikola each get "Requested approval on …" from Luka
+- [x] Luka sees no **Approve** or **Reject** on his own pending request
 
 ## APR-13 What members can't do
 **As:** Luka (member), then Sara (member), then Ivana (member in Residential, admin in Office) · **Day:** any, after ONB-33 · **Needs:** APR-12 done (A has pending requests)
@@ -286,12 +286,12 @@ any day after ONB-33, nothing depends on the calendar.
 4. As Ivana, look at Residential's top bar, open Residential **Approvals** by the same address, then open Office Refurbishments and look at its top bar.
 5. As Ivana, open **Overview** from the address bar (`/overview`).
 
-- [ ] Luka's Approvals section on A lists the pending requests with no **Approve** or **Reject** buttons
-- [ ] Luka's top bar has no **Approvals** link, and the address takes him back to Residential **Jobs**
-- [ ] Sara's top bar has no **Approvals** link, and the address takes her back to Residential **Jobs**
-- [ ] Ivana, a member in Residential, has no **Approvals** link there and the address takes her back to Residential **Jobs**
-- [ ] In Office, where Ivana is an admin, her top bar has the **Approvals** link
-- [ ] Ivana, a member of the organisation, can't open Overview: she lands on the project list
+- [x] Luka's Approvals section on A lists the pending requests with no **Approve** or **Reject** buttons
+- [x] Luka's top bar has no **Approvals** link, and the address takes him back to Residential **Jobs**
+- [x] Sara's top bar has no **Approvals** link, and the address takes her back to Residential **Jobs**
+- [x] Ivana, a member in Residential, has no **Approvals** link there and the address takes her back to Residential **Jobs**
+- [x] In Office, where Ivana is an admin, her top bar has the **Approvals** link
+- [x] Ivana, a member of the organisation, can't open Overview: she lands on the project list
 
 ## APR-14 Approving a manual request does not complete the job
 **As:** Nikola (Residential admin), then Luka, then Ana · **Day:** any, after ONB-33 · **Needs:** APR-12 done (Luka's request on A pending, A In Progress, Residential's gate on)
@@ -303,13 +303,13 @@ any day after ONB-33, nothing depends on the calendar.
 5. As Ana, open Residential **Approvals**, click **Reject** on that card, type "Keep the brass handle, the client chose it." and confirm.
 6. As Luka, look at the bell and A's Approvals section.
 
-- [ ] After the approval A is still **In Progress**
-- [ ] The request shows **Approved**, "Approved by Nikola Jovanović" and the comment in quotes, and shows no label **Completion**
-- [ ] Luka gets "Approved your request on …" from Nikola
-- [ ] Luka's bar on A still offers **Request completion** and not **Complete**
-- [ ] Ana's rejection shows **Rejected**, "Rejected by Ana Petrović" and her comment, and A is still **In Progress**
-- [ ] Luka gets "Rejected your request on …" from Ana
-- [ ] A's Approvals section lists the two requests newest first: the matte black one (Rejected), then the oak frame one (Approved)
+- [x] After the approval A is still **In Progress**
+- [x] The request shows **Approved**, "Approved by Nikola Jovanović" and the comment in quotes, and shows no label **Completion**
+- [x] Luka gets "Approved your request on …" from Nikola
+- [x] Luka's bar on A still offers **Request completion** and not **Complete**
+- [x] Ana's rejection shows **Rejected**, "Rejected by Ana Petrović" and her comment, and A is still **In Progress**
+- [x] Luka gets "Rejected your request on …" from Ana
+- [x] A's Approvals section lists the two requests newest first: the matte black one (Rejected), then the oak frame one (Approved)
 
 ## APR-15 Two admins decide the same request
 **As:** Luka, then Ana and Nikola at the same time · **Day:** any, after ONB-33 · **Needs:** APR-14 done. Ana and Nikola each have Residential **Approvals** open
@@ -321,12 +321,12 @@ any day after ONB-33, nothing depends on the calendar.
 5. As Ana, confirm in her window.
 6. As Ana, close the window and look at the queue. As Luka, open the bell.
 
-- [ ] Luka's new card appears in Ana's and Nikola's open queues without a reload
-- [ ] Nikola's approval is accepted and the card is gone from his queue
-- [ ] Ana's confirm shows a red message "This approval was already decided by another user."
-- [ ] The card is already gone from Ana's queue behind the window, and stays gone after she closes it, without a reload
-- [ ] The request in A's Approvals section is **Approved** by Nikola Jovanović
-- [ ] Luka gets one "Approved your request on …" entry for this request, from Nikola
+- [x] Luka's new card appears in Ana's and Nikola's open queues without a reload
+- [x] Nikola's approval is accepted and the card is gone from his queue
+- [x] Ana's confirm shows a red message "This approval was already decided by another user."
+- [x] The card is already gone from Ana's queue behind the window, and stays gone after she closes it, without a reload
+- [x] The request in A's Approvals section is **Approved** by Nikola Jovanović
+- [x] Luka gets one "Approved your request on …" entry for this request, from Nikola
 
 ## APR-16 Office Refurbishments: the gate is off
 **As:** Luka (member, assignee of F), then Ivana (Office admin), then Nikola (Office owner), then Ana · **Day:** any, after ONB-33 · **Needs:** APR-01 done, Office's gate off
@@ -338,12 +338,12 @@ any day after ONB-33, nothing depends on the calendar.
 5. As Luka, look at the bell, then click **Complete** and confirm **Mark Complete**.
 6. As Ana, open Residential **Approvals** and **Overview**.
 
-- [ ] Luka's bar on In Progress F offers **Complete** (not **Request completion**), **Block** and **Request Approval**
-- [ ] The request shows in Office **Approvals** without the label **Completion**, and Ivana, an admin who isn't the project owner, can approve it
-- [ ] Nikola and Ivana each get "Requested approval on …" from Luka, and Ana gets nothing about F
-- [ ] Luka gets "Approved your request on …" from Ivana
-- [ ] **Complete** asks for a confirmation and completes F at once: no banner, no **Awaiting completion approval** badge on the list
-- [ ] None of F's requests appears in Residential's queue or on Ana's Overview
+- [x] Luka's bar on In Progress F offers **Complete** (not **Request completion**), **Block** and **Request Approval**
+- [x] The request shows in Office **Approvals** without the label **Completion**, and Ivana, an admin who isn't the project owner, can approve it
+- [x] Nikola and Ivana each get "Requested approval on …" from Luka, and Ana gets nothing about F
+- [x] Luka gets "Approved your request on …" from Ivana
+- [x] **Complete** asks for a confirmation and completes F at once: no banner, no **Awaiting completion approval** badge on the list
+- [x] None of F's requests appears in Residential's queue or on Ana's Overview
 
 ## APR-17 Turning the gate on and off
 **As:** Nikola (Office owner), then Luka (member, assignee of G), then Nikola · **Day:** any, after ONB-33 · **Needs:** APR-01 done, Office's gate off. Finish this scenario in one sitting, because with Office's gate on `JOB-17` in `04-jobs.md` would give Luka **Request completion**
@@ -356,12 +356,12 @@ any day after ONB-33, nothing depends on the calendar.
 6. As Nikola, open Office **Approvals**, click **Approve** on G's card and confirm.
 7. As Luka, open the bell and G.
 
-- [ ] Switching the gate on shows "Jobs now need approval to complete", and off "Jobs no longer need approval to complete"
-- [ ] With the gate on Luka's bar on G offers **Request completion**, and sending shows the banner and the greyed **Approval requested**
-- [ ] With the gate turned off again G still shows the banner and the request is still **Pending**, and Luka's bar now offers **Complete** again
-- [ ] Approving the pending request completes G, although the gate is off
-- [ ] Luka gets "Approved completion of …" and a Status changed entry for G
-- [ ] Office's gate ends **off** (Settings shows the switch off after a reload)
+- [x] Switching the gate on shows "Jobs now need approval to complete", and off "Jobs no longer need approval to complete"
+- [x] With the gate on Luka's bar on G offers **Request completion**, and sending shows the banner and the greyed **Approval requested**
+- [x] With the gate turned off again G still shows the banner and the request is still **Pending**, and Luka's bar now offers **Complete** again
+- [x] Approving the pending request completes G, although the gate is off
+- [x] Luka gets "Approved completion of …" and a Status changed entry for G
+- [x] Office's gate ends **off** (Settings shows the switch off after a reload)
 
 ## APR-18 An org without the Approvals add-on
 **As:** Petra (owner, Pine & Pixel Studio) · **Day:** any, after ONB-33 · **Needs:** ONB-31 done. Pine & Pixel has no add-ons.
@@ -372,12 +372,12 @@ any day after ONB-33, nothing depends on the calendar.
 4. Go back, open **Settings**, scroll to **Job screen**, and look at **Require approval to complete jobs**.
 5. Open the job "Draft logo options for Juniper Cafe" and look at its action bar. Open **Overview**.
 
-- [ ] The top bar shows **Approvals** with a lock
-- [ ] The page says "Approvals is not included in your plan" with **Upgrade in org settings**, and no approval queue
-- [ ] **Upgrade in org settings** opens **Organisation Settings**
-- [ ] **Require approval to complete jobs** is locked with "Requires an active Approvals add-on."
-- [ ] The job's action bar has no **Request Approval** button and no **Request completion**: **Complete** completes directly (`JOB-22` in `04-jobs.md` checks the rest of the job screen)
-- [ ] **Overview** shows "All caught up — no pending approvals across your projects." and no error message
+- [x] The top bar shows **Approvals** with a lock
+- [x] The page says "Approvals is not included in your plan" with **Upgrade in org settings**, and no approval queue
+- [x] **Upgrade in org settings** opens **Organisation Settings**
+- [x] **Require approval to complete jobs** is locked with "Requires an active Approvals add-on."
+- [x] The job's action bar has no **Request Approval** button and no **Request completion**: **Complete** completes directly (`JOB-22` in `04-jobs.md` checks the rest of the job screen)
+- [x] **Overview** shows "All caught up — no pending approvals across your projects." and no error message
 
 ## APR-19 The Serbian UI
 **As:** Luka (member, Serbian UI), then Ana · **Day:** any, after ONB-33 · **Needs:** APR-10, APR-14 and APR-15 done: C Completed with an **Approved, not applied** request, A with one Pending, one Rejected and two Approved requests
@@ -387,24 +387,24 @@ any day after ONB-33, nothing depends on the calendar.
 3. Open the bell and read the approval entries. Open **Overview**.
 4. As Ana, change nothing: just open Residential **Approvals** to confirm the queue is in English for her.
 
-- [ ] The labels **Completion**, **Pending**, **Approved**, **Rejected**, **Cancelled** and **Approved, not applied**, "Requested by …", "Approved by …" and "Rejected by …" are in Serbian and read naturally
-- [ ] The line "The job wasn't completed because it was Blocked." is in Serbian, and the status name inside it is Serbian too
-- [ ] The **Request completion** window (title, explanation, **Message**, **Cancel**, button) is in Serbian
-- [ ] The approval notifications ("Approved completion of …", "Approved your request on …", "Rejected your request on …") are in Serbian
-- [ ] No English text is left on the screens above (known Serbian wording choice to judge: the Serbian texts call a job "zadatak" in some places and "posao" in others, tick when you accept it, or link a `UX:` job)
-- [ ] Ana's own screens stay in English
+- [x] The labels **Completion**, **Pending**, **Approved**, **Rejected**, **Cancelled** and **Approved, not applied**, "Requested by …", "Approved by …" and "Rejected by …" are in Serbian and read naturally
+- [x] The line "The job wasn't completed because it was Blocked." is in Serbian, and the status name inside it is Serbian too
+- [x] The **Request completion** window (title, explanation, **Message**, **Cancel**, button) is in Serbian
+- [x] The approval notifications ("Approved completion of …", "Approved your request on …", "Rejected your request on …") are in Serbian
+- [x] No English text is left on the screens above (known Serbian wording choice to judge: the Serbian texts call a job "zadatak" in some places and "posao" in others, tick when you accept it, or link a `UX:` job)
+- [x] Ana's own screens stay in English
 
 ## APR-20 Notifications of the whole file
 **As:** Ana, Nikola, Ivana, Luka, Sara, Petra, each in her own profile · **Day:** any, after APR-19 · **Needs:** APR-01 to APR-19 done
 
 Open each person's bell (or **Notifications**) and filter by the Willow Lane and Dunmore Dental jobs. Compare with the table at the top of this file.
 
-- [ ] Ana has 11 **Approval requested**, 1 **Status changed** and 1 **Job blocked** about these jobs
-- [ ] Nikola has 13 **Approval requested**, 12 **Status changed** and 1 **Job blocked** about these jobs
-- [ ] Ivana has 1 **Job assigned**, 2 **Approval requested**, 2 **Approval decided** and 6 **Status changed**
-- [ ] Luka has 4 **Job assigned**, 7 **Approval decided** and 4 **Status changed**
-- [ ] Sara has 2 **Job assigned**, 2 **Approval decided**, 3 **Status changed** and 1 **Job deleted**
-- [ ] Petra has no notification, and nobody has an entry for an action they did themselves
+- [x] Ana has 11 **Approval requested**, 1 **Status changed** and 1 **Job blocked** about these jobs
+- [x] Nikola has 13 **Approval requested**, 12 **Status changed** and 1 **Job blocked** about these jobs
+- [x] Ivana has 1 **Job assigned**, 2 **Approval requested**, 2 **Approval decided** and 6 **Status changed**
+- [x] Luka has 4 **Job assigned**, 7 **Approval decided** and 4 **Status changed**
+- [x] Sara has 2 **Job assigned**, 2 **Approval decided**, 3 **Status changed** and 1 **Job deleted**
+- [x] Petra has no notification, and nobody has an entry for an action they did themselves
 
 ## Not manual
 - Calling the approval endpoints through the API without the Approvals add-on (403): covered by `RequiresAddonAspectTest` ("Should throw ForbiddenException when add-on is not active") and the add-on cases of `CompletionApprovalIntegrationTest` ("Gate on but the org lacks the APPROVALS add-on: gate not enforced, 200 completed"). `APR-18` checks what the screens show.
