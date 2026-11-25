@@ -85,7 +85,7 @@ interface SettingRowProps {
 
 function SettingRow({ label, description, children }: SettingRowProps) {
   return (
-    <div className="flex items-center justify-between gap-6 p-5">
+    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 p-5">
       <div className="min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{label}</p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>

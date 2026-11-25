@@ -160,22 +160,26 @@ export default function OrgSettingsPage() {
           {t('org:membersSectionHeading')}
         </h2>
         <div className="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-          <div className="p-4 flex items-center justify-between">
+          <div className="p-4 flex items-center justify-between gap-4">
             <p className="text-sm text-gray-600 dark:text-gray-300">
               {t('org:manageMembersDesc')}
             </p>
-            <Button variant="secondary" size="sm" onClick={() => navigate('/org/members')}>
-              {t('org:manageMembersButton')}
-            </Button>
+            <div className="shrink-0">
+              <Button variant="secondary" size="sm" onClick={() => navigate('/org/members')}>
+                {t('org:manageMembersButton')}
+              </Button>
+            </div>
           </div>
           {isOwnerOrAdmin && (
-            <div className="p-4 flex items-center justify-between">
+            <div className="p-4 flex items-center justify-between gap-4">
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 {t('org:inviteDesc')}
               </p>
-              <Button variant="secondary" size="sm" onClick={() => navigate('/org/invites')}>
-                {t('org:invitesButton')}
-              </Button>
+              <div className="shrink-0">
+                <Button variant="secondary" size="sm" onClick={() => navigate('/org/invites')}>
+                  {t('org:invitesButton')}
+                </Button>
+              </div>
             </div>
           )}
         </div>

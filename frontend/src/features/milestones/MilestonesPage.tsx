@@ -51,8 +51,8 @@ function MilestoneRow({ milestone, projectId, completed, total, canManage, onEdi
   const { prefs } = usePreferences();
 
   return (
-    <div className="flex items-start justify-between gap-4 p-5">
-      <div className="min-w-0 space-y-1 flex-1">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 p-5">
+      <div className="min-w-0 space-y-1 w-full sm:w-auto sm:flex-1">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{milestone.name}</p>
         {milestone.description && (
           <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">

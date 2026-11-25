@@ -146,9 +146,9 @@ function JobCard({ job, projectId, showMilestoneChip = false }: JobCardProps) {
         job.status === 'BLOCKED' ? 'border-l-4 border-l-red-400' : ''
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{job.title}</p>
-        <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 sm:flex-1 min-w-0 break-words">{job.title}</p>
+        <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0">
           {job.typeId && job.typeName && job.typeColor && (
             <JobTypeBadge name={job.typeName} color={job.typeColor} />
           )}
@@ -508,19 +508,25 @@ export default function JobListPage() {
         </div>
       </div>
 
+      {/* Toolbar. Phone: search on its own row, the filters share the next row, then the
+          Grouped toggle and Everyone/Mine together, then the status tabs. From `sm:` the two
+          inner rows are real flex rows (search + filters + Grouped, tabs + Everyone/Mine);
+          below `sm:` they're `contents`, so their children lay out in this wrapping row. */}
+      <div className="flex flex-wrap items-center gap-2 mb-4 sm:block">
       {/* Search + Priority filter + Milestone filter + View toggle */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="contents sm:flex sm:flex-wrap sm:gap-2 sm:mb-4">
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('jobListPage.searchPlaceholder')}
-          className="flex-1 min-w-0 sm:max-w-sm rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
+          className="w-full sm:w-auto sm:flex-1 min-w-0 sm:max-w-sm rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
         />
+        <div className="flex w-full gap-2 sm:contents">
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value as JobPriority | 'ALL')}
-          className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+          className="flex-1 sm:flex-initial min-w-0 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
         >
           {priorityFilters.map(({ key, label }) => (
             <option key={key} value={key}>{label}</option>
@@ -530,7 +536,7 @@ export default function JobListPage() {
           <select
             value={milestoneFilter}
             onChange={(e) => setMilestoneFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+            className="flex-1 sm:flex-initial min-w-0 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
           >
             <option value="ALL">{t('jobListPage.allMilestonesOption')}</option>
             {milestones.map((ms: MilestoneResponse) => (
@@ -542,7 +548,7 @@ export default function JobListPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
+            className="flex-1 sm:flex-initial min-w-0 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
           >
             <option value="ALL">{t('jobListPage.allTypesOption')}</option>
             {jobTypes.map((type) => (
@@ -550,6 +556,7 @@ export default function JobListPage() {
             ))}
           </select>
         )}
+        </div>
         {hasMilestones && !milestoneFilterActive && (
           <button
             onClick={() => setViewModeOverride(viewMode === 'grouped' ? 'flat' : 'grouped')}
@@ -565,8 +572,8 @@ export default function JobListPage() {
       </div>
 
       {/* Status filter tabs + Everyone/Mine toggle */}
-      <div className="flex flex-col-reverse sm:flex-row sm:items-end gap-2 mb-4">
-      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 flex-1 min-w-0">
+      <div className="contents sm:flex sm:flex-row sm:items-end sm:gap-2 sm:mb-4">
+      <div className="order-last sm:order-none overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 w-[calc(100%+2rem)] shrink-0 sm:w-auto sm:shrink sm:flex-1 min-w-0">
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 min-w-max sm:min-w-0">
         {filters.map(({ key, label }) => {
           const count = key === 'ALL' ? allCount : counts[key as JobStatus];
@@ -622,6 +629,7 @@ export default function JobListPage() {
             {value === 'EVERYONE' ? t('jobListPage.assigneeEveryone') : t('jobListPage.assigneeMine')}
           </button>
         ))}
+      </div>
       </div>
       </div>
 
