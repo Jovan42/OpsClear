@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import type { NotificationType } from '../../types';
-import { refreshApprovalsAfterConflict, refreshApprovalsForNotification } from './approvalRefresh';
+import { refreshApprovalsAfterConflict, refreshApprovalsAfterConnect, refreshApprovalsForNotification } from './approvalRefresh';
 
 const PROJECT_QUEUE = ['approvals', 'PRJ-1', 'pending'];
 const CROSS_ORG = ['approvals', 'pending', 'cross-org'];
@@ -37,6 +37,17 @@ describe('refreshApprovalsForNotification', () => {
 
     expect(isInvalidated(PROJECT_QUEUE)).toBe(false);
     expect(isInvalidated(CROSS_ORG)).toBe(false);
+  });
+});
+
+describe('refreshApprovalsAfterConnect', () => {
+  it('invalidates the project queue and the cross-org list, nothing else', () => {
+    refreshApprovalsAfterConnect(qc);
+
+    expect(isInvalidated(PROJECT_QUEUE)).toBe(true);
+    expect(isInvalidated(CROSS_ORG)).toBe(true);
+    expect(isInvalidated(JOB_APPROVALS)).toBe(false);
+    expect(isInvalidated(NOTIFICATIONS)).toBe(false);
   });
 });
 

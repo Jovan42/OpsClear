@@ -5,7 +5,8 @@
 // - A new request arrives as an APPROVAL_REQUESTED notification over the live stream, which
 //   refreshes the queues. These tests wait for the bell's `data-live="true"` first.
 // - A decision by another admin notifies only the requester, so an admin's open queue
-//   learns about it on window focus (or the 60s poll, not exercised here: too slow). The
+//   learns about it on window focus (or the 60s poll that runs only while a queue is shown,
+//   not exercised here: too slow). The
 //   Member is the requester throughout, so the Owner never gets a notification that would
 //   refresh the queue for another reason.
 // - A 409 "already decided" on decide refreshes the queues, so the stale card leaves.
