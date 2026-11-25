@@ -50,7 +50,7 @@ describe('Milestones', () => {
       cy.contains('Ship the beta to early adopters').should('be.visible');
 
       cy.contains('Beta Launch')
-        .parents('div.flex.items-start.justify-between')
+        .parents('div.flex.sm\\:justify-between')
         .then(($row) => {
           const msId = $row.text();
           expect(msId).to.contain('Beta Launch');
