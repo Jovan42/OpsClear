@@ -153,12 +153,12 @@ any day after ONB-33, nothing depends on the calendar.
 - [ ] Nikola's queue shows the same two requests with the same buttons
 
 ## APR-05 Reject a completion request
-**As:** Nikola (Residential admin), then Ivana, then Ana · **Day:** any, after ONB-33 · **Needs:** APR-03 done (B pending)
+**As:** Nikola (Residential admin), then Ivana, then Ana · **Day:** any, after ONB-33 · **Needs:** APR-03 done (B pending). Ana has Residential **Approvals** open in her own window, showing B's card
 
 1. As Nikola, open Residential **Approvals**, click **Reject** on the card of B.
 2. Read the window. Click **Cancel**, then click **Reject** again, type "Please add the snag photos to a note first." and click **Reject** in the window.
 3. As Ivana, open B and look at the banner, the action bar and the Approvals section.
-4. As Ana, look at Residential **Approvals**.
+4. As Ana, without reloading, switch back to her Residential **Approvals** window.
 
 - [ ] The window is titled "Reject Request" and its comment box is marked optional
 - [ ] **Cancel** decides nothing: B's card is still in the queue
@@ -166,7 +166,7 @@ any day after ONB-33, nothing depends on the calendar.
 - [ ] B is still **In Progress** for Ivana, with no banner, and the bar offers **Request completion** again
 - [ ] The request in the Approvals section shows the status **Rejected**, "Rejected by Nikola Jovanović" with the time, and the comment in quotes
 - [ ] Ivana gets "Rejected your request on …" from Nikola
-- [ ] Ana gets no notification for the decision, and the queue she sees no longer has B
+- [ ] Ana gets no notification for the decision, and B's card leaves her open queue when she returns to the window, without a reload
 
 ## APR-06 Approve a completion request: the job completes by itself
 **As:** Ivana (member), then Ana (Residential owner), then Nikola · **Day:** any, after ONB-33 · **Needs:** APR-05 done
@@ -187,20 +187,21 @@ any day after ONB-33, nothing depends on the calendar.
 - [ ] Nikola gets a Status changed entry for B, and Ana gets none for her own approval
 
 ## APR-07 The requester withdraws a completion request
-**As:** Luka (member, assignee of C), then Ana · **Day:** any, after ONB-33 · **Needs:** APR-02 done (C pending)
+**As:** Luka (member, assignee of C), then Ana · **Day:** any, after ONB-33 · **Needs:** APR-02 done (C pending). Ana has Residential **Approvals** open in her own window, showing C's card
 
 1. As Luka, open C and click **Withdraw** on the banner.
 2. Read the window and click **Cancel**. Click **Withdraw** on the banner again and click **Withdraw** in the window.
 3. Look at the banner, the action bar and the Approvals section.
-4. As Ana, open Residential **Approvals** and the bell.
+4. As Ana, without reloading, switch back to her Residential **Approvals** window, then open the bell.
 5. As Luka, click **Request completion**, type "Re-checked the skirting, requesting again." and send.
+6. As Ana, look at her Approvals window without reloading.
 
 - [ ] The window is titled "Withdraw completion request" and says the job stays In Progress and completion can be requested again
 - [ ] **Cancel** leaves the request pending: the banner is still there
 - [ ] After withdrawing, the banner is gone, C is still **In Progress** and the bar offers **Request completion** again
 - [ ] The request in the Approvals section shows the status **Cancelled** and "Cancelled by Luka Ilić"
-- [ ] C's card is gone from Ana's queue, and no notification about the withdrawal reaches Ana or Nikola
-- [ ] After the second request C shows the banner with the new message and the queue has C's card again
+- [ ] C's card leaves Ana's open queue when she returns to the window, without a reload, and no notification about the withdrawal reaches Ana or Nikola
+- [ ] After the second request C shows the banner with the new message, and C's card is back in Ana's open queue without a reload
 
 ## APR-08 An admin withdraws someone else's request
 **As:** Sara (member, assignee of D), then Nikola (Residential admin), then Sara · **Day:** any, after ONB-33 · **Needs:** APR-01 done
@@ -314,15 +315,16 @@ any day after ONB-33, nothing depends on the calendar.
 **As:** Luka, then Ana and Nikola at the same time · **Day:** any, after ONB-33 · **Needs:** APR-14 done. Ana and Nikola each have Residential **Approvals** open
 
 1. As Luka, on A click **Request Approval**, type "Confirm the Thursday delivery slot for the door." and submit.
-2. Reload Ana's and Nikola's Residential **Approvals** until both show Luka's new card.
+2. Without reloading, wait until Ana's and Nikola's Residential **Approvals** both show Luka's new card.
 3. As Ana, click **Approve** on it and leave the window open, without confirming.
 4. As Nikola, click **Approve** on the same card, type "Thursday is fine." and confirm.
 5. As Ana, confirm in her window.
 6. As Ana, close the window and look at the queue. As Luka, open the bell.
 
+- [ ] Luka's new card appears in Ana's and Nikola's open queues without a reload
 - [ ] Nikola's approval is accepted and the card is gone from his queue
 - [ ] Ana's confirm shows a red message "This approval was already decided by another user."
-- [ ] Ana's queue no longer has the card after she closes the window and the page refreshes
+- [ ] The card is already gone from Ana's queue behind the window, and stays gone after she closes it, without a reload
 - [ ] The request in A's Approvals section is **Approved** by Nikola Jovanović
 - [ ] Luka gets one "Approved your request on …" entry for this request, from Nikola
 
