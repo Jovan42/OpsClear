@@ -5,7 +5,9 @@ Guide: /guide/dashboard, /guide/stats-overview, /guide/preferences, /guide/roles
 
 This file covers the project **Dashboard** (status ring, summary counts, the Blocked, Overdue and Pending Approvals lists, the breakdown by type), **Stats** (completed jobs per week, the five tiles, the range, the per-member table and drill-down), the **Overview** page (pending approvals across projects and the project directory), the preferences that change them (hidden dashboard sections, default stats range, Overview approvals, landing project), who sees what per role, and what an organisation without the Dashboard add-on sees. The world is built by `01-onboarding.md` ([README](README.md#test-world)): Brightline Renovations with Ana, Nikola, Ivana, Luka and Sara, the projects Residential Fit-outs and Office Refurbishments, and Petra in Pine & Pixel Studio, which has no add-ons. Run `01-onboarding.md` first.
 
-**Run order.** Run DSH-01 to DSH-15 in order, in one sitting, on any day after ONB-33, and without crossing 06:00 UTC (the deadline alerts run then): DSH-01 creates a job with a past deadline that stays open until DSH-11. DSH-16 and DSH-17 create nothing and can run on any later day.
+**Run order and time window.** Run DSH-01 to DSH-15 in order, in one sitting, on one UTC day after ONB-33: start after 07:05 UTC and finish before 23:00 UTC. Reasons: the deadline alerts run at 06:00 UTC; the `Daily site safety check` schedule of `08-schedules.md` creates a New job in Residential at 07:00 UTC, which would move the New counts and Ivana's or Sara's numbers; at midnight UTC other open jobs flip to Overdue, and near local midnight (CET) the Monday of the current week can change under the Stats range. DSH-16 and DSH-17 create nothing and can run on any later day.
+
+**If the sitting stops before DSH-11**, clear D's deadline (or delete D) before 06:00 UTC, because D is open with a past deadline. If an alert went out anyway, Ana and Nikola each have one **Job overdue** entry about D, which `09-notifications.md` day 7+ should expect.
 
 **Numbers depend on the other files, so this file reads before and compares after.** Residential holds the day-1 jobs, the working jobs of every other file and the jobs the schedules made, and their statuses and deadlines move as the run goes on. So no check here relies on an absolute count. DSH-01 writes down a **baseline reading**, and the later checks say "goes up by one", "goes down by two" or "is back to the baseline". DSH-15 deletes this file's jobs, after which every number is back to that baseline. Checks that name a total use "at least".
 
@@ -13,13 +15,13 @@ This file covers the project **Dashboard** (status ring, summary counts, the Blo
 
 - **Dashboard** (needs the Dashboard add-on). Opening a project lands on the Dashboard unless the user chose another **Default project page**. **Summary** has cards for **New**, **In Progress**, **Blocked**, **Completed** and **Overdue**, and **Pending approvals** for Owners and Admins only. A card of the first four opens the job list on that tab, **Pending approvals** opens the Approvals page, **Overdue** opens nothing. The ring chart only lists statuses that have jobs. **By type** only shows when at least one job has a type. The **Blocked**, **Overdue** and **Pending Approvals** lists only show when they have rows, and the Pending Approvals list shows five rows at most.
 - **Who sees what.** Owners and Admins see the whole project. For a Member, the Dashboard and Stats only count the jobs assigned to them. A Member has no **Pending approvals** card and no list of pending approvals. Admins of a project get the same as its Owner.
-- **Overdue.** A job is overdue once its deadline day is over and it isn't Completed, so a job due today is not overdue. A Blocked job past its deadline counts as Blocked and as Overdue.
+- **Overdue.** A job is overdue once its deadline day (UTC date) is over and it isn't Completed, so a job due today is not overdue. A Blocked job past its deadline counts as Blocked and as Overdue.
 - **Staying fresh.** The Dashboard loads fresh numbers when opened and after you change a job yourself. Other people's changes show after **Refresh** (the icon at the top right, with a note "Updated just now") or when you come back to the browser window. The Overview and the Approvals page also update by themselves.
-- **Stats** (the Dashboard add-on). **Team stats** for Owners and Admins, **Your stats** for a Member. The range is **4 weeks**, **12 weeks** or **26 weeks**. A job counts in the week it was completed (weeks start on Monday, in the viewer's time zone). Tiles: **Completed**, **Avg. total time**, **Avg. working time**, **Avg. blocked time** and **Completed late**, with the line "N late out of M with a deadline" under it, which only shows when at least one completed job had a deadline. A job is late only when completed after the end of its deadline day. A dash means no job has that number. Deleted jobs are not counted. Owners and Admins also get **Team** and **By member** above the tiles.
-- **Overview** (organisation Owners and Admins only, in the user menu). **Pending Approvals** lists the requests waiting in every project where the person is Owner or Admin (needs the Approvals add-on and the preference **Show approvals on Overview** on). **Project Directory** lists every project of the organisation with Owner, Status and Members, fewest members first.
+- **Stats** (the Dashboard add-on). **Team stats** for Owners and Admins, **Your stats** for a Member. The range is **4 weeks**, **12 weeks** or **26 weeks**. A job counts in the week it was completed (weeks start on Monday, in the viewer's time zone). Tiles: **Completed**, **Avg. total time**, **Avg. working time**, **Avg. blocked time** and **Completed late**, with the line "N late out of M with a deadline" under it, which only shows when at least one completed job had a deadline. A job is late only when completed after the end of its deadline day (UTC date). A dash means no job has that number. Deleted jobs are not counted. Owners and Admins also get **Team** and **By member** above the tiles.
+- **Overview** (organisation Owners and Admins only, in the user menu). **Pending Approvals** lists the requests waiting in every project where the person is Owner or Admin (shown when the preference **Show approvals on Overview** is on; without the Approvals add-on the heading stays and the list is empty, with "All caught up — no pending approvals across your projects."). **Project Directory** lists every project of the organisation with Owner, Status and Members, fewest members first.
 - **Luka's language.** Luka uses the Serbian UI. His checks read the Serbian equivalent of the English labels named here and never compare exact English text.
 
-**Things this file creates** (fictional customer, all in the test world). Every one of them is deleted in DSH-15, so nothing stays behind and no deadline alert is ever sent for them.
+**Things this file creates** (fictional customer, all in the test world). Every one of them is deleted in DSH-15, so nothing stays behind. Run inside the time window above, none of them raises a deadline alert (D is completed in DSH-11, E is due in 10 days).
 
 | What | Where | Created in | Ends as |
 |------|-------|-----------|---------|
@@ -27,7 +29,7 @@ This file covers the project **Dashboard** (status ring, summary counts, the Blo
 | Job **A** Grout kitchen splashback at 6 Hawthorn Row, Ana, type Tiling, no deadline | Residential | DSH-01 | deleted |
 | Job **B** Seal bathroom floor at 6 Hawthorn Row, Ana, type Tiling, no deadline | Residential | DSH-01 | deleted |
 | Job **C** Fit shower screen at 6 Hawthorn Row, Luka, no deadline | Residential | DSH-01 | deleted |
-| Job **D** Collect tile samples for 6 Hawthorn Row, Ana, deadline yesterday | Residential | DSH-01 | deleted |
+| Job **D** Collect tile samples for 6 Hawthorn Row, Ana, deadline two days ago | Residential | DSH-01 | deleted |
 | Job **E** Order extractor ducting for 6 Hawthorn Row, Ana, deadline today + 10 days | Residential | DSH-01 | deleted |
 | Approval requests on C (completion) and E (manual) | Residential | DSH-05 | decided in DSH-10, gone with their jobs |
 
@@ -41,6 +43,8 @@ DSH-16 changes preferences of Ana and puts them back. Everything else in the wor
 | Nikola | 12 **Status changed** (A, B, D and E started, B completed, Luka starts C, C completed by approval, D and A unblocked, D, A and E completed), 2 **Job blocked** (A, D), 1 **Approval requested** (Luka's on C), 1 **Approval decided** (his request on E) |
 | Luka | 1 **Job assigned** (C), 1 **Approval decided** (C approved), 1 **Status changed** (C completed), 1 **Job deleted** (C) |
 | Ivana, Sara, Petra | none |
+
+No deadline alert is sent when the sitting follows the time window. Only the recovery case above (stopped before DSH-11, no fix before 06:00 UTC) adds one **Job overdue** entry about D to Ana and Nikola.
 
 ## DSH-01 Baseline readings, the Tiling type and the working jobs
 **As:** Ana (owner, Residential Fit-outs), Luka and Sara (members) · **Day:** any, after ONB-33 · **Needs:** `01-onboarding.md` done, the Dashboard and Job types add-ons on
@@ -58,7 +62,7 @@ Write the readings on paper or in a note. They are used by the checks of every l
    | A | Grout kitchen splashback at 6 Hawthorn Row | Ana | none | Tiling |
    | B | Seal bathroom floor at 6 Hawthorn Row | Ana | none | Tiling |
    | C | Fit shower screen at 6 Hawthorn Row | Luka | none | none |
-   | D | Collect tile samples for 6 Hawthorn Row | Ana | yesterday | none |
+   | D | Collect tile samples for 6 Hawthorn Row | Ana | two days ago | none |
    | E | Order extractor ducting for 6 Hawthorn Row | Ana | today + 10 days | none |
 
 - [ ] The Tiling type is created and the five jobs are created as **New**
@@ -77,7 +81,7 @@ Write the readings on paper or in a note. They are used by the checks of every l
 - [ ] **Overdue** is one higher than in R0 and **Pending approvals** is the same as in R0
 - [ ] The ring chart has a **New** entry in its legend, and no entry for a status that has no jobs
 - [ ] **By type** shows **Tiling** with the number 2 and a bar
-- [ ] The **Overdue** list includes "Collect tile samples for 6 Hawthorn Row" with "Ana Petrović" and a red "· due" with yesterday's date, and its title shows a count that equals the **Overdue** card
+- [ ] The **Overdue** list includes "Collect tile samples for 6 Hawthorn Row" with "Ana Petrović" and a red "· due" with the date from two days ago (this assumes **Deadline format** is **Absolute**, its default), and its title shows a count that equals the **Overdue** card
 - [ ] The **Overdue** list does not include "Order extractor ducting for 6 Hawthorn Row" (due in 10 days)
 - [ ] The top right shows a Refresh icon with a note "Updated just now"
 
@@ -154,7 +158,7 @@ Write the readings on paper or in a note. They are used by the checks of every l
 1. Open **Account settings**, find **Dashboard**. Set **Blocked jobs section** to **Hide**. Open the Residential Dashboard.
 2. Back in settings, set **Blocked jobs section** to **Show**, **Overdue jobs section** to **Hide**, and open the Dashboard.
 3. Set **Overdue jobs section** to **Show**, **Pending approvals section** to **Hide**, and open the Dashboard.
-4. Set **Pending approvals section** to **Show**. Set **Show approvals on Overview** to **Off** and open the Residential project top bar and **Overview**.
+4. Set **Pending approvals section** to **Show**. Set **Show approvals on Overview** to **Off** and open Residential and look at **Approvals** in the top bar, then open **Overview**.
 5. Set **Show approvals on Overview** to **On** and open **Overview** again.
 
 - [ ] With the Blocked section hidden, the list is gone and the **Blocked** card still shows the same number as before
@@ -262,7 +266,7 @@ Write the readings on paper or in a note. They are used by the checks of every l
 - [ ] After the reload the same member is still shown
 - [ ] **Back to team** shows the team totals again, with the same **Completed** number as before the drill-down
 - [ ] Nikola sees the same table and can open his own row
-- [ ] Ivana sees **Your stats** with no "Showing:" line and no switch, and her **Completed** number is not Luka's
+- [ ] Ivana sees **Your stats** with no "Showing:" line and no switch, and her **Completed** number matches her own row in Ana's table
 - [ ] Luka's page is titled in Serbian "Your stats" (the Serbian equivalent), and his **Completed** matches his row in Ana's table
 - [ ] The labels, tiles and chart dates read in Serbian
 
@@ -283,6 +287,7 @@ Write the readings on paper or in a note. They are used by the checks of every l
 ## DSH-16 Default stats range and landing project
 **As:** Ana (owner) · **Day:** any · **Needs:** DSH-15 done
 
+0. Open **Account settings** and write down Ana's current **Default range** and **Landing project** (they should be 12 weeks and Project list); put those values back at the end.
 1. Open **Account settings**. Under **Stats**, set **Default range** to **4 weeks**. Open **Stats** in Residential.
 2. Click **26 weeks**, open the **Dashboard**, then **Stats** again.
 3. Back in settings set **Default range** to **12 weeks**.
@@ -296,20 +301,21 @@ Write the readings on paper or in a note. They are used by the checks of every l
 - [ ] With **Specific**, the root address takes Ana to the Residential Dashboard (her **Default project page**)
 - [ ] With **Last opened**, it takes her to the Office Refurbishments Dashboard
 - [ ] With **Project list**, it takes her to **Projects**
-- [ ] Every setting is back to Default range 12 weeks and Landing project Project list at the end
+- [ ] **Default range** and **Landing project** are back to the values written down in step 0
 
 ## DSH-17 Add-on off: Pine & Pixel Studio
 **As:** Petra (owner, Pine & Pixel Studio) · **Day:** any · **Needs:** ONB-31 done (project Brand refresh for Juniper Cafe, no add-ons)
 
-1. Open the project, click **Dashboard** in the top bar.
-2. Click **Stats**.
+1. Open **Brand refresh for Juniper Cafe** from **Projects** and look at the page and the top bar.
+2. Click **Dashboard** in the top bar, then **Stats**.
 3. Click **Upgrade in org settings**.
 4. Open the user menu.
 
-- [ ] The Dashboard shows "Dashboard is not included in your plan" and no numbers
+- [ ] Opening the project lands on the Dashboard, which shows "Dashboard is not included in your plan" and no numbers
+- [ ] **Dashboard** and **Stats** show in the top bar with a lock, at the end after **Settings**
 - [ ] **Stats** shows "Stats is not included in your plan" and no tiles
 - [ ] **Upgrade in org settings** opens **Organisation Settings**
-- [ ] The user menu has **Overview** (Petra is the org owner), and the page lists only **Brand refresh for Juniper Cafe** in **Project Directory**, with no Brightline project, and no request of Brightline in **Pending Approvals**
+- [ ] The user menu has **Overview** (Petra is the org owner), and the page lists only **Brand refresh for Juniper Cafe** in **Project Directory**, with no Brightline project, and **Pending Approvals** shows its heading with "All caught up — no pending approvals across your projects." and no request of Brightline
 - [ ] No data of Brightline shows anywhere
 
 ## Not manual
@@ -321,7 +327,7 @@ Write the readings on paper or in a note. They are used by the checks of every l
 - The Stats empty state (zero or dash tiles and empty weeks), a failed stats load with retry, the locked Stats tab: covered by `frontend/cypress/e2e/stats/stats-page.cy.ts` ("a project with no completions in range shows the empty state, zero/"—" tiles and the empty weeks", "a failed stats load shows PageError with a working retry", "an org without the DASHBOARD add-on sees a locked Stats tab and an upgrade card, and never fetches").
 - The project directory API (all projects of the organisation, fewest members first, 403 for a plain Member, 404 for a caller outside the organisation, 401 without a login): covered by `ProjectDirectoryIntegrationTest` (`getDirectory_shouldReturnAllOrgProjects_sortedByMemberCountAscending`, `getDirectory_shouldReturn403_forPlainMember`, `getDirectory_shouldReturn404_whenCallerNotInOrg`, `getDirectory_shouldReturn401_withoutAuth`). DSH-06 and DSH-17 check the screen.
 - The Overview and the Approvals page refreshing on new requests and when a decided request leaves: covered by `frontend/cypress/e2e/approvals/queue-refresh.cy.ts` ("a new request shows on the open Overview without a reload"). DSH-05 checks it by hand.
-- The stats range, Overview approvals and landing preferences saved to the server: covered by `frontend/cypress/e2e/user-settings/stats-overview-preferences.cy.ts` ("Stats opens on the chosen default range, and changing it there keeps the preference", "an Owner hides the Overview approvals while the nav badge stays; a Member does not see the setting") and the saved deep link beating the landing project by the landing-page specs. The settings page itself is in `11-account.md`.
+- The stats range, Overview approvals and landing preferences saved to the server: covered by `frontend/cypress/e2e/user-settings/stats-overview-preferences.cy.ts` ("Stats opens on the chosen default range, and changing it there keeps the preference", "an Owner hides the Overview approvals while the nav badge stays; a Member does not see the setting") and the saved deep link beating the landing project by `frontend/cypress/e2e/user-settings/landing-project.cy.ts` ("a saved deep link still wins over the landing project"). The settings page itself is in `11-account.md`.
 - Ten requests at first on the Overview with a **Show … more** button: needs more than ten pending requests across projects, which the test world never has.
 
 ## Findings
