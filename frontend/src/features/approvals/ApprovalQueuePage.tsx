@@ -79,7 +79,7 @@ export default function ApprovalQueuePage() {
   const { data: project } = useProject(projectId);
   const role = useProjectRole(projectId);
   const { hasAddon } = useCurrentOrg();
-  const { data: approvals = [], isLoading, isError, isFetching, dataUpdatedAt, refetch } = useApprovalQueue(projectId);
+  const { data: approvals = [], isLoading, isError, isFetching, dataUpdatedAt, refetch } = useApprovalQueue(projectId, { live: true });
   const { data: members = [] } = useProjectMembers(projectId);
   usePageTitle(t('approvals.pageTitle'), project?.name);
   const [decision, setDecision] = useState<DecisionState>(null);

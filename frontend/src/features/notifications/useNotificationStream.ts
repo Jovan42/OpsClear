@@ -2,6 +2,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationsApi, withPayload } from '../../api/notifications';
 import { useAuth } from '../../auth/AuthContext';
+import { refreshApprovalsAfterConnect, refreshApprovalsForNotification } from '../approvals/approvalRefresh';
 import { usePreferences } from '../../hooks/usePreferences';
 import type { NotificationResponse } from '../../types';
 import { backoffDelay, nextFailureCount } from './backoff';
@@ -138,8 +139,9 @@ function runStream({ onOpen, onEvent }: StreamHandlers): () => void {
 /**
  * Live notification updates (ADR-0051): one stream per tab, mounted once in AppLayout for
  * authenticated users. `notification` and `read-state` events update the TanStack Query
- * caches in place; every (re)connect refetches the count and lists, because the server
- * doesn't replay what was sent while disconnected. A new unread `notification` also plays a
+ * caches in place; every (re)connect refetches the count, lists and pending approval queues,
+ * because the server doesn't replay what was sent while disconnected. An approval notification
+ * also refreshes the pending approval queues (approvalRefresh.ts). A new unread `notification` also plays a
  * chime in the active tab (notificationSound.ts). Heartbeat comments are skipped by the
  * parser. The stream is aborted on unmount. Logout (`keycloak.logout()`) leaves the page,
  * which closes it with everything else.
@@ -172,12 +174,18 @@ export function useNotificationStream() {
       if (event === 'notification') {
         const notification = withPayload(parsed as NotificationResponse);
         const isNew = applyNewNotification(queryClient, notification);
+        refreshApprovalsForNotification(queryClient, notification.type);
         sound.onNotification(notification, isNew);
       } else if (event === 'read-state') {
         applyReadState(queryClient, parsed as ReadStateEvent);
       }
     }
 
-    return runStream({ onOpen: () => invalidateAfterConnect(queryClient), onEvent });
+    function onOpen() {
+      invalidateAfterConnect(queryClient);
+      refreshApprovalsAfterConnect(queryClient);
+    }
+
+    return runStream({ onOpen, onEvent });
   }, [authenticated, queryClient]);
 }

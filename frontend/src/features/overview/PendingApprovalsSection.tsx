@@ -18,7 +18,7 @@ export default function PendingApprovalsSection() {
   const { t } = useTranslation(['approvalsDashboardSettingsLanding', 'jobsComponents']);
   const { prefs } = usePreferences();
   const navigate = useNavigate();
-  const { data: approvals = [], isLoading, isError, refetch } = usePendingApprovalsAcrossOrgs();
+  const { data: approvals = [], isLoading, isError, refetch } = usePendingApprovalsAcrossOrgs({ live: true });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const visible = approvals.slice(0, visibleCount);
