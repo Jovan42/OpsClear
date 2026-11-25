@@ -478,6 +478,24 @@ Then open job A from the list and click **Jobs** in the breadcrumb at the top.
 - [x] The small label beside D's deadline is in Serbian ("Rok uskoro")
 - [x] D is gone from Luka's list, so it raises no deadline alert
 
+## JOB-24 The job list and the job screen on a phone
+**As:** Ana (owner, Residential) · **Day:** any, after ONB-33 · **Needs:** JOB-03 done (A, B and C exist), Residential has milestones and job types
+
+1. On a phone, or in the browser's device mode at 375 px wide, open Residential **Jobs**. Look at the tools above the list.
+2. Look at the job cards in the **Grouped** view, then click **Grouped** to switch to **Flat** and look at the tools again. Click **Flat** to go back.
+3. Open job A and look at the top of the screen.
+4. Switch the theme to dark in **Account settings** and repeat steps 1 to 3. Switch it back.
+5. Widen the window to desktop size (1024 px or more) and look at the list and job A again.
+
+- [ ] The search box fills its own row and the placeholder text is readable
+- [ ] The priority, type (and in Flat, milestone) boxes share the next row in equal widths
+- [ ] **Grouped** / **Flat** and **Everyone** / **Mine** sit together on one row, with the status tabs below them
+- [ ] Every job card's title uses the full card width, with the type, priority and status badges on a line under it, none cut off or overlapping
+- [ ] On job A, **Edit** and **⋮** sit above the title, and the title reads on one or two lines with its badges beside or under it
+- [ ] In dark theme the same layout holds and every text is readable
+- [ ] Nothing scrolls sideways at 375 px
+- [ ] At desktop size the list and job A look as before: search, filters and **Grouped** on one row, badges to the right of the title, **Edit** to the right of the title
+
 ## Not manual
 - Every illegal status transition (New to Completed, New to Blocked, Blocked to Completed, Completed to New, and so on) and the 400 "Invalid transition": covered by `JobStatusTransitionerTest` ("validate rejects every illegal transition with 400, even for an Owner") and, through the API, by `JobIntegrationTest` (New to Completed, Blocked to Completed, Completed to New). The screen never offers them, so JOB-12, JOB-13 and JOB-15 check the buttons per status instead.
 - The block reason being required by the API when the box is empty: covered by `JobStatusTransitionerTest` ("transition to BLOCKED without a reason fails with 400 and changes nothing"). The screen greys out the button (JOB-13).

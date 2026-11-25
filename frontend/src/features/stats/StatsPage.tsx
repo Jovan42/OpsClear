@@ -54,7 +54,7 @@ function Segmented<T extends string | number>({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(o.value)}
-            className={`px-3 py-1 text-xs font-medium rounded-md cursor-pointer transition-colors ${
+            className={`px-3 py-1 text-xs font-medium whitespace-nowrap rounded-md cursor-pointer transition-colors ${
               active
                 ? 'bg-brand text-white'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'

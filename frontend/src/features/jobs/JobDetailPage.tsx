@@ -200,8 +200,8 @@ export default function JobDetailPage() {
           <span className="text-gray-700 dark:text-gray-200 truncate">{job.title}</span>
         </nav>
 
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{job.title}</h1>
               {job.typeId && job.typeName && job.typeColor && (
@@ -226,7 +226,7 @@ export default function JobDetailPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
             <RefreshButton
               lastUpdated={dataUpdatedAt}
               isFetching={isFetching}
