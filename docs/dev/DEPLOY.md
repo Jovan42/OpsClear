@@ -79,3 +79,56 @@ sudo certbot renew --dry-run
 
 **Rolling back:** remove `APP_URL` from `.env.prod`, revert the PR on `main` (the deploy action
 redeploys the old nginx config), and run the `up -d --build` command above.
+
+## Domain email
+
+Set up by hand on 2026-11-25 (ADR-0064, ADR-0059). Written down here so the server and the DNS can
+be rebuilt.
+
+- **Mailbox: Namecheap Private Email.** One mailbox for `opsclear.app`. `support@opsclear.app` is
+  an alias of it and is the address customers see (Reply-To, email footers, the app and the site).
+  `hello@opsclear.app` is certbot's contact and receives the DMARC reports.
+- **App sender: Brevo**, SMTP relay `smtp-relay.brevo.com` on port **2525** (DigitalOcean blocks
+  587 and 465). Keycloak (verification, password reset) and the backend (invites) both send as
+  `OpsClear <no-reply@opsclear.app>`, with `Reply-To: support@opsclear.app`.
+
+### DNS records (Namecheap, Advanced DNS)
+
+| Type | Host | Value |
+|---|---|---|
+| MX | `@` | `mx1.privateemail.com`, priority 10 |
+| MX | `@` | `mx2.privateemail.com`, priority 10 |
+| TXT | `@` | `v=spf1 include:spf.privateemail.com include:spf.brevo.com ~all` (the only SPF record) |
+| TXT | `privateemail._domainkey` | DKIM key from Namecheap Private Email |
+| CNAME | `brevo1._domainkey`, `brevo2._domainkey` | DKIM targets given by Brevo |
+| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:hello@opsclear.app` |
+| TXT | `@` | `brevo-code:...` (Brevo domain verification) |
+| CNAME | `em`, `img.em`, `r.em` | Brevo tracking targets given by Brevo |
+
+**Keep Mail Settings on Custom MX.** In Namecheap Advanced DNS, the "Mail Settings" box must stay
+on **Custom MX** with the MX records above. Selecting "Private Email" makes Namecheap write its own
+SPF record, which drops `include:spf.brevo.com`, and app emails start failing SPF without any error.
+
+Check the records from outside with, for example, `dig +short MX opsclear.app`,
+`dig +short TXT opsclear.app` and `dig +short TXT _dmarc.opsclear.app`.
+
+### Settings in `.env.prod`
+
+| Variable | Prod value | Used by |
+|---|---|---|
+| `SMTP_FROM` | `no-reply@opsclear.app` | backend, Keycloak |
+| `SMTP_FROM_NAME` | `OpsClear` | backend, Keycloak (also the Reply-To display name) |
+| `SMTP_REPLY_TO` | `support@opsclear.app` | backend (Reply-To and the invite footer), Keycloak (Reply-To) |
+
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_AUTH` and `SMTP_STARTTLS` hold the
+Brevo connection, see `.env.prod.example`. `SMTP_REPLY_TO` is optional: empty means no Reply-To and
+no footer in backend emails. The Keycloak footer comes from the email theme
+(`keycloak/themes/opsclear/email/messages/`, key `supportFooter`), not from this variable.
+
+### After a change
+
+1. Restart the backend so it reads the new values:
+   `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d backend`.
+2. Apply the settings to Keycloak: `scripts/keycloak-apply-email.sh` (Keycloak keeps its SMTP
+   settings in the realm, not in the env).
+3. Send an invite and a password reset, and check the sender, the Reply-To and the footer.

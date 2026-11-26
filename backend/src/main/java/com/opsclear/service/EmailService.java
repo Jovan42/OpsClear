@@ -23,6 +23,9 @@ import java.util.Locale;
  * same light layout as the Keycloak emails.
  * No template engine.
  *
+ * <p>When {@code opsclear.mail.reply-to} is set (ADR-0064), replies go to that address and every email ends with a
+ * support footer naming it. When it's blank (dev, tests, CI), there's no Reply-To header and no footer.
+ *
  * <p>Sending is best-effort: a failure is logged at WARN with the invite ID only and never thrown, because the
  * invite is already saved and owners/admins can always copy the link instead. The recipient's address and the
  * token are never logged, and neither is the exception message, since SMTP errors can contain the address.
@@ -61,17 +64,20 @@ public class EmailService {
     private final String from;
     private final String fromName;
     private final String baseUrl;
+    private final String replyTo;
 
     public EmailService(
             JavaMailSender mailSender,
             @Value("${opsclear.mail.from}") String from,
             @Value("${opsclear.mail.from-name}") String fromName,
-            @Value("${opsclear.app.base-url}") String baseUrl) {
+            @Value("${opsclear.app.base-url}") String baseUrl,
+            @Value("${opsclear.mail.reply-to:}") String replyTo) {
         this.mailSender = mailSender;
         this.messages = mailMessages();
         this.from = from;
         this.fromName = fromName;
         this.baseUrl = baseUrl;
+        this.replyTo = replyTo == null ? "" : replyTo.strip();
     }
 
     public void sendInvite(InviteEmail email) {
@@ -86,6 +92,9 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
             helper.setFrom(from, fromName);
+            if (hasReplyTo()) {
+                helper.setReplyTo(replyTo);
+            }
             helper.setTo(email.to());
             helper.setSubject(text("invite.subject", locale, email.orgName()));
             helper.setText(
@@ -105,7 +114,8 @@ public class EmailService {
                 text("invite.body", locale, inviter, org),
                 text("invite.linkIntro", locale) + "\n" + link,
                 text("invite.expiry", locale, expiry),
-                text("invite.ignore", locale)) + "\n";
+                text("invite.ignore", locale))
+                + (hasReplyTo() ? "\n\n" + text("footer.support", locale, replyTo) : "") + "\n";
     }
 
     // Same light layout, colours, spacing and font stack as the Keycloak emails (ADR-0059, amended 2026-11-17):
@@ -122,8 +132,25 @@ public class EmailService {
                 + "<p style=\"" + SMALL_GREY + " margin:0 0 16px;\">" + html("invite.linkFallback", locale)
                 + "<br><span style=\"word-break:break-all;\">" + href + "</span></p>"
                 + "<p style=\"" + SMALL_GREY + " margin:0 0 16px;\">" + html("invite.expiry", locale, expiry) + "</p>"
-                + "<p style=\"" + SMALL_GREY + " margin:0;\">" + html("invite.ignore", locale) + "</p>"
+                + "<p style=\"" + SMALL_GREY + " margin:" + (hasReplyTo() ? "0 0 16px" : "0") + ";\">"
+                + html("invite.ignore", locale) + "</p>"
+                + supportFooterHtml(locale)
                 + HTML_END;
+    }
+
+    // Last small grey paragraph of the card, with the reply-to address as a mailto: link (ADR-0064)
+    private String supportFooterHtml(Locale locale) {
+        if (!hasReplyTo()) {
+            return "";
+        }
+        String address = HtmlUtils.htmlEscape(replyTo);
+        String mailto = "<a href=\"mailto:" + address + "\" style=\"color:#059669;\">" + address + "</a>";
+        return "<p style=\"" + SMALL_GREY + " margin:0;\">"
+                + messages.getMessage("footer.support", new Object[] {mailto}, locale) + "</p>";
+    }
+
+    private boolean hasReplyTo() {
+        return !replyTo.isEmpty();
     }
 
     private String text(String key, Locale locale, Object... args) {

@@ -36,6 +36,8 @@ Promoted from JOB-255 (Future Consideration, PRJ-002) into PRJ-014 / MIL-043. Th
 
 - **Provider: Brevo free plan** (300 emails/day, no expiry). SMTP relay `smtp-relay.brevo.com:2525` with STARTTLS. Keycloak and the backend use the same Brevo account and sender.
 - **Sender for now: one verified sender address**, a dedicated free Gmail address made for OpsClear and verified in Brevo. This is acceptable only while the app is in testing with no real users. **Before real users sign up**, switch to a domain we own with Brevo domain authentication (DKIM + SPF + DMARC `p=none`). Until then, some mail will land in spam.
+
+  > **Note (2026-11-25, JOB-433):** the domain sender is in place. Keycloak and the backend send as `OpsClear <no-reply@opsclear.app>` through Brevo, with the domain authenticated (DKIM, SPF, DMARC `p=none`), and replies go to `support@opsclear.app`. The requirement above is met. See ADR-0064 and the "Domain email" section of `docs/dev/DEPLOY.md`.
 - **Keycloak:** `verifyEmail: true`, Brevo SMTP, a branded verify-email page, and an `opsclear` email theme with en/sr texts for the verification and password-reset emails.
 - **Existing unverified users have to verify too.** At their next login Keycloak sends them the verification email and blocks the login until they click it.
 - **Prod realm changes go through an idempotent `kcadm` script**, run by hand on the VPS, with SMTP secrets from `.env.prod`.
