@@ -114,3 +114,4 @@ Status is as recorded in each ADR. New ADRs: add a row here in the same PR.
 | 0065 | [Production Operations](0065-production-operations.md) | Proposed | 2026-11-26 |
 | 0066 | [Early Access Waitlist](0066-early-access-waitlist.md) | Proposed | 2026-11-26 |
 | 0067 | [Free Trial and Lock-out](0067-free-trial-and-lock-out.md) | Proposed | 2026-11-26 |
+| 0068 | [Payments Go-Live](0068-payments-go-live.md) | Proposed | 2026-11-26 |
