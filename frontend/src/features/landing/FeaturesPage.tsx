@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
+import SupportLink from '../../components/SupportLink';
 import { useCatalog } from '../org/useSubscription';
 import DemoTrigger from '../../demo/DemoTrigger';
 import { BookOpen } from 'lucide-react';
@@ -307,6 +308,10 @@ export default function FeaturesPage() {
           </div>
         </div>
       </main>
+
+      <footer className="shrink-0 border-t border-gray-200 dark:border-gray-800 px-6 py-6">
+        <SupportLink />
+      </footer>
     </div>
   );
 }

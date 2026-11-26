@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
+import SupportLink from '../../components/SupportLink';
 import ProductAndPricing from './ProductAndPricing';
 import SocialLinks from './SocialLinks';
 import { POST_LOGIN_REDIRECT_KEY } from '../../auth/postLoginRedirect';
@@ -77,6 +78,7 @@ function CTAFooter() {
       <div className="mt-8">
         <SocialLinks />
       </div>
+      <SupportLink className="mt-6 text-sm text-white/70" linkClassName="text-white/90 hover:text-white underline underline-offset-4" />
     </footer>
   );
 }
