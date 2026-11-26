@@ -62,6 +62,7 @@ ONB-08 and ONB-30 repeat the check in the browser.
 - [x] A card's demo opens and can be stepped through
 - [x] The user guide opens without a login
 - [x] `/projects` while logged out sends you to the sign-in page, not an error
+- [ ] The home page footer, the bottom of `/features` and the bottom of the user guide show "Questions? Write to support@opsclear.app", and clicking the address opens a new email to it
 
 ## ONB-03 Registration form checks its input
 **As:** Ana (not registered yet) · **Day:** 1 · **Needs:** nothing
@@ -487,6 +488,16 @@ Afterwards, revoke the Brightline invite for Petra in Ana's **Invites** list so 
 
 From now on Luka plays every scenario with the Serbian UI. The Serbian screens themselves are
 judged in Luka's scenarios in the other area files.
+
+## ONB-34 Contact support from the user menu
+**As:** Ana (owner), then Luka (member, Serbian UI) · **Day:** 1 · **Needs:** ONB-08 and ONB-33 done
+
+1. As Ana, open the user menu and look at the items. Click **Contact support**.
+2. As Luka, open the user menu on a phone-width window with the dark theme on.
+
+- [ ] **Contact support** comes right after **Feedback**
+- [ ] Clicking it closes the menu and opens a new email to support@opsclear.app
+- [ ] Luka's menu says **Kontaktirajte podršku** on one line, readable in the dark theme
 
 ## Not manual
 - Invite emails never failing the invite when sending fails: covered by `InviteEmailListenerTest`.

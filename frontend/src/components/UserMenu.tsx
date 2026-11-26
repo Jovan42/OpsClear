@@ -5,6 +5,7 @@ import keycloak from '../auth/keycloak';
 import { useAuth } from '../auth/AuthContext';
 import { useCurrentOrg } from '../features/org/OrgContext';
 import { useOrgMembers } from '../features/org/useOrganisation';
+import { supportMailto } from '../utils/support';
 
 interface UserMenuProps {
   readonly name: string;
@@ -55,7 +56,7 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1 z-50">
+        <div className="absolute right-0 mt-2 w-52 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1 z-50">
           {org && (
             <button
               onClick={() => { setOpen(false); navigate('/org/settings'); }}
@@ -70,6 +71,14 @@ export default function UserMenu({ name }: Readonly<UserMenuProps>) {
           >
             {t('feedback')}
           </button>
+          {/* ADR-0064: a mailto link, not a route. */}
+          <a
+            href={supportMailto()}
+            onClick={() => setOpen(false)}
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+          >
+            {t('contactSupport')}
+          </a>
           {isOwnerOrAdmin && (
             <button
               onClick={() => { setOpen(false); navigate('/overview'); }}
