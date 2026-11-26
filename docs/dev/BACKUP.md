@@ -140,21 +140,38 @@ aws s3 cp s3://$BACKUP_S3_BUCKET/db/opsclear-<timestamp>.dump /data/
 aws s3 cp s3://$BACKUP_S3_BUCKET/db/keycloak-<timestamp>.dump /data/
 ```
 
+Check the disk first, because two copies of the database exist until you drop the old one:
+`df -h /` (the Docker volume lives there) and `docker system df`. You need room for the dump's
+restored size on top of the current database.
+
 Then swap the database. The old one is **renamed, not dropped**, so there's a way back until the
 checks pass. Stop what uses the database first: `backend` for `opsclear`, `keycloak` for `keycloak`.
 Repeat for each database you restore.
+
+The steps are chained with `&&`, so if any of them fails nothing after it runs. The most likely
+failure is the rename ("being accessed by other users"): then the live database keeps its name and
+nothing was changed. **Don't run the rollback in that case**: fix the cause and start again, or give
+up and start the service again with `$C start $USERSVC` (it stays stopped after a failed swap).
 
 ```sh
 C="docker compose -f docker-compose.prod.yml --env-file .env.prod"
 P="$C exec -T postgres psql -U opsclear -d postgres -v ON_ERROR_STOP=1"
 DB=opsclear                      # or keycloak
 USERSVC=backend                  # or keycloak
-$C stop $USERSVC
-$P -c "select pg_terminate_backend(pid) from pg_stat_activity where datname='$DB'"
-$P -c "ALTER DATABASE $DB RENAME TO ${DB}_pre_restore"
-$P -c "CREATE DATABASE $DB"
-$C exec -T postgres pg_restore -U opsclear -d $DB --no-owner --exit-on-error < ~/restore/$DB-<timestamp>.dump
-$C start $USERSVC
+TS=<timestamp>                   # of the dump you downloaded
+exists() { [ "$($P -Atc "select 1 from pg_database where datname='$1'")" = 1 ]; }
+
+# Refuse to start if a leftover from an earlier swap is still around.
+if exists ${DB}_pre_restore || exists ${DB}_failed_restore; then
+  echo "leftover ${DB}_pre_restore or ${DB}_failed_restore exists, look at it and drop it first"
+else
+  $C stop $USERSVC \
+  && $P -c "select pg_terminate_backend(pid, 5000) from pg_stat_activity where datname='$DB' and pid <> pg_backend_pid()" \
+  && $P -c "ALTER DATABASE $DB RENAME TO ${DB}_pre_restore" \
+  && $P -c "CREATE DATABASE $DB" \
+  && $C exec -T postgres pg_restore -U opsclear -d $DB --no-owner --exit-on-error < ~/restore/$DB-$TS.dump \
+  && $C start $USERSVC
+fi
 ```
 
 Restoring `keycloak` and `opsclear` from different days works for the app, but accounts created
@@ -170,16 +187,24 @@ between the two dumps would be missing on one side. Prefer the pair with the sam
   right.
 - `$C logs --tail 50 backend` shows no migration or connection errors.
 
-**If a check fails (or the restore command failed): roll back** with two renames, then start the
-service again:
+**If a check fails, or the restore command failed after the rename: roll back** with two renames,
+then start the service again. It refuses to run unless `${DB}_pre_restore` exists, so it can't
+leave prod without a database:
 
 ```sh
-$C stop $USERSVC
-$P -c "select pg_terminate_backend(pid) from pg_stat_activity where datname='$DB'"
-$P -c "ALTER DATABASE $DB RENAME TO ${DB}_failed_restore"
-$P -c "ALTER DATABASE ${DB}_pre_restore RENAME TO $DB"
-$C start $USERSVC
+if exists ${DB}_pre_restore; then
+  $C stop $USERSVC \
+  && $P -c "select pg_terminate_backend(pid, 5000) from pg_stat_activity where datname='$DB' and pid <> pg_backend_pid()" \
+  && $P -c "ALTER DATABASE $DB RENAME TO ${DB}_failed_restore" \
+  && $P -c "ALTER DATABASE ${DB}_pre_restore RENAME TO $DB" \
+  && $C start $USERSVC
+else
+  echo "no ${DB}_pre_restore: nothing was swapped, do NOT roll back"
+fi
 ```
+
+After the rollback, look at `${DB}_failed_restore` if you want to know what went wrong, then drop
+it (`$P -c "DROP DATABASE ${DB}_failed_restore"`). The next swap refuses to start while it exists.
 
 **If all checks pass**, drop the old copy and delete the downloaded dumps (they hold all customer
 data):
@@ -195,7 +220,7 @@ With the dumps downloaded to `~/restore` as above:
 
 ```sh
 docker run -d --rm --name restore-test -e POSTGRES_USER=opsclear -e POSTGRES_PASSWORD=x postgres:16
-until docker exec restore-test pg_isready -U opsclear -d opsclear; do sleep 1; done
+until docker exec restore-test pg_isready -h 127.0.0.1 -U opsclear; do sleep 1; done
 docker exec -i restore-test pg_restore -U opsclear -d opsclear --no-owner --exit-on-error < ~/restore/opsclear-<timestamp>.dump
 docker exec restore-test psql -U opsclear -d opsclear -Atc "select count(*) from jobs"
 docker exec restore-test psql -U opsclear -d postgres -c "CREATE DATABASE keycloak"
@@ -216,16 +241,18 @@ Use this when the server itself is lost or broken.
 3. For a new droplet: point the DNS `A @` and `A www` records (Namecheap) at the new IP, and update
    the `DEPLOY_HOST` secret (and `DEPLOY_SSH_KEY` if the key changed) used by
    `.github/workflows/deploy.yml`.
-4. On the droplet: `cd /root/OpsClear && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d`.
+4. On the droplet start **only the database** from the image, so the site doesn't serve old data:
+   `cd /root/OpsClear && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d postgres`.
    The image holds the certificates (`/etc/letsencrypt`), `.env.prod`, the checkout and the
    `postgres_data` volume.
 5. **Compare the image's date with the newest dump** in `db/` (`aws s3 ls`, see above). The image is
    up to a day old (daily backups) or a week (weekly), so the newest dump is usually newer. If it
-   is, **restore both dumps (same timestamp) with the steps above before reopening the site**, since
-   they hold the latest data. The volume in an image was copied while Postgres ran, so Postgres may
-   also do crash recovery on start; if the databases look wrong or don't start, restore the dumps
-   the same way.
-6. Run the checks above. Confirm the cron entry exists (`sudo crontab -l`) and run
+   is, **restore both dumps (same timestamp) with the steps above** (nothing else is running, so
+   the stop and start of the services in those steps can be skipped). The volume in an image was
+   copied while Postgres ran, so Postgres may also do crash recovery on start; if the databases
+   look wrong or don't start, restore the dumps the same way.
+6. Bring up the rest: `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d`. Run
+   the checks above. Confirm the cron entry exists (`sudo crontab -l`) and run
    `scripts/backup-db.sh` once.
 
 ## Restore tests

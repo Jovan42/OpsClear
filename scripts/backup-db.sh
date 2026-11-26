@@ -25,8 +25,8 @@ Exits non-zero on any failure. pg_dump doesn't block INSERT/UPDATE/DELETE, but i
 SHARE locks, so a migration that needs ACCESS EXCLUSIVE waits for it (see docs/dev/BACKUP.md).
 
 Environment:
-  ENV_FILE            env file to read (default .env.prod)
-  COMPOSE_FILE        compose file (default docker-compose.prod.yml)
+  ENV_FILE            env file to read (default .env.prod; a custom path must be absolute)
+  COMPOSE_FILE        compose file (default docker-compose.prod.yml; a custom path must be absolute)
   POSTGRES_CONTAINER  use this container instead of the compose "postgres" service (local tests)
   POSTGRES_USER       database user (default opsclear)
   BACKUP_DATABASES    space-separated database names (default "opsclear keycloak")
