@@ -153,26 +153,45 @@ failure is the rename ("being accessed by other users"): then the live database 
 nothing was changed. **Don't run the rollback in that case**: fix the cause and start again, or give
 up and start the service again with `$C start $USERSVC` (it stays stopped after a failed swap).
 
+Run these in **bash** (the helpers rely on word splitting, which zsh doesn't do). Open one bash
+session and keep it for the swap, the checks and the rollback:
+
 ```sh
 C="docker compose -f docker-compose.prod.yml --env-file .env.prod"
 P="$C exec -T postgres psql -U opsclear -d postgres -v ON_ERROR_STOP=1"
 DB=opsclear                      # or keycloak
 USERSVC=backend                  # or keycloak
-TS=<timestamp>                   # of the dump you downloaded
-exists() { [ "$($P -Atc "select 1 from pg_database where datname='$1'")" = 1 ]; }
+TS=CHANGE_ME                  # edit this: the timestamp of the dump you downloaded
 
-# Refuse to start if a leftover from an earlier swap is still around.
-if exists ${DB}_pre_restore || exists ${DB}_failed_restore; then
+# exists NAME: exit 0 = database exists, 1 = it doesn't, 2 = couldn't ask postgres (it says so).
+exists() {
+  local r
+  r=$($P -Atc "select 1 from pg_database where datname='$1'") \
+    || { echo "ERROR: could not query postgres (is it running?), stopping" >&2; return 2; }
+  [ "$r" = 1 ]
+}
+
+exists ${DB}_pre_restore; r1=$?
+exists ${DB}_failed_restore; r2=$?
+if [ $r1 -ge 2 ] || [ $r2 -ge 2 ]; then
+  echo "could not check for leftovers, nothing was changed"
+elif [ $r1 -eq 0 ] || [ $r2 -eq 0 ]; then
+  # Refuse to start if a leftover from an earlier swap is still around.
   echo "leftover ${DB}_pre_restore or ${DB}_failed_restore exists, look at it and drop it first"
 else
-  $C stop $USERSVC \
+  [ -s ~/restore/$DB-$TS.dump ] \
+  && $C stop $USERSVC \
   && $P -c "select pg_terminate_backend(pid, 5000) from pg_stat_activity where datname='$DB' and pid <> pg_backend_pid()" \
   && $P -c "ALTER DATABASE $DB RENAME TO ${DB}_pre_restore" \
   && $P -c "CREATE DATABASE $DB" \
   && $C exec -T postgres pg_restore -U opsclear -d $DB --no-owner --exit-on-error < ~/restore/$DB-$TS.dump \
-  && $C start $USERSVC
+  && $C start $USERSVC \
+  || echo "STOPPED: a step failed (see above). Is the dump file ~/restore/$DB-$TS.dump there and not empty?"
 fi
 ```
+
+The first step checks the dump file exists and isn't empty, so a forgotten or wrong `TS` stops
+before anything is renamed.
 
 Restoring `keycloak` and `opsclear` from different days works for the app, but accounts created
 between the two dumps would be missing on one side. Prefer the pair with the same timestamp.
@@ -192,15 +211,16 @@ then start the service again. It refuses to run unless `${DB}_pre_restore` exist
 leave prod without a database:
 
 ```sh
-if exists ${DB}_pre_restore; then
-  $C stop $USERSVC \
-  && $P -c "select pg_terminate_backend(pid, 5000) from pg_stat_activity where datname='$DB' and pid <> pg_backend_pid()" \
-  && $P -c "ALTER DATABASE $DB RENAME TO ${DB}_failed_restore" \
-  && $P -c "ALTER DATABASE ${DB}_pre_restore RENAME TO $DB" \
-  && $C start $USERSVC
-else
-  echo "no ${DB}_pre_restore: nothing was swapped, do NOT roll back"
-fi
+exists ${DB}_pre_restore; r=$?
+case $r in
+  0) $C stop $USERSVC \
+     && $P -c "select pg_terminate_backend(pid, 5000) from pg_stat_activity where datname='$DB' and pid <> pg_backend_pid()" \
+     && $P -c "ALTER DATABASE $DB RENAME TO ${DB}_failed_restore" \
+     && $P -c "ALTER DATABASE ${DB}_pre_restore RENAME TO $DB" \
+     && $C start $USERSVC ;;
+  1) echo "no ${DB}_pre_restore: nothing was swapped, do NOT roll back" ;;
+  *) echo "could not check (postgres unreachable?): fix that first, don't guess" ;;
+esac
 ```
 
 After the rollback, look at `${DB}_failed_restore` if you want to know what went wrong, then drop
@@ -238,22 +258,33 @@ Use this when the server itself is lost or broken.
    cutover.
 2. DO console > the droplet > Backups > pick the image > **Restore Droplet** (same droplet, replaces
    the disk) or **Create Droplet** from the image (new droplet, new IP).
-3. For a new droplet: point the DNS `A @` and `A www` records (Namecheap) at the new IP, and update
-   the `DEPLOY_HOST` secret (and `DEPLOY_SSH_KEY` if the key changed) used by
-   `.github/workflows/deploy.yml`.
-4. On the droplet start **only the database** from the image, so the site doesn't serve old data:
-   `cd /root/OpsClear && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d postgres`.
+3. Don't switch DNS yet. Every service has `restart: unless-stopped` and was running when the
+   image was taken, so **the whole stack starts by itself when the restored droplet boots**, with
+   the image's old data. Get a shell on the droplet (a new droplet has a new IP: SSH to that IP;
+   for **Restore Droplet** the site is live with old data until the stop below, so be quick) and
+   stop the app first, then check that only `postgres` is running:
+
+   ```sh
+   cd /root/OpsClear
+   C="docker compose -f docker-compose.prod.yml --env-file .env.prod"
+   $C stop frontend backend keycloak
+   $C ps      # only postgres (and portainer) may be listed as running
+   ```
+
    The image holds the certificates (`/etc/letsencrypt`), `.env.prod`, the checkout and the
    `postgres_data` volume.
-5. **Compare the image's date with the newest dump** in `db/` (`aws s3 ls`, see above). The image is
+4. **Compare the image's date with the newest dump** in `db/` (`aws s3 ls`, see above). The image is
    up to a day old (daily backups) or a week (weekly), so the newest dump is usually newer. If it
-   is, **restore both dumps (same timestamp) with the steps above** (nothing else is running, so
-   the stop and start of the services in those steps can be skipped). The volume in an image was
-   copied while Postgres ran, so Postgres may also do crash recovery on start; if the databases
-   look wrong or don't start, restore the dumps the same way.
-6. Bring up the rest: `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d`. Run
-   the checks above. Confirm the cron entry exists (`sudo crontab -l`) and run
-   `scripts/backup-db.sh` once.
+   is, **restore both dumps (same timestamp) with the steps above**. The app is already stopped, so
+   drop the `$C start $USERSVC` line from the swap chain: `backend` and `keycloak` start in step 5.
+   The volume in an image was copied while Postgres ran, so Postgres may also do crash recovery on
+   start; if the databases look wrong or don't start, restore the dumps the same way.
+5. Bring up the rest: `$C up -d`. Run the checks above. For a new droplet, test it by IP or
+   with a `hosts` entry for `opsclear.app` (the certificate is already there).
+6. **Only now, for a new droplet:** point the DNS `A @` and `A www` records (Namecheap) at the new
+   IP, and update the `DEPLOY_HOST` secret (and `DEPLOY_SSH_KEY` if the key changed) used by
+   `.github/workflows/deploy.yml`.
+7. Confirm the cron entry exists (`sudo crontab -l`) and run `scripts/backup-db.sh` once.
 
 ## Restore tests
 
