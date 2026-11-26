@@ -20,6 +20,7 @@ Promoted from JOB-364 (Future Consideration, PRJ-002) into PRJ-015 "Launch QA: C
 - **Deadline alerts** (`DeadlineAlertJob`) run daily at 06:00 UTC. They send DEADLINE_SOON for open jobs due tomorrow and OVERDUE for open jobs whose deadline day has passed (`DeadlineRules`), each once per job and kind (`alertOnce`). Testing them takes 3–4 calendar days.
 - **Notification cleanup** (`NotificationCleanupJob`) deletes read notifications after 30 days and unread ones after 90. It can't be tested in a run of a few days.
 - **Missed runs** (`SchedulerPoller`, every minute) are only recorded when a scheduled run time has already passed when the poller sees it, which in practice means the app was down, for example during a deploy. You can't trigger one from the UI.
+  > **Amendment (2026-11-20, JOB-370):** a missed run can be produced from the UI. Pause a schedule, wait past two or more of its run times, then resume it: the first poll records the skipped runs (all but the first one) as missed. `08-schedules.md` uses this in SCH-17. A deploy can't do it, because schedules run at most hourly.
 - **Billing:** Paddle runs in sandbox on prod. A super-admin can also grant credits (`POST /credits/grant`), and orgs can be deleted (`DELETE /organisations/{id}`).
 - **Email verification** is live on prod (ADR-0059), so every test user needs a real inbox.
 - **The app is bilingual** (en/sr, ADR-0037), with the language stored in user preferences.
