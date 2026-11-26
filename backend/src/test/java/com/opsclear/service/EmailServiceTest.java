@@ -4,12 +4,15 @@ import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;
 import jakarta.mail.Part;
 import jakarta.mail.Session;
+import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +30,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -39,6 +43,7 @@ class EmailServiceTest {
 
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private static final String TO = "invitee@example.com";
+    private static final String SUPPORT = "support@opsclear.test";
     private static final Instant EXPIRES_AT = Instant.parse("2026-11-24T10:15:00Z");
 
     @Mock private JavaMailSender mailSender;
@@ -48,7 +53,7 @@ class EmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        emailService = new EmailService(mailSender, "no-reply@opsclear.test", "OpsClear", "https://app.example.com");
+        emailService = service("https://app.example.com", "");
         inviteId = UUID.randomUUID();
     }
 
@@ -143,7 +148,7 @@ class EmailServiceTest {
     @Test
     @DisplayName("sendInvite_shouldBuildLinkWithoutDoubleSlash_whenBaseUrlEndsWithSlash")
     void sendInvite_shouldBuildLinkWithoutDoubleSlash_whenBaseUrlEndsWithSlash() throws Exception {
-        emailService = new EmailService(mailSender, "no-reply@opsclear.test", "OpsClear", "http://localhost:5173/");
+        emailService = service("http://localhost:5173/", "");
 
         MimeMessage sent = send(invite("en", "Acme Corp", "Olivia Owner"));
 
@@ -208,7 +213,121 @@ class EmailServiceTest {
                 .doesNotContain(TOKEN);
     }
 
+    // ─── Reply-To and support footer (ADR-0064) ───────────────────────────────
+
+    @Test
+    @DisplayName("sendInvite_shouldSetReplyTo_whenReplyToIsConfigured")
+    void sendInvite_shouldSetReplyTo_whenReplyToIsConfigured() throws Exception {
+        emailService = service("https://app.example.com", SUPPORT);
+
+        MimeMessage sent = send(invite("en", "Acme Corp", "Olivia Owner"));
+
+        assertThat(sent.getReplyTo()).hasSize(1);
+        InternetAddress replyTo = (InternetAddress) sent.getReplyTo()[0];
+        assertThat(replyTo.getAddress()).isEqualTo(SUPPORT);
+        assertThat(replyTo.getPersonal()).isEqualTo("OpsClear");
+        assertThat(sent.getHeader("Reply-To")).containsExactly("OpsClear <" + SUPPORT + ">");
+        InternetAddress from = (InternetAddress) sent.getFrom()[0];
+        assertThat(from.getAddress()).isEqualTo("no-reply@opsclear.test");
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldTrimReplyTo_whenConfiguredWithSurroundingSpaces")
+    void sendInvite_shouldTrimReplyTo_whenConfiguredWithSurroundingSpaces() throws Exception {
+        emailService = service("https://app.example.com", "  " + SUPPORT + " ");
+
+        MimeMessage sent = send(invite("en", "Acme Corp", "Olivia Owner"));
+
+        assertThat(sent.getHeader("Reply-To")).containsExactly("OpsClear <" + SUPPORT + ">");
+        assertThat(textPart(sent, "text/plain")).contains("write to " + SUPPORT + "\n");
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldAddEnglishSupportFooter_whenReplyToIsConfigured")
+    void sendInvite_shouldAddEnglishSupportFooter_whenReplyToIsConfigured() throws Exception {
+        emailService = service("https://app.example.com", SUPPORT);
+
+        MimeMessage sent = send(invite("en", "Acme Corp", "Olivia Owner"));
+
+        assertThat(textPart(sent, "text/plain")).endsWith(
+                "If you weren't expecting this invite, you can ignore this email.\n\n"
+                        + "Questions? Reply to this email or write to " + SUPPORT + "\n");
+        String html = textPart(sent, "text/html");
+        assertThat(html)
+                // the ignore line is no longer the last paragraph, so it keeps its bottom margin
+                .contains("<p style=\"font-size:13px; color:#6b7280; margin:0 0 16px;\">If you weren't expecting")
+                .contains("<p style=\"font-size:13px; color:#6b7280; margin:0;\">Questions? Reply to this email or"
+                        + " write to <a href=\"mailto:" + SUPPORT + "\" style=\"color:#059669;\">" + SUPPORT
+                        + "</a></p>\n</td>");
+        assertThat(html.indexOf("If you weren't expecting")).isLessThan(html.indexOf("Questions?"));
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldAddSerbianSupportFooter_whenReplyToIsConfigured")
+    void sendInvite_shouldAddSerbianSupportFooter_whenReplyToIsConfigured() throws Exception {
+        emailService = service("https://app.example.com", SUPPORT);
+
+        MimeMessage sent = send(invite("sr", "Acme Corp", "Olivia Owner"));
+
+        assertThat(textPart(sent, "text/plain"))
+                .endsWith("\n\nImate pitanje? Odgovorite na ovaj mejl ili pišite na " + SUPPORT + "\n");
+        assertThat(textPart(sent, "text/html"))
+                .contains("<p style=\"font-size:13px; color:#6b7280; margin:0;\">Imate pitanje? Odgovorite na ovaj"
+                        + " mejl ili pišite na <a href=\"mailto:" + SUPPORT + "\" style=\"color:#059669;\">"
+                        + SUPPORT + "</a></p>")
+                .doesNotContain("Questions?");
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldEscapeReplyToInHtml_whenAddressContainsMarkup")
+    void sendInvite_shouldEscapeReplyToInHtml_whenAddressContainsMarkup() throws Exception {
+        emailService = service("https://app.example.com", "a&b@opsclear.test");
+
+        String html = textPart(send(invite("en", "Acme Corp", "Olivia Owner")), "text/html");
+
+        assertThat(html).contains("<a href=\"mailto:a&amp;b@opsclear.test\" style=\"color:#059669;\">"
+                + "a&amp;b@opsclear.test</a>");
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldSendNoReplyToAndNoFooter_whenReplyToIsBlank")
+    void sendInvite_shouldSendNoReplyToAndNoFooter_whenReplyToIsBlank() throws Exception {
+        emailService = service("https://app.example.com", "   ");
+
+        assertNoReplyToAndNoFooter(send(invite("en", "Acme Corp", "Olivia Owner")));
+    }
+
+    @Test
+    @DisplayName("sendInvite_shouldSendNoReplyToAndNoFooter_whenReplyToIsEmpty")
+    void sendInvite_shouldSendNoReplyToAndNoFooter_whenReplyToIsEmpty() throws Exception {
+        assertNoReplyToAndNoFooter(send(invite("sr", "Acme Corp", "Olivia Owner")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"support@", "support opsclear.test", "Support <support@opsclear.test", "@opsclear.test"})
+    @DisplayName("constructor_shouldFail_whenReplyToIsMalformed")
+    void constructor_shouldFail_whenReplyToIsMalformed(String replyTo) {
+        assertThatThrownBy(() -> service("https://app.example.com", replyTo))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("opsclear.mail.reply-to (SMTP_REPLY_TO) is not a valid email address")
+                .hasCauseInstanceOf(AddressException.class);
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
+
+    private EmailService service(String baseUrl, String replyTo) {
+        return new EmailService(mailSender, "no-reply@opsclear.test", "OpsClear", baseUrl, replyTo);
+    }
+
+    private static void assertNoReplyToAndNoFooter(MimeMessage sent) throws Exception {
+        assertThat(sent.getHeader("Reply-To")).isNull();
+        String text = textPart(sent, "text/plain");
+        String html = textPart(sent, "text/html");
+        assertThat(text).doesNotContain("Questions?").doesNotContain("Imate pitanje?").doesNotContain("mailto:");
+        assertThat(html).doesNotContain("Questions?").doesNotContain("Imate pitanje?").doesNotContain("mailto:")
+                // the ignore line stays the last paragraph, without a bottom margin
+                .contains("<p style=\"font-size:13px; color:#6b7280; margin:0;\">");
+    }
 
     private InviteEmail invite(String language, String orgName, String inviterName) {
         return new InviteEmail(inviteId, TO, language, orgName, inviterName, TOKEN, EXPIRES_AT);

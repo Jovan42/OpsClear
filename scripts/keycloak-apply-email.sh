@@ -11,7 +11,8 @@ Runs kcadm.sh inside the Keycloak container and reads SMTP settings from the env
 Steps:
   1. Log in as the master admin (KEYCLOAK_ADMIN_PASSWORD).
   2. Set emailTheme=opsclear and smtpServer from SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD,
-     SMTP_FROM, SMTP_FROM_NAME (auth=true, starttls=true).
+     SMTP_FROM, SMTP_FROM_NAME (auth=true, starttls=true), plus replyTo and replyToDisplayName
+     (= SMTP_FROM_NAME) when SMTP_REPLY_TO is set (ADR-0064).
   3. List users with emailVerified=false (they will have to verify).
   4. Only with --enable-verification: set verifyEmail=true.
   5. Print the email settings back, password masked.
@@ -32,7 +33,10 @@ Environment:
   KEYCLOAK_CONTAINER  container name (default: the "keycloak" service of the compose file)
   KEYCLOAK_REALM      realm (default opsclear)
 Required in the env file (no defaults): KEYCLOAK_ADMIN_PASSWORD, SMTP_HOST, SMTP_PORT, SMTP_USER,
-SMTP_PASSWORD, SMTP_FROM, SMTP_FROM_NAME. Values must not contain a double quote or a backslash.
+SMTP_PASSWORD, SMTP_FROM, SMTP_FROM_NAME.
+Optional in the env file: SMTP_REPLY_TO, where replies to Keycloak emails go (support@opsclear.app on
+prod). Left out, no Reply-To is set; an existing one in the realm is cleared.
+Values must not contain a double quote or a backslash.
 USAGE
 }
 
@@ -57,7 +61,8 @@ for v in KEYCLOAK_ADMIN_PASSWORD SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD SMT
   [ -n "${!v:-}" ] || { echo "$v is empty or unset in $ENV_FILE" >&2; exit 1; }
 done
 # The values go into a JSON document built by printf, so reject characters that would break it.
-for v in REALM SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD SMTP_FROM SMTP_FROM_NAME; do
+SMTP_REPLY_TO=${SMTP_REPLY_TO:-}
+for v in REALM SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD SMTP_FROM SMTP_FROM_NAME SMTP_REPLY_TO; do
   case "${!v}" in
     *\"*|*\\*) echo "$v must not contain a double quote or a backslash" >&2; exit 1 ;;
   esac
@@ -79,9 +84,15 @@ echo "Logging in to Keycloak..."
 printf '%s\n' "$KEYCLOAK_ADMIN_PASSWORD" \
   | kc config credentials --server http://localhost:8080 --realm master --user admin >/dev/null
 
+# Reply-To is optional (ADR-0064). smtpServer is replaced as a whole, so leaving it out clears it.
+REPLY_TO_JSON=""
+if [ -n "$SMTP_REPLY_TO" ]; then
+  REPLY_TO_JSON=$(printf ',"replyTo":"%s","replyToDisplayName":"%s"' "$SMTP_REPLY_TO" "$SMTP_FROM_NAME")
+fi
+
 echo "Setting emailTheme and smtpServer on realm $REALM..."
-printf '{"emailTheme":"opsclear","smtpServer":{"host":"%s","port":"%s","user":"%s","password":"%s","from":"%s","fromDisplayName":"%s","auth":"true","starttls":"true","ssl":"false"}}' \
-  "$SMTP_HOST" "$SMTP_PORT" "$SMTP_USER" "$SMTP_PASSWORD" "$SMTP_FROM" "$SMTP_FROM_NAME" \
+printf '{"emailTheme":"opsclear","smtpServer":{"host":"%s","port":"%s","user":"%s","password":"%s","from":"%s","fromDisplayName":"%s"%s,"auth":"true","starttls":"true","ssl":"false"}}' \
+  "$SMTP_HOST" "$SMTP_PORT" "$SMTP_USER" "$SMTP_PASSWORD" "$SMTP_FROM" "$SMTP_FROM_NAME" "$REPLY_TO_JSON" \
   | kc update "realms/$REALM" -f -
 
 echo

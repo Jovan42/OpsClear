@@ -2,7 +2,8 @@
      light grey background with an "OpsClear" header. Inline styles and tables only, because email
      clients ignore <style> blocks and CSS variables. Colours are the login theme's brand tokens
      (keycloak/themes/opsclear/login/resources/css/theme.css). The base theme's per-email
-     templates call this macro with the message body. -->
+     templates call this macro with the message body. Every email ends with the support footer
+     (supportFooter in messages/, ADR-0064). -->
 <#macro emailLayout>
 <!DOCTYPE html>
 <html>
@@ -21,6 +22,8 @@
         <tr>
           <td style="padding:8px 32px 32px; font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:15px; line-height:1.6; color:#374151;">
             <#nested>
+            <#-- Support footer (ADR-0064): our own message text with the mailto: link, so no escaping. -->
+            <p style="margin:16px 0 0; font-size:13px; color:#6b7280;">${msg("supportFooter")?no_esc}</p>
           </td>
         </tr>
       </table>

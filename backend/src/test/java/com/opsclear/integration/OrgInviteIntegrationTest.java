@@ -269,6 +269,7 @@ class OrgInviteIntegrationTest {
                 .contains("background-color:#059669")
                 .contains("Ako dugme ne radi, kopirajte ovaj link u pregledač:<br>"
                         + "<span style=\"word-break:break-all;\">http://app.test/invite/" + token + "</span>");
+        assertNoReplyToAndNoFooter(email);
     }
 
     @Test
@@ -287,6 +288,7 @@ class OrgInviteIntegrationTest {
                 .contains("max-width:560px; background-color:#ffffff; border:1px solid #e5e7eb; border-radius:12px;")
                 .contains("If the button doesn't work, copy this link into your browser:<br>"
                         + "<span style=\"word-break:break-all;\">http://app.test/invite/" + token + "</span>");
+        assertNoReplyToAndNoFooter(email);
     }
 
     @Test
@@ -1003,6 +1005,17 @@ class OrgInviteIntegrationTest {
         MimeMessage[] received = GREEN_MAIL.getReceivedMessages();
         assertThat(received).hasSize(1);
         return received[0];
+    }
+
+    // The test profile leaves opsclear.mail.reply-to blank (ADR-0064): no Reply-To header, no support footer, and the
+    // ignore line stays the last paragraph of the card. The set case: OrgInviteReplyToIntegrationTest.
+    private static void assertNoReplyToAndNoFooter(MimeMessage email) throws Exception {
+        assertThat(email.getHeader("Reply-To")).isNull();
+        String text = part(email, "text/plain");
+        String html = part(email, "text/html");
+        assertThat(text).doesNotContain("Questions?").doesNotContain("Imate pitanje?").matches("(?s).*email\\.\\r?\\n");
+        assertThat(html).doesNotContain("Questions?").doesNotContain("Imate pitanje?").doesNotContain("mailto:")
+                .containsPattern("<p style=\"font-size:13px; color:#6b7280; margin:0;\">[^<]*email\\.</p>\\r?\\n</td>");
     }
 
     private static String part(Part message, String mimeType) throws Exception {
