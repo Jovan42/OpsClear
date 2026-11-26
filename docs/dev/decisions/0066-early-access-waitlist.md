@@ -65,10 +65,13 @@ waitlist. This ADR is JOB-435. It was not promoted from a Future Consideration.
    - Keycloak registration stays on, so **invites keep working**: invited people can still create
      an account and join an existing org
    - launch day: set `OPSCLEAR_SIGNUP_OPEN=true` in `.env.prod` and restart the backend
-5. **Super admins see the list** on a new "Early access" tab in the super-admin area, with
+5. **Sign-ups are stored in one reusable table, `email_signups`**, with a `list` column. Early
+   access is the first list (`early-access`). A later campaign, newsletter or event adds a list value,
+   not a new table or endpoint.
+6. **Super admins see the sign-ups** on a new "Sign-ups" tab in the super-admin area, filtered by list, with
    "Download CSV" and a delete button per row (junk and GDPR requests).
-6. **The launch email is sent by hand from the CSV.** No bulk-mail code in this milestone.
-7. **Spam protection:** a dedicated nginx rate-limit zone for the form endpoint and a honeypot
+7. **The launch email is sent by hand from the CSV.** No bulk-mail code in this milestone.
+8. **Spam protection:** a dedicated nginx rate-limit zone for the form endpoint and a honeypot
    field. No captcha.
 
 ## Product decisions
@@ -86,7 +89,8 @@ waitlist. This ADR is JOB-435. It was not promoted from a Future Consideration.
 | Closing sign-up | No new organisations while `OPSCLEAR_SIGNUP_OPEN=false`. Invites still work. Super users can still create orgs (for testing). |
 | Landing "Sign up" | While closed, it goes to `/early-access` and reads "Get notified". "Log in" is unchanged. On launch it goes back to Keycloak registration. |
 | Signed in without an org | `/onboarding` shows "We're not open yet. We'll email you at launch." with a button that adds their account email to the list (or a link to `/early-access`) and a "Log out" button. |
-| Viewing the list | Super-admin "Early access" tab: date, email, source, campaign. Newest first. "Download CSV". |
+| Viewing the list | Super-admin "Sign-ups" tab with a list filter (only `early-access` for now): date, email, language, source, medium, campaign. Newest first. "Download CSV" for the selected list. |
+| Reuse | One table for every email sign-up. Each sign-up belongs to a list (`early-access` now). The same email can be on several lists. New lists are added to an allowed set in the backend. |
 | Removing someone | Delete button per row in the super-admin tab. Requests come in through support@ (ADR-0064). |
 | Launch mail | Out of scope. The developer exports the CSV and sends one campaign by hand. MIL-052 decides what the trial looks like. |
 | Privacy | The Privacy Policy lists the waitlist (email, consent time, campaign source, kept until launch mail plus 6 months, or until deleted). Added on PR #613 or, if it merged, by the frontend job. |
@@ -95,11 +99,12 @@ waitlist. This ADR is JOB-435. It was not promoted from a Future Consideration.
 
 ### Database
 
-`V045__early_access_signups.sql`:
+`V045__email_signups.sql`:
 
 ```sql
-CREATE TABLE early_access_signups (
+CREATE TABLE email_signups (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    list         VARCHAR(50)  NOT NULL,
     email        VARCHAR(254) NOT NULL,
     consent_at   TIMESTAMPTZ  NOT NULL,
     locale       VARCHAR(5),
@@ -109,12 +114,15 @@ CREATE TABLE early_access_signups (
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX uq_early_access_signups_email ON early_access_signups (lower(email));
+CREATE UNIQUE INDEX uq_email_signups_list_email ON email_signups (list, lower(email));
 ```
 
 - Hard delete (no `deleted_at`): a removed address must really be gone (GDPR), unlike the app's
   soft-deleted entities.
 - No `org_id`: the list belongs to OpsClear, not a customer org.
+- `list` is free text in the database. The backend accepts only values from its allowed set
+  (`early-access` for now), so a new campaign is a one-line backend change and no migration.
+- Unique per list: the same email can be on `early-access` and a later list.
 - `locale` (`en` / `sr`, from the page language) tells the launch mail which language to use.
 - Regenerate jOOQ classes.
 
@@ -122,11 +130,11 @@ CREATE UNIQUE INDEX uq_early_access_signups_email ON early_access_signups (lower
 
 | Method | Path | Auth | Request | Response |
 |---|---|---|---|---|
-| `POST` | `/api/public/early-access` | none | `{ "email": "a@b.com", "consent": true, "locale": "en", "utmSource": "linkedin", "utmMedium": "social", "utmCampaign": "launch", "website": "" }` | `204` always on valid input, new or duplicate. `400` on invalid email or `consent` not `true`. |
+| `POST` | `/api/public/signups` | none | `{ "list": "early-access", "email": "a@b.com", "consent": true, "locale": "en", "utmSource": "linkedin", "utmMedium": "social", "utmCampaign": "launch", "website": "" }` | `204` always on valid input, new or duplicate. `400` on invalid email, unknown `list` or `consent` not `true`. |
 | `GET` | `/api/public/signup` | none | — | `200 { "open": false }` |
-| `GET` | `/api/super-admin/early-access` | super user | — | `200 [{ id, email, locale, utmSource, utmMedium, utmCampaign, consentAt, createdAt }]`, newest first |
-| `GET` | `/api/super-admin/early-access/export` | super user | — | `200 text/csv`, `Content-Disposition: attachment; filename="early-access-YYYY-MM-DD.csv"`, same columns |
-| `DELETE` | `/api/super-admin/early-access/{id}` | super user | — | `204`, `404` if not found |
+| `GET` | `/api/super-admin/signups?list=early-access` | super user | — | `200 [{ id, list, email, locale, utmSource, utmMedium, utmCampaign, consentAt, createdAt }]`, newest first |
+| `GET` | `/api/super-admin/signups/export?list=early-access` | super user | — | `200 text/csv`, `Content-Disposition: attachment; filename="<list>-YYYY-MM-DD.csv"`, same columns |
+| `DELETE` | `/api/super-admin/signups/{id}` | super user | — | `204`, `404` if not found |
 | `POST` | `/api/organisations` | JWT | unchanged | new: `403` `{ "error": "Forbidden", "message": "Sign-up is closed until launch" }` when closed and the caller isn't a super user |
 
 `website` is the honeypot. When it's not empty, the endpoint returns `204` and stores nothing.
@@ -137,31 +145,33 @@ CREATE UNIQUE INDEX uq_early_access_signups_email ON early_access_signups (lower
   CI and the seed script behave as today. `docker-compose.prod.yml` passes
   `OPSCLEAR_SIGNUP_OPEN: ${OPSCLEAR_SIGNUP_OPEN:-true}`, and `.env.prod.example` lists it with a
   comment.
-- **`SecurityConfig`:** `permitAll` for `POST /api/public/early-access` and
+- **`SecurityConfig`:** `permitAll` for `POST /api/public/signups` and
   `GET /api/public/signup`.
-- **`PublicController`** (or `EarlyAccessController` plus `SignupStatusController`) for the two
-  public endpoints. **`SuperAdminEarlyAccessController`** for the list, export and delete, each
+- **`PublicSignupController`** for the two public endpoints. **`SuperAdminSignupController`** for the list, export and delete, each
   with `@RequiresSuperUser`, like `SuperAdminFeedbackController`.
-- **`EarlyAccessService`:**
-  - `signUp(request)`: if the honeypot is filled, return. Otherwise normalise the email (trim;
+- **`SignupList`** enum with the allowed lists and their wire values (`EARLY_ACCESS("early-access")`).
+- **`EmailSignupService`:**
+  - `signUp(request)`: if the honeypot is filled, return. Otherwise check the list is allowed, normalise the email (trim;
     keep the case as typed, uniqueness on `lower(email)`), require `consent == true`, truncate the
     UTM values to 100 characters, and insert with `ON CONFLICT DO NOTHING` (no error, no update).
-  - `list()`, `exportCsv()` and `delete(id)`.
+  - `list(list)`, `exportCsv(list)` and `delete(id)`.
   - CSV: header row; RFC 4180 quoting; cells starting with `=`, `+`, `-` or `@` get a leading `'`
     (CSV injection in spreadsheets).
-- **`EarlyAccessRepository`** (jOOQ): insert-ignore, list ordered by `created_at desc`, delete by
-  id.
+- **`EmailSignupRepository`** (jOOQ): insert-ignore, list by `list` ordered by `created_at desc`,
+  delete by id.
 - **Closing org creation:** `OrganisationService.create` checks `signupOpen`. When false and the
   caller isn't a super user, it throws `ForbiddenException("Sign-up is closed until launch")`.
   Invite accept doesn't create an org, so it isn't affected.
-- **DTOs:** `EarlyAccessSignupRequest` (`@Email`, `@NotBlank`, `@Size(max = 254)` on email;
+- **DTOs:** `EmailSignupRequest` (`list` required; `@Email`, `@NotBlank`, `@Size(max = 254)` on email;
   `@AssertTrue` on consent; `@Pattern("en|sr")` on locale, optional; `@Size(max = 100)` on UTM
-  fields), `EarlyAccessSignupResponse`, and `SignupStatusResponse(boolean open)`.
-- **Logging:** never log the email at INFO. Log "early access sign-up stored" / "duplicate" /
+  fields), `EmailSignupResponse`, and `SignupStatusResponse(boolean open)`.
+- **Logging:** never log the email at INFO. Log "sign-up stored" / "duplicate" /
   "honeypot" without the address.
 - **Tests:**
   - Integration (`ApiPaths` for the new paths):
-    - sign-up stores a row
+    - sign-up stores a row with its list
+    - unknown list returns 400
+    - the same email on two lists gives two rows
     - duplicate in other case returns 204 and leaves one row
     - honeypot returns 204 and stores nothing
     - invalid email and missing consent return 400
@@ -172,15 +182,16 @@ CREATE UNIQUE INDEX uq_early_access_signups_email ON early_access_signups (lower
     - `POST /api/organisations` returns 403 when closed and 201 for a super user when closed
       (test profile with the property set to `false`)
     - invite accept still works when closed
-  - Unit: `EarlyAccessService` (normalising, truncating, honeypot, CSV escaping).
+  - Unit: `EmailSignupService` (list check, normalising, truncating, honeypot, CSV escaping).
 
 ### Frontend
 
-- **API layer:** `api/earlyAccess.ts` (`signUp`, `getSignupStatus`) and super-admin `list`,
+- **API layer:** `api/signups.ts` (`signUp(list, …)`, `getSignupStatus`) and super-admin `list`,
   `exportCsv` and `delete`. Hooks `useSignupStatus` (TanStack Query, long `staleTime`) and
-  `useEarlyAccessSignUp`.
+  `useEmailSignUp`. A reusable `EmailSignupForm` component takes the `list` as a prop, so a later
+  campaign page reuses it.
 - **`/early-access` page** (`features/earlyAccess/EarlyAccessPage.tsx`), public, in `router.tsx`
-  next to `/features`:
+  next to `/features`, using `EmailSignupForm` with `list="early-access"`:
   - copy from Product decisions, the email field, the consent checkbox with a Privacy Policy link,
     a submit button, and the hidden honeypot `website` input (off-screen, `tabIndex={-1}`,
     `autoComplete="off"`)
@@ -196,8 +207,8 @@ CREATE UNIQUE INDEX uq_early_access_signups_email ON early_access_signups (lower
   profile), show the "We're not open yet" card instead of the form: "Join the list" (submits the
   account email with `consent: true` after the user ticks the checkbox) and "Log out". A 403 from
   `POST /api/organisations` shows the same card.
-- **Super-admin "Early access" tab:** `SuperAdminNav` gets the tab. `SuperAdminEarlyAccessPage`
-  has a table (date, email, language, source, medium, campaign), a count, "Download CSV" (fetches
+- **Super-admin "Sign-ups" tab:** `SuperAdminNav` gets the tab. `SuperAdminSignupsPage` has a list
+  selector (defaults to `early-access`), a table (date, email, language, source, medium, campaign), a count, "Download CSV" (fetches
   the export with the auth header and saves it as a blob) and a delete button per row with a
   confirm dialog.
 - **E2E (E2E.md):**
@@ -214,8 +225,8 @@ CREATE UNIQUE INDEX uq_early_access_signups_email ON early_access_signups (lower
 
 ### nginx (neutral, ships with the backend job)
 
-- New zone `limit_req_zone $binary_remote_addr zone=early_access:1m rate=5r/m;`
-- `location = /api/public/early-access` with `limit_req zone=early_access burst=5 nodelay;`, the
+- New zone `limit_req_zone $binary_remote_addr zone=signups:1m rate=5r/m;`
+- `location = /api/public/signups` with `limit_req zone=signups burst=5 nodelay;`, the
   same proxy headers as `/api/`, and the 429 handling of `@rate_limited`.
 - `GET /api/public/signup` falls under the normal `/api/` zone.
 
@@ -251,6 +262,11 @@ CREATE UNIQUE INDEX uq_early_access_signups_email ON early_access_signups (lower
 No code, but the page would live off our domain or in an iframe, styling and i18n wouldn't match,
 another sub-processor would hold the list, and UTM capture would be clumsy. Built in, it's one small
 table and one form.
+
+### A dedicated `early_access_signups` table (decided against)
+
+Simplest for one waitlist, but every later campaign or newsletter would need another table,
+endpoint and admin view. A `list` column costs one field and one allowed-value check.
 
 ### Turn off Keycloak registration (decided against)
 
@@ -312,9 +328,9 @@ The nginx limit and the honeypot are enough for a one-field form. It can be adde
 Each job is one layer (JOBS.md). nginx, compose, `.env.prod.example` and DEPLOY.md are neutral and
 go with the backend job.
 
-1. **DB: Early access sign-ups table.** `V045__early_access_signups.sql` (table and unique
-   `lower(email)` index), jOOQ regeneration.
-2. **Backend: Early access sign-up, signup switch and super-admin list.** The two public endpoints,
+1. **DB: Email sign-ups table.** `V045__email_signups.sql` (table and unique `(list, lower(email))`
+   index), jOOQ regeneration.
+2. **Backend: Email sign-ups, signup switch and super-admin list.** `SignupList`, the two public endpoints,
    the super-admin list, CSV export and delete, the `opsclear.signup.open` check in
    `OrganisationService.create`, `SecurityConfig`, the nginx zone and location, compose,
    `.env.prod.example`, and DEPLOY.md "Launch day: reopen sign-up", with tests. Blocked by 1.
@@ -323,7 +339,7 @@ go with the backend job.
    and check that `POST /api/organisations` returns 403 for a non-super user.
 3. **Frontend: Early access page, closed sign-up and super-admin tab.** `/early-access`, the
    Sign up buttons driven by `useSignupStatus`, the "not open yet" card in `CreateOrgPage`, the
-   super-admin Early access tab with CSV and delete, en and sr, E2E, and the Privacy Policy entry if
+   reusable `EmailSignupForm`, the super-admin Sign-ups tab with CSV and delete, en and sr, E2E, and the Privacy Policy entry if
    PR #613 has merged. Blocked by 2.
 
 Order on prod: the backend can ship first with the setting still `true` (nothing changes), then
