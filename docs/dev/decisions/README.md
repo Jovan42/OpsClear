@@ -111,3 +111,4 @@ Status is as recorded in each ADR. New ADRs: add a row here in the same PR.
 | 0062 | [User Guide](0062-user-guide.md) | Proposed | 2026-11-16 |
 | 0063 | [Manual Test Scenarios](0063-manual-test-scenarios.md) | Proposed | 2026-11-18 |
 | 0064 | [Domain Email and Support Contact](0064-domain-email-and-support-contact.md) | Proposed | 2026-11-26 |
+| 0065 | [Production Operations](0065-production-operations.md) | Proposed | 2026-11-26 |
