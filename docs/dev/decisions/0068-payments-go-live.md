@@ -78,7 +78,7 @@ JOB-415 (Paddle live). This ADR is JOB-432.
    Subscribe within 14 days to keep going." After that, ADR-0067's ending and ended emails and
    lock-out apply.
 5. **The switch is two super-admin actions**, both allowed only when
-   `paddle.environment=production`, idempotent, and recorded with who and when:
+   `paddle.environment=production` and safe to press twice:
    - **Reset sandbox data** (decision 3)
    - **Announce paid plans** (decision 4)
 
@@ -108,23 +108,20 @@ JOB-415 (Paddle live). This ADR is JOB-432.
 
 ### Database
 
-`V0NN__billing_go_live.sql` (next free number after ADR-0066 and ADR-0067):
+`V0NN__paid_plans_announcement.sql` (next free number after ADR-0066 and ADR-0067):
 
 ```sql
-CREATE TABLE billing_go_live_steps (
-    step     VARCHAR(30) PRIMARY KEY,          -- 'RESET_SANDBOX', 'ANNOUNCE'
-    done_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    done_by  UUID        NOT NULL REFERENCES users (id),
-    details  JSONB                             -- counts: orgs reset, orgs given grace, emails queued
-);
-
 ALTER TABLE organisations
+    ADD COLUMN paid_plans_announced_at  TIMESTAMPTZ,
     ADD COLUMN paid_plans_email_sent_at TIMESTAMPTZ;
 ```
 
-- A row in `billing_go_live_steps` makes each action run once.
-- `paid_plans_email_sent_at` makes the announcement email idempotent per org (sent by a job, like
-  JOB-447's).
+- `paid_plans_announced_at` is set by **Announce paid plans** on every org it gives the grace to.
+  If any org has it, the announcement has happened: Announce refuses to run again and Reset refuses
+  to run at all.
+- `paid_plans_email_sent_at` is set by the email job per org, so a crash halfway never sends
+  twice (like JOB-447's trial email columns).
+- No go-live log table (decided 2026-11-26): the backend log and these columns are the record.
 - Regenerate jOOQ.
 
 ### API
@@ -132,9 +129,9 @@ ALTER TABLE organisations
 | Method | Path | Auth | Change |
 |---|---|---|---|
 | `GET` | `/api/subscriptions/catalog` | none | `CatalogResponse` gains `paddle: { environment: "sandbox" \| "production", clientToken }` |
-| `GET` | `/api/super-admin/billing/go-live` | super user | `200 { environment, lockoutEnabled, steps: [{ step, doneAt, doneBy, details }] }` |
-| `POST` | `/api/super-admin/billing/go-live/reset-sandbox` | super user | `200 { orgsReset, subscriptionsCleared, catalogRowsCleared }`. `409` if already done. `403` unless `paddle.environment=production`. |
-| `POST` | `/api/super-admin/billing/go-live/announce` | super user | `200 { orgsGivenGrace, emailsQueued }`. `409` if already done. `403` unless production. `409` unless reset-sandbox is done and the catalog has live price IDs. |
+| `GET` | `/api/super-admin/billing/go-live` | super user | `200 { environment, lockoutEnabled, livePricesPresent, announced, orgsAnnounced, emailsSent, emailsPending }` |
+| `POST` | `/api/super-admin/billing/go-live/reset-sandbox` | super user | `200 { orgsReset, subscriptionsCleared, catalogRowsCleared }`. Running it twice is harmless. `403` unless `paddle.environment=production`. `409` once paid plans have been announced. |
+| `POST` | `/api/super-admin/billing/go-live/announce` | super user | `200 { orgsGivenGrace }`. `403` unless production. `409` if already announced (any `paid_plans_announced_at`). `409` unless the catalog's price IDs exist in the live Paddle account. |
 
 ### Backend
 
@@ -153,16 +150,22 @@ ALTER TABLE organisations
       `paddle_pending_downgrade_effective_at`
     - clear `organisations.paddle_customer_id` for non-internal orgs
     - clear credit-related Paddle discount IDs if any are stored (check `CreditService`'s columns)
-    - insert the `RESET_SANDBOX` step
+    - refused (409) once any org has `paid_plans_announced_at`, so it can never wipe live
+      subscriptions after the announcement
+    - logs the counts and the caller at INFO
   - **`announce(callerId)`**, in one transaction:
     - for every non-internal org without real billing, set
       `trial_ends_at = GREATEST(trial_ends_at, now() + 14 days)` (a NULL counts as now) and reset
       `trial_ending_email_sent_at` and `trial_ended_email_sent_at`
-    - insert the `ANNOUNCE` step with counts
-  - Both are guarded by environment and by step order, and are `@RequiresSuperUser` through the
-    controller.
-- **`PaidPlansEmailJob`**, or an extension of JOB-447's `TrialEmailJob`: after `ANNOUNCE`, emails
-  owners of orgs with `paid_plans_email_sent_at` null and state `TRIAL`, in their `locale`, through
+    - set `paid_plans_announced_at = now()` on those orgs
+    - refused (409) if any org already has `paid_plans_announced_at`
+    - refused (409) unless the catalog is live: one Paddle API call fetches a tier's
+      `paddle_price_id_monthly` with the live key. Sandbox IDs don't exist in the live account, so
+      this also proves Reset and the live sync happened.
+    - logs the counts and the caller at INFO
+  - Both are guarded by the environment and are `@RequiresSuperUser` through the controller.
+- **`PaidPlansEmailJob`**, or an extension of JOB-447's `TrialEmailJob`: emails owners of orgs
+  with `paid_plans_announced_at` set and `paid_plans_email_sent_at` null, in their `locale`, through
   `EmailService.sendPaidPlansLive`, then sets the column. It runs hourly until none are left, so a
   big list doesn't block the request.
 - **Compose / `.env.prod.example`:**
@@ -171,8 +174,10 @@ ALTER TABLE organisations
     the catalog
 - **Tests (integration):**
   - the catalog returns the environment and token
-  - reset clears exactly the listed fields, keeps internal orgs, and runs once (`409` the second
-    time)
+  - reset clears exactly the listed fields, keeps internal orgs, is harmless twice, and is refused
+    after the announcement
+  - announce runs once (`409` the second time) and is refused when the price check fails (mocked
+    Paddle client)
   - both actions return `403` in sandbox
   - announce needs reset and live price IDs
   - the grace rule: expired → now + 14, active ending sooner → now + 14, later end kept, internal
@@ -186,13 +191,14 @@ ALTER TABLE organisations
   query (`useSubscriptionCatalog`, already used by the plan picker). No checkout until the catalog
   has loaded. Remove `VITE_PADDLE_CLIENT_TOKEN` from the Dockerfile, compose and `vite-env.d.ts`.
 - **Super-admin "Billing go-live" tab** (`SuperAdminNav`):
-  - shows the environment, `lockoutEnabled` and each step's status (done at, by, counts)
+  - shows the environment, `lockoutEnabled`, whether live prices are present, whether paid plans
+    were announced, and emails sent / pending
   - two buttons, **Reset sandbox data** and **Announce paid plans**, each disabled unless
     allowed, with a confirm dialog that explains what it changes
   - a checklist from the runbook, with links to the Pricing page and its sync
 - **Texts:** no work. The "Subscribe" vs "contact us" switch follows `access.lockoutEnabled`
   (JOB-447, JOB-448).
-- en and sr. E2E: the super-admin tab renders with the steps (stubbed API), and Paddle checkout
+- en and sr. E2E: the super-admin tab renders its status (stubbed API), and Paddle checkout
   initialises from the catalog values (Vitest with a mocked `initializePaddle`).
 
 ### Go-live runbook (DEPLOY.md, Chore)
@@ -228,7 +234,8 @@ ALTER TABLE organisations
 
 - **Order matters:** reset before syncing (sync skips rows that already have IDs), test before
   announcing, announce before lock-out (otherwise expired trials lock before getting their grace).
-  The API enforces reset → announce. The runbook covers the rest.
+  The API enforces it where it can: announce needs live prices (so reset and sync happened), and
+  reset is refused after the announcement. The runbook covers the rest.
 - **Webhooks from sandbox:** after the switch the live secret rejects any stray sandbox webhook
   (signature mismatch). Expected, and logged.
 - **Credits:** Paddle discounts made in sandbox for credits don't exist in live. Credit balances in
@@ -259,7 +266,13 @@ and need a rebuild. A runtime value from the backend can't drift.
 ### SQL script and a manual email for the switch (decided against)
 
 Fewer endpoints, but more manual steps on the droplet and a hand-made mailing, for a one-time
-operation where mistakes hit paying customers. Two guarded, recorded, idempotent actions are safer.
+operation where mistakes hit paying customers. Two guarded actions that are safe to repeat are safer.
+
+### A go-live log table (decided against)
+
+A `billing_go_live_steps` table with who, when and counts per action would give a neat history
+panel. Rejected: the two per-org columns already make the actions safe to repeat, the backend log
+records who ran them, and a table for one event isn't worth it.
 
 ### Reset only the catalog (decided against)
 
@@ -302,8 +315,8 @@ Each job is one layer (JOBS.md). **All are created undated, priority LOW**, and 
 developer decides to open payments. Neutral paths (compose, `.env.prod.example`, DEPLOY.md) go with
 the job that needs them.
 
-1. **DB: Billing go-live steps.** `billing_go_live_steps` and
-   `organisations.paid_plans_email_sent_at`, jOOQ. Blocked by ADR-0067's DB job (JOB-444, migration
+1. **DB: Paid plans announcement columns.** `organisations.paid_plans_announced_at` and
+   `paid_plans_email_sent_at`, jOOQ. Blocked by ADR-0067's DB job (JOB-444, migration
    order).
 2. **Backend: Paddle environment setting and billing go-live actions.** `paddle.environment` and
    `paddle.client-token`, the catalog's `paddle` block, `BillingGoLiveService` (reset, announce),
