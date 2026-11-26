@@ -1,6 +1,6 @@
 # Notifications
 
-Last run: 2026-11-20, Jovan (in progress)
+Last run: 2026-11-20 to 2026-11-26, Jovan
 Guide: /guide/notifications
 
 This file covers the notification centre (bell, dropdown and `/notifications` page), live updates
@@ -435,14 +435,14 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 1. Check Ivana's, Ana's, Nikola's, Luka's and Sara's centres after 06:00 UTC.
 2. Open the paint job and the partition job.
 
-- [ ] Ivana has "… is overdue" for both open jobs, under **Job overdue**, in the urgent style, from **OpsClear**, with "Was due …"
-- [ ] Ana (owner of Residential) has one for the paint job and none for the partition job (she isn't in Office)
-- [ ] Nikola has one for the paint job (admin of Residential) and one for the partition job (owner of Office)
-- [ ] Ivana has exactly one entry for the partition job, though she is both its assignee and an Office admin
-- [ ] Nobody has "… is overdue" for "Tile bathroom at 14 Elm St", because it is Completed
-- [ ] Luka has no **Job overdue** yet, because his jobs are due today (the alert comes after the deadline day has passed)
-- [ ] Sara gets "Re-seal shower at 6 Alder Court is due tomorrow" once, for its new Day 5 deadline, and no overdue entry
-- [ ] The day-3 jobs get no second **Deadline tomorrow** today
+- [x] Ivana has "… is overdue" for both open jobs, under **Job overdue**, in the urgent style, from **OpsClear**, with "Was due …"
+- [x] Ana (owner of Residential) has one for the paint job and none for the partition job (she isn't in Office)
+- [x] Nikola has one for the paint job (admin of Residential) and one for the partition job (owner of Office)
+- [x] Ivana has exactly one entry for the partition job, though she is both its assignee and an Office admin
+- [x] Nobody has "… is overdue" for "Tile bathroom at 14 Elm St", because it is Completed
+- [x] Luka has no **Job overdue** yet, because his jobs are due today (the alert comes after the deadline day has passed)
+- [x] Sara gets "Re-seal shower at 6 Alder Court is due tomorrow" once, for its new Day 5 deadline, and no overdue entry
+- [x] The day-3 jobs get no second **Deadline tomorrow** today
 
 ## NTF-30 Day 5+: still no repeats
 **As:** Ivana, Ana, Nikola, Luka, Sara · **Day:** 5, after 06:00 UTC (look again on day 6 if you can) · **Needs:** NTF-29 done
@@ -450,11 +450,11 @@ Re-add Sara to Spring Maintenance 2026 only if `03-projects.md` needs her there.
 1. Check each person's centre after 06:00 UTC on day 5.
 2. Count **Job overdue** entries per job and person.
 
-- [ ] "Install kitchen worktops at 31 Oak Ave" is overdue once each for Luka, Ana and Nikola
-- [ ] "Replace ceiling lights in the open-plan office" is overdue once each for Luka, Nikola (Office owner) and Ivana (Office admin)
-- [ ] The paint and partition jobs still have one **Job overdue** per person, not a new one each day
-- [ ] The shower job (if still open) is overdue once for Sara, Ana and Nikola on day 6, with no repeat after that
-- [ ] No **Deadline tomorrow** repeats for any job
+- [x] "Install kitchen worktops at 31 Oak Ave" is overdue once each for Luka, Ana and Nikola
+- [x] "Replace ceiling lights in the open-plan office" is overdue once each for Luka, Nikola (Office owner) and Ivana (Office admin)
+- [x] The paint and partition jobs still have one **Job overdue** per person, not a new one each day
+- [x] The shower job (if still open) is overdue once for Sara, Ana and Nikola on day 6, with no repeat after that
+- [x] No **Deadline tomorrow** repeats for any job
 
 ## NTF-31 Each persona only hears what they should
 **As:** Luka, Ivana, Sara, Nikola, Ana · **Day:** 7 or later, after NTF-24 · **Needs:** the scenarios above done
