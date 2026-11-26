@@ -1,6 +1,6 @@
 # Recurring schedules
 
-Last run: 2026-11-22, Jovan (in progress)
+Last run: 2026-11-22 to 2026-11-26, Jovan
 Guide: /guide/recurring-jobs
 
 Recurring schedules create a job from a template on a timetable, hand it to people in turn, and keep
@@ -204,7 +204,7 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 - [x] The window for the daily schedule is titled **Edit Schedule** with the name, the template **Site safety check**, the timing 07:00 UTC (shown as **Daily** at 07:00, or as the cron `0 0 7 * * *` on **Advanced**) and the two people in order (Ivana #1, Sara #2) already filled in
 - [x] The weekly schedule's window shows **Weekly**, the day-3 weekday, 07:00 and `UTC` already filled in
 - [x] After step 2 the row shows the new name and is still **Active**, and **Next:** is unchanged
-- [ ] After step 4 the row shows the new name and is still **Paused** — ❌ JOB-405 (fix in PR #598)
+- [x] After step 4 the row shows the new name and is still **Paused**
 - [x] After step 5 the row shows **No assignees** and no circles
 - [x] **Resume** is shown on that row
 
@@ -228,13 +228,13 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 3. As Ana, open **Schedules**, then **Templates**.
 4. As Ivana, open Residential, **Jobs**. As Sara, do the same.
 
-- [ ] The job `Site safety check for Residential Fit-outs - <day 2 date>` exists with the status **New**, priority **Medium**, client "Brightline internal" and the description from the template
-- [ ] It is assigned to Ivana (the first in the rotation)
-- [ ] Its deadline is the day after the run date
-- [ ] The job page shows "Created by schedule" with the link **Daily site safety check**, which opens the Schedules page
-- [ ] **Daily site safety check** now shows **Next:** day 3 at 07:00 UTC and is still **Active**
-- [ ] **Site safety check** on the Templates page shows "Used 1×"
-- [ ] Ivana sees the job in her list and Sara does not
+- [x] The job `Site safety check for Residential Fit-outs - <day 2 date>` exists with the status **New**, priority **Medium**, client "Brightline internal" and the description from the template
+- [x] It is assigned to Ivana (the first in the rotation)
+- [x] Its deadline is the day after the run date
+- [x] The job page shows "Created by schedule" with the link **Daily site safety check**, which opens the Schedules page
+- [x] **Daily site safety check** now shows **Next:** day 3 at 07:00 UTC and is still **Active**
+- [x] **Site safety check** on the Templates page shows "Used 1×"
+- [x] Ivana sees the job in her list and Sara does not
 
 ## SCH-14 Day 3: the weekly schedule runs and the rotation moves to Sara
 **As:** Ana, Nikola, Ivana, Sara · **Day:** 3, after 07:00 UTC · **Needs:** SCH-13 done. The weekly schedule was set to day 3 in SCH-06.
@@ -243,13 +243,13 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 2. As Nikola, open **Jobs** and **Schedules**.
 3. As Ivana, then Sara, open **Jobs**.
 
-- [ ] `Toolbox talk week <week number>` exists as **New** with priority **Low**, no deadline and no assignee
-- [ ] A second `Site safety check for Residential Fit-outs - <day 3 date>` exists, assigned to Sara
-- [ ] Nikola sees both new jobs
-- [ ] **Weekly toolbox talk** shows **Next:** one week later at 07:00 UTC
-- [ ] Sara's list has the day-3 safety check job and not the toolbox talk
-- [ ] Ivana's list has neither new job (her day-2 job is still there)
-- [ ] The toolbox talk job's page says "Created by schedule" with **Weekly toolbox talk**
+- [x] `Toolbox talk week <week number>` exists as **New** with priority **Low**, no deadline and no assignee
+- [x] A second `Site safety check for Residential Fit-outs - <day 3 date>` exists, assigned to Sara
+- [x] Nikola sees both new jobs
+- [x] **Weekly toolbox talk** shows **Next:** one week later at 07:00 UTC
+- [x] Sara's list has the day-3 safety check job and not the toolbox talk
+- [x] Ivana's list has neither new job (her day-2 job is still there)
+- [x] The toolbox talk job's page says "Created by schedule" with **Weekly toolbox talk**
 
 ## SCH-15 Day 4: the third run, then pause the daily schedule
 **As:** Ivana, then Nikola · **Day:** 4, after 07:00 UTC · **Needs:** SCH-14 done
@@ -257,9 +257,9 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 1. As Ivana, open **Jobs** and look for the day-4 safety check job.
 2. As Nikola, open **Schedules**. On **Daily site safety check** click **Pause**, choose **Indefinitely**, click **Pause**.
 
-- [ ] `Site safety check for Residential Fit-outs - <day 4 date>` exists and is assigned to Ivana again (the rotation wrapped round)
-- [ ] After step 2 **Daily site safety check** shows **Paused** and **Resume**
-- [ ] **Weekly toolbox talk** is still **Active**
+- [x] `Site safety check for Residential Fit-outs - <day 4 date>` exists and is assigned to Ivana again (the rotation wrapped round)
+- [x] After step 2 **Daily site safety check** shows **Paused** and **Resume**
+- [x] **Weekly toolbox talk** is still **Active**
 
 ## SCH-16 Day 5: a paused schedule creates nothing
 **As:** Ana · **Day:** 5, after 07:00 UTC and two minutes · **Needs:** SCH-15 done
@@ -267,10 +267,10 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 1. Open Residential, **Jobs** and search for "Site safety check".
 2. Open **Schedules**.
 
-- [ ] The list has the day-2, day-3 and day-4 jobs and none for day 5
-- [ ] **Daily site safety check** is still **Paused**
-- [ ] **Weekly toolbox talk** is **Active**
-- [ ] Its **Next:** is still the day-3 run plus one week
+- [x] The list has the day-2, day-3 and day-4 jobs and none for day 5
+- [x] **Daily site safety check** is still **Paused**
+- [x] **Weekly toolbox talk** is **Active**
+- [x] Its **Next:** is still the day-3 run plus one week
 
 ## SCH-17 Resume after a long pause: runs that were skipped are listed as missed
 **As:** Ana · **Day:** 7, after 07:00 UTC and before 07:00 UTC on day 8 · **Needs:** SCH-16 done. The schedule was paused on day 4 after its run, so its next run was day 5 07:00 UTC. Resume on day 7 after 07:00 UTC, three ticks later (day 5, 6 and 7): the poller doesn't record the first skipped tick (day 5), only the ones after it, so the list gets exactly two entries (day 6 and day 7, 07:00 UTC). Resuming later gives more entries and breaks the counts in SCH-18. This is also what makes the `SCHEDULE_RUN_MISSED` notifications of NTF-24, so do it before NTF-24.
@@ -279,11 +279,11 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 2. Wait two minutes and reload the page.
 3. Open **Jobs** and search for "Site safety check".
 
-- [ ] After **Resume** the row says **Active**
-- [ ] The row shows a banner with "2 missed runs" under the schedule
-- [ ] **Next:** shows the next 07:00 UTC moment in the future
-- [ ] No new `Site safety check …` job was made for the time the schedule sat paused: the list still has the day-2, day-3 and day-4 jobs only
-- [ ] Ana (Owner) has two "Schedule \"Daily site safety check\" missed a run in Residential Fit-outs" entries in her notification centre, one per missed run (recipients and text are checked in NTF-24)
+- [x] After **Resume** the row says **Active**
+- [x] The row shows a banner with "2 missed runs" under the schedule
+- [x] **Next:** shows the next 07:00 UTC moment in the future
+- [x] No new `Site safety check …` job was made for the time the schedule sat paused: the list still has the day-2, day-3 and day-4 jobs only
+- [x] Ana (Owner) has two "Schedule \"Daily site safety check\" missed a run in Residential Fit-outs" entries in her notification centre, one per missed run (recipients and text are checked in NTF-24)
 
 ## SCH-18 The missed-runs list
 **As:** Sara (member), then Ana (Owner) · **Day:** 7 · **Needs:** SCH-17 done
@@ -294,12 +294,12 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 4. Click **View** in the green box.
 5. Back on **Schedules**, open the banner again and click **Dismiss** on the remaining entry.
 
-- [ ] Sara can open the banner and sees the missed dates, but has no **Create job**, **Dismiss** or **Dismiss all**
-- [ ] Ana's list has two rows, oldest first (day 6, then day 7), each with its date, each with **Create job** and **Dismiss**, and a **Dismiss all** button above them (shown only while there is more than one)
-- [ ] **Create job** shows a green box "Job created:" with the new job's ID and its title `Site safety check for Residential Fit-outs - <day 6 date>`
-- [ ] **View** opens that job, which is **New** and shows "Created by schedule" with **Daily site safety check**
-- [ ] The entry you used is gone from the list, the banner now says "1 missed run" and **Dismiss all** is no longer shown
-- [ ] After **Dismiss** on the last entry the list is empty and no job was made for it, and after a reload the banner is gone
+- [x] Sara can open the banner and sees the missed dates, but has no **Create job**, **Dismiss** or **Dismiss all**
+- [x] Ana's list has two rows, oldest first (day 6, then day 7), each with its date, each with **Create job** and **Dismiss**, and a **Dismiss all** button above them (shown only while there is more than one)
+- [x] **Create job** shows a green box "Job created:" with the new job's ID and its title `Site safety check for Residential Fit-outs - <day 6 date>`
+- [x] **View** opens that job, which is **New** and shows "Created by schedule" with **Daily site safety check**
+- [x] The entry you used is gone from the list, the banner now says "1 missed run" and **Dismiss all** is no longer shown
+- [x] After **Dismiss** on the last entry the list is empty and no job was made for it, and after a reload the banner is gone
 
 ## SCH-19 Deleting a schedule keeps its jobs
 **As:** Ana (Residential owner) · **Day:** 7 (before the weekly schedule's second run) · **Needs:** SCH-18 done
@@ -309,10 +309,10 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 3. Open **Jobs** and search for "Toolbox talk".
 4. Open **Templates** again.
 
-- [ ] **Weekly toolbox talk** is gone from the list
-- [ ] **Daily site safety check** is still listed
-- [ ] The job `Toolbox talk week <week number>` from day 3 is still in the job list, unchanged
-- [ ] **Toolbox talk** on the Templates page shows the same "Used" count as before the delete
+- [x] **Weekly toolbox talk** is gone from the list
+- [x] **Daily site safety check** is still listed
+- [x] The job `Toolbox talk week <week number>` from day 3 is still in the job list, unchanged
+- [x] **Toolbox talk** on the Templates page shows the same "Used" count as before the delete
 
 ## SCH-20 Missed run after the app was stopped (optional)
 **As:** Nikola, then Ana, Ivana · **Day:** 7 or later · **Needs:** the developer can stop and start the prod backend. Skip this if that isn't practical: SCH-17 already covers the list and the notification. This is the only scenario where the app itself was down, and it needs the app stopped for **more than one hour**, because a missed run is only recorded when the next run time is also past. A normal deploy of a few minutes won't produce one.
@@ -324,11 +324,11 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 5. As Ana, then Ivana (a member), check the notification centre.
 6. As Nikola, delete **Hourly yard check**.
 
-- [ ] **Hourly yard check** was created as **Active**, with **Next:** at the next top of the hour
-- [ ] After the restart the row has a banner with at least "1 missed run", and its date is on the hour, in the past
-- [ ] No job was made for the missed time
-- [ ] Ana and Nikola have a "Schedule … missed a run" entry (details in NTF-24) and Ivana has none
-- [ ] **Hourly yard check** is gone after step 6
+- [x] **Hourly yard check** was created as **Active**, with **Next:** at the next top of the hour
+- [x] After the restart the row has a banner with at least "1 missed run", and its date is on the hour, in the past
+- [x] No job was made for the missed time
+- [x] Ana and Nikola have a "Schedule … missed a run" entry (details in NTF-24) and Ivana has none
+- [x] **Hourly yard check** is gone after step 6
 
 ## Not manual
 - Member, non-member and wrong-project calls to the schedule endpoints are refused (403 or 404), including an assignee from another organisation: covered by `RecurringScheduleIntegrationTest` and `ScheduleMissedRunIntegrationTest`.
@@ -342,4 +342,4 @@ before 07:00 UTC, the first run is today and every "Day 2" check below moves one
 
 ## Findings
 
-- SCH-11: JOB-405 (Bug) editing a schedule un-pauses it and clears its end date: the edit form doesn't send the current pause or end dates and `RecurringScheduleService.update` writes them as null.
+- SCH-11: JOB-405 (Bug) editing a schedule un-pauses it and clears its end date: the edit form doesn't send the current pause or end dates and `RecurringScheduleService.update` writes them as null. Fixed in PR #598 and rechecked.
