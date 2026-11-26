@@ -16,6 +16,12 @@ cd ~/OpsClear
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
+## Backups
+
+Daily Droplet Backups plus nightly database dumps to a private DigitalOcean Spaces bucket
+(`scripts/backup-db.sh`). Setup, alerting, restore steps and the restore test log:
+[BACKUP.md](BACKUP.md).
+
 ## Domain and TLS
 
 - DNS (Namecheap): `A @` and `A www` point to the droplet's IP.
