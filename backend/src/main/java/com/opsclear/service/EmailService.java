@@ -1,5 +1,7 @@
 package com.opsclear.service;
 
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +26,8 @@ import java.util.Locale;
  * No template engine.
  *
  * <p>When {@code opsclear.mail.reply-to} is set (ADR-0064), replies go to that address and every email ends with a
- * support footer naming it. When it's blank (dev, tests, CI), there's no Reply-To header and no footer.
+ * support footer naming it. When it's blank (dev, tests, CI), there's no Reply-To header and no footer. A set but
+ * malformed address stops the application at startup.
  *
  * <p>Sending is best-effort: a failure is logged at WARN with the invite ID only and never thrown, because the
  * invite is already saved and owners/admins can always copy the link instead. The recipient's address and the
@@ -77,7 +80,20 @@ public class EmailService {
         this.from = from;
         this.fromName = fromName;
         this.baseUrl = baseUrl;
-        this.replyTo = replyTo == null ? "" : replyTo.strip();
+        this.replyTo = replyTo.strip();
+        if (hasReplyTo()) {
+            requireValidAddress(this.replyTo);
+        }
+    }
+
+    // A typo in SMTP_REPLY_TO would otherwise make every send fail, and sends are best-effort (only a WARN each),
+    // so fail at startup instead
+    private static void requireValidAddress(String address) {
+        try {
+            new InternetAddress(address, true);
+        } catch (AddressException e) {
+            throw new IllegalStateException("opsclear.mail.reply-to (SMTP_REPLY_TO) is not a valid email address", e);
+        }
     }
 
     public void sendInvite(InviteEmail email) {
@@ -93,7 +109,8 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
             helper.setFrom(from, fromName);
             if (hasReplyTo()) {
-                helper.setReplyTo(replyTo);
+                // Same display name as From, like Keycloak's replyToDisplayName
+                helper.setReplyTo(replyTo, fromName);
             }
             helper.setTo(email.to());
             helper.setSubject(text("invite.subject", locale, email.orgName()));

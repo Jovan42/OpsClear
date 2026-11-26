@@ -4,12 +4,15 @@ import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;
 import jakarta.mail.Part;
 import jakarta.mail.Session;
+import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +30,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -218,8 +222,11 @@ class EmailServiceTest {
 
         MimeMessage sent = send(invite("en", "Acme Corp", "Olivia Owner"));
 
-        assertThat(sent.getReplyTo()).extracting(Object::toString).containsExactly(SUPPORT);
-        assertThat(sent.getHeader("Reply-To")).containsExactly(SUPPORT);
+        assertThat(sent.getReplyTo()).hasSize(1);
+        InternetAddress replyTo = (InternetAddress) sent.getReplyTo()[0];
+        assertThat(replyTo.getAddress()).isEqualTo(SUPPORT);
+        assertThat(replyTo.getPersonal()).isEqualTo("OpsClear");
+        assertThat(sent.getHeader("Reply-To")).containsExactly("OpsClear <" + SUPPORT + ">");
         InternetAddress from = (InternetAddress) sent.getFrom()[0];
         assertThat(from.getAddress()).isEqualTo("no-reply@opsclear.test");
     }
@@ -231,7 +238,7 @@ class EmailServiceTest {
 
         MimeMessage sent = send(invite("en", "Acme Corp", "Olivia Owner"));
 
-        assertThat(sent.getHeader("Reply-To")).containsExactly(SUPPORT);
+        assertThat(sent.getHeader("Reply-To")).containsExactly("OpsClear <" + SUPPORT + ">");
         assertThat(textPart(sent, "text/plain")).contains("write to " + SUPPORT + "\n");
     }
 
@@ -296,12 +303,14 @@ class EmailServiceTest {
         assertNoReplyToAndNoFooter(send(invite("sr", "Acme Corp", "Olivia Owner")));
     }
 
-    @Test
-    @DisplayName("sendInvite_shouldSendNoReplyToAndNoFooter_whenReplyToIsNull")
-    void sendInvite_shouldSendNoReplyToAndNoFooter_whenReplyToIsNull() throws Exception {
-        emailService = service("https://app.example.com", null);
-
-        assertNoReplyToAndNoFooter(send(invite("en", "Acme Corp", "Olivia Owner")));
+    @ParameterizedTest
+    @ValueSource(strings = {"support@", "support opsclear.test", "Support <support@opsclear.test", "@opsclear.test"})
+    @DisplayName("constructor_shouldFail_whenReplyToIsMalformed")
+    void constructor_shouldFail_whenReplyToIsMalformed(String replyTo) {
+        assertThatThrownBy(() -> service("https://app.example.com", replyTo))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("opsclear.mail.reply-to (SMTP_REPLY_TO) is not a valid email address")
+                .hasCauseInstanceOf(AddressException.class);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────
