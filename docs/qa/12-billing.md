@@ -158,7 +158,7 @@ Afterwards reopen the job (set it back to **In Progress**) so later scenarios ca
 - [ ] **Notes** keeps its green border after the update, without a refresh
 - [ ] The job shows a **Notes** section, the note is saved, and the other four sections stay locked
 - [ ] **Notes** is available under **Sections shown on jobs**, and the other four still say **Not in your plan**
-- [ ] The top bar still shows a lock on Dashboard, Stats, Milestones, Templates, Types and Schedules
+- [ ] The top bar still shows a lock on Dashboard, Stats, Milestones, Templates, Types, Schedules, Links and Approvals
 
 ## BIL-11 Adding and removing in one change is refused
 **As:** Petra · **Day:** 1 · **Needs:** BIL-10 done
@@ -249,7 +249,7 @@ Afterwards reopen the job (set it back to **In Progress**) so later scenarios ca
 - [ ] **Job links** is now unlocked in the project's top bar
 
 ## BIL-19 A past-due payment keeps data readable and blocks changes
-**As:** Developer, then Petra · **Day:** 5+ · **Needs:** BIL-17 done, a way to fail Pine & Pixel's next payment in Paddle sandbox. The sandbox can't fail a renewal on demand, so try these in order: in the Paddle sandbox dashboard open her subscription, change the payment method to one of Paddle's declining test cards and bill the next period now; or send the `subscription.past_due` event to the webhook. If nothing works, mark this scenario and BIL-20 as removed and add "past due: no way to fail a sandbox payment" under **Not manual**. `NTF-25` then stays covered under its own **Not manual**.
+**As:** Developer, then Petra · **Day:** 5+ · **Needs:** BIL-17 done, a way to fail Pine & Pixel's next payment in Paddle sandbox. The sandbox can't fail a renewal on demand, so try these in order: in the Paddle sandbox dashboard open her subscription, change the payment method to one of Paddle's declining test cards and bill the next period now; or use Paddle's sandbox notification simulator (or replay a past notification) to send `subscription.past_due` for her subscription. A hand-made request to the webhook won't work, because it checks the Paddle signature. If nothing works, mark this scenario and BIL-20 as removed and add "past due: no way to fail a sandbox payment" under **Not manual**. `NTF-25` then stays covered under its own **Not manual**.
 
 1. Put Pine & Pixel's subscription into past due and wait for the webhook.
 2. As Petra, open any page, then **Organisation Settings**.
@@ -265,17 +265,17 @@ Afterwards reopen the job (set it back to **In Progress**) so later scenarios ca
 - [ ] After the new card is accepted the banner disappears, the Billing box shows **Active**, and the note can be added
 
 ## BIL-20 Past due in Brightline (only if BIL-19 worked, for NTF-25)
-**As:** Developer, then Ana, Nikola and Luka · **Day:** 5+, after every other area and just before `15-cross-cutting.md` · **Needs:** BIL-19 ticked, `NTF-25` waiting. Brightline blocks writes to its add-on features until it recovers, so do this last.
+**As:** Developer, then Ana, Nikola, Ivana and Luka · **Day:** 5+, after every other area and just before `15-cross-cutting.md` · **Needs:** BIL-19 ticked, `NTF-25` waiting. Brightline blocks writes to its add-on features until it recovers, so do this last.
 
 1. Put Brightline's subscription into past due the way BIL-19 did, and wait for the webhook.
-2. As Ana, Nikola and Luka, open any page. Run `NTF-25` now.
+2. As Ana, Nikola, Ivana and Luka, open any page. Run `NTF-25` now (it plays Ana, Nikola and Ivana).
 3. As Luka, add a note on one of his jobs. As Ana, open the **Settings** of Residential Fit-outs.
 4. As Ana, click **Update payment method** and pay with the test card. Wait.
 
-- [ ] Ana, Nikola and Luka all see the past-due banner, and Ana's **Update payment method** link opens **Organisation Settings**
+- [ ] Ana, Nikola, Ivana and Luka all see the past-due banner, and Ana's **Update payment method** link opens **Organisation Settings**
 - [ ] Luka's note fails with the past-due message, and everything on his job stays readable
 - [ ] **Require approval to complete jobs** shows "Not enforced: requires an active Approvals add-on." while past due
-- [ ] After payment the banner is gone for all three, the Billing box shows **Active**, and Luka can add the note
+- [ ] After payment the banner is gone for all four, the Billing box shows **Active**, and Luka can add the note
 
 ## Not manual
 - Paddle webhook signature checks, unknown customers, bad bodies, and redelivered events that change nothing a second time: covered by `PaddleWebhookIntegrationTest`.
