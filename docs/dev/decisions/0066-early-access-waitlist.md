@@ -46,6 +46,11 @@ waitlist. This ADR is JOB-435. It was not promoted from a Future Consideration.
 - **Privacy Policy:** draft PR #613 (MIL-053) lists the data we collect. Waitlist emails are new
   personal data and have to be listed.
 - **Email:** the app sends mail through Brevo (ADR-0059, ADR-0064). This milestone sends none.
+- **Verified emails:** Keycloak blocks login until the email is verified (ADR-0059,
+  `verifyEmail: true`), so the email on a signed-in user is one they own. Nobody can claim another
+  person's sign-up benefit by registering with their address.
+- **Trial:** today a new org has no trial and no add-ons. The free trial and its end date come from
+  MIL-052 (ADR job JOB-431, not written yet). The `TRIAL` code's benefit needs that trial end date.
 
 ## Decision
 
@@ -70,8 +75,15 @@ waitlist. This ADR is JOB-435. It was not promoted from a Future Consideration.
    not a new table or endpoint.
 6. **Super admins see the sign-ups** on a new "Sign-ups" tab in the super-admin area, filtered by list, with
    "Download CSV" and a delete button per row (junk and GDPR requests).
-7. **The launch email is sent by hand from the CSV.** No bulk-mail code in this milestone.
-8. **Spam protection:** a dedicated nginx rate-limit zone for the form endpoint and a honeypot
+7. **A sign-up can carry a code** (`TRIAL` for now), taken from the link (`?code=TRIAL`) or typed
+   into an optional "Promo code" field. A static map in the backend says what each code gives.
+   `TRIAL` gives a **30-day trial in total**. Later codes can give other benefits (more trial days,
+   credits). Unknown codes are rejected.
+8. **The benefit is redeemed when the person creates their organisation** with the same
+   (verified) email. Nothing to type again, once only. This needs MIL-052's trial, so the redemption
+   job waits for it.
+9. **The launch email is sent by hand from the CSV.** No bulk-mail code in this milestone.
+10. **Spam protection:** a dedicated nginx rate-limit zone for the form endpoint and a honeypot
    field. No captcha.
 
 ## Product decisions
@@ -84,14 +96,17 @@ waitlist. This ADR is JOB-435. It was not promoted from a Future Consideration.
 | Copy | Matches the posts: "30 days free, no credit card needed. Leave your email and we'll tell you the day OpsClear opens." Links to the Privacy Policy. en and sr. |
 | After submit | Thank-you state on the same page: "Thanks! We'll email you when we launch." |
 | Confirmation email | None. Decided over a "you're on the list" email and over double opt-in. |
-| Duplicates | Same thank-you. The stored row stays as it was. |
+| Duplicates | Same thank-you. The stored row stays as it was, except that a code is added if the row had none. |
 | Source tracking | `utm_source`, `utm_medium` and `utm_campaign` from the page URL, stored with the sign-up. Shown in the list and the CSV. |
 | Closing sign-up | No new organisations while `OPSCLEAR_SIGNUP_OPEN=false`. Invites still work. Super users can still create orgs (for testing). |
 | Landing "Sign up" | While closed, it goes to `/early-access` and reads "Get notified". "Log in" is unchanged. On launch it goes back to Keycloak registration. |
 | Signed in without an org | `/onboarding` shows "We're not open yet. We'll email you at launch." with a button that adds their account email to the list (or a link to `/early-access`) and a "Log out" button. |
-| Viewing the list | Super-admin "Sign-ups" tab with a list filter (only `early-access` for now): date, email, language, source, medium, campaign. Newest first. "Download CSV" for the selected list. |
+| Viewing the list | Super-admin "Sign-ups" tab with a list filter (only `early-access` for now): date, email, code, redeemed, language, source, medium, campaign. Newest first. "Download CSV" for the selected list. |
 | Reuse | One table for every email sign-up. Each sign-up belongs to a list (`early-access` now). The same email can be on several lists. New lists are added to an allowed set in the backend. |
 | Removing someone | Delete button per row in the super-admin tab. Requests come in through support@ (ADR-0064). |
+| Codes | Optional "Promo code" field, filled from `?code=` in the link and editable. Case-insensitive, stored upper-case. Unknown code: "This code isn't valid". No code: the sign-up still works, with no benefit. |
+| Code map | Static, in the backend. `TRIAL` → trial of 30 days in total. New codes and new benefit types (for example credits) are a code change. |
+| Redeeming | At org creation, if the creator's email has an unredeemed sign-up with a code, the new org gets that code's benefit. Used once: the sign-up records when and for which org. Invited people who join an existing org redeem nothing. |
 | Launch mail | Out of scope. The developer exports the CSV and sends one campaign by hand. MIL-052 decides what the trial looks like. |
 | Privacy | The Privacy Policy lists the waitlist (email, consent time, campaign source, kept until launch mail plus 6 months, or until deleted). Added on PR #613 or, if it merged, by the frontend job. |
 
@@ -111,6 +126,9 @@ CREATE TABLE email_signups (
     utm_source   VARCHAR(100),
     utm_medium   VARCHAR(100),
     utm_campaign VARCHAR(100),
+    code         VARCHAR(30),
+    redeemed_at  TIMESTAMPTZ,
+    redeemed_org_id UUID REFERENCES organisations (id),
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
@@ -124,15 +142,18 @@ CREATE UNIQUE INDEX uq_email_signups_list_email ON email_signups (list, lower(em
   (`early-access` for now), so a new campaign is a one-line backend change and no migration.
 - Unique per list: the same email can be on `early-access` and a later list.
 - `locale` (`en` / `sr`, from the page language) tells the launch mail which language to use.
+- `code` is free text in the database, upper-case. The backend accepts only codes in its map.
+- `redeemed_at` and `redeemed_org_id` mark a used benefit. They're added in this migration so the
+  redemption job (after MIL-052) needs no migration.
 - Regenerate jOOQ classes.
 
 ### API
 
 | Method | Path | Auth | Request | Response |
 |---|---|---|---|---|
-| `POST` | `/api/public/signups` | none | `{ "list": "early-access", "email": "a@b.com", "consent": true, "locale": "en", "utmSource": "linkedin", "utmMedium": "social", "utmCampaign": "launch", "website": "" }` | `204` always on valid input, new or duplicate. `400` on invalid email, unknown `list` or `consent` not `true`. |
+| `POST` | `/api/public/signups` | none | `{ "list": "early-access", "email": "a@b.com", "consent": true, "locale": "en", "utmSource": "linkedin", "utmMedium": "social", "utmCampaign": "launch", "code": "TRIAL", "website": "" }` | `204` always on valid input, new or duplicate. `400` on invalid email, unknown `list`, unknown `code` or `consent` not `true`. |
 | `GET` | `/api/public/signup` | none | — | `200 { "open": false }` |
-| `GET` | `/api/super-admin/signups?list=early-access` | super user | — | `200 [{ id, list, email, locale, utmSource, utmMedium, utmCampaign, consentAt, createdAt }]`, newest first |
+| `GET` | `/api/super-admin/signups?list=early-access` | super user | — | `200 [{ id, list, email, code, redeemedAt, redeemedOrgId, locale, utmSource, utmMedium, utmCampaign, consentAt, createdAt }]`, newest first |
 | `GET` | `/api/super-admin/signups/export?list=early-access` | super user | — | `200 text/csv`, `Content-Disposition: attachment; filename="<list>-YYYY-MM-DD.csv"`, same columns |
 | `DELETE` | `/api/super-admin/signups/{id}` | super user | — | `204`, `404` if not found |
 | `POST` | `/api/organisations` | JWT | unchanged | new: `403` `{ "error": "Forbidden", "message": "Sign-up is closed until launch" }` when closed and the caller isn't a super user |
@@ -150,10 +171,26 @@ CREATE UNIQUE INDEX uq_email_signups_list_email ON email_signups (list, lower(em
 - **`PublicSignupController`** for the two public endpoints. **`SuperAdminSignupController`** for the list, export and delete, each
   with `@RequiresSuperUser`, like `SuperAdminFeedbackController`.
 - **`SignupList`** enum with the allowed lists and their wire values (`EARLY_ACCESS("early-access")`).
+- **Code map:** `SignupCode` enum, the single place codes are defined, each with its benefit:
+
+  ```java
+  sealed interface SignupBenefit permits TrialDays { }
+  record TrialDays(int totalDays) implements SignupBenefit { }
+
+  enum SignupCode {
+      TRIAL(new TrialDays(30));
+      // later: e.g. a Credits(int amount) benefit and codes that use it
+  }
+  ```
+
+  `SignupCode.parse(String)` trims, upper-cases and returns empty for an unknown code. A new
+  benefit type is a new record plus its case in the redemption switch.
 - **`EmailSignupService`:**
   - `signUp(request)`: if the honeypot is filled, return. Otherwise check the list is allowed, normalise the email (trim;
     keep the case as typed, uniqueness on `lower(email)`), require `consent == true`, truncate the
-    UTM values to 100 characters, and insert with `ON CONFLICT DO NOTHING` (no error, no update).
+    UTM values to 100 characters, and check `code` against `SignupCode` (400 if unknown). Insert with
+    `ON CONFLICT (list, lower(email)) DO UPDATE SET code = COALESCE(email_signups.code, EXCLUDED.code)`:
+    no error, nothing else changes, and a code given later is kept.
   - `list(list)`, `exportCsv(list)` and `delete(id)`.
   - CSV: header row; RFC 4180 quoting; cells starting with `=`, `+`, `-` or `@` get a leading `'`
     (CSV injection in spreadsheets).
@@ -164,13 +201,16 @@ CREATE UNIQUE INDEX uq_email_signups_list_email ON email_signups (list, lower(em
   Invite accept doesn't create an org, so it isn't affected.
 - **DTOs:** `EmailSignupRequest` (`list` required; `@Email`, `@NotBlank`, `@Size(max = 254)` on email;
   `@AssertTrue` on consent; `@Pattern("en|sr")` on locale, optional; `@Size(max = 100)` on UTM
-  fields), `EmailSignupResponse`, and `SignupStatusResponse(boolean open)`.
+  fields; `@Size(max = 30)` on code, optional), `EmailSignupResponse`, and
+  `SignupStatusResponse(boolean open)`.
 - **Logging:** never log the email at INFO. Log "sign-up stored" / "duplicate" /
   "honeypot" without the address.
 - **Tests:**
   - Integration (`ApiPaths` for the new paths):
     - sign-up stores a row with its list
     - unknown list returns 400
+    - code stored upper-case; unknown code returns 400; no code is fine
+    - a duplicate with a code fills an empty code and doesn't overwrite an existing one
     - the same email on two lists gives two rows
     - duplicate in other case returns 204 and leaves one row
     - honeypot returns 204 and stores nothing
@@ -195,6 +235,8 @@ CREATE UNIQUE INDEX uq_email_signups_list_email ON email_signups (list, lower(em
   - copy from Product decisions, the email field, the consent checkbox with a Privacy Policy link,
     a submit button, and the hidden honeypot `website` input (off-screen, `tabIndex={-1}`,
     `autoComplete="off"`)
+  - an optional "Promo code" field, filled from `?code=` and editable; a 400 for the code shows
+    "This code isn't valid" on that field
   - reads `utm_source`, `utm_medium` and `utm_campaign` from the URL; sends the current i18n
     language as `locale`
   - thank-you state after `204`, and an inline error on `400` or `429`
@@ -208,7 +250,7 @@ CREATE UNIQUE INDEX uq_email_signups_list_email ON email_signups (list, lower(em
   account email with `consent: true` after the user ticks the checkbox) and "Log out". A 403 from
   `POST /api/organisations` shows the same card.
 - **Super-admin "Sign-ups" tab:** `SuperAdminNav` gets the tab. `SuperAdminSignupsPage` has a list
-  selector (defaults to `early-access`), a table (date, email, language, source, medium, campaign), a count, "Download CSV" (fetches
+  selector (defaults to `early-access`), a table (date, email, code, redeemed, language, source, medium, campaign), a count, "Download CSV" (fetches
   the export with the auth header and saves it as a blob) and a delete button per row with a
   confirm dialog.
 - **E2E (E2E.md):**
@@ -241,6 +283,15 @@ CREATE UNIQUE INDEX uq_email_signups_list_email ON email_signups (list, lower(em
 - **Second org for an existing user** (`/org/new`) is also blocked while closed. Nobody does that
   before launch.
 - **Super users:** exempt from the org check, so the developer can create test orgs on prod.
+- **Codes are public:** anyone who sees a post can use `TRIAL`. That's intended; it's a campaign
+  code, not a secret. A code-specific limit (for example a maximum number of redemptions) would be a
+  new field in the map later.
+- **Code before MIL-052:** until the redemption job ships, codes are only stored and shown. Orgs
+  created in that time (super users only, while sign-up is closed) don't redeem anything.
+- **Different email at org creation:** if someone signs up with one address and registers with
+  another, the code isn't found. Support can fix it by hand (support@, ADR-0064).
+- **Deleted sign-up:** deleting the row removes the code too. An already redeemed benefit stays on
+  the org.
 - **Launch day:** `OPSCLEAR_SIGNUP_OPEN=true` in `.env.prod`, then
   `docker compose … up -d backend`. The frontend picks it up on the next status fetch, with no
   rebuild. Recorded in DEPLOY.md.
@@ -262,6 +313,17 @@ CREATE UNIQUE INDEX uq_email_signups_list_email ON email_signups (list, lower(em
 No code, but the page would live off our domain or in an iframe, styling and i18n wouldn't match,
 another sub-processor would hold the list, and UTM capture would be clumsy. Built in, it's one small
 table and one form.
+
+### Code typed at org creation (decided against)
+
+A "Promo code" field on `CreateOrgPage` works for anyone with the code, but people would have to
+remember it weeks later, and the waitlist sign-up wouldn't matter. Redeeming by verified email
+needs nothing from the user.
+
+### Only store the code now, decide redemption in MIL-052 (decided against)
+
+Keeps this ADR smaller, but splits one feature across two ADRs. The redemption is a separate job
+here, blocked by MIL-052's trial job, so the order is still right.
 
 ### A dedicated `early_access_signups` table (decided against)
 
@@ -341,6 +403,18 @@ go with the backend job.
    Sign up buttons driven by `useSignupStatus`, the "not open yet" card in `CreateOrgPage`, the
    reusable `EmailSignupForm`, the super-admin Sign-ups tab with CSV and delete, en and sr, E2E, and the Privacy Policy entry if
    PR #613 has merged. Blocked by 2.
+4. **Backend 2: Redeem sign-up codes at organisation creation.** In `OrganisationService.create`,
+   after the org is created: find the oldest unredeemed sign-up with a code for the creator's email
+   (case-insensitive), apply its benefit (`TrialDays` sets the org's trial end to creation +
+   `totalDays`, through MIL-052's trial model), and set `redeemed_at` and `redeemed_org_id`, all in
+   the same transaction. Log the redemption (no email). Integration tests: the code is redeemed
+   once; a second org by the same user gets the normal trial; no sign-up or no code gives the normal
+   trial; super-user org creation follows the same rule. Blocked by 2 and by MIL-052's trial backend
+   job (JOB-431 breakdown). The frontend shows the trial length MIL-052 already displays, so no
+   frontend job is needed.
+
+**For JOB-431 (free trial ADR):** the trial model must allow a per-org trial length (a trial end
+date set at creation that can differ from the default), so job 4 can apply `TrialDays`.
 
 Order on prod: the backend can ship first with the setting still `true` (nothing changes), then
 switch to `false` once the frontend is live, so the Sign up buttons never point to a 403.
