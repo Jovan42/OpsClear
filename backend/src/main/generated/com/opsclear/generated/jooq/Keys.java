@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.EmailSignups;
 import com.opsclear.generated.jooq.tables.FeedbackSubmissions;
 import com.opsclear.generated.jooq.tables.JobDeadlineAlerts;
 import com.opsclear.generated.jooq.tables.JobLinks;
@@ -38,6 +39,7 @@ import com.opsclear.generated.jooq.tables.SubscriptionTiers;
 import com.opsclear.generated.jooq.tables.Users;
 import com.opsclear.generated.jooq.tables.records.ApiKeysRecord;
 import com.opsclear.generated.jooq.tables.records.ApprovalsRecord;
+import com.opsclear.generated.jooq.tables.records.EmailSignupsRecord;
 import com.opsclear.generated.jooq.tables.records.FeedbackSubmissionsRecord;
 import com.opsclear.generated.jooq.tables.records.JobDeadlineAlertsRecord;
 import com.opsclear.generated.jooq.tables.records.JobLinksRecord;
@@ -89,6 +91,7 @@ public class Keys {
     public static final UniqueKey<ApiKeysRecord> API_KEYS_KEY_HASH_KEY = Internal.createUniqueKey(ApiKeys.API_KEYS, DSL.name("api_keys_key_hash_key"), new TableField[] { ApiKeys.API_KEYS.KEY_HASH }, true);
     public static final UniqueKey<ApiKeysRecord> API_KEYS_PKEY = Internal.createUniqueKey(ApiKeys.API_KEYS, DSL.name("api_keys_pkey"), new TableField[] { ApiKeys.API_KEYS.ID }, true);
     public static final UniqueKey<ApprovalsRecord> APPROVALS_PKEY = Internal.createUniqueKey(Approvals.APPROVALS, DSL.name("approvals_pkey"), new TableField[] { Approvals.APPROVALS.ID }, true);
+    public static final UniqueKey<EmailSignupsRecord> EMAIL_SIGNUPS_PKEY = Internal.createUniqueKey(EmailSignups.EMAIL_SIGNUPS, DSL.name("email_signups_pkey"), new TableField[] { EmailSignups.EMAIL_SIGNUPS.ID }, true);
     public static final UniqueKey<FeedbackSubmissionsRecord> FEEDBACK_SUBMISSIONS_PKEY = Internal.createUniqueKey(FeedbackSubmissions.FEEDBACK_SUBMISSIONS, DSL.name("feedback_submissions_pkey"), new TableField[] { FeedbackSubmissions.FEEDBACK_SUBMISSIONS.ID }, true);
     public static final UniqueKey<JobDeadlineAlertsRecord> JOB_DEADLINE_ALERTS_PKEY = Internal.createUniqueKey(JobDeadlineAlerts.JOB_DEADLINE_ALERTS, DSL.name("job_deadline_alerts_pkey"), new TableField[] { JobDeadlineAlerts.JOB_DEADLINE_ALERTS.JOB_ID, JobDeadlineAlerts.JOB_DEADLINE_ALERTS.KIND, JobDeadlineAlerts.JOB_DEADLINE_ALERTS.DEADLINE }, true);
     public static final UniqueKey<JobLinksRecord> JOB_LINKS_PKEY = Internal.createUniqueKey(JobLinks.JOB_LINKS, DSL.name("job_links_pkey"), new TableField[] { JobLinks.JOB_LINKS.ID }, true);

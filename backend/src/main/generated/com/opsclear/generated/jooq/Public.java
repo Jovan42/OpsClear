@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.EmailSignups;
 import com.opsclear.generated.jooq.tables.FeedbackSubmissions;
 import com.opsclear.generated.jooq.tables.JobDeadlineAlerts;
 import com.opsclear.generated.jooq.tables.JobLinks;
@@ -67,6 +68,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.approvals</code>.
      */
     public final Approvals APPROVALS = Approvals.APPROVALS;
+
+    /**
+     * The table <code>public.email_signups</code>.
+     */
+    public final EmailSignups EMAIL_SIGNUPS = EmailSignups.EMAIL_SIGNUPS;
 
     /**
      * Customer bug/feature/other feedback (ADR-0043) — reviewed by super
@@ -242,6 +248,7 @@ public class Public extends SchemaImpl {
         return Arrays.asList(
             ApiKeys.API_KEYS,
             Approvals.APPROVALS,
+            EmailSignups.EMAIL_SIGNUPS,
             FeedbackSubmissions.FEEDBACK_SUBMISSIONS,
             JobDeadlineAlerts.JOB_DEADLINE_ALERTS,
             JobLinks.JOB_LINKS,
