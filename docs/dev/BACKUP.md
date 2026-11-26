@@ -1,6 +1,7 @@
 # Production backups and restore
 
 Two layers (JOB-421). Both are set up by hand on the droplet and in the DigitalOcean account.
+Prod runs as **root** in `/root/OpsClear`, so every command below is run as root there.
 
 | Layer | What | Restores | Kept |
 |---|---|---|---|
@@ -10,21 +11,39 @@ Two layers (JOB-421). Both are set up by hand on the droplet and in the DigitalO
 A disk image of a running Postgres may need crash recovery and can't restore one database, so the
 dumps are the main way back for data. The disk image is for losing the server.
 
+**Threat model.** The Spaces key has to be able to delete (DO's limited keys are either read or
+read/write/delete), so someone with root on the droplet can delete every dump. The Droplet Backups
+are the copy the droplet can't touch, so keep them on even though the dumps exist.
+
 ## How the backup works
 
-`scripts/backup-db.sh` (read `--help` for the details):
+`scripts/backup-db.sh` (read `--help` for the details). It works from any folder: it changes to the
+repo root first.
 
 1. Runs `pg_dump -Fc -Z 6` for each database inside the `postgres` service (`docker compose exec`),
-   into a private temp folder on the droplet. `pg_dump` takes a snapshot and doesn't block writes.
-2. Checks each dump: at least 2 KB, `pg_restore --list` can read it, and it has table data. A failed
-   or empty dump stops the script (`set -euo pipefail`, every step is checked).
+   into a private temp folder on the droplet.
+2. Checks each dump: at least 2 KB, `pg_restore -f /dev/null` reads the **whole** archive without
+   error (a dump cut off in the data section fails; `pg_restore --list` alone would not notice),
+   and it has table data. A failed or empty dump stops the script (`set -euo pipefail`, every step
+   is checked).
 3. Uploads to `s3://<bucket>/db/<database>-<UTC timestamp>.dump` with the pinned `amazon/aws-cli`
    Docker image (nothing to install, Docker is already there), then reads each object's size back
    from the bucket and compares.
 4. Pings the health check (see Alerting). The temp folder is always removed.
 
-The Spaces keys never appear in the command line (passed to the container as environment
-variables) and the script prints none of them.
+The Spaces keys are passed to the container by variable name, so they are not in the command line
+(`ps`) and the script prints none of them.
+
+### Locks and deploys
+
+`pg_dump` doesn't block INSERT, UPDATE or DELETE: it holds `ACCESS SHARE` on every table for the
+length of the dump. It does block anything that needs `ACCESS EXCLUSIVE`: Flyway's `ALTER TABLE` and
+`DROP`, and Keycloak's Liquibase upgrades. Worse, a migration waiting for that lock queues every
+later read and write on the table behind it, so a deploy with a migration that lands during the dump
+stalls the site until the dump ends. At today's size the dump takes seconds, and 03:15 is a quiet
+time: nobody works then and deploys only run when someone merges to `main`. **Don't merge
+migrations around 03:15 server time.** If the dump grows to minutes, set a `lock_timeout` for
+Flyway.
 
 ## Alerting: dead-man's switch
 
@@ -57,7 +76,7 @@ don't leave it empty in production.
    that one bucket with read/write/delete. Copy the secret at once, it is shown only once.
 5. **Health check.** Create a free check on healthchecks.io named `opsclear-db-backup`, period
    1 day, grace 2 hours, and add an email integration. Copy its ping URL.
-6. **Env vars** in `~/OpsClear/.env.prod` (see `.env.prod.example`), then `chmod 600 .env.prod`:
+6. **Env vars** in `/root/OpsClear/.env.prod` (see `.env.prod.example`), then `chmod 600 .env.prod`:
 
    ```sh
    BACKUP_S3_ENDPOINT=https://<region>.digitaloceanspaces.com
@@ -69,62 +88,71 @@ don't leave it empty in production.
    ```
 
    These variables are read only by the backup script. The compose services ignore them.
-7. **First manual run**, on the droplet, from the checkout (`git pull` first, or wait for the deploy):
+7. **Get the script and do the first manual run.** Merging this change does **not** deploy it
+   (`deploy.yml` only runs for `backend/**` and `frontend/**`), so pull it on the droplet:
 
    ```sh
-   cd ~/OpsClear && scripts/backup-db.sh
+   cd /root/OpsClear && git pull && scripts/backup-db.sh
    ```
 
    Expect "Backup ... done", two new objects under `db/` in the bucket and a green check on
    healthchecks.io. Also test the alert once: temporarily set `BACKUP_S3_BUCKET=does-not-exist` in
    `.env.prod`, run the script (it fails at the upload), confirm the alert email arrives, and put
    the real bucket name back.
-8. **Schedule** at a quiet hour (03:15 server time). Cron, as the user that owns the checkout
-   (it must be in the `docker` group):
+8. **Schedule** at a quiet hour (03:15 server time), in **root's** crontab (`.env.prod` is `600`,
+   root-only). `flock -n` stops a hung run from overlapping the next night's run:
 
    ```sh
-   crontab -e
+   sudo crontab -e
    # OpsClear nightly database backup (JOB-421, docs/dev/BACKUP.md)
-   15 3 * * * cd $HOME/OpsClear && scripts/backup-db.sh >> $HOME/opsclear-backup.log 2>&1
+   15 3 * * * flock -n /var/lock/opsclear-backup.lock /root/OpsClear/scripts/backup-db.sh >> /root/opsclear-backup.log 2>&1
    ```
 
-   Check it ran the next morning: `tail ~/opsclear-backup.log`.
+   Check it ran the next morning: `tail /root/opsclear-backup.log`. The log grows slowly; trim it
+   now and then.
 9. **Prod restore test** (below), then fill in the test record at the bottom.
 
 ## Where the keys are
 
-- Spaces key and health check URL: `~/OpsClear/.env.prod` on the droplet (root-readable, `600`,
+- Spaces key and health check URL: `/root/OpsClear/.env.prod` on the droplet (root-only, `600`,
   never in git). Keep a copy of the Spaces key and the DO login in the password manager. The key
   can be regenerated in the DO console (API > Spaces Keys), then update `.env.prod`.
 - A Droplet Backup includes `.env.prod`, so a rebuilt droplet gets the keys back.
 
 ## Restore one database from a dump
 
-Do this on the droplet, in `~/OpsClear`. Use the dump you want: list them, newest last.
+Do this on the droplet, in `/root/OpsClear`. First list the dumps and pick one (the newest
+`opsclear-` and `keycloak-` pair with the same timestamp is the usual choice).
 
 ```sh
+cd /root/OpsClear
 set -a; . ./.env.prod; set +a
-aws() { docker run --rm -e AWS_ACCESS_KEY_ID="$BACKUP_S3_ACCESS_KEY" \
-  -e AWS_SECRET_ACCESS_KEY="$BACKUP_S3_SECRET_KEY" -e AWS_DEFAULT_REGION="$BACKUP_S3_REGION" \
+export AWS_ACCESS_KEY_ID=$BACKUP_S3_ACCESS_KEY AWS_SECRET_ACCESS_KEY=$BACKUP_S3_SECRET_KEY
+aws() { docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
+  -e AWS_DEFAULT_REGION="$BACKUP_S3_REGION" \
   -e AWS_EC2_METADATA_DISABLED=true -e AWS_REQUEST_CHECKSUM_CALCULATION=when_required \
   -e AWS_RESPONSE_CHECKSUM_VALIDATION=when_required -v "$HOME/restore:/data" \
   amazon/aws-cli:2.42.3 --endpoint-url "$BACKUP_S3_ENDPOINT" "$@"; }
 mkdir -p ~/restore
-aws s3 ls s3://$BACKUP_S3_BUCKET/db/ | sort -k4 | tail -n 6
+# newest dumps last (the date and time columns sort first)
+aws s3 ls s3://$BACKUP_S3_BUCKET/db/ | sort -k1,2 | tail -n 6
 aws s3 cp s3://$BACKUP_S3_BUCKET/db/opsclear-<timestamp>.dump /data/
+aws s3 cp s3://$BACKUP_S3_BUCKET/db/keycloak-<timestamp>.dump /data/
 ```
 
-Then replace the database (this **deletes the current data** in it, so take a fresh
-`scripts/backup-db.sh` first if the stack still works). Stop what uses the database. For `opsclear`
-that is the backend, for `keycloak` it is Keycloak:
+Then swap the database. The old one is **renamed, not dropped**, so there's a way back until the
+checks pass. Stop what uses the database first: `backend` for `opsclear`, `keycloak` for `keycloak`.
+Repeat for each database you restore.
 
 ```sh
 C="docker compose -f docker-compose.prod.yml --env-file .env.prod"
+P="$C exec -T postgres psql -U opsclear -d postgres -v ON_ERROR_STOP=1"
 DB=opsclear                      # or keycloak
 USERSVC=backend                  # or keycloak
 $C stop $USERSVC
-$C exec -T postgres psql -U opsclear -d postgres -c "DROP DATABASE $DB WITH (FORCE)"
-$C exec -T postgres psql -U opsclear -d postgres -c "CREATE DATABASE $DB"
+$P -c "select pg_terminate_backend(pid) from pg_stat_activity where datname='$DB'"
+$P -c "ALTER DATABASE $DB RENAME TO ${DB}_pre_restore"
+$P -c "CREATE DATABASE $DB"
 $C exec -T postgres pg_restore -U opsclear -d $DB --no-owner --exit-on-error < ~/restore/$DB-<timestamp>.dump
 $C start $USERSVC
 ```
@@ -142,32 +170,62 @@ between the two dumps would be missing on one side. Prefer the pair with the sam
   right.
 - `$C logs --tail 50 backend` shows no migration or connection errors.
 
+**If a check fails (or the restore command failed): roll back** with two renames, then start the
+service again:
+
+```sh
+$C stop $USERSVC
+$P -c "select pg_terminate_backend(pid) from pg_stat_activity where datname='$DB'"
+$P -c "ALTER DATABASE $DB RENAME TO ${DB}_failed_restore"
+$P -c "ALTER DATABASE ${DB}_pre_restore RENAME TO $DB"
+$C start $USERSVC
+```
+
+**If all checks pass**, drop the old copy and delete the downloaded dumps (they hold all customer
+data):
+
+```sh
+$P -c "DROP DATABASE ${DB}_pre_restore"
+rm -rf ~/restore
+```
+
 ### Restore into a throwaway container (the test, no risk to prod)
+
+With the dumps downloaded to `~/restore` as above:
 
 ```sh
 docker run -d --rm --name restore-test -e POSTGRES_USER=opsclear -e POSTGRES_PASSWORD=x postgres:16
-sleep 6
+until docker exec restore-test pg_isready -U opsclear -d opsclear; do sleep 1; done
 docker exec -i restore-test pg_restore -U opsclear -d opsclear --no-owner --exit-on-error < ~/restore/opsclear-<timestamp>.dump
 docker exec restore-test psql -U opsclear -d opsclear -Atc "select count(*) from jobs"
 docker exec restore-test psql -U opsclear -d postgres -c "CREATE DATABASE keycloak"
 docker exec -i restore-test pg_restore -U opsclear -d keycloak --no-owner --exit-on-error < ~/restore/keycloak-<timestamp>.dump
 docker stop restore-test
+rm -rf ~/restore
 ```
 
 ## Rebuild from a Droplet Backup
 
 Use this when the server itself is lost or broken.
 
-1. DO console > the droplet > Backups > pick the image > **Restore Droplet** (same droplet, replaces
+1. If the old droplet still runs and you will use **Create Droplet** (a new droplet), **power the
+   old one off first**, so two hosts don't both run the nightly backup or serve the site during the
+   cutover.
+2. DO console > the droplet > Backups > pick the image > **Restore Droplet** (same droplet, replaces
    the disk) or **Create Droplet** from the image (new droplet, new IP).
-2. For a new droplet: point the DNS `A @` and `A www` records (Namecheap) at the new IP, and update
-   the `DEPLOY_HOST` secret (and `DEPLOY_SSH_KEY` if the key changed) used by `.github/workflows/deploy.yml`.
-3. On the droplet: `cd ~/OpsClear && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d`.
+3. For a new droplet: point the DNS `A @` and `A www` records (Namecheap) at the new IP, and update
+   the `DEPLOY_HOST` secret (and `DEPLOY_SSH_KEY` if the key changed) used by
+   `.github/workflows/deploy.yml`.
+4. On the droplet: `cd /root/OpsClear && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d`.
    The image holds the certificates (`/etc/letsencrypt`), `.env.prod`, the checkout and the
    `postgres_data` volume.
-4. The volume in a disk image was copied while Postgres ran, so Postgres may do crash recovery on
-   start. If the databases look wrong or don't start, restore the latest dumps as above.
-5. Run the checks above. Confirm the cron entry exists (`crontab -l`) and run
+5. **Compare the image's date with the newest dump** in `db/` (`aws s3 ls`, see above). The image is
+   up to a day old (daily backups) or a week (weekly), so the newest dump is usually newer. If it
+   is, **restore both dumps (same timestamp) with the steps above before reopening the site**, since
+   they hold the latest data. The volume in an image was copied while Postgres ran, so Postgres may
+   also do crash recovery on start; if the databases look wrong or don't start, restore the dumps
+   the same way.
+6. Run the checks above. Confirm the cron entry exists (`sudo crontab -l`) and run
    `scripts/backup-db.sh` once.
 
 ## Restore tests

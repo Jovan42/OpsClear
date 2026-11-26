@@ -3,6 +3,10 @@
 # checked, then uploaded to a private DigitalOcean Spaces bucket. Runbook: docs/dev/BACKUP.md.
 set -euo pipefail
 
+# Work from the repo root so the default .env.prod and compose file resolve from any cwd.
+# (A custom ENV_FILE or COMPOSE_FILE should be an absolute path.)
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 usage() {
   cat <<'USAGE'
 Usage: scripts/backup-db.sh [--help]
@@ -10,14 +14,15 @@ Usage: scripts/backup-db.sh [--help]
 Steps:
   1. Ping the dead-man's switch "start" URL (if BACKUP_HEALTHCHECK_URL is set).
   2. For each database in BACKUP_DATABASES: pg_dump -Fc inside the postgres service to a private
-     temp folder, then check the dump (not tiny, pg_restore can read its table of contents, it
-     holds table data).
+     temp folder, then check the dump (not tiny, pg_restore reads the whole archive without
+     error, it holds table data).
   3. Upload the dumps to s3://BACKUP_S3_BUCKET/db/<database>-<UTC timestamp>.dump with the
      amazon/aws-cli Docker image, then check each object's size in the bucket.
   4. Ping BACKUP_HEALTHCHECK_URL on success, or BACKUP_HEALTHCHECK_URL/fail (with the error text)
      on any failure. A missed ping is also an alert (set the check to period 1 day, grace 2 hours).
 Nothing is deleted here: old dumps expire through the bucket's 30-day lifecycle rule.
-Exits non-zero on any failure. pg_dump doesn't block writes.
+Exits non-zero on any failure. pg_dump doesn't block INSERT/UPDATE/DELETE, but it holds ACCESS
+SHARE locks, so a migration that needs ACCESS EXCLUSIVE waits for it (see docs/dev/BACKUP.md).
 
 Environment:
   ENV_FILE            env file to read (default .env.prod)
@@ -95,12 +100,13 @@ pg() { # run a command in the postgres container, stdin passed through
   fi
 }
 
-# The keys go in through the environment, never argv. The checksum settings keep newer CLI
-# versions compatible with S3-compatible stores such as Spaces.
+# The keys reach the container by name (-e NAME): docker copies the values from its own
+# environment, so they never appear in argv (ps). The checksum settings keep newer CLI versions
+# compatible with S3-compatible stores such as Spaces.
 aws_s3() {
+  AWS_ACCESS_KEY_ID="$BACKUP_S3_ACCESS_KEY" AWS_SECRET_ACCESS_KEY="$BACKUP_S3_SECRET_KEY" \
   docker run --rm \
-    -e AWS_ACCESS_KEY_ID="$BACKUP_S3_ACCESS_KEY" \
-    -e AWS_SECRET_ACCESS_KEY="$BACKUP_S3_SECRET_KEY" \
+    -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
     -e AWS_DEFAULT_REGION="$BACKUP_S3_REGION" \
     -e AWS_EC2_METADATA_DISABLED=true \
     -e AWS_REQUEST_CHECKSUM_CALCULATION=when_required \
@@ -122,7 +128,10 @@ for db in $DATABASES; do
   fi
   size=$(wc -c < "$WORKDIR/$file" | tr -d ' ')
   [ "$size" -ge "$MIN_BYTES" ] || fail "dump of $db is only $size bytes (minimum $MIN_BYTES)"
-  # pg_restore --list reads the archive's table of contents: a truncated dump fails here.
+  # --list reads only the header and table of contents, so first read the whole archive
+  # (every data block is decompressed) to catch a dump cut off in the data section.
+  pg pg_restore -f /dev/null < "$WORKDIR/$file" 2> "$PG_ERR" \
+    || fail "dump of $db is not a complete archive: $(tail -n 2 "$PG_ERR" | tr '\n' ' ')"
   toc=$(pg pg_restore --list < "$WORKDIR/$file") || fail "dump of $db is not a readable archive"
   grep -q 'TABLE DATA' <<<"$toc" || fail "dump of $db contains no table data"
   echo "  $file: $size bytes, OK"
