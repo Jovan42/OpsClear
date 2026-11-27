@@ -409,6 +409,27 @@ class EmailSignupIntegrationTest {
     }
 
     @Test
+    @DisplayName("export_shouldGuardCellsStartingWithTabOrCarriageReturn")
+    void export_shouldGuardCellsStartingWithTabOrCarriageReturn() throws Exception {
+        Map<String, Object> risky = signup("tab@example.com");
+        risky.put("utmSource", "\tads");
+        risky.put("utmMedium", "\rsocial");
+        risky.put("utmCampaign", "a\tb");
+        mockMvc.perform(postJson(ApiPaths.PUBLIC_SIGNUPS, risky)).andExpect(status().isNoContent());
+        EmailSignupsRecord row = dsl.selectFrom(EMAIL_SIGNUPS).fetchSingle();
+
+        String csv = mockMvc.perform(get(ApiPaths.forList(ApiPaths.SUPER_ADMIN_SIGNUPS_EXPORT, EARLY_ACCESS))
+                        .with(asSuperUser()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        // The carriage return is also a line break, so that cell is quoted too. A tab inside a cell isn't guarded.
+        assertThat(csv).endsWith("\r\n" + row.getId() + ",early-access,tab@example.com,,,,,"
+                + "'\tads,\"'\rsocial\",a\tb,"
+                + row.getConsentAt().toInstant() + "," + row.getCreatedAt().toInstant() + "\r\n");
+    }
+
+    @Test
     @DisplayName("export_shouldReturnOnlyTheHeader_whenListIsEmpty")
     void export_shouldReturnOnlyTheHeader_whenListIsEmpty() throws Exception {
         mockMvc.perform(get(ApiPaths.forList(ApiPaths.SUPER_ADMIN_SIGNUPS_EXPORT, EARLY_ACCESS)).with(asSuperUser()))

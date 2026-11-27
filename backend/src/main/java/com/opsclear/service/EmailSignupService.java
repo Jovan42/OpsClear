@@ -35,8 +35,9 @@ public class EmailSignupService {
     static final String CSV_HEADER = "id,list,email,code,redeemed_at,redeemed_org_id,locale,"
             + "utm_source,utm_medium,utm_campaign,consent_at,created_at";
     private static final String CSV_LINE_END = "\r\n";
-    // A cell starting with one of these is run as a formula by spreadsheets (CSV injection)
-    private static final Pattern FORMULA_START = Pattern.compile("^[=+\\-@]");
+    // A cell starting with one of these is run as a formula by spreadsheets (CSV injection, OWASP list:
+    // = + - @, tab and carriage return)
+    private static final Pattern FORMULA_START = Pattern.compile("^[=+\\-@\t\r]");
     // RFC 4180: a field with a comma, quote or line break must be quoted
     private static final Pattern NEEDS_QUOTES = Pattern.compile("[\",\r\n]");
 
@@ -96,6 +97,11 @@ public class EmailSignupService {
         log.info("Deleted email sign-up {}", id);
     }
 
+    /**
+     * Cuts a UTM value to the column size. Through the API {@code @Size(max = 100)} on the request already rejects
+     * longer values with 400, so this is only a safety net for callers that skip DTO validation (a request built
+     * with the builder, as in the unit tests). No branch on the length, so the API path covers every instruction.
+     */
     static String truncateUtm(String value) {
         return value == null ? null : value.substring(0, Math.min(value.length(), UTM_MAX_LENGTH));
     }

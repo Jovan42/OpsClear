@@ -1,6 +1,8 @@
 package com.opsclear.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opsclear.dto.CreateOrganisationRequest;
+import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.UserModel;
 import com.opsclear.repository.BlockReasonRepository;
 import com.opsclear.repository.JobRepository;
@@ -10,6 +12,7 @@ import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.ProjectMemberRepository;
 import com.opsclear.repository.ProjectRepository;
 import com.opsclear.repository.UserRepository;
+import com.opsclear.service.OrganisationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -54,6 +58,7 @@ class OrganisationIntegrationTest {
     @Autowired private ProjectMemberRepository projectMemberRepository;
     @Autowired private ProjectRepository projectRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private OrganisationService organisationService;
 
     private UUID ownerId;
     private UUID memberId;
@@ -142,6 +147,21 @@ class OrganisationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("name", "Second Corp", "slug", "SEC"))))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("create_shouldThrowNotFoundAndCreateNothing_whenCallerHasNoUserRow")
+    void create_shouldThrowNotFoundAndCreateNothing_whenCallerHasNoUserRow() {
+        // Through the API UserSyncFilter creates the user row first, so the service is called directly
+        UUID unknownId = UUID.randomUUID();
+
+        CreateOrganisationRequest request = new CreateOrganisationRequest("Ghost Corp", "GHO");
+
+        assertThatThrownBy(() -> organisationService.create(request, unknownId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("User not found");
+
+        assertThat(organisationRepository.existsBySlugAndDeletedAtIsNull("GHO")).isFalse();
     }
 
     @Test

@@ -121,6 +121,20 @@ class EmailSignupServiceTest {
         assertThat(request.getEmail()).isNull();
     }
 
+    @Test
+    @DisplayName("signUp_shouldTruncateUtmValuesTo100Characters_whenDtoValidationWasSkipped")
+    void signUp_shouldTruncateUtmValuesTo100Characters_whenDtoValidationWasSkipped() {
+        when(emailSignupRepository.upsert(any())).thenReturn(true);
+
+        service.signUp(validRequest().utmSource("s".repeat(150)).utmMedium("m".repeat(101))
+                .utmCampaign("c".repeat(100)).build());
+
+        EmailSignupModel stored = captureUpsert();
+        assertThat(stored.getUtmSource()).isEqualTo("s".repeat(100));
+        assertThat(stored.getUtmMedium()).isEqualTo("m".repeat(100));
+        assertThat(stored.getUtmCampaign()).isEqualTo("c".repeat(100));
+    }
+
     // --- truncateUtm ---
 
     @Test
@@ -195,6 +209,10 @@ class EmailSignupServiceTest {
         assertThat(EmailSignupService.csvCell("+1")).isEqualTo("'+1");
         assertThat(EmailSignupService.csvCell("-1")).isEqualTo("'-1");
         assertThat(EmailSignupService.csvCell("@SUM(A1)")).isEqualTo("'@SUM(A1)");
+        assertThat(EmailSignupService.csvCell("\t=1")).isEqualTo("'\t=1");
+        // A leading carriage return is guarded and, being a line break, also quoted
+        assertThat(EmailSignupService.csvCell("\r=1")).isEqualTo("\"'\r=1\"");
+        assertThat(EmailSignupService.csvCell("a\tb")).isEqualTo("a\tb");
         assertThat(EmailSignupService.csvCell("a=b")).isEqualTo("a=b");
     }
 
