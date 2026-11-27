@@ -514,13 +514,57 @@ judged in Luka's scenarios in the other area files.
 - [ ] Serbian shows the full page in Serbian, still saying the English version is binding
 - [ ] The register page says "By creating an account you agree to the Terms of Service and the Privacy Policy", and both links open the pages (in a new tab where the theme keeps it)
 - [ ] **Account settings** shows the three links at the bottom
+## ONB-36 Early access page and the super-admin Sign-ups tab
+**As:** Anonymous visitor (private window), then the developer (super user) · **Day:** 1 · **Needs:** a super user account on the environment
+
+1. Open `/early-access?code=TRIAL&utm_source=linkedin&utm_medium=social&utm_campaign=launch` on a desktop-width window.
+2. Click **Get notified** without filling anything in.
+3. Type `<mailbox>+waitlist@<domain>`, tick **Email me when OpsClear launches** and click **Get notified**.
+4. Open the page again with the same link, sign up the same address again.
+5. Open `/early-access?code=NOPE`, type `<mailbox>+waitlist2@<domain>`, tick the box and click **Get notified**.
+6. Repeat steps 1 and 3 with `<mailbox>+waitlist3@<domain>` on a phone-width window with the **SR** language on.
+7. As the developer, open `/admin` and click **Sign-ups**.
+8. Click **Download CSV** and open the file in a spreadsheet.
+9. Click the bin icon on the `+waitlist3` row and confirm **Delete**.
+
+- [ ] The page shows **Get notified at launch**, "30 days free, no credit card needed…", and **Promo code** prefilled with `TRIAL`
+- [ ] Step 2 shows "Enter your email" and "Tick the box so we can email you at launch", and sends nothing
+- [ ] **Privacy Policy** opens the Privacy Policy in a new tab (the `/privacy` page comes with JOB-420, PR #613), and it lists the launch list
+- [ ] After submitting, the form is replaced by "Thanks! We'll email you when we launch."
+- [ ] The same address again shows the same thank-you, with no error
+- [ ] `NOPE` shows "This code isn't valid" under **Promo code**, and no thank-you
+- [ ] At phone width nothing scrolls sideways, and the Serbian page reads **Obavestite me o pokretanju**
+- [ ] **Sign-ups** lists the list **Early access** with a count, newest first: `+waitlist3` with language `sr`, and `+waitlist` once, with code `TRIAL`, source `linkedin`, medium `social`, campaign `launch`
+- [ ] The CSV file is named `early-access-<today>.csv` and opens with one column per field (date, email, code, redeemed, language, source, medium, campaign)
+- [ ] After **Delete**, the `+waitlist3` row is gone and the count drops by one
+
+Afterwards, delete the `+waitlist` row too.
+
+## ONB-37 Sign-up closed until launch
+**As:** Anonymous visitor, a new user, Ana (owner), then the developer (super user) · **Day:** 1 · **Needs:** the backend started with `OPSCLEAR_SIGNUP_OPEN=false`; run on a test environment, never during the Brightline world build
+
+1. Open the home page and `/features` in a private window. Look at the Sign up buttons and click one.
+2. Register a new user `<mailbox>+closed@<domain>` through Keycloak's own **Register** link on the login page, and verify the email.
+3. On the page that opens, click **Join the list**, then tick **Email me when OpsClear launches** and click **Join the list** again.
+4. Click **Log out**.
+5. As Ana, invite `<mailbox>+closedinvite@<domain>` to Brightline. Open the invite link in a private window, create the account and accept the invite.
+6. As the developer (super user, no organisation yet on this environment), open `/org/new`.
+
+- [ ] The hero, the green footer and the `/features` buttons read **Get notified** and open `/early-access`
+- [ ] The new user sees **We're not open yet** and "We'll email you at launch." with their account email, not the create form
+- [ ] **Join the list** first asks for the tick, then shows "Thanks! We'll email you when we launch."
+- [ ] **Log out** signs the user out and returns to the home page
+- [ ] The invited person creates an account and joins Brightline without seeing the card
+- [ ] The developer gets the **Create your organisation** form and can create a test org
 
 ## Not manual
 - Invite emails never failing the invite when sending fails: covered by `InviteEmailListenerTest`.
 - The Keycloak `verifyEmail` realm setting on a fresh install: covered by the `@smoke` E2E `auth-flows/registration.cy.ts`, which clicks the real verification link.
 - Two simultaneous org creations with the same slug: covered by `OrganisationServiceTest` and the unique index from migration V039.
-- Early access sign-up API (ADR-0066: validation, codes, duplicates in any case, honeypot): covered by `EmailSignupIntegrationTest`. The `/early-access` page scenarios come with the Frontend job (JOB-442).
-- Sign-up switch closed (`OPSCLEAR_SIGNUP_OPEN=false`): org creation returns 403 for a normal user and 201 for a super user, and invite accept still works: covered by `SignupClosedIntegrationTest`. Prod stays open until the Frontend job (JOB-442) ships its "not open yet" scenarios.
+- Early access sign-up API (ADR-0066: validation, codes, duplicates in any case, honeypot): covered by `EmailSignupIntegrationTest`. The page itself is ONB-36.
+- The honeypot field on `/early-access` (off-screen, only bots fill it): covered by `emailSignup.test.ts` (sent as filled) and `EmailSignupIntegrationTest` (nothing stored).
+- Sign-up switch closed (`OPSCLEAR_SIGNUP_OPEN=false`): org creation returns 403 for a normal user and 201 for a super user, and invite accept still works: covered by `SignupClosedIntegrationTest`. The screens are ONB-37, and the 403 showing the "not open yet" card is covered by the E2E `organisation-management/signup-closed.cy.ts`.
+- The 429 message on `/early-access` (nginx limit of 5 a minute): covered by the E2E `landing-page/early-access.cy.ts` with a stubbed 429.
 
 ## Findings
 - ONB-05: JOB-395 (UX) **Create your organisation** has no **Log out**, language or theme controls, so a signed-in user with no org is stuck on the page. Fix in PR #582; ONB-06 now checks the new top bar.

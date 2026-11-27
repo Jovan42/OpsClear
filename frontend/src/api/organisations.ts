@@ -20,8 +20,11 @@ export const organisationsApi = {
   get: (id: string) =>
     apiClient.get<OrganisationResponse>(`/api/organisations/${id}`).then((r) => r.data),
 
+  // 403 only means "sign-up is closed until launch" (ADR-0066): the page shows its own card instead
   create: (body: { name: string; slug: string }) =>
-    apiClient.post<OrganisationResponse>('/api/organisations', body).then((r) => r.data),
+    apiClient
+      .post<OrganisationResponse>('/api/organisations', body, { skipErrorToastStatuses: [403] })
+      .then((r) => r.data),
 
   update: (id: string, body: { name: string; slug: string }) =>
     apiClient.patch<OrganisationResponse>(`/api/organisations/${id}`, body).then((r) => r.data),

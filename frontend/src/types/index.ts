@@ -790,3 +790,42 @@ export interface NotificationListFilters {
   unread: boolean;
   type: NotificationType | null;
 }
+
+// ---- Email sign-ups (ADR-0066) ----
+
+/** A sign-up list the backend accepts (`SignupList`). Only the early access list so far. */
+export type SignupList = 'early-access';
+
+/** `POST /api/public/signups`. `website` is the honeypot: real visitors leave it empty. */
+export interface EmailSignupRequest {
+  list: SignupList;
+  email: string;
+  consent: boolean;
+  locale: 'en' | 'sr';
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  code?: string;
+  website: string;
+}
+
+/** `GET /api/public/signup`: whether new organisations can be created. */
+export interface SignupStatusResponse {
+  open: boolean;
+}
+
+/** `GET /api/super-admin/signups?list=`, newest first. */
+export interface EmailSignupResponse {
+  id: string;
+  list: SignupList;
+  email: string;
+  code: string | null;
+  redeemedAt: string | null;
+  redeemedOrgId: string | null;
+  locale: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  consentAt: string;
+  createdAt: string;
+}

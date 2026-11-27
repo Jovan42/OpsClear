@@ -1,0 +1,34 @@
+{
+  "pageTitle": "Get notified at launch",
+  "heading": "Get notified at launch",
+  "intro": "30 days free, no credit card needed. Leave your email and we'll tell you the day OpsClear opens.",
+  "backToHome": "← Back to home",
+  "cta": {
+    "getNotified": "Get notified"
+  },
+  "form": {
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@company.com",
+    "emailRequired": "Enter your email",
+    "emailInvalid": "Enter a valid email address",
+    "consentLabel": "Email me when OpsClear launches",
+    "consentRequired": "Tick the box so we can email you at launch",
+    "privacy": "We only use your email to tell you about the launch. See the <privacy>Privacy Policy</privacy>.",
+    "codeLabel": "Promo code",
+    "codeOptional": "(optional)",
+    "codeInvalid": "This code isn't valid",
+    "honeypotLabel": "Leave this field empty",
+    "submit": "Get notified",
+    "thanks": "Thanks! We'll email you when we launch.",
+    "invalid": "Check your email address and try again.",
+    "rateLimited": "Too many attempts. Wait a minute and try again.",
+    "generic": "Something went wrong. Please try again."
+  },
+  "closed": {
+    "heading": "We're not open yet",
+    "body": "We'll email you at launch.",
+    "joinHint": "Join the launch list with your account email:",
+    "joinList": "Join the list",
+    "logOut": "Log out"
+  }
+}

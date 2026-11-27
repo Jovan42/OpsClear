@@ -16,7 +16,8 @@
   },
   "nav": {
     "pricing": "Cene",
-    "feedback": "Povratne informacije i krediti"
+    "feedback": "Povratne informacije i krediti",
+    "signups": "Prijave"
   },
   "feedbackPageHeading": "Povratne informacije i krediti",
   "feedbackPageSubtitle": "Pregledajte prijave korisnika i upravljajte evidencijom kredita.",
@@ -53,5 +54,36 @@
     "syncWarning": {
       "NO_PADDLE_SUBSCRIPTION": "Ova organizacija još nema realnu, aktivnu Paddle pretplatu — nema na šta da se prikači popust dok se ne izvrši plaćanje."
     }
+  },
+  "signups": {
+    "pageHeading": "Prijave",
+    "pageSubtitle": "Ljudi koji su ostavili email na listi prijava. Najnovije prvo.",
+    "listLabel": "Lista",
+    "lists": {
+      "early-access": "Rani pristup"
+    },
+    "count_one": "{{count}} prijava",
+    "count_few": "{{count}} prijave",
+    "count_other": "{{count}} prijava",
+    "download": "Preuzmi CSV",
+    "downloadError": "Preuzimanje CSV-a nije uspelo. Pokušajte ponovo.",
+    "empty": "Na ovoj listi još nema prijava.",
+    "loadError": "Učitavanje prijava nije uspelo.",
+    "columns": {
+      "date": "Datum",
+      "email": "Email",
+      "code": "Kod",
+      "redeemed": "Iskorišćen",
+      "language": "Jezik",
+      "source": "Izvor",
+      "medium": "Medijum",
+      "campaign": "Kampanja",
+      "actions": "Radnje"
+    },
+    "deleteButton": "Obriši",
+    "deleteAria": "Obriši {{email}}",
+    "deleteTitle": "Brisanje prijave",
+    "deleteMessage": "Ukloniti {{email}} sa liste? Ovo se ne može poništiti.",
+    "deleteError": "Brisanje prijave nije uspelo. Pokušajte ponovo."
   }
 }

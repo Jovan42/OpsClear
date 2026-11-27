@@ -2,9 +2,9 @@ import { useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
 import PublicFooter from '../legal/PublicFooter';
+import SignupCta from '../earlyAccess/SignupCta';
 import { useCatalog } from '../org/useSubscription';
 import DemoTrigger from '../../demo/DemoTrigger';
 import { BookOpen } from 'lucide-react';
@@ -297,13 +297,11 @@ export default function FeaturesPage() {
           )}
 
           <div className="text-center mt-16">
-            <button
-              onClick={() => keycloak.register()}
+            <SignupCta
+              registerLabel={t('landing.hero.getStarted')}
               className="px-8 py-3 rounded-lg text-white font-semibold text-lg hover:opacity-90 transition-opacity"
               style={{ backgroundColor: 'var(--brand)' }}
-            >
-              {t('landing.hero.getStarted')}
-            </button>
+            />
             <p className="text-sm text-gray-400 mt-3">{t('featuresPage.noCreditCard')}</p>
           </div>
         </div>

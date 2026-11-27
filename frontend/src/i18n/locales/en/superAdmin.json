@@ -16,7 +16,8 @@
   },
   "nav": {
     "pricing": "Pricing",
-    "feedback": "Feedback & Credits"
+    "feedback": "Feedback & Credits",
+    "signups": "Sign-ups"
   },
   "feedbackPageHeading": "Feedback & Credits",
   "feedbackPageSubtitle": "Review customer submissions and manage the credit ledger.",
@@ -53,5 +54,35 @@
     "syncWarning": {
       "NO_PADDLE_SUBSCRIPTION": "This org has no real, active Paddle subscription yet — nothing to attach the discount to until they check out."
     }
+  },
+  "signups": {
+    "pageHeading": "Sign-ups",
+    "pageSubtitle": "People who left their email on a sign-up list. Newest first.",
+    "listLabel": "List",
+    "lists": {
+      "early-access": "Early access"
+    },
+    "count_one": "{{count}} sign-up",
+    "count_other": "{{count}} sign-ups",
+    "download": "Download CSV",
+    "downloadError": "Couldn't download the CSV. Try again.",
+    "empty": "No sign-ups on this list yet.",
+    "loadError": "Couldn't load the sign-ups.",
+    "columns": {
+      "date": "Date",
+      "email": "Email",
+      "code": "Code",
+      "redeemed": "Redeemed",
+      "language": "Language",
+      "source": "Source",
+      "medium": "Medium",
+      "campaign": "Campaign",
+      "actions": "Actions"
+    },
+    "deleteButton": "Delete",
+    "deleteAria": "Delete {{email}}",
+    "deleteTitle": "Delete sign-up",
+    "deleteMessage": "Remove {{email}} from the list? This can't be undone.",
+    "deleteError": "Couldn't delete the sign-up. Try again."
   }
 }

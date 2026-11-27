@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
-import keycloak from '../../auth/keycloak';
 import PublicNav from '../../components/PublicNav';
 import SupportLink from '../../components/SupportLink';
 import ProductAndPricing from './ProductAndPricing';
 import SocialLinks from './SocialLinks';
+import SignupCta from '../earlyAccess/SignupCta';
 import { POST_LOGIN_REDIRECT_KEY } from '../../auth/postLoginRedirect';
 import { clearPendingInvite, readPendingInvite } from '../org/inviteLink';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -26,13 +26,11 @@ function Hero() {
         <p className="text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-xl mx-auto">
           {t('landing.hero.subtitle')}
         </p>
-        <button
-          onClick={() => keycloak.register()}
+        <SignupCta
+          registerLabel={t('landing.hero.getStarted')}
           className="px-8 py-3 rounded-lg text-white font-semibold text-lg hover:opacity-90 transition-opacity"
           style={{ backgroundColor: 'var(--brand)' }}
-        >
-          {t('landing.hero.getStarted')}
-        </button>
+        />
       </div>
     </section>
   );
@@ -64,13 +62,11 @@ function CTAFooter() {
     <footer className="px-6 py-20 text-center" style={{ backgroundColor: 'var(--brand)' }}>
       <h2 className="text-3xl font-bold text-white mb-3">{t('landing.cta.heading')}</h2>
       <p className="text-white/70 mb-8">{t('landing.cta.subtitle')}</p>
-      <button
-        onClick={() => keycloak.register()}
+      <SignupCta
+        registerLabel={t('landing.cta.button')}
         className="px-8 py-3 bg-white rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity"
         style={{ color: 'var(--brand)' }}
-      >
-        {t('landing.cta.button')}
-      </button>
+      />
       <div className="mt-10">
         <Link to="/guide" className="text-sm text-white/80 hover:text-white underline-offset-4 hover:underline">
           {tGuide('entry.nav')}
