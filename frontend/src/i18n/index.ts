@@ -16,6 +16,7 @@ import enSuperAdmin from './locales/en/superAdmin.json';
 import enFeedback from './locales/en/feedback.json';
 import enNotifications from './locales/en/notifications.json';
 import enGuide from './locales/en/guide.json';
+import enLegal from './locales/en/legal.json';
 
 import srCommon from './locales/sr/common.json';
 import srErrors from './locales/sr/errors.json';
@@ -32,6 +33,7 @@ import srSuperAdmin from './locales/sr/superAdmin.json';
 import srFeedback from './locales/sr/feedback.json';
 import srNotifications from './locales/sr/notifications.json';
 import srGuide from './locales/sr/guide.json';
+import srLegal from './locales/sr/legal.json';
 
 export const NAMESPACES = [
   'common',
@@ -49,6 +51,7 @@ export const NAMESPACES = [
   'feedback',
   'notifications',
   'guide',
+  'legal',
 ] as const;
 
 void i18n.use(initReactI18next).init({
@@ -69,6 +72,7 @@ void i18n.use(initReactI18next).init({
       feedback: enFeedback,
       notifications: enNotifications,
       guide: enGuide,
+      legal: enLegal,
     },
     sr: {
       common: srCommon,
@@ -86,6 +90,7 @@ void i18n.use(initReactI18next).init({
       feedback: srFeedback,
       notifications: srNotifications,
       guide: srGuide,
+      legal: srLegal,
     },
   },
   lng: 'en',

@@ -96,6 +96,13 @@
                 </div>
             </div>
 
+            <#-- JOB-420: the app's legal pages. client.baseUrl is the app's root URL (a trailing slash). -->
+            <#if (client.baseUrl)?has_content>
+                <p id="kc-legal-consent" class="${properties.kcLabelClass!}">
+                    ${kcSanitize(msg("registerAgree", client.baseUrl))?no_esc}
+                </p>
+            </#if>
+
             <div id="kc-form-buttons" class="${properties.kcFormGroupClass!}">
                 <input class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}" type="submit" value="${msg("doRegister")}"/>
             </div>

@@ -1,0 +1,170 @@
+{
+  "common": {
+    "draftBanner": "Nacrt, nije pregledan. Ovaj tekst nije pregledao pravnik, a podaci o kompaniji su rezervisana mesta. Ne oslanjajte se na njega.",
+    "lastUpdated": "Poslednje ažuriranje: {{date}}",
+    "bindingNote": "Verzija ovog dokumenta na engleskom jeziku je merodavna. Srpska verzija je prevod radi lakšeg razumevanja.",
+    "backToHome": "Nazad na početnu",
+    "footerLabel": "Pravne informacije",
+    "contactHeading": "Podaci o kompaniji i kontakt",
+    "contactBody": "[[LEGAL_ENTITY_NAME]], [[LEGAL_ENTITY_ADDRESS]]. Matični broj: [[REGISTRATION_NUMBER]]. PIB: [[TAX_NUMBER]]. Podrška: [[SUPPORT_EMAIL]]."
+  },
+  "links": {
+    "terms": "Uslovi korišćenja",
+    "privacy": "Politika privatnosti",
+    "refunds": "Politika povraćaja sredstava"
+  },
+  "terms": {
+    "title": "Uslovi korišćenja",
+    "sections": [
+      {
+        "heading": "1. Ko smo mi",
+        "paragraphs": ["OpsClear vodi [[LEGAL_ENTITY_NAME]] ([[LEGAL_ENTITY_ADDRESS]], matični broj [[REGISTRATION_NUMBER]], PIB [[TAX_NUMBER]]), u daljem tekstu „mi“. Pravljenjem naloga ili korišćenjem OpsClear-a prihvatate ove uslove. Ako OpsClear koristite za firmu, potvrđujete da možete da prihvatite uslove u njeno ime."]
+      },
+      {
+        "heading": "2. Usluga",
+        "paragraphs": ["OpsClear je veb aplikacija za praćenje operativnog rada: poslova, njihovih statusa, blokada, beleški i odobrenja. Dostupne funkcije zavise od paketa i dodataka na koje je vaša organizacija pretplaćena."]
+      },
+      {
+        "heading": "3. Nalozi i organizacije",
+        "paragraphs": ["Za korišćenje OpsClear-a potreban vam je nalog i potvrđena email adresa. Čuvajte lozinku u tajnosti i javite nam ako mislite da je nalog zloupotrebljen. Jedna osoba može pripadati jednoj organizaciji. Ko napravi organizaciju postaje njen vlasnik i odgovara za osobe koje pozove i za ono što rade u njoj."]
+      },
+      {
+        "heading": "4. Prihvatljivo korišćenje",
+        "paragraphs": ["Obavezujete se da nećete:"],
+        "items": [
+          "kršiti zakon niti čuvati ili deliti nezakonit sadržaj",
+          "pokušavati da pristupite podacima drugih organizacija, niti ometati, ispitivati ili preopterećivati uslugu",
+          "deliti nalog na način kojim izbegavate plaćanje dodatnih mesta ili dodataka",
+          "preprodavati uslugu niti je nuditi pod svojim imenom bez naše pisane dozvole"
+        ]
+      },
+      {
+        "heading": "5. Pretplate i naplata",
+        "paragraphs": [
+          "Plaćeni paketi naplaćuju se unapred za svaki period (mesečno ili godišnje) i obnavljaju se automatski dok ih ne otkažete. Cene se vide pri plaćanju.",
+          "Plaćanje obrađuje Paddle, koji je trgovac na zapisu (merchant of record) za vašu kupovinu. Paddle vam prodaje pretplatu, naplaćuje uplatu i poreze i izdaje račun. Pored ovih uslova, na kupovinu se primenjuju i Paddle-ovi uslovi za kupce."
+        ]
+      },
+      {
+        "heading": "6. Probni period",
+        "paragraphs": ["Nove organizacije mogu dobiti besplatan probni period od 7 dana. Kada probni period istekne, za pristup je potrebna plaćena pretplata."]
+      },
+      {
+        "heading": "7. Otkazivanje i povraćaj sredstava",
+        "paragraphs": ["Pretplatu možete otkazati u svakom trenutku u podešavanjima naplate vaše organizacije. Otkazivanje zaustavlja sledeće obnavljanje, a pristup traje do kraja plaćenog perioda. Povraćaj sredstava opisan je u našoj Politici povraćaja sredstava."]
+      },
+      {
+        "heading": "8. Zaključavanje posle probnog perioda ili neplaćanja",
+        "paragraphs": ["Kada probni period istekne bez pretplate, ili plaćanje ne uspe i ne bude rešeno, organizacija se zaključava: članovi više ne mogu da koriste aplikaciju. Podaci se čuvaju ograničeno vreme kako biste mogli da se ponovo pretplatite i nastavite, a posle toga mogu biti obrisani."]
+      },
+      {
+        "heading": "9. Vaši podaci",
+        "paragraphs": ["Sadržaj koji unesete u OpsClear (poslovi, beleške i drugo) vaš je. Dajete nam pravo da ga čuvamo i obrađujemo samo radi pružanja usluge vama. Postupanje sa ličnim podacima opisano je u Politici privatnosti."]
+      },
+      {
+        "heading": "10. Dostupnost",
+        "paragraphs": ["Trudimo se da OpsClear radi, ali ne obećavamo neprekidnu ili bezgrešnu uslugu i ne postoji ugovor o nivou usluge (SLA). Možemo menjati uslugu i vršiti održavanje."]
+      },
+      {
+        "heading": "11. Odgovornost",
+        "paragraphs": [
+          "OpsClear se pruža „takav kakav jeste“. U meri u kojoj zakon dozvoljava, ne odgovaramo za posrednu ili posledičnu štetu, izgubljenu dobit ili izgubljene podatke, a naša ukupna odgovornost po svakom zahtevu ograničena je na iznos koji ste nam platili u 12 meseci pre zahteva.",
+          "Ništa u ovim uslovima ne ograničava odgovornost koja se po zakonu ne može ograničiti, niti vaša prava kao potrošača, tamo gde važe."
+        ]
+      },
+      {
+        "heading": "12. Prestanak",
+        "paragraphs": ["Možete prestati da koristite OpsClear u svakom trenutku. Možemo suspendovati ili ugasiti nalog koji krši ove uslove, uz upozorenje kada je to razumno."]
+      },
+      {
+        "heading": "13. Merodavno pravo",
+        "paragraphs": ["Na ove uslove primenjuje se pravo države [[GOVERNING_LAW_COUNTRY]], a sporove rešavaju tamošnji sudovi, bez uklanjanja zaštite potrošača koja se na vas primenjuje po zakonu."]
+      },
+      {
+        "heading": "14. Izmene uslova",
+        "paragraphs": ["Možemo ažurirati ove uslove. O bitnim izmenama obavestićemo vas emailom ili u aplikaciji pre nego što počnu da važe. Ako nastavite da koristite OpsClear, prihvatate ih."]
+      },
+      {
+        "heading": "15. Kontakt",
+        "paragraphs": ["Pitanja o ovim uslovima: [[SUPPORT_EMAIL]]."]
+      }
+    ]
+  },
+  "privacy": {
+    "title": "Politika privatnosti",
+    "sections": [
+      {
+        "heading": "1. Ko je odgovoran",
+        "paragraphs": ["Rukovalac podacima je [[LEGAL_ENTITY_NAME]], [[LEGAL_ENTITY_ADDRESS]] (matični broj [[REGISTRATION_NUMBER]]). Kontakt za pitanja o privatnosti: [[SUPPORT_EMAIL]]. Za sadržaj koji vaša organizacija unosi u poslove i beleške, rukovalac je vaša organizacija, a mi smo obrađivač u njeno ime."]
+      },
+      {
+        "heading": "2. Šta prikupljamo",
+        "paragraphs": ["Obrađujemo:"],
+        "items": [
+          "Podatke o nalogu: ime i email adresu, i prijavu, preko našeg servisa za prijavu (Keycloak)",
+          "Sadržaj: ono što vi i vaše kolege unesete u poslove, beleške, odobrenja i podešavanja",
+          "Tehničke podatke: serverske logove kao što su IP adresa, pregledač, vreme i tražena stranica, radi bezbednosti i rešavanja problema",
+          "Podatke o naplati: čuva Paddle, naš pružalac plaćanja i trgovac na zapisu. Mi dobijamo status pretplate i podatke sa računa, ne broj vaše kartice"
+        ]
+      },
+      {
+        "heading": "3. Zašto i na kom pravnom osnovu",
+        "paragraphs": [
+          "Da pružimo uslugu za koju ste se prijavili (izvršenje ugovora sa vama): nalozi, poslovi, obaveštenja, status naplate.",
+          "Da usluga bude bezbedna i ispravna (naš legitimni interes): logovi, sprečavanje zloupotrebe, ispravljanje grešaka.",
+          "Da ispunimo zakonske obaveze, kao što su poreske i računovodstvene evidencije."
+        ]
+      },
+      {
+        "heading": "4. Sa kim delimo podatke",
+        "paragraphs": ["Koristimo ove podobrađivače:"],
+        "items": [
+          "DigitalOcean: hosting, u regionu [[HOSTING_REGION]]",
+          "Paddle: plaćanja, fakturisanje i porezi",
+          "[[SMTP_PROVIDER]]: slanje emailova, kao što su potvrda adrese i pozivnice"
+        ]
+      },
+      {
+        "heading": "5. Koliko dugo čuvamo podatke",
+        "paragraphs": ["Podatke o nalogu i sadržaj čuvamo dok vaša organizacija ima nalog. Kada se organizacija obriše ili prestane da važi, brišemo njene podatke u roku od [[RETENTION_PERIOD]], osim onoga što zakon traži da čuvamo, kao što su računi. Logovi se čuvaju kratko."]
+      },
+      {
+        "heading": "6. Vaša prava",
+        "paragraphs": ["Prema GDPR-u (i zakonu o zaštiti podataka o ličnosti Srbije) možete tražiti pristup podacima, ispravku, brisanje, kopiju u prenosivom formatu, ograničenje obrade ili uložiti prigovor na obradu. Za sada te zahteve šaljite emailom na [[SUPPORT_EMAIL]], a mi ćemo odgovoriti u roku od mesec dana. Možete se žaliti i nadležnom organu za zaštitu podataka."]
+      },
+      {
+        "heading": "7. Kolačići",
+        "paragraphs": ["OpsClear koristi samo kolačiće i skladište pregledača koji su potrebni za prijavu i pamćenje jezika i teme. Ne koristimo reklamne kolačiće niti kolačiće za praćenje. Ako se to promeni, ažuriraćemo ovu politiku i tražiti saglasnost gde je potrebna."]
+      },
+      {
+        "heading": "8. Izmene i kontakt",
+        "paragraphs": ["Ažuriraćemo ovu politiku ako se promeni ono što radimo i obavestiti vas o bitnim izmenama. Pitanja: [[SUPPORT_EMAIL]]."]
+      }
+    ]
+  },
+  "refunds": {
+    "title": "Politika otkazivanja i povraćaja sredstava",
+    "sections": [
+      {
+        "heading": "1. Otkazivanje u svakom trenutku",
+        "paragraphs": ["Pretplatu možete otkazati u svakom trenutku u podešavanjima naplate vaše organizacije. Otkazivanje zaustavlja sledeće obnavljanje. Pristup traje do kraja perioda koji ste već platili."]
+      },
+      {
+        "heading": "2. Nema povraćaja za plaćene periode",
+        "paragraphs": ["Osim tamo gde to zahteva zakon ili uslovi našeg prodavca, ne vraćamo novac za već plaćen period, bez obzira na to da li ste koristili uslugu tokom njega."]
+      },
+      {
+        "heading": "3. Probajte pre plaćanja",
+        "paragraphs": ["Svaka nova organizacija može koristiti besplatan probni period od 7 dana, i tako proveriti da li vam OpsClear odgovara pre plaćanja."]
+      },
+      {
+        "heading": "4. Paddle i vaša zakonska prava",
+        "paragraphs": ["Paddle je trgovac na zapisu za vašu kupovinu. Njegovi uslovi za kupce mogu vam dati prava, kao što je zakonski rok za odustanak u nekim regionima, a Paddle može odobriti povraćaj u skladu sa njima. Ništa u ovoj politici ne ograničava prava koja imate po zakonu."]
+      },
+      {
+        "heading": "5. Kontakt",
+        "paragraphs": ["Pitanja o naplati: [[SUPPORT_EMAIL]]."]
+      }
+    ]
+  }
+}

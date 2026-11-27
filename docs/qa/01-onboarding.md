@@ -499,6 +499,22 @@ judged in Luka's scenarios in the other area files.
 - [ ] Clicking it closes the menu and opens a new email to support@opsclear.app
 - [ ] Luka's menu says **Kontaktirajte podršku** on one line, readable in the dark theme
 
+## ONB-35 The legal pages open logged out and are linked
+**As:** Visitor (not signed in, a private window) · **Day:** 1 · **Needs:** nothing. JOB-420 draft pages: the "Draft, not yet reviewed" banner and `[[…]]` placeholders are expected until the texts are final.
+
+1. Open the landing page and scroll to the footer. Click **Terms of Service**, go back, then **Privacy Policy**, go back, then **Refund policy**.
+2. Open **Features** and, at the bottom, click each of the three links. Do the same on **Guide**.
+3. On a phone, or a 375 px wide window, open `/terms`. Switch to dark mode and to Serbian with the **EN** button.
+4. Start **Register** from the landing page and read the text above the **Register** button. Click both links.
+5. As Ana, open **Account settings** and scroll to the bottom.
+
+- [ ] Each page opens without signing in, with a title, a "Last updated" date, the draft banner, the note that the English version is binding, and the company details section
+- [ ] The landing footer, **Features** and **Guide** each show the three links, and they open the right pages
+- [ ] On a phone the text fits the screen with no sideways scrolling, in light and dark mode
+- [ ] Serbian shows the full page in Serbian, still saying the English version is binding
+- [ ] The register page says "By creating an account you agree to the Terms of Service and the Privacy Policy", and both links open the pages (in a new tab where the theme keeps it)
+- [ ] **Account settings** shows the three links at the bottom
+
 ## Not manual
 - Invite emails never failing the invite when sending fails: covered by `InviteEmailListenerTest`.
 - The Keycloak `verifyEmail` realm setting on a fresh install: covered by the `@smoke` E2E `auth-flows/registration.cy.ts`, which clicks the real verification link.
