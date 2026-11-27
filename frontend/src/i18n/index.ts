@@ -17,6 +17,7 @@ import enFeedback from './locales/en/feedback.json';
 import enNotifications from './locales/en/notifications.json';
 import enGuide from './locales/en/guide.json';
 import enLegal from './locales/en/legal.json';
+import enEarlyAccess from './locales/en/earlyAccess.json';
 
 import srCommon from './locales/sr/common.json';
 import srErrors from './locales/sr/errors.json';
@@ -34,6 +35,7 @@ import srFeedback from './locales/sr/feedback.json';
 import srNotifications from './locales/sr/notifications.json';
 import srGuide from './locales/sr/guide.json';
 import srLegal from './locales/sr/legal.json';
+import srEarlyAccess from './locales/sr/earlyAccess.json';
 
 export const NAMESPACES = [
   'common',
@@ -52,6 +54,7 @@ export const NAMESPACES = [
   'notifications',
   'guide',
   'legal',
+  'earlyAccess',
 ] as const;
 
 void i18n.use(initReactI18next).init({
@@ -73,6 +76,7 @@ void i18n.use(initReactI18next).init({
       notifications: enNotifications,
       guide: enGuide,
       legal: enLegal,
+      earlyAccess: enEarlyAccess,
     },
     sr: {
       common: srCommon,
@@ -91,6 +95,7 @@ void i18n.use(initReactI18next).init({
       notifications: srNotifications,
       guide: srGuide,
       legal: srLegal,
+      earlyAccess: srEarlyAccess,
     },
   },
   lng: 'en',

@@ -1,0 +1,34 @@
+{
+  "pageTitle": "Obavestite me o pokretanju",
+  "heading": "Obavestite me o pokretanju",
+  "intro": "30 dana besplatno, bez kreditne kartice. Ostavite email i javićemo vam dan kada se OpsClear otvori.",
+  "backToHome": "← Nazad na početnu",
+  "cta": {
+    "getNotified": "Obavestite me"
+  },
+  "form": {
+    "emailLabel": "Email",
+    "emailPlaceholder": "vi@firma.rs",
+    "emailRequired": "Unesite svoj email",
+    "emailInvalid": "Unesite ispravnu email adresu",
+    "consentLabel": "Pošaljite mi email kada se OpsClear pokrene",
+    "consentRequired": "Označite polje da bismo vam poslali email pri pokretanju",
+    "privacy": "Vaš email koristimo samo da vas obavestimo o pokretanju. Pogledajte <privacy>Politiku privatnosti</privacy>.",
+    "codeLabel": "Promo kod",
+    "codeOptional": "(nije obavezno)",
+    "codeInvalid": "Ovaj kod nije važeći",
+    "honeypotLabel": "Ostavite ovo polje prazno",
+    "submit": "Obavestite me",
+    "thanks": "Hvala! Poslaćemo vam email kada se pokrenemo.",
+    "invalid": "Proverite email adresu i pokušajte ponovo.",
+    "rateLimited": "Previše pokušaja. Sačekajte minut i pokušajte ponovo.",
+    "generic": "Nešto nije u redu. Pokušajte ponovo."
+  },
+  "closed": {
+    "heading": "Još nismo otvoreni",
+    "body": "Poslaćemo vam email pri pokretanju.",
+    "joinHint": "Prijavite se na listu za pokretanje sa emailom svog naloga:",
+    "joinList": "Prijavi me na listu",
+    "logOut": "Odjavi se"
+  }
+}

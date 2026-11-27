@@ -11,6 +11,11 @@ import { useCurrentOrg } from './OrgContext';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import OnboardingHeader from './OnboardingHeader';
 import { clearPendingInvite, readPendingInvite } from './inviteLink';
+import Skeleton from '../../components/Skeleton';
+import SignupClosedCard from '../earlyAccess/SignupClosedCard';
+import { useSignupStatus } from '../earlyAccess/useSignups';
+import { createOrgView } from '../earlyAccess/emailSignup';
+import { useIsSuperUser } from '../superAdmin/useSuperAdminPricing';
 
 export default function CreateOrgPage() {
   const { t } = useTranslation('org');
@@ -19,6 +24,11 @@ export default function CreateOrgPage() {
   const { setOrg } = useCurrentOrg();
   const { mutate: createOrg, isPending } = useCreateOrganisation();
   const [apiError, setApiError] = useState<string | null>(null);
+  // ADR-0066: closed until launch for everyone but super users
+  const { data: signupStatus, isLoading: statusLoading } = useSignupStatus();
+  const isSuperUser = useIsSuperUser(signupStatus?.open === false);
+  const [createForbidden, setCreateForbidden] = useState(false);
+  const view = createOrgView({ status: signupStatus, statusLoading, isSuperUser, createForbidden });
   // JOB-399: a user who signed up from an invite page belongs on it (it joins them), not here
   const [pendingInvite] = useState(() => readPendingInvite());
   useEffect(() => {
@@ -56,7 +66,9 @@ export default function CreateOrgPage() {
           navigate('/org/settings');
         },
         onError: (err) => {
-          if (isAxiosError(err) && err.response?.data?.message) {
+          if (isAxiosError(err) && err.response?.status === 403) {
+            setCreateForbidden(true);
+          } else if (isAxiosError(err) && err.response?.data?.message) {
             setApiError(err.response.data.message as string);
           } else {
             setApiError(t('somethingWentWrongTryAgain'));
@@ -67,6 +79,19 @@ export default function CreateOrgPage() {
   }
 
   if (pendingInvite) return <Navigate to={`/invite/${pendingInvite}`} replace />;
+
+  if (view !== 'form') {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        <OnboardingHeader />
+        <main className="flex-1 flex items-center justify-center px-4 py-8">
+          <div className="w-full max-w-md">
+            {view === 'loading' ? <Skeleton className="h-64 rounded-2xl" /> : <SignupClosedCard />}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">

@@ -6,6 +6,7 @@ import RouteErrorPage from './components/RouteErrorPage';
 import LandingPage from './features/landing/LandingPage';
 import FeaturesPage from './features/landing/FeaturesPage';
 import LegalPage from './features/legal/LegalPage';
+import EarlyAccessPage from './features/earlyAccess/EarlyAccessPage';
 import ProjectListPage from './features/projects/ProjectListPage';
 import ProjectSettingsPage from './features/projects/ProjectSettingsPage';
 import JobListPage from './features/jobs/JobListPage';
@@ -27,6 +28,7 @@ import OrgSettingsPage from './features/org/OrgSettingsPage';
 import AcceptInvitePage from './features/org/AcceptInvitePage';
 import SuperAdminPricingPage from './features/superAdmin/SuperAdminPricingPage';
 import SuperAdminFeedbackPage from './features/superAdmin/SuperAdminFeedbackPage';
+import SuperAdminSignupsPage from './features/superAdmin/SuperAdminSignupsPage';
 import FeedbackPage from './features/feedback/FeedbackPage';
 import OverviewPage from './features/overview/OverviewPage';
 import NotificationsPage from './features/notifications/NotificationsPage';
@@ -34,6 +36,8 @@ import NotificationsPage from './features/notifications/NotificationsPage';
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage />, errorElement: <RouteErrorPage /> },
   { path: '/features', element: <FeaturesPage />, errorElement: <RouteErrorPage /> },
+  // ADR-0066: the public launch list, where the Sign up buttons point while sign-up is closed
+  { path: '/early-access', element: <EarlyAccessPage />, errorElement: <RouteErrorPage /> },
   // ADR-0062: the user guide, public like /features. Lazy, so the guide's layout, search
   // and zoom (and each page's content, loaded separately) stay out of the main bundle.
   {
@@ -90,6 +94,7 @@ export const router = createBrowserRouter([
           { path: 'admin', element: <Navigate to="/admin/pricing" replace /> },
           { path: 'admin/pricing', element: <SuperAdminPricingPage /> },
           { path: 'admin/feedback', element: <SuperAdminFeedbackPage /> },
+          { path: 'admin/signups', element: <SuperAdminSignupsPage /> },
         ],
       },
     ],

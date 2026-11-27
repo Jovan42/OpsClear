@@ -11,9 +11,10 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 export default function SuperAdminNav() {
   const { t } = useTranslation('superAdmin');
   return (
-    <nav className="flex gap-1 w-fit">
+    <nav className="flex flex-wrap gap-1 w-fit">
       <NavLink to="/admin/pricing" className={linkClass}>{t('nav.pricing')}</NavLink>
       <NavLink to="/admin/feedback" className={linkClass}>{t('nav.feedback')}</NavLink>
+      <NavLink to="/admin/signups" className={linkClass}>{t('nav.signups')}</NavLink>
     </nav>
   );
 }

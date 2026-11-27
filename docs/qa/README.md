@@ -181,6 +181,7 @@ finding naming the area file. When you add a route or controller, add it here in
 |-------|-----------|
 | `/` (landing) | `01-onboarding.md` |
 | `/features` | `01-onboarding.md` |
+| `/early-access` | `01-onboarding.md` |
 | `/onboarding` | `01-onboarding.md` |
 | `/org/new` | `01-onboarding.md` |
 | `/invite/:token` | `02-org-admin.md` |
@@ -206,6 +207,7 @@ finding naming the area file. When you add a route or controller, add it here in
 | `/admin` (redirect) | `14-feedback-admin.md` |
 | `/admin/pricing` | `14-feedback-admin.md` |
 | `/admin/feedback` | `14-feedback-admin.md` |
+| `/admin/signups` | `01-onboarding.md` (ONB-36) |
 | `*` (unknown path redirects to `/projects`) | `15-cross-cutting.md` |
 | `/design` | Not manual: developer-only design page |
 
