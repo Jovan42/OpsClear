@@ -5,9 +5,9 @@ import { useAuth } from '../../auth/AuthContext';
 import AppHeader from '../../components/AppHeader';
 import OrgLoader from '../../components/OrgLoader';
 import PublicNav from '../../components/PublicNav';
-import SupportLink from '../../components/SupportLink';
 import { useTheme } from '../../hooks/useTheme';
 import type { GuidePageEntry } from '../../guide/pages';
+import PublicFooter from '../legal/PublicFooter';
 import GuideSidebar from './GuideSidebar';
 
 interface GuideLayoutProps {
@@ -68,11 +68,7 @@ export default function GuideLayout({ current, aside, children }: Readonly<Guide
         )}
       </div>
 
-      {!authenticated && (
-        <footer className="shrink-0 border-t border-gray-200 dark:border-gray-800 px-6 py-6">
-          <SupportLink />
-        </footer>
-      )}
+      {!authenticated && <PublicFooter />}
 
       {/* `inert` while closed: the off-screen close button mustn't take keyboard focus. */}
       <div className={`fixed inset-0 z-50 md:hidden ${drawerOpen ? '' : 'pointer-events-none'}`} aria-hidden={!drawerOpen} inert={!drawerOpen}>

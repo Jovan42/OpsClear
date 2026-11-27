@@ -20,6 +20,7 @@ import type {
   AssigneeFilter, DueSoonDays, LandingProject, StatsRange,
 } from '../../hooks/usePreferences';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import LegalLinks from '../legal/LegalLinks';
 
 // ---- helpers ----
 
@@ -514,6 +515,12 @@ export default function SettingsPage() {
           <div id="api-keys" className="scroll-mt-6">
             {hasAddon('API_KEYS') ? <ApiKeySection /> : <UpgradeCard featureName={t('settings.apiKeysFeatureName')} />}
           </div>
+
+          {/* JOB-420: legal pages, for signed-in users too. */}
+          <LegalLinks
+            className="pt-2"
+            linkClassName="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:underline underline-offset-4"
+          />
         </div>
       </div>
     </div>

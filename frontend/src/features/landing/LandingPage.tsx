@@ -12,6 +12,7 @@ import { clearPendingInvite, readPendingInvite } from '../org/inviteLink';
 import { usePreferences } from '../../hooks/usePreferences';
 import { getMostRecentProject } from '../../hooks/useRecentProjects';
 import { useProjectList } from '../projects/useProjects';
+import LegalLinks from '../legal/LegalLinks';
 import { PROJECT_LIST_PATH, landingPath, landingProjectRef } from './landingTarget';
 
 function Hero() {
@@ -75,6 +76,10 @@ function CTAFooter() {
           {tGuide('entry.nav')}
         </Link>
       </div>
+      <LegalLinks
+        className="mt-4"
+        linkClassName="text-sm text-white/80 hover:text-white underline-offset-4 hover:underline"
+      />
       <div className="mt-8">
         <SocialLinks />
       </div>

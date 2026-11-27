@@ -5,6 +5,7 @@ import RequireAuth from './components/RequireAuth';
 import RouteErrorPage from './components/RouteErrorPage';
 import LandingPage from './features/landing/LandingPage';
 import FeaturesPage from './features/landing/FeaturesPage';
+import LegalPage from './features/legal/LegalPage';
 import ProjectListPage from './features/projects/ProjectListPage';
 import ProjectSettingsPage from './features/projects/ProjectSettingsPage';
 import JobListPage from './features/jobs/JobListPage';
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
     lazy: async () => ({ Component: (await import('./features/guide/GuidePage')).default }),
     errorElement: <RouteErrorPage />,
   },
+  // JOB-420: public legal pages (Paddle's domain review and GDPR need them logged out).
+  { path: '/terms', element: <LegalPage kind="terms" />, errorElement: <RouteErrorPage /> },
+  { path: '/privacy', element: <LegalPage kind="privacy" />, errorElement: <RouteErrorPage /> },
+  { path: '/refunds', element: <LegalPage kind="refunds" />, errorElement: <RouteErrorPage /> },
   { path: '/onboarding', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   { path: '/org/new', element: <CreateOrgPage />, errorElement: <RouteErrorPage /> },
   // JOB-399: public, like /features. A new invitee sees the invite before having an account,
