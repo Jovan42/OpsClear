@@ -94,6 +94,8 @@ services:
       SMTP_AUTH: ${SMTP_AUTH:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-}
       APP_BASE_URL: ${APP_BASE_URL:-${APP_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}}
+      # Sign-up switch (ADR-0066): false closes organisation creation to all but super users until launch.
+      OPSCLEAR_SIGNUP_OPEN: ${OPSCLEAR_SIGNUP_OPEN:-true}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

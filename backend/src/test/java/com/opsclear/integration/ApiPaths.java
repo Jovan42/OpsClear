@@ -327,6 +327,19 @@ final class ApiPaths {
         return "/api/super-admin/organisations/" + orgId + "/credits";
     }
 
+    // --- Email sign-ups (ADR-0066) ---
+    static final String PUBLIC_SIGNUPS       = "/api/public/signups";
+    static final String PUBLIC_SIGNUP_STATUS = "/api/public/signup";
+    static final String SUPER_ADMIN_SIGNUPS  = "/api/super-admin/signups";
+    static final String SUPER_ADMIN_SIGNUPS_EXPORT = "/api/super-admin/signups/export";
+    /** {@link #SUPER_ADMIN_SIGNUPS} or {@link #SUPER_ADMIN_SIGNUPS_EXPORT} for one list. */
+    static String forList(String path, String list) {
+        return path + "?list=" + list;
+    }
+    static String superAdminSignup(UUID id) {
+        return SUPER_ADMIN_SIGNUPS + "/" + id;
+    }
+
     // --- Dashboard ---
 
     static String dashboard(UUID projectId) {

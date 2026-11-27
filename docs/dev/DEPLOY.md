@@ -16,6 +16,26 @@ cd ~/OpsClear
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
+## Launch day: reopen sign-up
+
+Until launch, `OPSCLEAR_SIGNUP_OPEN=false` in `.env.prod` closes organisation creation to everyone
+except super users (ADR-0066): `POST /api/organisations` returns 403, the Sign up buttons lead to
+`/early-access`, and invites keep working. Empty or unset means open.
+
+On launch day:
+
+1. Set `OPSCLEAR_SIGNUP_OPEN=true` in `~/OpsClear/.env.prod`.
+2. Restart the backend so it reads the setting (the frontend asks `GET /api/public/signup`, so it
+   needs no rebuild):
+
+   ```sh
+   cd ~/OpsClear
+   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d backend
+   ```
+
+3. Check `curl -s https://opsclear.app/api/public/signup` returns `{"open":true}`, and that the
+   landing page Sign up button opens the Keycloak registration again.
+
 ## Backups
 
 Daily Droplet Backups plus nightly database dumps to a private DigitalOcean Spaces bucket

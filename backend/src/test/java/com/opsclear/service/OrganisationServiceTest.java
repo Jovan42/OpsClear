@@ -47,7 +47,7 @@ class OrganisationServiceTest {
 
     @BeforeEach
     void setUp() {
-        organisationService = new OrganisationService(organisationRepository, userRepository, friendlyIdService);
+        organisationService = new OrganisationService(organisationRepository, userRepository, friendlyIdService, true);
 
         ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();
@@ -138,6 +138,43 @@ class OrganisationServiceTest {
         assertThatThrownBy(() -> organisationService.create(
                 new CreateOrganisationRequest("Acme", "ACM"), ownerId))
                 .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    @DisplayName("create_shouldThrowForbiddenException_whenSignupClosedAndCallerIsNotSuperUser")
+    void create_shouldThrowForbiddenException_whenSignupClosedAndCallerIsNotSuperUser() {
+        OrganisationService closed =
+                new OrganisationService(organisationRepository, userRepository, friendlyIdService, false);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+
+        assertThatThrownBy(() -> closed.create(new CreateOrganisationRequest("Acme", "ACM"), ownerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Sign-up is closed until launch");
+
+        verify(organisationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("create_shouldCreateOrg_whenSignupClosedAndCallerIsSuperUser")
+    void create_shouldCreateOrg_whenSignupClosedAndCallerIsSuperUser() {
+        OrganisationService closed =
+                new OrganisationService(organisationRepository, userRepository, friendlyIdService, false);
+        owner.setSuperUser(true);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(organisationRepository.existsBySlugAndDeletedAtIsNull("ACM")).thenReturn(false);
+        when(organisationRepository.save(any())).thenReturn(org);
+
+        assertThat(closed.create(new CreateOrganisationRequest("Acme", "ACM"), ownerId)).isSameAs(org);
+
+        verify(organisationRepository).saveMember(orgId, ownerId, OrganisationRole.OWNER);
+    }
+
+    @Test
+    @DisplayName("isSignupOpen_shouldReflectTheSetting")
+    void isSignupOpen_shouldReflectTheSetting() {
+        assertThat(organisationService.isSignupOpen()).isTrue();
+        assertThat(new OrganisationService(organisationRepository, userRepository, friendlyIdService, false)
+                .isSignupOpen()).isFalse();
     }
 
     // --- getById ---

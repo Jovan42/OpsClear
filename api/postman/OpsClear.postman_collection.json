@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "opsclear-api-collection",
 		"name": "OpsClear API",
-		"description": "API collection for OpsClear - Operational tracking for SMBs.\n\n## Usage\n\n1. Import this collection into Postman\n2. Import the environment file from `environments/`\n3. Run \"Login\" request to get JWT token\n4. Token is auto-saved to environment variable\n5. All other requests use the token automatically\n\n## Structure\n\nFolders match API modules:\n- Auth: Login, token refresh\n- Projects: CRUD for projects\n- Members: Project membership management\n- Jobs: Job CRUD and status\n- Notes: Immutable notes on jobs\n- Approvals: Approval workflow\n\n## Rate limits\n\nAny request authenticated by `X-Api-Key` can return **429 Too Many Requests** with a `Retry-After` header (seconds to wait) and the standard JSON error body (ADR-0058). Each API key gets a burst of 60 requests, then 120 per minute. Keys of internal orgs are exempt. JWT requests are not limited per user by the backend, but every `/api/` request (JWT, API key or webhook) is also subject to an nginx per-IP limit of 20 requests/s with a burst of 200, and the Paddle webhook to 5 requests/s with a burst of 20. Only `/api/health` and the notification SSE stream are exempt. A request limited by nginx also gets 429 with `Retry-After: 1`.",
+		"description": "API collection for OpsClear - Operational tracking for SMBs.\n\n## Usage\n\n1. Import this collection into Postman\n2. Import the environment file from `environments/`\n3. Run \"Login\" request to get JWT token\n4. Token is auto-saved to environment variable\n5. All other requests use the token automatically\n\n## Structure\n\nFolders match API modules:\n- Auth: Login, token refresh\n- Projects: CRUD for projects\n- Members: Project membership management\n- Jobs: Job CRUD and status\n- Notes: Immutable notes on jobs\n- Approvals: Approval workflow\n\n## Rate limits\n\nAny request authenticated by `X-Api-Key` can return **429 Too Many Requests** with a `Retry-After` header (seconds to wait) and the standard JSON error body (ADR-0058). Each API key gets a burst of 60 requests, then 120 per minute. Keys of internal orgs are exempt. JWT requests are not limited per user by the backend, but every `/api/` request (JWT, API key or webhook) is also subject to an nginx per-IP limit of 20 requests/s with a burst of 200, and the Paddle webhook to 5 requests/s with a burst of 20. The public sign-up form (`POST /api/public/signups`) is limited to 5 requests per minute with a burst of 5. Only `/api/health` and the notification SSE stream are exempt. A request limited by nginx also gets 429 with `Retry-After: 1`.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -1425,6 +1425,680 @@
 				}
 			],
 			"description": "The caller's server-synced UI preferences (ADR-0061)"
+		},
+		{
+			"name": "Organisations",
+			"item": [
+				{
+					"name": "Create Organisation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Brightline Renovations\",\n  \"slug\": \"BRL\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/organisations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"organisations"
+							]
+						},
+						"description": "Creates an organisation with the caller as its owner. `slug` (the ID prefix) is stored upper-case. 409 when the slug is taken or the caller already belongs to an organisation. While sign-up is closed (`OPSCLEAR_SIGNUP_OPEN=false`, see `GET /api/public/signup`), 403 for everyone except super users (ADR-0066)."
+					},
+					"response": [
+						{
+							"name": "201 created",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Brightline Renovations\",\n  \"slug\": \"BRL\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"organisations"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"id\": \"{{orgId}}\",\n  \"name\": \"Brightline Renovations\",\n  \"slug\": \"BRL\",\n  \"createdBy\": \"{{userId}}\",\n  \"createdByName\": \"Ana\",\n  \"createdAt\": \"2026-11-27T10:30:00Z\"\n}"
+						},
+						{
+							"name": "403 sign-up closed",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Brightline Renovations\",\n  \"slug\": \"BRL\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/organisations",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"organisations"
+									]
+								}
+							},
+							"status": "Forbidden",
+							"code": 403,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Forbidden\",\n  \"message\": \"Sign-up is closed until launch\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						}
+					]
+				}
+			],
+			"description": "Organisation creation."
+		},
+		{
+			"name": "Sign-ups",
+			"item": [
+				{
+					"name": "Sign Up (no auth)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"list\": \"early-access\",\n  \"email\": \"ana@example.com\",\n  \"consent\": true,\n  \"locale\": \"en\",\n  \"utmSource\": \"linkedin\",\n  \"utmMedium\": \"social\",\n  \"utmCampaign\": \"launch\",\n  \"code\": \"TRIAL\",\n  \"website\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/public/signups",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"signups"
+							]
+						},
+						"description": "Public, no auth (ADR-0066): puts an email on a sign-up list. `list` (only `early-access` for now), `email` (max 254, kept in the case typed, trimmed) and `consent: true` are required. Optional: `locale` (`en` or `sr`), `utmSource` / `utmMedium` / `utmCampaign` (max 100 each), `code` (max 30, case-insensitive, stored upper-case; only `TRIAL` exists) and `website`, the honeypot (leave empty). 204 for a new sign-up, a duplicate (same list, any case; only an empty code is filled in) or a filled honeypot alike, so the answer never says who is on the list. 400 for an invalid email, unknown list, unknown code or missing consent. Rate-limited by nginx to 5 per minute per IP (burst 5)."
+					},
+					"response": [
+						{
+							"name": "204 stored (or duplicate, or honeypot)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"list\": \"early-access\",\n  \"email\": \"ana@example.com\",\n  \"consent\": true,\n  \"locale\": \"en\",\n  \"utmSource\": \"linkedin\",\n  \"utmMedium\": \"social\",\n  \"utmCampaign\": \"launch\",\n  \"code\": \"TRIAL\",\n  \"website\": \"\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/public/signups",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"signups"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"body": ""
+						},
+						{
+							"name": "400 unknown code",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"list\": \"early-access\",\n  \"email\": \"ana@example.com\",\n  \"consent\": true,\n  \"locale\": \"en\",\n  \"utmSource\": \"linkedin\",\n  \"utmMedium\": \"social\",\n  \"utmCampaign\": \"launch\",\n  \"code\": \"TRIAL\",\n  \"website\": \"\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/public/signups",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"signups"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Bad Request\",\n  \"message\": \"This code isn't valid\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						},
+						{
+							"name": "400 missing consent",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"list\": \"early-access\",\n  \"email\": \"ana@example.com\",\n  \"consent\": true,\n  \"locale\": \"en\",\n  \"utmSource\": \"linkedin\",\n  \"utmMedium\": \"social\",\n  \"utmCampaign\": \"launch\",\n  \"code\": \"TRIAL\",\n  \"website\": \"\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/public/signups",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"signups"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Validation Error\",\n  \"message\": \"consent: Consent is required\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Sign-up Status (no auth)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/public/signup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"signup"
+							]
+						},
+						"description": "Public, no auth (ADR-0066): whether new organisations can be created, from `OPSCLEAR_SIGNUP_OPEN` (default `true`). While it's `false`, `POST /api/organisations` returns 403 for everyone except super users; invites still work."
+					},
+					"response": [
+						{
+							"name": "200 closed",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/public/signup",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"signup"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"open\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "List Sign-ups (super admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/super-admin/signups?list=early-access",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"super-admin",
+								"signups"
+							],
+							"query": [
+								{
+									"key": "list",
+									"value": "early-access"
+								}
+							]
+						},
+						"description": "Super users only (ADR-0066). The sign-ups on one list, newest first. `list` is required; an unknown or missing list gives 400."
+					},
+					"response": [
+						{
+							"name": "200 sign-ups",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups?list=early-access",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups"
+									],
+									"query": [
+										{
+											"key": "list",
+											"value": "early-access"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "[\n  {\n    \"id\": \"{{signupId}}\",\n    \"list\": \"early-access\",\n    \"email\": \"ana@example.com\",\n    \"code\": \"TRIAL\",\n    \"redeemedAt\": null,\n    \"redeemedOrgId\": null,\n    \"locale\": \"en\",\n    \"utmSource\": \"linkedin\",\n    \"utmMedium\": \"social\",\n    \"utmCampaign\": \"launch\",\n    \"consentAt\": \"2026-11-27T09:12:44.512Z\",\n    \"createdAt\": \"2026-11-27T09:12:44.512Z\"\n  }\n]"
+						},
+						{
+							"name": "400 unknown list",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups?list=early-access",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups"
+									],
+									"query": [
+										{
+											"key": "list",
+											"value": "early-access"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Bad Request\",\n  \"message\": \"Unknown sign-up list\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						},
+						{
+							"name": "403 not a super user",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups?list=early-access",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups"
+									],
+									"query": [
+										{
+											"key": "list",
+											"value": "early-access"
+										}
+									]
+								}
+							},
+							"status": "Forbidden",
+							"code": 403,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Forbidden\",\n  \"message\": \"Super admin access required\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Export Sign-ups CSV (super admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/super-admin/signups/export?list=early-access",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"super-admin",
+								"signups",
+								"export"
+							],
+							"query": [
+								{
+									"key": "list",
+									"value": "early-access"
+								}
+							]
+						},
+						"description": "Super users only (ADR-0066). The list as `text/csv` with a header row, one row per sign-up (newest first) and CRLF line ends, as the attachment `<list>-YYYY-MM-DD.csv` (UTC date). Fields are quoted per RFC 4180, and a cell starting with `=`, `+`, `-`, `@`, a tab or a carriage return gets a leading `'` so spreadsheets don't run it as a formula."
+					},
+					"response": [
+						{
+							"name": "200 CSV",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups/export?list=early-access",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups",
+										"export"
+									],
+									"query": [
+										{
+											"key": "list",
+											"value": "early-access"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "text",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/csv;charset=UTF-8"
+								},
+								{
+									"key": "Content-Disposition",
+									"value": "attachment; filename=\"early-access-2026-11-27.csv\""
+								}
+							],
+							"body": "id,list,email,code,redeemed_at,redeemed_org_id,locale,utm_source,utm_medium,utm_campaign,consent_at,created_at\r\n3f2c9a1e-7b4d-4c1a-9e0f-2a6b8c5d4e31,early-access,ana@example.com,TRIAL,,,en,linkedin,social,launch,2026-11-27T09:12:44.512Z,2026-11-27T09:12:44.512Z\r\n"
+						},
+						{
+							"name": "400 unknown list",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups/export?list=early-access",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups",
+										"export"
+									],
+									"query": [
+										{
+											"key": "list",
+											"value": "early-access"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Bad Request\",\n  \"message\": \"Unknown sign-up list\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						},
+						{
+							"name": "403 not a super user",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups/export?list=early-access",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups",
+										"export"
+									],
+									"query": [
+										{
+											"key": "list",
+											"value": "early-access"
+										}
+									]
+								}
+							},
+							"status": "Forbidden",
+							"code": 403,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Forbidden\",\n  \"message\": \"Super admin access required\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Delete Sign-up (super admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/super-admin/signups/{{signupId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"super-admin",
+								"signups",
+								"{{signupId}}"
+							]
+						},
+						"description": "Super users only (ADR-0066). Hard delete (junk and GDPR requests): the row is really gone."
+					},
+					"response": [
+						{
+							"name": "204 deleted",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups/{{signupId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups",
+										"{{signupId}}"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"body": ""
+						},
+						{
+							"name": "404 unknown id",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups/{{signupId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups",
+										"{{signupId}}"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Not Found\",\n  \"message\": \"Sign-up not found\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						},
+						{
+							"name": "403 not a super user",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/super-admin/signups/{{signupId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"super-admin",
+										"signups",
+										"{{signupId}}"
+									]
+								}
+							},
+							"status": "Forbidden",
+							"code": 403,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n  \"error\": \"Forbidden\",\n  \"message\": \"Super admin access required\",\n  \"timestamp\": \"2026-11-27T10:30:00Z\"\n}"
+						}
+					]
+				}
+			],
+			"description": "Email sign-up lists (ADR-0066): the public early access form, the sign-up switch status and the super-admin list, CSV export and delete."
 		},
 		{
 			"name": "Organisation Invites",
