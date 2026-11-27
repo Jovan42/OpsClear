@@ -219,6 +219,7 @@ may touch more than one area file.
 |------------|-----------|
 | `OrganisationController` | `01-onboarding.md` |
 | `UserController` | `01-onboarding.md` |
+| `PublicSignupController` (public, no-auth early access sign-up and sign-up switch status) | `01-onboarding.md` |
 | `OrganisationMemberController` | `02-org-admin.md` |
 | `OrgInviteController` (incl. the public, no-auth `GET /api/invites/{token}`) | `02-org-admin.md` |
 | `OrgSettingsController` | `02-org-admin.md` |
@@ -254,5 +255,6 @@ may touch more than one area file.
 | `SuperAdminFeedbackController` | `14-feedback-admin.md` |
 | `SuperAdminPricingController` | `14-feedback-admin.md` |
 | `SuperAdminCreditController` | `14-feedback-admin.md` |
+| `SuperAdminSignupController` | `14-feedback-admin.md` |
 | `PaddleWebhookController` | Not manual: called by Paddle, covered by its integration tests (`12-billing.md` checks the effects) |
 | `HealthController` | Not manual: infra health check |

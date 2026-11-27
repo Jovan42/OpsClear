@@ -503,6 +503,8 @@ judged in Luka's scenarios in the other area files.
 - Invite emails never failing the invite when sending fails: covered by `InviteEmailListenerTest`.
 - The Keycloak `verifyEmail` realm setting on a fresh install: covered by the `@smoke` E2E `auth-flows/registration.cy.ts`, which clicks the real verification link.
 - Two simultaneous org creations with the same slug: covered by `OrganisationServiceTest` and the unique index from migration V039.
+- Early access sign-up API (ADR-0066: validation, codes, duplicates in any case, honeypot): covered by `EmailSignupIntegrationTest`. The `/early-access` page scenarios come with the Frontend job (JOB-442).
+- Sign-up switch closed (`OPSCLEAR_SIGNUP_OPEN=false`): org creation returns 403 for a normal user and 201 for a super user, and invite accept still works: covered by `SignupClosedIntegrationTest`. Prod stays open until the Frontend job (JOB-442) ships its "not open yet" scenarios.
 
 ## Findings
 - ONB-05: JOB-395 (UX) **Create your organisation** has no **Log out**, language or theme controls, so a signed-in user with no org is stuck on the page. Fix in PR #582; ONB-06 now checks the new top bar.

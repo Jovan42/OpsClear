@@ -8,10 +8,11 @@ import com.opsclear.exception.ForbiddenException;
 import com.opsclear.exception.NotFoundException;
 import com.opsclear.model.OrganisationModel;
 import com.opsclear.model.OrganisationRole;
+import com.opsclear.model.UserModel;
 import com.opsclear.repository.OrganisationRepository;
 import com.opsclear.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,17 +20,33 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OrganisationService {
 
     private final OrganisationRepository organisationRepository;
     private final UserRepository userRepository;
     private final FriendlyIdService friendlyIdService;
+    private final boolean signupOpen;
+
+    public OrganisationService(OrganisationRepository organisationRepository,
+                               UserRepository userRepository,
+                               FriendlyIdService friendlyIdService,
+                               @Value("${opsclear.signup.open:true}") boolean signupOpen) {
+        this.organisationRepository = organisationRepository;
+        this.userRepository = userRepository;
+        this.friendlyIdService = friendlyIdService;
+        this.signupOpen = signupOpen;
+    }
+
+    /** Whether new organisations can be created (ADR-0066). Super users can always create one. */
+    public boolean isSignupOpen() {
+        return signupOpen;
+    }
 
     @Transactional
     public OrganisationModel create(CreateOrganisationRequest request, UUID callerId) {
-        requireUserExists(callerId);
+        UserModel caller = requireUser(callerId);
+        requireSignupOpenOrSuperUser(caller);
         requireNoExistingOrganisation(callerId);
         requireSlugAvailable(request.getSlug());
 
@@ -100,9 +117,17 @@ public class OrganisationService {
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.Organisation.NOT_FOUND));
     }
 
-    private void requireUserExists(UUID userId) {
-        userRepository.findById(userId)
+    private UserModel requireUser(UUID userId) {
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorMessages.User.NOT_FOUND));
+    }
+
+    private void requireSignupOpenOrSuperUser(UserModel caller) {
+        // ADR-0066: closed until launch for everyone except super users (test orgs on prod). Invite accept
+        // joins an existing org and never comes through here.
+        if (!signupOpen && !caller.isSuperUser()) {
+            throw new ForbiddenException(ErrorMessages.Organisation.SIGNUP_CLOSED);
+        }
     }
 
     private void requireMember(UUID orgId, UUID userId) {

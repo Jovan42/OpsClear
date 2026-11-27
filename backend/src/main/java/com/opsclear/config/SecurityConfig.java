@@ -67,6 +67,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/webhooks/paddle").permitAll()
                         // Invite landing page (JOB-398): GET on one path segment only, so accept stays authenticated
                         .requestMatchers(HttpMethod.GET, "/api/invites/*").permitAll()
+                        // Early access sign-up and the sign-up switch status (ADR-0066)
+                        .requestMatchers(HttpMethod.POST, "/api/public/signups").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/signup").permitAll()
                         .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )

@@ -151,6 +151,7 @@ public final class ErrorMessages {
         public static final String CANNOT_ASSIGN_OWNER_ROLE = "Cannot assign OWNER role";
         public static final String CANNOT_CHANGE_OWNER_ROLE = "Cannot change the organisation owner's role";
         public static final String CANNOT_REMOVE_OWNER = "Cannot remove the organisation owner";
+        public static final String SIGNUP_CLOSED = "Sign-up is closed until launch";
 
         private Organisation() {
         }
@@ -225,6 +226,15 @@ public final class ErrorMessages {
         public static final String ALREADY_REVIEWED = "This submission has already been reviewed";
 
         private Feedback() {
+        }
+    }
+
+    public static final class EmailSignup {
+        public static final String NOT_FOUND = "Sign-up not found";
+        public static final String UNKNOWN_LIST = "Unknown sign-up list";
+        public static final String UNKNOWN_CODE = "This code isn't valid";
+
+        private EmailSignup() {
         }
     }
 
