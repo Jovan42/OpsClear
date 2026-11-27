@@ -6,6 +6,7 @@ package com.opsclear.generated.jooq;
 
 import com.opsclear.generated.jooq.tables.ApiKeys;
 import com.opsclear.generated.jooq.tables.Approvals;
+import com.opsclear.generated.jooq.tables.EmailSignups;
 import com.opsclear.generated.jooq.tables.FeedbackSubmissions;
 import com.opsclear.generated.jooq.tables.JobDeadlineAlerts;
 import com.opsclear.generated.jooq.tables.JobLinks;
@@ -53,6 +54,11 @@ public class Tables {
      * The table <code>public.approvals</code>.
      */
     public static final Approvals APPROVALS = Approvals.APPROVALS;
+
+    /**
+     * The table <code>public.email_signups</code>.
+     */
+    public static final EmailSignups EMAIL_SIGNUPS = EmailSignups.EMAIL_SIGNUPS;
 
     /**
      * Customer bug/feature/other feedback (ADR-0043) — reviewed by super
