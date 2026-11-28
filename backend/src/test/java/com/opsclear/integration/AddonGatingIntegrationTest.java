@@ -26,6 +26,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -110,18 +112,31 @@ class AddonGatingIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 403 when org has no subscription")
-    void dashboardGet_shouldReturn403_whenNoSubscription() throws Exception {
+    @DisplayName("ADR-0067: should return 200 for a trial org with no subscription (every add-on in the trial)")
+    void dashboardGet_shouldReturn200_whenTrial() throws Exception {
+        organisationRepository.updateTrialEndsAt(orgId, Instant.now().plus(Duration.ofDays(10)));
+
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("JOB-200/JOB-180: should return 403 when DASHBOARD add-on is staged but the org has no "
-            + "real, webhook-confirmed Paddle billing yet — a staged selection alone must never grant access")
-    void dashboardGet_shouldReturn403_whenAddonStagedButNoRealBilling() throws Exception {
-        subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(dashboardAddonId));
+    @DisplayName("ADR-0067 amendment: with the lock-out switch off, an org whose trial ended keeps every add-on")
+    void dashboardGet_shouldReturn200_whenTrialEndedAndSwitchOff() throws Exception {
+        organisationRepository.updateTrialEndsAt(orgId, Instant.now().minus(Duration.ofDays(1)));
+
+        mockMvc.perform(get(ApiPaths.dashboard(projectId))
+                        .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Should return 403 for a PAST_DUE paid org without the add-on")
+    void dashboardGet_shouldReturn403_whenPastDueWithoutAddon() throws Exception {
+        subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of(notesAddonId));
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "PAST_DUE", null, null);
+        organisationRepository.updateTrialEndsAt(orgId, Instant.now().plus(Duration.ofDays(10)));
 
         mockMvc.perform(get(ApiPaths.dashboard(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@test.com"))))

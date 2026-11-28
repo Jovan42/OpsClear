@@ -152,6 +152,7 @@ public final class ErrorMessages {
         public static final String CANNOT_CHANGE_OWNER_ROLE = "Cannot change the organisation owner's role";
         public static final String CANNOT_REMOVE_OWNER = "Cannot remove the organisation owner";
         public static final String SIGNUP_CLOSED = "Sign-up is closed until launch";
+        public static final String LOCKED = "Your organisation's trial has ended";
 
         private Organisation() {
         }

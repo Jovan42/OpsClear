@@ -23,6 +23,7 @@ public class OrganisationModel {
     private String createdByName;
     private Instant createdAt;
     private Instant deletedAt;
+    private Instant trialEndsAt;
 
     public void softDelete() {
         this.deletedAt = Instant.now();

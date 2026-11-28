@@ -3,7 +3,9 @@ package com.opsclear.controller;
 import com.opsclear.dto.CreateOrganisationRequest;
 import com.opsclear.dto.OrganisationResponse;
 import com.opsclear.dto.UpdateOrganisationRequest;
+import com.opsclear.model.OrganisationModel;
 import com.opsclear.security.SecurityUtils;
+import com.opsclear.service.OrgAccessService;
 import com.opsclear.service.OrganisationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class OrganisationController {
 
     private final OrganisationService organisationService;
+    private final OrgAccessService orgAccessService;
 
     @PostMapping
     public ResponseEntity<OrganisationResponse> create(
@@ -34,14 +37,14 @@ public class OrganisationController {
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(OrganisationResponse.from(organisationService.create(request, callerId)));
+                .body(withAccess(organisationService.create(request, callerId)));
     }
 
     @GetMapping("/mine")
     public ResponseEntity<OrganisationResponse> getMyOrganisation(Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
         return organisationService.getMyOrganisation(callerId)
-                .map(org -> ResponseEntity.ok(OrganisationResponse.from(org)))
+                .map(org -> ResponseEntity.ok(withAccess(org)))
                 .orElse(ResponseEntity.noContent().build());
     }
 
@@ -50,7 +53,7 @@ public class OrganisationController {
             @PathVariable UUID id,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        return ResponseEntity.ok(OrganisationResponse.from(organisationService.getById(id, callerId)));
+        return ResponseEntity.ok(withAccess(organisationService.getById(id, callerId)));
     }
 
     @PatchMapping("/{id}")
@@ -59,7 +62,7 @@ public class OrganisationController {
             @Valid @RequestBody UpdateOrganisationRequest request,
             Authentication auth) {
         UUID callerId = SecurityUtils.resolveUserId(auth);
-        return ResponseEntity.ok(OrganisationResponse.from(organisationService.update(id, request, callerId)));
+        return ResponseEntity.ok(withAccess(organisationService.update(id, request, callerId)));
     }
 
     @DeleteMapping("/{id}")
@@ -69,5 +72,10 @@ public class OrganisationController {
         UUID callerId = SecurityUtils.resolveUserId(auth);
         organisationService.softDelete(id, callerId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ADR-0067: the caller's own org always carries its access state, limits and usage.
+    private OrganisationResponse withAccess(OrganisationModel org) {
+        return OrganisationResponse.from(org, orgAccessService.access(org.getId()));
     }
 }

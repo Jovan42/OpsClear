@@ -223,6 +223,8 @@ class JobTypeIntegrationTest {
         subscriptionRepository.deleteAll();
         UUID tierId = tierRepository.findAll().getFirst().getId();
         subscriptionRepository.create(orgId, tierId, "MONTHLY", Set.of());
+        // A paid org without the add-on: trial and internal orgs get every add-on (ADR-0067)
+        subscriptionRepository.updateFromPaddleWebhook(orgId, "sub_test_" + orgId, "ACTIVE", null, null);
 
         mockMvc.perform(post(ApiPaths.jobTypes(projectId))
                         .with(jwt().jwt(j -> j.subject(ownerId.toString()).claim("email", "owner@example.com")))

@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.config.TrialProperties;
 import com.opsclear.dto.CreateOrganisationRequest;
 import com.opsclear.dto.UpdateOrganisationRequest;
 import com.opsclear.exception.ConflictException;
@@ -17,6 +18,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -26,15 +29,18 @@ public class OrganisationService {
     private final OrganisationRepository organisationRepository;
     private final UserRepository userRepository;
     private final FriendlyIdService friendlyIdService;
+    private final TrialProperties trialProperties;
     private final boolean signupOpen;
 
     public OrganisationService(OrganisationRepository organisationRepository,
                                UserRepository userRepository,
                                FriendlyIdService friendlyIdService,
+                               TrialProperties trialProperties,
                                @Value("${opsclear.signup.open:true}") boolean signupOpen) {
         this.organisationRepository = organisationRepository;
         this.userRepository = userRepository;
         this.friendlyIdService = friendlyIdService;
+        this.trialProperties = trialProperties;
         this.signupOpen = signupOpen;
     }
 
@@ -54,6 +60,7 @@ public class OrganisationService {
                 .name(request.getName())
                 .slug(request.getSlug().toUpperCase())
                 .createdBy(callerId)
+                .trialEndsAt(newTrialEndsAt())
                 .build();
 
         // JOB-238: requireSlugAvailable() above is a check-then-act race — two concurrent
@@ -108,6 +115,14 @@ public class OrganisationService {
         org.softDelete();
         organisationRepository.save(org);
         log.info("Soft-deleted organisation '{}' by user {}", orgId, callerId);
+    }
+
+    /**
+     * ADR-0067: every new org starts a trial of {@code opsclear.trial.days}. The one place a new org's trial end is
+     * decided; a redeemed sign-up code (ADR-0066, JOB-443) overrides it here, in the same transaction.
+     */
+    private Instant newTrialEndsAt() {
+        return Instant.now().plus(Duration.ofDays(trialProperties.days()));
     }
 
     // --- Guards ---

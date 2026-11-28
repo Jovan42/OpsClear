@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +44,15 @@ public class OrganisationRepository {
         return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
     }
 
+    // trial_ends_at is TIMESTAMPTZ (V046), unlike the older TIMESTAMP columns above.
+    private static Instant toInstant(OffsetDateTime odt) {
+        return odt != null ? odt.toInstant() : null;
+    }
+
+    private static OffsetDateTime toOffsetDateTime(Instant instant) {
+        return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
+    }
+
     public Optional<OrganisationModel> findByProject(UUID projectId) {
         return dsl.select(of(
                         ORGANISATIONS.ID,
@@ -51,7 +61,8 @@ public class OrganisationRepository {
                         ORGANISATIONS.CREATED_BY,
                         CREATOR_NAME,
                         ORGANISATIONS.CREATED_AT,
-                        ORGANISATIONS.DELETED_AT))
+                        ORGANISATIONS.DELETED_AT,
+                        ORGANISATIONS.TRIAL_ENDS_AT))
                 .from(ORGANISATIONS)
                 .leftJoin(USERS).on(ORGANISATIONS.CREATED_BY.eq(USERS.ID))
                 .join(PROJECTS).on(PROJECTS.ORGANISATION_ID.eq(ORGANISATIONS.ID))
@@ -70,7 +81,8 @@ public class OrganisationRepository {
                         ORGANISATIONS.CREATED_BY,
                         CREATOR_NAME,
                         ORGANISATIONS.CREATED_AT,
-                        ORGANISATIONS.DELETED_AT))
+                        ORGANISATIONS.DELETED_AT,
+                        ORGANISATIONS.TRIAL_ENDS_AT))
                 .from(ORGANISATIONS)
                 .leftJoin(USERS).on(ORGANISATIONS.CREATED_BY.eq(USERS.ID))
                 .join(ORGANISATION_MEMBERS).on(ORGANISATION_MEMBERS.ORGANISATION_ID.eq(ORGANISATIONS.ID))
@@ -135,6 +147,7 @@ public class OrganisationRepository {
                     .set(ORGANISATIONS.SLUG, org.getSlug().toUpperCase())
                     .set(ORGANISATIONS.CREATED_BY, org.getCreatedBy())
                     .set(ORGANISATIONS.CREATED_AT, LocalDateTime.now(ZoneOffset.UTC))
+                    .set(ORGANISATIONS.TRIAL_ENDS_AT, toOffsetDateTime(org.getTrialEndsAt()))
                     .returning(ORGANISATIONS.ID)
                     .fetchSingle()
                     .getId();
@@ -256,6 +269,24 @@ public class OrganisationRepository {
                 .execute();
     }
 
+    // ADR-0067: empty when the org doesn't exist or never had a trial (trial_ends_at NULL).
+    public Optional<Instant> findTrialEndsAt(UUID orgId) {
+        return dsl.select(ORGANISATIONS.TRIAL_ENDS_AT)
+                .from(ORGANISATIONS)
+                .where(ORGANISATIONS.ID.eq(orgId))
+                .fetchOptional(ORGANISATIONS.TRIAL_ENDS_AT)
+                .map(OffsetDateTime::toInstant);
+    }
+
+    // Kept out of save(): an org update must never move the trial. Written at creation (save) and by trial-specific
+    // code such as sign-up code redemption (ADR-0066, JOB-443).
+    public void updateTrialEndsAt(UUID orgId, Instant trialEndsAt) {
+        dsl.update(ORGANISATIONS)
+                .set(ORGANISATIONS.TRIAL_ENDS_AT, toOffsetDateTime(trialEndsAt))
+                .where(ORGANISATIONS.ID.eq(orgId))
+                .execute();
+    }
+
     public Optional<UUID> findIdByPaddleCustomerId(String paddleCustomerId) {
         return dsl.select(ORGANISATIONS.ID)
                 .from(ORGANISATIONS)
@@ -279,7 +310,8 @@ public class OrganisationRepository {
                         ORGANISATIONS.CREATED_BY,
                         CREATOR_NAME,
                         ORGANISATIONS.CREATED_AT,
-                        ORGANISATIONS.DELETED_AT))
+                        ORGANISATIONS.DELETED_AT,
+                        ORGANISATIONS.TRIAL_ENDS_AT))
                 .from(ORGANISATIONS)
                 .leftJoin(USERS).on(ORGANISATIONS.CREATED_BY.eq(USERS.ID));
     }
@@ -293,6 +325,7 @@ public class OrganisationRepository {
                 .createdByName(r.get(CREATOR_NAME))
                 .createdAt(toInstant(r.get(ORGANISATIONS.CREATED_AT)))
                 .deletedAt(toInstant(r.get(ORGANISATIONS.DELETED_AT)))
+                .trialEndsAt(toInstant(r.get(ORGANISATIONS.TRIAL_ENDS_AT)))
                 .build();
     }
 }

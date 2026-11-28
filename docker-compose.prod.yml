@@ -96,6 +96,12 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:-${APP_URL:-https://${APP_HOST:-localhost}:${APP_PORT:-8443}}}
       # Sign-up switch (ADR-0066): false closes organisation creation to all but super users until launch.
       OPSCLEAR_SIGNUP_OPEN: ${OPSCLEAR_SIGNUP_OPEN:-true}
+      # Free trial (ADR-0067): length in days and caps for new organisations. Changes affect new trials only.
+      OPSCLEAR_TRIAL_DAYS: ${OPSCLEAR_TRIAL_DAYS:-30}
+      OPSCLEAR_TRIAL_MAX_MEMBERS: ${OPSCLEAR_TRIAL_MAX_MEMBERS:-5}
+      OPSCLEAR_TRIAL_MAX_PROJECTS: ${OPSCLEAR_TRIAL_MAX_PROJECTS:-3}
+      # Lock-out switch (ADR-0067 amendment): false until Paddle is live (JOB-432), so expired trials aren't blocked.
+      OPSCLEAR_LOCKOUT_ENABLED: ${OPSCLEAR_LOCKOUT_ENABLED:-false}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

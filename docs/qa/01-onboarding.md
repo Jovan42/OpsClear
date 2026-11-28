@@ -565,6 +565,7 @@ Afterwards, delete the `+waitlist` row too.
 - The honeypot field on `/early-access` (off-screen, only bots fill it): covered by `emailSignup.test.ts` (sent as filled) and `EmailSignupIntegrationTest` (nothing stored).
 - Sign-up switch closed (`OPSCLEAR_SIGNUP_OPEN=false`): org creation returns 403 for a normal user and 201 for a super user, and invite accept still works: covered by `SignupClosedIntegrationTest`. The screens are ONB-37, and the 403 showing the "not open yet" card is covered by the E2E `organisation-management/signup-closed.cy.ts`.
 - The 429 message on `/early-access` (nginx limit of 5 a minute): covered by the E2E `landing-page/early-access.cy.ts` with a stubbed 429.
+- A new organisation starts a 30-day trial with every add-on, and `access` (state, trial end, limits, usage, `lockoutEnabled`) in the organisation response (ADR-0067): covered by `OrgAccessIntegrationTest` and `OrgAccessServiceTest`. The 402 lock-out of a locked org and its allowlist, with `OPSCLEAR_LOCKOUT_ENABLED=true`: covered by `OrgLockoutIntegrationTest` and `OrgLockInterceptorTest`. The trial banner and paywall screens come with JOB-448. Pine & Pixel pays for a plan in ONB-30, so it's a paid org without add-ons and NHR-22/NHR-23 still hold.
 
 ## Findings
 - ONB-05: JOB-395 (UX) **Create your organisation** has no **Log out**, language or theme controls, so a signed-in user with no org is stuck on the page. Fix in PR #582; ONB-06 now checks the new top bar.

@@ -29,6 +29,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -233,14 +235,14 @@ class ProjectSettingsIntegrationTest {
     }
 
     @Test
-    @DisplayName("Turning the gate on with no subscription at all gets 403")
-    void updateSettings_shouldReturn403_whenNoSubscription() throws Exception {
-        mockMvc.perform(patchSettings(ApiPaths.projectSettings(projectId), ownerId, GATE_ON))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message")
-                        .value(ErrorMessages.Project.COMPLETION_GATE_REQUIRES_APPROVALS_ADDON));
+    @DisplayName("A trial org with no subscription at all turns the gate on (ADR-0067: every add-on in the trial)")
+    void updateSettings_shouldEnableGate_whenTrial() throws Exception {
+        organisationRepository.updateTrialEndsAt(orgId, Instant.now().plus(Duration.ofDays(10)));
 
-        assertThat(gateInDb()).isFalse();
+        mockMvc.perform(patchSettings(ApiPaths.projectSettings(projectId), ownerId, GATE_ON))
+                .andExpect(status().isOk());
+
+        assertThat(gateInDb()).isTrue();
     }
 
     @Test
