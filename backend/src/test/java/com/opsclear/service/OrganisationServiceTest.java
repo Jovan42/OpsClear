@@ -1,5 +1,6 @@
 package com.opsclear.service;
 
+import com.opsclear.config.TrialProperties;
 import com.opsclear.dto.CreateOrganisationRequest;
 import com.opsclear.dto.UpdateOrganisationRequest;
 import com.opsclear.exception.ConflictException;
@@ -18,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +39,8 @@ class OrganisationServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private FriendlyIdService friendlyIdService;
 
+    private static final TrialProperties TRIAL = new TrialProperties(30, 5, 3);
+
     private OrganisationService organisationService;
 
     private UUID ownerId;
@@ -47,7 +51,8 @@ class OrganisationServiceTest {
 
     @BeforeEach
     void setUp() {
-        organisationService = new OrganisationService(organisationRepository, userRepository, friendlyIdService, true);
+        organisationService =
+                new OrganisationService(organisationRepository, userRepository, friendlyIdService, TRIAL, true);
 
         ownerId = UUID.randomUUID();
         memberId = UUID.randomUUID();
@@ -87,6 +92,25 @@ class OrganisationServiceTest {
 
         verify(organisationRepository).saveMember(orgId, ownerId, OrganisationRole.OWNER);
         verify(friendlyIdService).seedForOrg(orgId);
+    }
+
+    @Test
+    @DisplayName("create_shouldStartATrialOfTheConfiguredDays (ADR-0067)")
+    void create_shouldStartATrialOfTheConfiguredDays() {
+        organisationService =
+                new OrganisationService(organisationRepository, userRepository, friendlyIdService,
+                        new TrialProperties(14, 5, 3), true);
+        when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(organisationRepository.save(any())).thenReturn(org);
+
+        Instant before = Instant.now();
+        organisationService.create(new CreateOrganisationRequest("Acme Corp", "acm"), ownerId);
+        Instant after = Instant.now();
+
+        ArgumentCaptor<OrganisationModel> captor = ArgumentCaptor.forClass(OrganisationModel.class);
+        verify(organisationRepository).save(captor.capture());
+        assertThat(captor.getValue().getTrialEndsAt())
+                .isBetween(before.plus(Duration.ofDays(14)), after.plus(Duration.ofDays(14)));
     }
 
     @Test
@@ -144,7 +168,7 @@ class OrganisationServiceTest {
     @DisplayName("create_shouldThrowForbiddenException_whenSignupClosedAndCallerIsNotSuperUser")
     void create_shouldThrowForbiddenException_whenSignupClosedAndCallerIsNotSuperUser() {
         OrganisationService closed =
-                new OrganisationService(organisationRepository, userRepository, friendlyIdService, false);
+                new OrganisationService(organisationRepository, userRepository, friendlyIdService, TRIAL, false);
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
 
         assertThatThrownBy(() -> closed.create(new CreateOrganisationRequest("Acme", "ACM"), ownerId))
@@ -158,7 +182,7 @@ class OrganisationServiceTest {
     @DisplayName("create_shouldCreateOrg_whenSignupClosedAndCallerIsSuperUser")
     void create_shouldCreateOrg_whenSignupClosedAndCallerIsSuperUser() {
         OrganisationService closed =
-                new OrganisationService(organisationRepository, userRepository, friendlyIdService, false);
+                new OrganisationService(organisationRepository, userRepository, friendlyIdService, TRIAL, false);
         owner.setSuperUser(true);
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
         when(organisationRepository.existsBySlugAndDeletedAtIsNull("ACM")).thenReturn(false);
@@ -173,7 +197,7 @@ class OrganisationServiceTest {
     @DisplayName("isSignupOpen_shouldReflectTheSetting")
     void isSignupOpen_shouldReflectTheSetting() {
         assertThat(organisationService.isSignupOpen()).isTrue();
-        assertThat(new OrganisationService(organisationRepository, userRepository, friendlyIdService, false)
+        assertThat(new OrganisationService(organisationRepository, userRepository, friendlyIdService, TRIAL, false)
                 .isSignupOpen()).isFalse();
     }
 

@@ -54,6 +54,13 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("Too Many Requests", ex.getMessage()));
     }
 
+    @ExceptionHandler(OrgLockedException.class)
+    public ResponseEntity<ErrorResponse> handleOrgLocked(OrgLockedException ex) {
+        // ADR-0067: the frontend shows the paywall on this error name
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                .body(ErrorResponse.of("OrgLocked", ex.getMessage()));
+    }
+
     @ExceptionHandler(PaddleSyncException.class)
     public ResponseEntity<ErrorResponse> handlePaddleSync(PaddleSyncException ex) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)

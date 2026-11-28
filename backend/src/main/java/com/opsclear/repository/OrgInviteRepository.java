@@ -104,6 +104,16 @@ public class OrgInviteRepository {
                 .fetch(this::toModel);
     }
 
+    // Same "pending" as findPendingByOrgId: not accepted, not revoked, not expired.
+    public int countPendingByOrgId(UUID organisationId) {
+        return dsl.fetchCount(
+                dsl.selectFrom(ORGANISATION_INVITES)
+                        .where(ORGANISATION_INVITES.ORGANISATION_ID.eq(organisationId))
+                        .and(ORGANISATION_INVITES.ACCEPTED_AT.isNull())
+                        .and(ORGANISATION_INVITES.REVOKED_AT.isNull())
+                        .and(ORGANISATION_INVITES.EXPIRES_AT.gt(LocalDateTime.now(ZoneOffset.UTC))));
+    }
+
     public boolean existsPendingByEmailAndOrgId(String email, UUID organisationId) {
         return dsl.fetchExists(
                 dsl.selectOne()

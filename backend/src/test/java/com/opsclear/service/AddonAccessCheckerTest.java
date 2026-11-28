@@ -1,6 +1,7 @@
 package com.opsclear.service;
 
 import com.opsclear.aop.AddonCode;
+import com.opsclear.model.OrgAccessState;
 import com.opsclear.repository.OrgSubscriptionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,75 +21,159 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AddonAccessChecker (JOB-285)")
+@DisplayName("AddonAccessChecker (JOB-285, ADR-0067)")
 class AddonAccessCheckerTest {
 
     @Mock private OrgSubscriptionRepository subscriptionRepository;
+    @Mock private OrgAccessService orgAccessService;
 
     private AddonAccessChecker checker;
     private UUID orgId;
 
     @BeforeEach
     void setUp() {
-        checker = new AddonAccessChecker(subscriptionRepository);
+        checker = new AddonAccessChecker(subscriptionRepository, orgAccessService);
         orgId = UUID.randomUUID();
     }
 
-    private void givenPaidAddon(boolean billed, boolean addon) {
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(billed);
-        if (billed) {
-            when(subscriptionRepository.hasAddon(orgId, "APPROVALS")).thenReturn(addon);
-        }
+    private void givenState(OrgAccessState state) {
+        when(orgAccessService.state(orgId)).thenReturn(state);
+    }
+
+    // --- hasAddonAccess ---
+
+    @Test
+    @DisplayName("hasAddonAccess: an internal org reads every add-on without the subscription being checked")
+    void hasAddonAccess_shouldReturnTrue_whenInternal() {
+        givenState(OrgAccessState.INTERNAL);
+
+        assertThat(checker.hasAddonAccess(orgId, AddonCode.NOTES)).isTrue();
+        verify(subscriptionRepository, never()).hasAddon(any(), anyString());
+    }
+
+    @Test
+    @DisplayName("hasAddonAccess: a trial org reads every add-on without the subscription being checked")
+    void hasAddonAccess_shouldReturnTrue_whenTrial() {
+        givenState(OrgAccessState.TRIAL);
+
+        assertThat(checker.hasAddonAccess(orgId, AddonCode.NOTES)).isTrue();
+        verify(subscriptionRepository, never()).hasAddon(any(), anyString());
+    }
+
+    @Test
+    @DisplayName("hasAddonAccess: a paid org with the add-on can read it")
+    void hasAddonAccess_shouldReturnTrue_whenPaidWithAddon() {
+        givenState(OrgAccessState.PAID);
+        when(subscriptionRepository.hasAddon(orgId, "NOTES")).thenReturn(true);
+
+        assertThat(checker.hasAddonAccess(orgId, AddonCode.NOTES)).isTrue();
+    }
+
+    @Test
+    @DisplayName("hasAddonAccess: a paid org without the add-on can't read it")
+    void hasAddonAccess_shouldReturnFalse_whenPaidWithoutAddon() {
+        givenState(OrgAccessState.PAID);
+        when(subscriptionRepository.hasAddon(orgId, "NOTES")).thenReturn(false);
+
+        assertThat(checker.hasAddonAccess(orgId, AddonCode.NOTES)).isFalse();
+    }
+
+    @Test
+    @DisplayName("hasAddonAccess: a PAST_DUE paid org keeps reads, without the status being checked")
+    void hasAddonAccess_shouldIgnorePastDue() {
+        givenState(OrgAccessState.PAID);
+        when(subscriptionRepository.hasAddon(orgId, "NOTES")).thenReturn(true);
+
+        assertThat(checker.hasAddonAccess(orgId, AddonCode.NOTES)).isTrue();
+        verify(subscriptionRepository, never()).findSubscriptionStatus(any());
+    }
+
+    @Test
+    @DisplayName("hasAddonAccess: a locked org has no add-ons while the lock-out switch is on")
+    void hasAddonAccess_shouldReturnFalse_whenLockedAndSwitchOn() {
+        givenState(OrgAccessState.LOCKED);
+        when(orgAccessService.isLockoutEnabled()).thenReturn(true);
+
+        assertThat(checker.hasAddonAccess(orgId, AddonCode.NOTES)).isFalse();
+    }
+
+    @Test
+    @DisplayName("hasAddonAccess: a locked org keeps every add-on while the lock-out switch is off")
+    void hasAddonAccess_shouldReturnTrue_whenLockedAndSwitchOff() {
+        givenState(OrgAccessState.LOCKED);
+        when(orgAccessService.isLockoutEnabled()).thenReturn(false);
+
+        assertThat(checker.hasAddonAccess(orgId, AddonCode.NOTES)).isTrue();
+        verify(subscriptionRepository, never()).hasAddon(any(), anyString());
     }
 
     // --- isAddonUsableForWrites ---
 
     @Test
-    @DisplayName("internal org can use every add-on for writes without billing or status being checked")
+    @DisplayName("isAddonUsableForWrites: internal org, without billing or status being checked")
     void isAddonUsableForWrites_shouldReturnTrue_whenOrgInternal() {
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(true);
+        givenState(OrgAccessState.INTERNAL);
 
         assertThat(checker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)).isTrue();
-        verify(subscriptionRepository, never()).hasRealBilling(any());
         verify(subscriptionRepository, never()).hasAddon(any(), anyString());
         verify(subscriptionRepository, never()).findSubscriptionStatus(any());
     }
 
     @Test
-    @DisplayName("real billing with the add-on and an ACTIVE subscription is usable for writes")
+    @DisplayName("isAddonUsableForWrites: trial org, like internal")
+    void isAddonUsableForWrites_shouldReturnTrue_whenTrial() {
+        givenState(OrgAccessState.TRIAL);
+
+        assertThat(checker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)).isTrue();
+        verify(subscriptionRepository, never()).findSubscriptionStatus(any());
+    }
+
+    @Test
+    @DisplayName("isAddonUsableForWrites: paid with the add-on and an ACTIVE subscription")
     void isAddonUsableForWrites_shouldReturnTrue_whenBilledAddonAndActive() {
-        givenPaidAddon(true, true);
+        givenState(OrgAccessState.PAID);
+        when(subscriptionRepository.hasAddon(orgId, "APPROVALS")).thenReturn(true);
         when(subscriptionRepository.findSubscriptionStatus(orgId)).thenReturn(Optional.of("ACTIVE"));
 
         assertThat(checker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)).isTrue();
     }
 
     @Test
-    @DisplayName("real billing with the add-on but a PAST_DUE subscription is not usable for writes")
+    @DisplayName("isAddonUsableForWrites: paid with the add-on but PAST_DUE is not usable")
     void isAddonUsableForWrites_shouldReturnFalse_whenPastDue() {
-        givenPaidAddon(true, true);
+        givenState(OrgAccessState.PAID);
+        when(subscriptionRepository.hasAddon(orgId, "APPROVALS")).thenReturn(true);
         when(subscriptionRepository.findSubscriptionStatus(orgId)).thenReturn(Optional.of("PAST_DUE"));
 
         assertThat(checker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)).isFalse();
     }
 
     @Test
-    @DisplayName("real billing without the add-on is not usable, without the status being checked")
+    @DisplayName("isAddonUsableForWrites: paid without the add-on, without the status being checked")
     void isAddonUsableForWrites_shouldReturnFalse_whenAddonMissing() {
-        givenPaidAddon(true, false);
+        givenState(OrgAccessState.PAID);
+        when(subscriptionRepository.hasAddon(orgId, "APPROVALS")).thenReturn(false);
 
         assertThat(checker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)).isFalse();
         verify(subscriptionRepository, never()).findSubscriptionStatus(any());
     }
 
     @Test
-    @DisplayName("a staged add-on without real billing is not usable")
-    void isAddonUsableForWrites_shouldReturnFalse_whenNoRealBilling() {
-        givenPaidAddon(false, false);
+    @DisplayName("isAddonUsableForWrites: locked with the switch on is not usable")
+    void isAddonUsableForWrites_shouldReturnFalse_whenLockedAndSwitchOn() {
+        givenState(OrgAccessState.LOCKED);
+        when(orgAccessService.isLockoutEnabled()).thenReturn(true);
 
         assertThat(checker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)).isFalse();
-        verify(subscriptionRepository, never()).hasAddon(any(), anyString());
+    }
+
+    @Test
+    @DisplayName("isAddonUsableForWrites: locked with the switch off is usable, like a trial")
+    void isAddonUsableForWrites_shouldReturnTrue_whenLockedAndSwitchOff() {
+        givenState(OrgAccessState.LOCKED);
+        when(orgAccessService.isLockoutEnabled()).thenReturn(false);
+
+        assertThat(checker.isAddonUsableForWrites(orgId, AddonCode.APPROVALS)).isTrue();
     }
 
     // --- building blocks ---
@@ -102,22 +187,15 @@ class AddonAccessCheckerTest {
     }
 
     @Test
-    @DisplayName("hasPaidAddon needs both real billing and the add-on")
-    void hasPaidAddon_shouldNeedBillingAndAddon() {
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
-        when(subscriptionRepository.hasAddon(orgId, "NOTES")).thenReturn(true);
-
-        assertThat(checker.hasPaidAddon(orgId, AddonCode.NOTES)).isTrue();
-    }
-
-    @Test
-    @DisplayName("isPastDue is false for a missing or non-PAST_DUE status")
-    void isPastDue_shouldBeFalse_whenStatusMissingOrOther() {
+    @DisplayName("isPastDue is false for a missing or non-PAST_DUE status, true for PAST_DUE")
+    void isPastDue_shouldMatchOnlyPastDue() {
         when(subscriptionRepository.findSubscriptionStatus(orgId))
                 .thenReturn(Optional.empty())
-                .thenReturn(Optional.of("ACTIVE"));
+                .thenReturn(Optional.of("ACTIVE"))
+                .thenReturn(Optional.of("PAST_DUE"));
 
         assertThat(checker.isPastDue(orgId)).isFalse();
         assertThat(checker.isPastDue(orgId)).isFalse();
+        assertThat(checker.isPastDue(orgId)).isTrue();
     }
 }

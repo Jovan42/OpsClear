@@ -36,6 +36,68 @@ On launch day:
 3. Check `curl -s https://opsclear.app/api/public/signup` returns `{"open":true}`, and that the
    landing page Sign up button opens the Keycloak registration again.
 
+## Free trial (ADR-0067)
+
+Every new organisation gets a trial (`OPSCLEAR_TRIAL_DAYS`, default 30) with every add-on, capped at
+`OPSCLEAR_TRIAL_MAX_MEMBERS` members and `OPSCLEAR_TRIAL_MAX_PROJECTS` active projects. When the trial ends
+without a subscription the org is `LOCKED`. **Lock-out stays off** (`OPSCLEAR_LOCKOUT_ENABLED=false`, the default)
+until Paddle is live (JOB-432): while it's off a locked org keeps working and the app shows "contact us" instead of
+the paywall. Turn it on (set `true`, restart the backend) only once Paddle live checkout works.
+
+`organisations.trial_ends_at` NULL means "never had a trial", which is `LOCKED` unless the org is internal or paid.
+Migration V046 gave every existing non-internal, unpaid org a trial, but orgs created after V046 deployed and before
+the trial code (JOB-445) shipped have NULL. Both statements below give those orgs a trial too: they match on
+"not internal, not paid", not on `trial_ends_at IS NOT NULL`.
+
+Run them in `psql` on the droplet:
+
+```sh
+cd ~/OpsClear
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec postgres psql -U opsclear -d opsclear
+```
+
+### Once, right after JOB-445 deploys: trials for orgs created in the gap
+
+```sql
+UPDATE organisations o
+SET trial_ends_at = now() + interval '30 days'
+WHERE o.deleted_at IS NULL
+  AND o.trial_ends_at IS NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM org_subscriptions s
+      WHERE s.org_id = o.id
+        AND (s.is_internal
+             OR (s.paddle_subscription_id IS NOT NULL
+                 AND s.subscription_status IS NOT NULL
+                 AND s.subscription_status <> 'CANCELED')));
+```
+
+Then check `GET /api/organisations/mine` (or the org settings page) shows `access.state` `TRIAL` for a test org and
+`INTERNAL` for the OpsClear org.
+
+### Launch day: reset every trial to launch + 30 days
+
+Next to "Launch day: reopen sign-up" above. Every non-internal, unpaid org (with or without a trial so far) gets a
+fresh trial from launch day, and the trial email markers are cleared so the ending and ended emails go out again:
+
+```sql
+UPDATE organisations o
+SET trial_ends_at = now() + interval '30 days',
+    trial_ending_email_sent_at = NULL,
+    trial_ended_email_sent_at = NULL
+WHERE o.deleted_at IS NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM org_subscriptions s
+      WHERE s.org_id = o.id
+        AND (s.is_internal
+             OR (s.paddle_subscription_id IS NOT NULL
+                 AND s.subscription_status IS NOT NULL
+                 AND s.subscription_status <> 'CANCELED')));
+```
+
+Then check Paddle live (JOB-415 / JOB-432) is on track to be done before day 27 after launch, and turn
+`OPSCLEAR_LOCKOUT_ENABLED=true` on only once it is. Until then, expired trials are reported `LOCKED` but not blocked.
+
 ## Backups
 
 Daily Droplet Backups plus nightly database dumps to a private DigitalOcean Spaces bucket

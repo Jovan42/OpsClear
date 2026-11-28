@@ -395,6 +395,22 @@ and go with the backend job that needs them.
 Outside this milestone: JOB-443 (ADR-0066, redeem sign-up codes) moves from blocked by JOB-431 to
 blocked by job 2 here. Paddle live (JOB-415 / MIL-053) must be done within 30 days of launch.
 
+## Amendment (2026-11-26): lock-out switch
+
+Payments are deferred (Paddle live, JOB-432, has no date), so the lock-out ships behind a switch,
+`opsclear.lockout.enabled=${OPSCLEAR_LOCKOUT_ENABLED:false}` (implemented in JOB-445):
+
+- **While false (the default):** `OrgLockInterceptor` never blocks. `OrgAccessService.state()` still
+  reports `LOCKED` for an expired trial (or an org that never had one), but `AddonAccessChecker`
+  treats `LOCKED` like `TRIAL`, so add-on access stays open.
+- **`OrgAccessResponse` gains `lockoutEnabled`**, so the frontend shows "contact us" instead of the
+  paywall for a `LOCKED` org while the switch is off.
+- **Turn it on when Paddle is live**: set `OPSCLEAR_LOCKOUT_ENABLED=true` and restart the backend.
+  Then Decision 6 applies as written: 402 `OrgLocked` outside the allowlist.
+- **Launch-day reset** (DEPLOY.md): matches every non-internal, unpaid org, not only orgs with a
+  `trial_ends_at`, so orgs created after V046 and before JOB-445 (NULL) get a trial too. DEPLOY.md
+  also has a one-off statement for those orgs right after JOB-445 deploys.
+
 ## References
 
 - JOB-419 (Future Consideration), JOB-431 (this ADR), PRJ-016 / MIL-052

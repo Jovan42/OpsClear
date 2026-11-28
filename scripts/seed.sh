@@ -146,7 +146,8 @@ SQL
 echo "  Database cleared."
 
 echo "==> [1/6] Removing existing seed users from Keycloak..."
-for email in alice@example.com bob@example.com carol@example.com dave@example.com; do
+for email in alice@example.com bob@example.com carol@example.com dave@example.com \
+             erin@example.com frank@example.com grace@example.com; do
   uid=$(kc_user_id "$email")
   if [ -n "$uid" ]; then
     curl -sSf -o /dev/null -X DELETE \
@@ -180,6 +181,10 @@ create_kc_user "Alice"  "Webb"    "alice@example.com"
 create_kc_user "Bob"    "Harris"  "bob@example.com"
 create_kc_user "Carol"  "Marsh"   "carol@example.com"
 create_kc_user "Dave"   "Santos"  "dave@example.com"
+# Trial and locked organisations (ADR-0067). One org per user, so they get their own users.
+create_kc_user "Erin"   "Novak"   "erin@example.com"
+create_kc_user "Frank"  "Doyle"   "frank@example.com"
+create_kc_user "Grace"  "Lin"     "grace@example.com"
 
 # -----------------------------------------------
 # 3. SYNC USERS INTO OPSCLEAR
@@ -192,10 +197,14 @@ TOKEN_ALICE=$(get_token "alice@example.com"    "$PASSWORD")
 TOKEN_BOB=$(get_token   "bob@example.com"      "$PASSWORD")
 TOKEN_CAROL=$(get_token "carol@example.com"    "$PASSWORD")
 TOKEN_DAVE=$(get_token  "dave@example.com"     "$PASSWORD")
+TOKEN_ERIN=$(get_token  "erin@example.com"     "$PASSWORD")
+TOKEN_FRANK=$(get_token "frank@example.com"    "$PASSWORD")
+TOKEN_GRACE=$(get_token "grace@example.com"    "$PASSWORD")
 
 # Any authenticated request creates the user row (UserSyncFilter). /organisations/mine is one of the
 # few endpoints that works before the user belongs to an organisation (204 = no org yet).
-for TOKEN in "$TOKEN_TEST" "$TOKEN_ALICE" "$TOKEN_BOB" "$TOKEN_CAROL" "$TOKEN_DAVE"; do
+for TOKEN in "$TOKEN_TEST" "$TOKEN_ALICE" "$TOKEN_BOB" "$TOKEN_CAROL" "$TOKEN_DAVE" \
+             "$TOKEN_ERIN" "$TOKEN_FRANK" "$TOKEN_GRACE"; do
   api GET "/api/organisations/mine" "$TOKEN" > /dev/null
 done
 
@@ -204,6 +213,7 @@ ID_ALICE=$(kc_user_id "alice@example.com")
 ID_BOB=$(kc_user_id   "bob@example.com")
 ID_CAROL=$(kc_user_id "carol@example.com")
 ID_DAVE=$(kc_user_id  "dave@example.com")
+ID_GRACE=$(kc_user_id "grace@example.com")
 echo "  Users synced."
 
 # -----------------------------------------------
@@ -244,6 +254,29 @@ SQL
 INTERNAL=$(api GET "/api/organisations/$ORG/subscription" "$TOKEN_TEST" | json_field internal)
 [ "$INTERNAL" = "True" ] || die "The demo organisation's subscription isn't internal."
 echo "  Internal subscription with all add-ons."
+
+# Trial and locked organisations (ADR-0067), for E2E and manual tests of the trial banner and paywall.
+# A new organisation starts a trial (opsclear.trial.days, default 30). The locked one gets its trial end
+# moved into the past; with OPSCLEAR_LOCKOUT_ENABLED=false (the default) it's reported LOCKED but not blocked.
+access_state() {
+  api GET "/api/organisations/mine" "$1" | python3 -c "import sys,json; print(json.load(sys.stdin)['access']['state'])"
+}
+
+api POST "/api/organisations" "$TOKEN_ERIN" '{"name":"Harbor Plumbing","slug":"HBP"}' > /dev/null
+api POST "/api/projects" "$TOKEN_ERIN" \
+  '{"name":"Riverside Apartments Repiping","description":"Replace the copper risers in blocks A and B"}' > /dev/null
+[ "$(access_state "$TOKEN_ERIN")" = "TRIAL" ] || die "Harbor Plumbing isn't in a trial."
+echo "  Harbor Plumbing (HBP): erin owner, in a trial."
+
+ORG_LOCKED=$(api POST "/api/organisations" "$TOKEN_FRANK" '{"name":"Northwind Joinery","slug":"NWJ"}' | jid)
+api POST "/api/projects" "$TOKEN_FRANK" \
+  '{"name":"Oak Staircase for 7 Mill Lane","description":"Bespoke staircase, fitted in two visits"}' > /dev/null
+psql_exec -v org_id="$ORG_LOCKED" -v grace="$ID_GRACE" > /dev/null <<'SQL'
+INSERT INTO organisation_members (organisation_id, user_id, org_role) VALUES (:'org_id'::uuid, :'grace'::uuid, 'MEMBER');
+UPDATE organisations SET trial_ends_at = now() - interval '1 day' WHERE id = :'org_id'::uuid;
+SQL
+[ "$(access_state "$TOKEN_FRANK")" = "LOCKED" ] || die "Northwind Joinery isn't locked."
+echo "  Northwind Joinery (NWJ): frank owner, grace member, trial ended (locked)."
 
 # -----------------------------------------------
 # HELPERS
@@ -459,10 +492,10 @@ check() {
 
 count() { psql_exec -c "SELECT count(*) FROM $1"; }
 
-check "users"                5  "$(count users)"
-check "organisations"        1  "$(count organisations)"
-check "organisation members" 5  "$(count organisation_members)"
-check "projects"             3  "$(count projects)"
+check "users"                8  "$(count users)"
+check "organisations"        3  "$(count organisations)"
+check "organisation members" 8  "$(count organisation_members)"
+check "projects"             5  "$(count projects)"
 check "milestones"           7  "$(count milestones)"
 check "jobs"                 23 "$(count jobs)"
 check "notes"                10 "$(count notes)"
@@ -479,6 +512,8 @@ carol@example.com|Mobile App|MEMBER
 carol@example.com|Website Redesign|MEMBER
 dave@example.com|Infrastructure Upgrade|MEMBER
 dave@example.com|Website Redesign|MEMBER
+erin@example.com|Riverside Apartments Repiping|OWNER
+frank@example.com|Oak Staircase for 7 Mill Lane|OWNER
 testuser@example.com|Infrastructure Upgrade|MEMBER
 testuser@example.com|Mobile App|OWNER"
 ACTUAL_ROLES=$(psql_exec -c "SELECT u.email || '|' || p.name || '|' || pm.role
@@ -495,8 +530,9 @@ for _ in $(seq 1 10); do
 done
 [ "$NOTIFICATIONS" -gt 0 ] || die "notifications: expected some, got none"
 
-# Every demo user can log in and use the API inside the organisation.
-for TOKEN in "$TOKEN_TEST" "$TOKEN_ALICE" "$TOKEN_BOB" "$TOKEN_CAROL" "$TOKEN_DAVE"; do
+# Every demo user can log in and use the API inside the organisation, and so can the trial org's owner. The locked
+# org is left out: with OPSCLEAR_LOCKOUT_ENABLED=true its calls get 402.
+for TOKEN in "$TOKEN_TEST" "$TOKEN_ALICE" "$TOKEN_BOB" "$TOKEN_CAROL" "$TOKEN_DAVE" "$TOKEN_ERIN"; do
   api GET "/api/projects" "$TOKEN" > /dev/null
 done
 echo "  Counts, roles and API access check out ($NOTIFICATIONS notifications so far)."
@@ -527,6 +563,11 @@ printf "  %-30s  %s\n" "alice@example.com"     "owner: Website Redesign | admin:
 printf "  %-30s  %s\n" "bob@example.com"       "admin: Website Redesign | owner: Infrastructure Upgrade"
 printf "  %-30s  %s\n" "carol@example.com"     "member: Website Redesign, Mobile App"
 printf "  %-30s  %s\n" "dave@example.com"      "member: Website Redesign, Infrastructure Upgrade"
+echo ""
+echo "Trial and locked organisations (ADR-0067):"
+printf "  %-30s  %s\n" "erin@example.com"      "owner: Harbor Plumbing (HBP), in a trial"
+printf "  %-30s  %s\n" "frank@example.com"     "owner: Northwind Joinery (NWJ), trial ended (locked)"
+printf "  %-30s  %s\n" "grace@example.com"     "member: Northwind Joinery (NWJ)"
 echo ""
 echo "Access:"
 echo "  Frontend    http://localhost:5173"

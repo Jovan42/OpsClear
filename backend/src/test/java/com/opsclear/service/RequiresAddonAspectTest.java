@@ -3,9 +3,9 @@ package com.opsclear.service;
 import com.opsclear.aop.AddonCode;
 import com.opsclear.aop.RequiresAddon;
 import com.opsclear.aop.RequiresAddonAspect;
+import com.opsclear.exception.ErrorMessages;
 import com.opsclear.exception.ForbiddenException;
 import com.opsclear.model.OrganisationModel;
-import com.opsclear.repository.OrgSubscriptionRepository;
 import com.opsclear.repository.OrganisationRepository;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -37,17 +37,18 @@ import static org.mockito.Mockito.when;
 @DisplayName("RequiresAddonAspect")
 class RequiresAddonAspectTest {
 
-    @Mock private OrgSubscriptionRepository subscriptionRepository;
+    @Mock private AddonAccessChecker addonAccessChecker;
     @Mock private OrganisationRepository organisationRepository;
     @Mock private ProceedingJoinPoint pjp;
 
     private RequiresAddonAspect aspect;
     private UUID userId;
     private UUID orgId;
+    private RequiresAddon annotation;
 
     @BeforeEach
     void setUp() {
-        aspect = new RequiresAddonAspect(new AddonAccessChecker(subscriptionRepository), organisationRepository);
+        aspect = new RequiresAddonAspect(addonAccessChecker, organisationRepository);
 
         userId = UUID.randomUUID();
         orgId = UUID.randomUUID();
@@ -60,6 +61,7 @@ class RequiresAddonAspectTest {
 
         when(organisationRepository.findByMember(userId))
                 .thenReturn(Optional.of(OrganisationModel.builder().id(orgId).build()));
+        annotation = mock(RequiresAddon.class);
     }
 
     @AfterEach
@@ -68,148 +70,65 @@ class RequiresAddonAspectTest {
     }
 
     @Test
-    @DisplayName("Should proceed when add-on is active")
-    void checkAddon_shouldProceed_whenAddonActive() throws Throwable {
-        RequiresAddon annotation = mock(RequiresAddon.class);
+    @DisplayName("Should proceed with a read when the org has add-on access, without the write check")
+    void checkAddon_shouldProceed_whenReadAndAccess() throws Throwable {
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
-        when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
-        stubSignature(false);
-
-        aspect.checkAddon(pjp, annotation);
-
-        verify(pjp).proceed();
-    }
-
-    @Test
-    @DisplayName("Should bypass add-on check when org is internal")
-    void checkAddon_shouldProceed_whenOrgIsInternal() throws Throwable {
-        RequiresAddon annotation = mock(RequiresAddon.class);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(true);
-
-        aspect.checkAddon(pjp, annotation);
-
-        verify(pjp).proceed();
-        verify(subscriptionRepository, never()).hasAddon(any(), any());
-    }
-
-    @Test
-    @DisplayName("Should throw ForbiddenException when add-on is not active")
-    void checkAddon_shouldThrowForbidden_whenAddonNotActive() {
-        RequiresAddon annotation = mock(RequiresAddon.class);
-        when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
-        when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(false);
-
-        assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessageContaining("DASHBOARD");
-    }
-
-    @Test
-    @DisplayName("Should throw ForbiddenException when no subscription exists")
-    void checkAddon_shouldThrowForbidden_whenNoSubscription() {
-        RequiresAddon annotation = mock(RequiresAddon.class);
-        when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
-        when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(false);
-
-        assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
-                .isInstanceOf(ForbiddenException.class);
-    }
-
-    @Test
-    @DisplayName("Should throw ForbiddenException when org has no real Paddle billing, without consulting the staged add-on selection")
-    void checkAddon_shouldThrowForbidden_whenNoRealBilling() {
-        RequiresAddon annotation = mock(RequiresAddon.class);
-        when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(false);
-
-        assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessageContaining("DASHBOARD");
-        verify(subscriptionRepository, never()).hasAddon(any(), any());
-    }
-
-    @Test
-    @DisplayName("Should throw ForbiddenException when user belongs to no organisation")
-    void checkAddon_shouldThrowForbidden_whenNoOrganisation() {
-        RequiresAddon annotation = mock(RequiresAddon.class);
-        when(organisationRepository.findByMember(userId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
-                .isInstanceOf(ForbiddenException.class);
-    }
-
-    // --- PAST_DUE subscription status ---
-
-    @Test
-    @DisplayName("Should proceed with a write action when subscription status is ACTIVE")
-    void checkAddon_shouldProceed_whenStatusActiveAndWriteAction() throws Throwable {
-        RequiresAddon annotation = mock(RequiresAddon.class);
-        when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
-        when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
-        when(subscriptionRepository.findSubscriptionStatus(orgId)).thenReturn(Optional.of("ACTIVE"));
-        stubSignature(false);
-
-        aspect.checkAddon(pjp, annotation);
-
-        verify(pjp).proceed();
-    }
-
-    @Test
-    @DisplayName("Should proceed with a write action when subscription status is null (no Paddle checkout yet)")
-    void checkAddon_shouldProceed_whenStatusNullAndWriteAction() throws Throwable {
-        RequiresAddon annotation = mock(RequiresAddon.class);
-        when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
-        when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
-        when(subscriptionRepository.findSubscriptionStatus(orgId)).thenReturn(Optional.empty());
-        stubSignature(false);
-
-        aspect.checkAddon(pjp, annotation);
-
-        verify(pjp).proceed();
-    }
-
-    @Test
-    @DisplayName("Should proceed with a read action when subscription status is PAST_DUE")
-    void checkAddon_shouldProceed_whenStatusPastDueAndReadAction() throws Throwable {
-        RequiresAddon annotation = mock(RequiresAddon.class);
-        when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
-        when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
+        when(addonAccessChecker.hasAddonAccess(orgId, AddonCode.DASHBOARD)).thenReturn(true);
         stubSignature(true);
 
         aspect.checkAddon(pjp, annotation);
 
         verify(pjp).proceed();
-        verify(subscriptionRepository, never()).findSubscriptionStatus(any());
+        verify(addonAccessChecker, never()).isAddonUsableForWrites(any(), any());
     }
 
     @Test
-    @DisplayName("Should throw ForbiddenException for a write action when subscription status is PAST_DUE")
-    void checkAddon_shouldThrowForbidden_whenStatusPastDueAndWriteAction() throws Throwable {
-        RequiresAddon annotation = mock(RequiresAddon.class);
+    @DisplayName("Should proceed with a write when the add-on is usable for writes")
+    void checkAddon_shouldProceed_whenWriteAndUsable() throws Throwable {
+        when(annotation.value()).thenReturn(AddonCode.NOTES);
+        when(addonAccessChecker.hasAddonAccess(orgId, AddonCode.NOTES)).thenReturn(true);
+        when(addonAccessChecker.isAddonUsableForWrites(orgId, AddonCode.NOTES)).thenReturn(true);
+        stubSignature(false);
+
+        aspect.checkAddon(pjp, annotation);
+
+        verify(pjp).proceed();
+    }
+
+    @Test
+    @DisplayName("Should throw ForbiddenException naming the add-on when the org has no access")
+    void checkAddon_shouldThrowForbidden_whenNoAccess() throws Throwable {
         when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
-        when(subscriptionRepository.isInternal(orgId)).thenReturn(false);
-        when(subscriptionRepository.hasRealBilling(orgId)).thenReturn(true);
-        when(subscriptionRepository.hasAddon(orgId, "DASHBOARD")).thenReturn(true);
-        when(subscriptionRepository.findSubscriptionStatus(orgId)).thenReturn(Optional.of("PAST_DUE"));
+        when(addonAccessChecker.hasAddonAccess(orgId, AddonCode.DASHBOARD)).thenReturn(false);
+
+        assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("DASHBOARD add-on is required to access this feature");
+        verify(pjp, never()).proceed();
+    }
+
+    @Test
+    @DisplayName("Should throw the PAST_DUE ForbiddenException for a write the org can read but not write")
+    void checkAddon_shouldThrowPastDue_whenWriteNotUsable() throws Throwable {
+        when(annotation.value()).thenReturn(AddonCode.DASHBOARD);
+        when(addonAccessChecker.hasAddonAccess(orgId, AddonCode.DASHBOARD)).thenReturn(true);
+        when(addonAccessChecker.isAddonUsableForWrites(orgId, AddonCode.DASHBOARD)).thenReturn(false);
         stubSignature(false);
 
         assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessageContaining("past due");
+                .hasMessage(ErrorMessages.Paddle.SUBSCRIPTION_PAST_DUE);
         verify(pjp, never()).proceed();
+    }
+
+    @Test
+    @DisplayName("Should throw ForbiddenException when user belongs to no organisation")
+    void checkAddon_shouldThrowForbidden_whenNoOrganisation() {
+        when(organisationRepository.findByMember(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> aspect.checkAddon(pjp, annotation))
+                .isInstanceOf(ForbiddenException.class);
+        verify(addonAccessChecker, never()).hasAddonAccess(any(), any());
     }
 
     // --- helpers ---
