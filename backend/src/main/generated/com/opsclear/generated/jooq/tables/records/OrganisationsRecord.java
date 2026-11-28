@@ -7,6 +7,7 @@ package com.opsclear.generated.jooq.tables.records;
 import com.opsclear.generated.jooq.tables.Organisations;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.jooq.Record1;
@@ -126,6 +127,51 @@ public class OrganisationsRecord extends UpdatableRecordImpl<OrganisationsRecord
         return (String) get(6);
     }
 
+    /**
+     * Setter for <code>public.organisations.trial_ends_at</code>.
+     */
+    public OrganisationsRecord setTrialEndsAt(OffsetDateTime value) {
+        set(7, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.organisations.trial_ends_at</code>.
+     */
+    public OffsetDateTime getTrialEndsAt() {
+        return (OffsetDateTime) get(7);
+    }
+
+    /**
+     * Setter for <code>public.organisations.trial_ending_email_sent_at</code>.
+     */
+    public OrganisationsRecord setTrialEndingEmailSentAt(OffsetDateTime value) {
+        set(8, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.organisations.trial_ending_email_sent_at</code>.
+     */
+    public OffsetDateTime getTrialEndingEmailSentAt() {
+        return (OffsetDateTime) get(8);
+    }
+
+    /**
+     * Setter for <code>public.organisations.trial_ended_email_sent_at</code>.
+     */
+    public OrganisationsRecord setTrialEndedEmailSentAt(OffsetDateTime value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.organisations.trial_ended_email_sent_at</code>.
+     */
+    public OffsetDateTime getTrialEndedEmailSentAt() {
+        return (OffsetDateTime) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -149,7 +195,7 @@ public class OrganisationsRecord extends UpdatableRecordImpl<OrganisationsRecord
     /**
      * Create a detached, initialised OrganisationsRecord
      */
-    public OrganisationsRecord(UUID id, String name, String slug, UUID createdBy, LocalDateTime createdAt, LocalDateTime deletedAt, String paddleCustomerId) {
+    public OrganisationsRecord(UUID id, String name, String slug, UUID createdBy, LocalDateTime createdAt, LocalDateTime deletedAt, String paddleCustomerId, OffsetDateTime trialEndsAt, OffsetDateTime trialEndingEmailSentAt, OffsetDateTime trialEndedEmailSentAt) {
         super(Organisations.ORGANISATIONS);
 
         setId(id);
@@ -159,6 +205,9 @@ public class OrganisationsRecord extends UpdatableRecordImpl<OrganisationsRecord
         setCreatedAt(createdAt);
         setDeletedAt(deletedAt);
         setPaddleCustomerId(paddleCustomerId);
+        setTrialEndsAt(trialEndsAt);
+        setTrialEndingEmailSentAt(trialEndingEmailSentAt);
+        setTrialEndedEmailSentAt(trialEndedEmailSentAt);
         resetChangedOnNotNull();
     }
 }

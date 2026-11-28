@@ -10,6 +10,7 @@ import com.opsclear.generated.jooq.Public;
 import com.opsclear.generated.jooq.tables.records.OrganisationsRecord;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -90,6 +91,21 @@ public class Organisations extends TableImpl<OrganisationsRecord> {
      */
     public final TableField<OrganisationsRecord, String> PADDLE_CUSTOMER_ID = createField(DSL.name("paddle_customer_id"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>public.organisations.trial_ends_at</code>.
+     */
+    public final TableField<OrganisationsRecord, OffsetDateTime> TRIAL_ENDS_AT = createField(DSL.name("trial_ends_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
+    /**
+     * The column <code>public.organisations.trial_ending_email_sent_at</code>.
+     */
+    public final TableField<OrganisationsRecord, OffsetDateTime> TRIAL_ENDING_EMAIL_SENT_AT = createField(DSL.name("trial_ending_email_sent_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
+    /**
+     * The column <code>public.organisations.trial_ended_email_sent_at</code>.
+     */
+    public final TableField<OrganisationsRecord, OffsetDateTime> TRIAL_ENDED_EMAIL_SENT_AT = createField(DSL.name("trial_ended_email_sent_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
     private Organisations(Name alias, Table<OrganisationsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -126,7 +142,7 @@ public class Organisations extends TableImpl<OrganisationsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.UK_ORGANISATIONS_SLUG_ACTIVE);
+        return Arrays.asList(Indexes.IDX_ORGANISATIONS_TRIAL_ENDS_AT, Indexes.UK_ORGANISATIONS_SLUG_ACTIVE);
     }
 
     @Override
